@@ -1,0 +1,389 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Label } from "@/components/ui/label"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Plus, Edit, Trash, Award, User, XCircle } from "lucide-react"
+import Image from "next/image"
+import { toast } from "@/components/ui/use-toast"
+import {
+  createBadge,
+  getAllBadges,
+  updateBadge,
+  deleteBadge,
+  assignBadgeToNutritionist,
+  removeBadgeFromNutritionist,
+  getNutritionistBadges,
+} from "@/lib/badge-service"
+import { getAllNutritionists } from "@/lib/nutritionist-service"
+import { getCurrentUser } from "@/lib/auth"
+
+export function BadgesTab() {
+  const [badges, setBadges] = useState([])
+  const [nutritionists, setNutritionists] = useState([])
+  const [selectedNutritionist, setSelectedNutritionist] = useState(null)
+  const [nutritionistBadges, setNutritionistBadges] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [isBadgeModalOpen, setIsBadgeModalOpen] = useState(false)
+  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false)
+  const [currentBadge, setCurrentBadge] = useState(null)
+  const [adminUserId, setAdminUserId] = useState(null)
+
+  useEffect(() => {
+    fetchData()
+    fetchAdminUser()
+  }, [])
+
+  const fetchAdminUser = async () => {
+    const user = await getCurrentUser()
+    if (user) {
+      setAdminUserId(user.id)
+    }
+  }
+
+  const fetchData = async () => {
+    setLoading(true)
+    const fetchedBadges = await getAllBadges()
+    setBadges(fetchedBadges)
+    const fetchedNutritionists = await getAllNutritionists()
+    setNutritionists(fetchedNutritionists)
+    setLoading(false)
+  }
+
+  const handleCreateOrUpdateBadge = async (e) => {
+    e.preventDefault()
+    if (!currentBadge?.name || !currentBadge?.icon_url) {
+      toast({ title: "Erro", description: "Nome e URL do ícone são obrigatórios.", variant: "destructive" })
+      return
+    }
+
+    let success = false
+    if (currentBadge.id) {
+      // Update
+      const updated = await updateBadge(
+        currentBadge.id,
+        currentBadge.name,
+        currentBadge.description || "",
+        currentBadge.icon_url,
+      )
+      success = !!updated
+      if (success) toast({ title: "Insígnia atualizada", description: "A insígnia foi salva com sucesso." })
+    } else {
+      // Create
+      const created = await createBadge(currentBadge.name, currentBadge.description || "", currentBadge.icon_url)
+      success = !!created
+      if (success) toast({ title: "Insígnia criada", description: "Nova insígnia adicionada com sucesso!" })
+    }
+
+    if (success) {
+      fetchData()
+      setIsBadgeModalOpen(false)
+      setCurrentBadge(null)
+    } else {
+      toast({ title: "Erro", description: "Não foi possível salvar a insígnia.", variant: "destructive" })
+    }
+  }
+
+  const handleDeleteBadge = async (id) => {
+    if (window.confirm("Tem certeza que deseja excluir esta insígnia?")) {
+      const success = await deleteBadge(id)
+      if (success) {
+        fetchData()
+        toast({ title: "Insígnia excluída", description: "A insígnia foi removida com sucesso." })
+      } else {
+        toast({ title: "Erro", description: "Não foi possível excluir a insígnia.", variant: "destructive" })
+      }
+    }
+  }
+
+  const handleAssignBadge = async (badgeId) => {
+    if (!selectedNutritionist || !adminUserId) {
+      toast({
+        title: "Erro",
+        description: "Selecione um nutricionista e faça login como admin.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    const success = await assignBadgeToNutritionist(selectedNutritionist.id, badgeId, adminUserId)
+    if (success) {
+      fetchNutritionistBadges(selectedNutritionist.id)
+      toast({ title: "Insígnia atribuída", description: "Insígnia adicionada ao nutricionista." })
+    } else {
+      toast({ title: "Erro", description: "Não foi possível atribuir a insígnia.", variant: "destructive" })
+    }
+  }
+
+  const handleRemoveBadge = async (badgeId) => {
+    if (!selectedNutritionist) return
+    if (window.confirm("Tem certeza que deseja remover esta insígnia do nutricionista?")) {
+      const success = await removeBadgeFromNutritionist(selectedNutritionist.id, badgeId)
+      if (success) {
+        fetchNutritionistBadges(selectedNutritionist.id)
+        toast({ title: "Insígnia removida", description: "Insígnia removida do nutricionista." })
+      } else {
+        toast({ title: "Erro", description: "Não foi possível remover a insígnia.", variant: "destructive" })
+      }
+    }
+  }
+
+  const fetchNutritionistBadges = async (nutritionistId) => {
+    const badges = await getNutritionistBadges(nutritionistId)
+    setNutritionistBadges(badges)
+  }
+
+  const handleSelectNutritionist = (nutri) => {
+    setSelectedNutritionist(nutri)
+    fetchNutritionistBadges(nutri.id)
+    setIsAssignModalOpen(true)
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-[400px] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-emerald-200 border-t-emerald-500 mx-auto"></div>
+        <p className="text-[#1E1D40]/70 font-medium ml-4">Carregando insígnias...</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-8">
+      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl lg:text-4xl font-bold text-[#1E1D40] mb-2">Gerenciar Insígnias</h1>
+          <p className="text-gray-600">Crie, edite e atribua insígnias de mérito aos nutricionistas.</p>
+        </div>
+        <Dialog open={isBadgeModalOpen} onOpenChange={setIsBadgeModalOpen}>
+          <DialogTrigger asChild>
+            <Button
+              onClick={() => setCurrentBadge({})}
+              className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 shadow-lg hover:shadow-xl transition-all duration-300"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Nova Insígnia
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>{currentBadge?.id ? "Editar Insígnia" : "Criar Nova Insígnia"}</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleCreateOrUpdateBadge} className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="badgeName" className="text-right">
+                  Nome
+                </Label>
+                <Input
+                  id="badgeName"
+                  value={currentBadge?.name || ""}
+                  onChange={(e) => setCurrentBadge({ ...currentBadge, name: e.target.value })}
+                  className="col-span-3"
+                  required
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="badgeDescription" className="text-right">
+                  Descrição
+                </Label>
+                <Textarea
+                  id="badgeDescription"
+                  value={currentBadge?.description || ""}
+                  onChange={(e) => setCurrentBadge({ ...currentBadge, description: e.target.value })}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="badgeIconUrl" className="text-right">
+                  URL do Ícone
+                </Label>
+                <Input
+                  id="badgeIconUrl"
+                  value={currentBadge?.icon_url || ""}
+                  onChange={(e) => setCurrentBadge({ ...currentBadge, icon_url: e.target.value })}
+                  className="col-span-3"
+                  placeholder="/placeholder.svg?height=32&width=32"
+                  required
+                />
+              </div>
+              <DialogFooter>
+                <Button type="submit">Salvar</Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      {/* Seção de Insígnias Existentes */}
+      <Card className="border-0 shadow-lg backdrop-blur-sm">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Award className="h-5 w-5 text-emerald-600" /> Insígnias Criadas
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {badges.length === 0 ? (
+            <p className="text-gray-500 text-center py-4">Nenhuma insígnia criada ainda.</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[60px]">Ícone</TableHead>
+                  <TableHead>Nome</TableHead>
+                  <TableHead>Descrição</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {badges.map((badge) => (
+                  <TableRow key={badge.id}>
+                    <TableCell>
+                      <Image
+                        src={badge.icon_url || "/placeholder.svg?height=32&width=32&query=badge"}
+                        alt={badge.name}
+                        width={32}
+                        height={32}
+                        className="rounded-full"
+                      />
+                    </TableCell>
+                    <TableCell className="font-medium">{badge.name}</TableCell>
+                    <TableCell className="text-gray-600">{badge.description}</TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setCurrentBadge(badge)
+                          setIsBadgeModalOpen(true)
+                        }}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => handleDeleteBadge(badge.id)}>
+                        <Trash className="h-4 w-4 text-red-500" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Seção de Atribuir Insígnias a Nutricionistas */}
+      <Card className="border-0 shadow-lg backdrop-blur-sm">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <User className="h-5 w-5 text-emerald-600" /> Atribuir Insígnias a Nutricionistas
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-gray-600 mb-4">Selecione um nutricionista para atribuir ou remover insígnias.</p>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Nome do Nutricionista</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead className="text-right">Ações</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {nutritionists.map((nutri) => (
+                <TableRow key={nutri.id}>
+                  <TableCell className="font-medium">{nutri.full_name}</TableCell>
+                  <TableCell className="text-gray-600">{nutri.email}</TableCell>
+                  <TableCell className="text-right">
+                    <Button variant="outline" size="sm" onClick={() => handleSelectNutritionist(nutri)}>
+                      <Award className="h-4 w-4 mr-2" /> Gerenciar Insígnias
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      {/* Modal de Atribuição de Insígnias */}
+      <Dialog open={isAssignModalOpen} onOpenChange={setIsAssignModalOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Gerenciar Insígnias para {selectedNutritionist?.full_name}</DialogTitle>
+          </DialogHeader>
+          <div className="py-4 space-y-6">
+            <div>
+              <h3 className="text-lg font-semibold mb-2">Insígnias Atribuídas</h3>
+              {nutritionistBadges.length === 0 ? (
+                <p className="text-gray-500">Nenhuma insígnia atribuída a este nutricionista ainda.</p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {nutritionistBadges.map((nb) => (
+                    <div key={nb.id} className="flex items-center gap-2 pr-1">
+                      {nb.badge?.icon_url && (
+                        <Image
+                          src={nb.badge.icon_url || "/placeholder.svg"}
+                          alt={nb.badge.name || "insígnia"}
+                          width={20}
+                          height={20}
+                          className="rounded-full"
+                        />
+                      )}
+                      {nb.badge?.name}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-5 w-5 rounded-full hover:bg-white/20"
+                        onClick={() => handleRemoveBadge(nb.badge_id)}
+                      >
+                        <XCircle className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div>
+              <h3 className="text-lg font-semibold mb-2">Atribuir Nova Insígnia</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                {badges.map((badge) => {
+                  const isAssigned = nutritionistBadges.some((nb) => nb.badge_id === badge.id)
+                  return (
+                    <Button
+                      key={badge.id}
+                      variant={isAssigned ? "secondary" : "outline"}
+                      onClick={() => handleAssignBadge(badge.id)}
+                      disabled={isAssigned}
+                      className="flex flex-col h-auto py-4 items-center justify-center text-center gap-2"
+                    >
+                      <Image
+                        src={badge.icon_url || "/placeholder.svg?height=32&width=32&query=badge"}
+                        alt={badge.name}
+                        width={32}
+                        height={32}
+                        className="rounded-full"
+                      />
+                      <span className="text-sm font-medium">{badge.name}</span>
+                      {isAssigned && <span className="text-xs text-gray-500">(Atribuída)</span>}
+                    </Button>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAssignModalOpen(false)}>
+              Fechar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
+}

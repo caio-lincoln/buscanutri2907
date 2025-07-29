@@ -1,0 +1,36 @@
+User-agent: *
+Allow: /
+
+# Páginas principais
+Allow: /
+Allow: /para-pacientes
+Allow: /para-nutricionistas
+Allow: /para-empresas
+Allow: /nutricionistas
+Allow: /vagas
+Allow: /blog
+
+# Páginas de autenticação
+Allow: /login
+Allow: /cadastro
+
+# Dashboards (permitir indexação básica)
+Allow: /dashboard/paciente
+Allow: /dashboard/nutricionistas
+Allow: /dashboard/empresa
+
+# Bloquear dashboard admin
+Disallow: /dashboard/admin
+
+# Páginas legais
+Allow: /termos
+Allow: /privacidade
+Allow: /cookies
+
+# Bloquear arquivos de sistema
+Disallow: /api/
+Disallow: /_next/
+Disallow: /scripts/
+
+# Sitemap
+Sitemap: https://buscanutri.com.br/sitemap.xml

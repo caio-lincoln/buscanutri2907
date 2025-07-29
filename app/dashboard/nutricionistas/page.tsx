@@ -1,0 +1,762 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import {
+  Calendar,
+  Users,
+  MessageSquare,
+  Briefcase,
+  BookOpen,
+  User,
+  Settings,
+  ArrowRight,
+  Star,
+  MapPin,
+  Target,
+  Zap,
+  Heart,
+} from "lucide-react"
+import { getCurrentUser, getUserProfile, signOut } from "@/lib/auth"
+import type { NutritionistProfile } from "@/lib/supabase"
+import { NotificationsPanel, type Notification } from "@/components/notifications-panel"
+import { DashboardSidebar, getMenuItems } from "@/components/dashboard-sidebar"
+import { IrisChat } from "@/components/iris-chat"
+import { StatsCard } from "@/components/stats-card"
+import { UserProfileModal } from "@/components/user-profile-modal"
+// Importar os novos componentes das abas
+import { ReportsTab } from "@/components/dashboard/nutricionistas/reports-tab"
+import { CoursesTab } from "@/components/dashboard/nutricionistas/courses-tab"
+import { JobsTab } from "@/components/dashboard/nutricionistas/jobs-tab"
+import { ForumTab } from "@/components/dashboard/nutricionistas/forum-tab"
+import { BlogTab } from "@/components/dashboard/nutricionistas/blog-tab"
+import { NutritionistTelemedicineTab } from "@/components/dashboard/nutricionistas/telemedicine-tab"
+import { AppointmentsTab } from "@/components/dashboard/nutricionistas/appointments-tab" // Importar a nova aba de agenda
+import NutritionistRecentChatsList from "@/components/nutritionist-recent-chats-list"
+
+export default function NutritionistDashboard() {
+  const [profile, setProfile] = useState<NutritionistProfile | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [notifications, setNotifications] = useState<Notification[]>([])
+  const [activeTab, setActiveTab] = useState("overview")
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
+  const router = useRouter()
+
+  const menuItems = getMenuItems("nutricionista")
+
+  useEffect(() => {
+    loadProfile()
+    loadNotifications()
+  }, [])
+
+  const loadProfile = async () => {
+    try {
+      const user = await getCurrentUser()
+      if (!user) {
+        router.push("/login")
+        return
+      }
+
+      const { data: profileData } = await getUserProfile(user.id, "nutricionista")
+      setProfile(profileData)
+    } catch (error) {
+      console.error("Error loading profile:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const loadNotifications = async () => {
+    const mockNotifications: Notification[] = [
+      {
+        id: "1",
+        type: "appointment",
+        title: "Nova consulta agendada",
+        description: "João Silva agendou uma consulta para amanhã às 10:00.",
+        time: "30 min atrás",
+        read: false,
+        actionUrl: "/agenda",
+        sender: {
+          name: "João Silva",
+          role: "Paciente",
+        },
+        priority: "high",
+      },
+      {
+        id: "2",
+        type: "message",
+        title: "Nova mensagem recebida",
+        description: "Maria Santos enviou uma pergunta sobre o plano alimentar.",
+        time: "1 hora atrás",
+        read: false,
+        actionUrl: "/chat",
+        sender: {
+          name: "Maria Santos",
+          role: "Paciente",
+        },
+        priority: "medium",
+      },
+    ]
+
+    setNotifications(mockNotifications)
+  }
+
+  const handleMarkAsRead = (id: string) => {
+    setNotifications((prev) =>
+      prev.map((notification) =>
+        notification.id === id ? { ...notification, read: !notification.read } : notification,
+      ),
+    )
+  }
+
+  const handleMarkAllAsRead = () => {
+    setNotifications((prev) => prev.map((notification) => ({ ...notification, read: true })))
+  }
+
+  const handleDelete = (id: string) => {
+    setNotifications((prev) => prev.filter((notification) => notification.id !== id))
+  }
+
+  const handleClearAll = () => {
+    setNotifications([])
+  }
+
+  const handleSignOut = async () => {
+    await signOut()
+    router.push("/")
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50/50 via-white to-white flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-200 border-t-blue-500 mx-auto"></div>
+          <p className="text-[#1E1D40]/70 font-medium">Carregando seu dashboard...</p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <DashboardSidebar
+      userType="nutricionista"
+      userName={profile?.full_name || "Nutricionista"}
+      menuItems={menuItems}
+      activeItem={activeTab}
+      onItemClick={setActiveTab}
+      onSignOut={handleSignOut}
+    >
+      <div className="space-y-8">
+        {/* Overview Dashboard */}
+        {activeTab === "overview" && (
+          <div className="space-y-8">
+            {/* Welcome Section */}
+            <div className="relative overflow-hidden bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 rounded-3xl p-8 text-white shadow-2xl">
+              <div className="absolute inset-0 bg-[url('/placeholder.svg?height=400&width=800')] opacity-10"></div>
+              <div className="relative flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+                <div className="space-y-4 flex-1">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
+                      <Heart className="h-6 w-6 text-white" />
+                    </div>
+                    <div>
+                      <h1 className="text-3xl lg:text-4xl font-bold">
+                        Olá, Dr(a). {profile?.full_name?.split(" ")[0] || "Nutricionista"}! 👋
+                      </h1>
+                      <p className="text-blue-100 text-lg mt-1">Como está sua prática hoje?</p>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-4">
+                    <div className="bg-white/10 backdrop-blur-sm rounded-xl px-4 py-2">
+                      <p className="text-sm text-blue-100">Consultas hoje</p>
+                      <p className="font-semibold">8 agendadas</p>
+                    </div>
+                    <div className="bg-white/10 backdrop-blur-sm rounded-xl px-4 py-2">
+                      <p className="text-sm text-blue-100">Avaliação média</p>
+                      <p className="font-semibold">4.9 ⭐</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="hidden lg:block">
+                  <div className="w-32 h-32 bg-white/10 rounded-full flex items-center justify-center backdrop-blur-sm">
+                    <Target className="h-16 w-16 text-white/80" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              <StatsCard
+                title="Pacientes Ativos"
+                value="127"
+                icon={Users}
+                color="blue"
+                trend={{ value: 12, isPositive: true }}
+                description="Este mês"
+              />
+              <StatsCard
+                title="Consultas Agendadas"
+                value="24"
+                icon={Calendar}
+                color="green"
+                trend={{ value: 8, isPositive: true }}
+                description="Próximos 7 dias"
+              />
+              <StatsCard
+                title="Mensagens Não Lidas"
+                value="7"
+                icon={MessageSquare}
+                color="orange"
+                trend={{ value: 15, isPositive: false }}
+                description="Últimas 24h"
+              />
+              <StatsCard
+                title="Avaliação Média"
+                value="4.9"
+                icon={Star}
+                color="yellow"
+                description="Baseado em 89 avaliações"
+              />
+            </div>
+
+            {/* Quick Actions */}
+            <div>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-[#1E1D40]">Ações Rápidas</h2>
+                <Button variant="ghost" size="sm" className="text-gray-500 hover:text-gray-700">
+                  Ver todas <ArrowRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <Card className="group hover-lift cursor-pointer transition-all duration-300 border-0 shadow-lg hover:shadow-xl bg-gradient-to-br from-blue-50 to-blue-100/50 backdrop-blur-sm">
+                  <CardContent className="p-6 text-center">
+                    <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                      <Calendar className="h-7 w-7 text-white" />
+                    </div>
+                    <h3 className="font-semibold text-[#1E1D40] mb-2 text-lg">Gerenciar Agenda</h3>
+                    <p className="text-sm text-gray-600 mb-4">Visualize e organize seus horários</p>
+                    <Button size="sm" variant="ghost" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50">
+                      Abrir agenda <ArrowRight className="h-3 w-3 ml-1" />
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                <Card className="group hover-lift cursor-pointer transition-all duration-300 border-0 shadow-lg hover:shadow-xl bg-gradient-to-br from-green-50 to-green-100/50 backdrop-blur-sm">
+                  <CardContent className="p-6 text-center">
+                    <div className="w-14 h-14 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                      <Users className="h-7 w-7 text-white" />
+                    </div>
+                    <h3 className="font-semibold text-[#1E1D40] mb-2 text-lg">Meus Pacientes</h3>
+                    <p className="text-sm text-gray-600 mb-4">Acompanhe o progresso dos pacientes</p>
+                    <Button size="sm" variant="ghost" className="text-green-600 hover:text-green-700 hover:bg-green-50">
+                      Ver pacientes <ArrowRight className="h-3 w-3 ml-1" />
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                <Card className="group hover-lift cursor-pointer transition-all duration-300 border-0 shadow-lg hover:shadow-xl bg-gradient-to-br from-purple-50 to-purple-100/50 backdrop-blur-sm">
+                  <CardContent className="p-6 text-center">
+                    <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                      <Briefcase className="h-7 w-7 text-white" />
+                    </div>
+                    <h3 className="font-semibold text-[#1E1D40] mb-2 text-lg">Oportunidades</h3>
+                    <p className="text-sm text-gray-600 mb-4">Explore vagas disponíveis</p>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-purple-600 hover:text-purple-700 hover:bg-purple-50"
+                    >
+                      Ver vagas <ArrowRight className="h-3 w-3 ml-1" />
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                <Card className="group hover-lift cursor-pointer transition-all duration-300 border-0 shadow-lg hover:shadow-xl bg-gradient-to-br from-orange-50 to-orange-100/50 backdrop-blur-sm">
+                  <CardContent className="p-6 text-center">
+                    <div className="w-14 h-14 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                      <BookOpen className="h-7 w-7 text-white" />
+                    </div>
+                    <h3 className="font-semibold text-[#1E1D40] mb-2 text-lg">Cursos & Educação</h3>
+                    <p className="text-sm text-gray-600 mb-4">Continue sua formação</p>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                    >
+                      Explorar <ArrowRight className="h-3 w-3 ml-1" />
+                    </Button>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+
+            {/* Recent Chats */}
+            <div>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-[#1E1D40]">Conversas Recentes</h2>
+                <Button variant="ghost" size="sm" className="text-gray-500 hover:text-gray-700">
+                  Ver todas <ArrowRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
+
+              <Card className="border-0 shadow-lg backdrop-blur-sm">
+                <CardContent className="p-6">
+                  {profile?.user_id && <NutritionistRecentChatsList userId={profile.user_id} />}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Today's Schedule & Recent Activity (Removido para a aba de Agenda) */}
+            {/* <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <Card className="border-0 shadow-lg backdrop-blur-sm">
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+                      <Calendar className="h-4 w-4 text-white" />
+                    </div>
+                    <span>Agenda de Hoje</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {[
+                    { patient: "Maria Silva", time: "09:00", type: "Primeira consulta", status: "confirmed" },
+                    { patient: "João Santos", time: "10:30", type: "Retorno", status: "confirmed" },
+                    { patient: "Ana Costa", time: "14:00", type: "Online", status: "pending" },
+                    { patient: "Carlos Lima", time: "15:30", type: "Retorno", status: "confirmed" },
+                  ].map((appointment, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-blue-50/50 to-blue-100/30 hover:shadow-md transition-all duration-300 group"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-sm shadow-md group-hover:scale-105 transition-transform duration-300">
+                          {appointment.time}
+                        </div>
+                        <div>
+                          <p className="font-semibold text-[#1E1D40]">{appointment.patient}</p>
+                          <p className="text-sm text-gray-600">{appointment.type}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge
+                          variant="outline"
+                          className={
+                            appointment.status === "confirmed"
+                              ? "bg-green-50 text-green-700 border-green-200"
+                              : "bg-yellow-50 text-yellow-700 border-yellow-200"
+                          }
+                        >
+                          {appointment.status === "confirmed" ? "Confirmado" : "Pendente"}
+                        </Badge>
+                        <Button variant="ghost" size="sm" className="hover:bg-blue-100">
+                          <Video className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+
+                  <Button variant="ghost" className="w-full mt-4 text-gray-600 hover:text-gray-800">
+                    Ver agenda completa <ArrowRight className="h-4 w-4 ml-1" />
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <Card className="border-0 shadow-lg backdrop-blur-sm">
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center">
+                      <Activity className="h-4 w-4 text-white" />
+                    </div>
+                    <span>Atividade Recente</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {[
+                    {
+                      icon: Users,
+                      title: "Novo paciente",
+                      desc: "Maria Silva se cadastrou",
+                      time: "2h",
+                      color: "green",
+                    },
+                    {
+                      icon: Star,
+                      title: "Nova avaliação",
+                      desc: "João Santos avaliou com 5 estrelas",
+                      time: "4h",
+                      color: "yellow",
+                    },
+                    {
+                      icon: MessageSquare,
+                      title: "Mensagem recebida",
+                      desc: "Ana Costa enviou uma pergunta",
+                      time: "6h",
+                      color: "blue",
+                    },
+                    {
+                      icon: Calendar,
+                      title: "Consulta reagendada",
+                      desc: "Carlos Lima alterou horário",
+                      time: "1d",
+                      color: "orange",
+                    },
+                  ].map((item, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center gap-4 p-4 rounded-xl bg-gray-50/50 hover:bg-gray-100/50 transition-colors duration-200 group"
+                    >
+                      <div
+                        className={`w-10 h-10 bg-gradient-to-br from-${item.color}-500 to-${item.color}-600 rounded-xl flex items-center justify-center shadow-md group-hover:scale-105 transition-transform duration-200`}
+                      >
+                        <item.icon className="h-5 w-5 text-white" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-[#1E1D40] text-sm">{item.title}</p>
+                        <p className="text-sm text-gray-600 truncate">{item.desc}</p>
+                      </div>
+                      <span className="text-xs text-gray-500 font-medium">{item.time}</span>
+                    </div>
+                  ))}
+
+                  <Button variant="ghost" className="w-full mt-4 text-gray-600 hover:text-gray-800">
+                    Ver todas as atividades <ArrowRight className="h-4 w-4 ml-1" />
+                  </Button>
+                </CardContent>
+              </Card>
+            </div> */}
+          </div>
+        )}
+
+        {/* Agenda (Nova aba dedicada) */}
+        {activeTab === "agenda" && profile?.user_id && <AppointmentsTab userId={profile.user_id} />}
+
+        {/* Telemedicina (nova aba dedicada) */}
+        {activeTab === "telemedicina" && profile?.user_id && (
+          <NutritionistTelemedicineTab
+            userId={profile.user_id}
+            onScheduleNewConsultation={() => router.push("/telemedicina/agendar")}
+          />
+        )}
+
+        {/* Relatórios */}
+        {activeTab === "relatorios" && <ReportsTab />}
+
+        {/* Cursos */}
+        {activeTab === "cursos" && <CoursesTab />}
+
+        {/* Vagas */}
+        {activeTab === "vagas" && <JobsTab />}
+
+        {/* Blog */}
+        {activeTab === "blog" && <BlogTab />}
+
+        {/* Fórum */}
+        {activeTab === "forum" && <ForumTab />}
+
+        {/* Iris Chat */}
+        {activeTab === "iris" && (
+          <div className="space-y-8">
+            <div className="text-center space-y-4">
+              <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-purple-600 rounded-3xl flex items-center justify-center mx-auto shadow-2xl">
+                <Zap className="h-10 w-10 text-white" />
+              </div>
+              <div>
+                <h1 className="text-3xl lg:text-4xl font-bold text-[#1E1D40] mb-2">Chat com Iris</h1>
+                <p className="text-gray-600 text-lg">Sua assistente virtual para nutricionistas</p>
+              </div>
+            </div>
+
+            <Card className="border-0 shadow-2xl backdrop-blur-sm">
+              <IrisChat userType="nutricionista" />
+            </Card>
+          </div>
+        )}
+
+        {/* Notificações */}
+        {activeTab === "notificacoes" && (
+          <div className="space-y-8">
+            <NotificationsPanel
+              notifications={notifications}
+              userType="nutricionista"
+              onMarkAsRead={handleMarkAsRead}
+              onMarkAllAsRead={handleMarkAllAsRead}
+              onDelete={handleDelete}
+              onClearAll={handleClearAll}
+            />
+          </div>
+        )}
+
+        {/* Perfil */}
+        {activeTab === "perfil" && (
+          <div className="space-y-8">
+            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+              <div>
+                <h1 className="text-3xl lg:text-4xl font-bold text-[#1E1D40] mb-2">Meu Perfil</h1>
+                <p className="text-gray-600">Gerencie suas informações profissionais</p>
+              </div>
+              <Button
+                variant="outline"
+                className="hover-lift bg-white/80 backdrop-blur-sm border-gray-200"
+                onClick={() => setIsProfileModalOpen(true)}
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                Editar Perfil
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <Card className="border-0 shadow-lg backdrop-blur-sm">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+                      <User className="h-4 w-4 text-white" />
+                    </div>
+                    <span>Informações Pessoais</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex flex-col items-center">
+                    <Avatar className="h-20 w-20 mb-4">
+                      <AvatarImage
+                        src={
+                          profile?.profile_image_url ||
+                          `/placeholder.svg?height=80&width=80&query=${profile?.full_name || "/placeholder.svg"}`
+                        }
+                      />
+                      <AvatarFallback className="bg-gray-200 text-gray-600 text-xl font-semibold">
+                        {profile?.full_name?.charAt(0).toUpperCase() || "U"}
+                      </AvatarFallback>
+                    </Avatar>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Nome Completo</label>
+                    <p className="text-[#1E1D40] font-semibold text-lg">{profile?.full_name || "Não informado"}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">CRN</label>
+                    <p className="text-[#1E1D40] font-semibold">{profile?.crn || "Não informado"}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Telefone</label>
+                    <p className="text-[#1E1D40] font-semibold">{profile?.phone || "Não informado"}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">CPF</label>
+                    <p className="text-[#1E1D40] font-semibold">{profile?.cpf || "Não informado"}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">RG</label>
+                    <p className="text-[#1E1D40] font-semibold">{profile?.rg || "Não informado"}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Biografia</label>
+                    <p className="text-[#1E1D40] font-semibold text-sm mt-1">{profile?.bio || "Não informado"}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Formação Acadêmica</label>
+                    <p className="text-[#1E1D40] font-semibold text-sm mt-1">{profile?.education || "Não informado"}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Website</label>
+                    <p className="text-[#1E1D40] font-semibold text-sm mt-1">
+                      {profile?.website ? (
+                        <a
+                          href={profile.website}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline"
+                        >
+                          {profile.website}
+                        </a>
+                      ) : (
+                        "Não informado"
+                      )}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-0 shadow-lg backdrop-blur-sm">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center">
+                      <Star className="h-4 w-4 text-white" />
+                    </div>
+                    <span>Especialidades</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Áreas de Atuação</label>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {profile?.specialties?.map((specialty, i) => (
+                        <Badge key={i} variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                          {specialty}
+                        </Badge>
+                      )) || <p className="text-sm text-gray-500">Nenhuma informada</p>}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Experiência</label>
+                    <p className="text-[#1E1D40] font-semibold">{profile?.experience_years || 0} anos</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Preço da Consulta</label>
+                    <p className="text-[#1E1D40] font-semibold">
+                      {profile?.consultation_price ? `R$ ${profile.consultation_price.toFixed(2)}` : "Não informado"}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Atendimento Online</label>
+                    <Badge
+                      variant="outline"
+                      className={
+                        profile?.online_consultation
+                          ? "bg-green-50 text-green-700 border-green-200"
+                          : "bg-red-50 text-red-700 border-red-200"
+                      }
+                    >
+                      {profile?.online_consultation ? "Disponível" : "Não Disponível"}
+                    </Badge>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-0 shadow-lg backdrop-blur-sm">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
+                      <MapPin className="h-4 w-4 text-white" />
+                    </div>
+                    <span>Localização</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Endereço do Consultório</label>
+                    <p className="text-[#1E1D40] font-semibold">{profile?.address || "Não informado"}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Idiomas</label>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {profile?.languages?.map((lang, i) => (
+                        <Badge key={i} variant="outline" className="text-xs bg-gray-50 text-gray-700 border-gray-200">
+                          {lang}
+                        </Badge>
+                      )) || <p className="text-sm text-gray-500">Nenhum informado</p>}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Certificações</label>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {profile?.certifications?.map((cert, i) => (
+                        <Badge
+                          key={i}
+                          variant="outline"
+                          className="text-xs bg-purple-50 text-purple-700 border-purple-200"
+                        >
+                          {cert}
+                        </Badge>
+                      )) || <p className="text-sm text-gray-500">Nenhuma informada</p>}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Conquistas</label>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {profile?.achievements?.map((ach, i) => (
+                        <Badge
+                          key={i}
+                          variant="outline"
+                          className="text-xs bg-orange-50 text-orange-700 border-orange-200"
+                        >
+                          {ach}
+                        </Badge>
+                      )) || <p className="text-sm text-gray-500">Nenhuma informada</p>}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Mídias Sociais</label>
+                    <div className="flex gap-2 mt-2">
+                      {profile?.social_media?.instagram && (
+                        <a
+                          href={`https://instagram.com/${profile.social_media.instagram}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-pink-600 hover:underline text-sm"
+                        >
+                          Instagram
+                        </a>
+                      )}
+                      {profile?.social_media?.linkedin && (
+                        <a
+                          href={`https://linkedin.com/in/${profile.social_media.linkedin}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-700 hover:underline text-sm"
+                        >
+                          LinkedIn
+                        </a>
+                      )}
+                      {!profile?.social_media?.instagram && !profile?.social_media?.linkedin && (
+                        <p className="text-sm text-gray-500">Nenhuma informada</p>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        )}
+
+        {/* Conteúdo padrão para outras abas que não foram detalhadas acima */}
+        {![
+          "overview",
+          "agenda",
+          "iris",
+          "notificacoes",
+          "perfil",
+          "relatorios",
+          "cursos",
+          "vagas",
+          "forum",
+          "blog",
+          "telemedicina", // Adicionado
+        ].includes(activeTab) && (
+          <div className="space-y-8">
+            <div className="text-center space-y-6 py-16">
+              <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-3xl flex items-center justify-center mx-auto shadow-2xl">
+                <Settings className="h-10 w-10 text-white" />
+              </div>
+              <div>
+                <h2 className="text-3xl font-bold text-[#1E1D40] mb-2 capitalize">{activeTab}</h2>
+                <p className="text-gray-600 text-lg">Esta funcionalidade será implementada em breve.</p>
+              </div>
+              <Button variant="outline" className="hover-lift bg-white/80 backdrop-blur-sm border-gray-200">
+                Voltar ao início
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {profile && (
+        <UserProfileModal
+          open={isProfileModalOpen}
+          onOpenChange={setIsProfileModalOpen}
+          userType="nutricionista"
+          initialProfileData={profile}
+          onProfileUpdate={loadProfile}
+          userId={profile.user_id}
+        />
+      )}
+    </DashboardSidebar>
+  )
+}

@@ -1,0 +1,630 @@
+"use client"
+
+import type React from "react"
+
+import { useState } from "react"
+import { useRouter } from "next/navigation"
+import Link from "next/link"
+import Image from "next/image"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Checkbox } from "@/components/ui/checkbox"
+import { ArrowLeft, Eye, EyeOff, Loader2, AlertCircle, CheckCircle, Clock, Building } from "lucide-react"
+import { signUp } from "@/lib/auth"
+import { toast } from "@/hooks/use-toast"
+import { DebugInfo } from "@/components/debug-info"
+import { validateCRNFormat, validateCRNWithAPI, formatCRN } from "@/lib/crn-validator"
+import { validateCNPJFormat, validateCNPJWithAPI, formatCNPJ } from "@/lib/cnpj-validator"
+
+export default function CadastroPage() {
+  const [showPassword, setShowPassword] = useState(false)
+  const [userType, setUserType] = useState("paciente")
+  const [acceptTerms, setAcceptTerms] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
+  const [showDebug, setShowDebug] = useState(false)
+
+  // Estados para validação de CRN
+  const [crnValue, setCrnValue] = useState("")
+  const [crnValidation, setCrnValidation] = useState<{
+    status: "idle" | "validating" | "valid" | "invalid"
+    message: string
+  }>({ status: "idle", message: "" })
+
+  // Estados para validação de CNPJ
+  const [cnpjValue, setCnpjValue] = useState("")
+  const [cnpjValidation, setCnpjValidation] = useState<{
+    status: "idle" | "validating" | "valid" | "invalid"
+    message: string
+    companyData?: any
+  }>({ status: "idle", message: "" })
+
+  const router = useRouter()
+
+  // Função para validar CRN em tempo real
+  const handleCRNChange = async (value: string) => {
+    const formatted = formatCRN(value)
+    setCrnValue(formatted)
+
+    if (!formatted || formatted.length < 6) {
+      setCrnValidation({ status: "idle", message: "" })
+      return
+    }
+
+    // Validação de formato primeiro
+    const formatValidation = validateCRNFormat(formatted)
+
+    if (!formatValidation.isValid) {
+      setCrnValidation({
+        status: "invalid",
+        message: formatValidation.message,
+      })
+      return
+    }
+
+    // Se formato está correto, valida via API
+    setCrnValidation({ status: "validating", message: "Validando CRN..." })
+
+    try {
+      const apiValidation = await validateCRNWithAPI(formatted)
+      setCrnValidation({
+        status: apiValidation.isValid ? "valid" : "invalid",
+        message: apiValidation.message,
+      })
+    } catch (error) {
+      setCrnValidation({
+        status: "invalid",
+        message: "Erro ao validar CRN. Tente novamente.",
+      })
+    }
+  }
+
+  // Função para validar CNPJ em tempo real
+  const handleCNPJChange = async (value: string) => {
+    const formatted = formatCNPJ(value)
+    setCnpjValue(formatted)
+
+    if (!formatted || formatted.replace(/\D/g, "").length < 14) {
+      setCnpjValidation({ status: "idle", message: "" })
+      return
+    }
+
+    // Validação de formato primeiro
+    const formatValidation = validateCNPJFormat(formatted)
+
+    if (!formatValidation.isValid) {
+      setCnpjValidation({
+        status: "invalid",
+        message: formatValidation.message,
+      })
+      return
+    }
+
+    // Se formato está correto, valida via API
+    setCnpjValidation({ status: "validating", message: "Consultando Receita Federal..." })
+
+    try {
+      const apiValidation = await validateCNPJWithAPI(formatted)
+      setCnpjValidation({
+        status: apiValidation.isValid ? "valid" : "invalid",
+        message: apiValidation.message,
+        companyData: apiValidation.companyData,
+      })
+    } catch (error) {
+      setCnpjValidation({
+        status: "invalid",
+        message: "Erro ao validar CNPJ. Tente novamente.",
+      })
+    }
+  }
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    setError("")
+
+    if (!acceptTerms) {
+      setError("Você deve aceitar os termos de uso para continuar")
+      return
+    }
+
+    // Validação específica para nutricionista
+    if (userType === "nutricionista") {
+      if (crnValidation.status !== "valid") {
+        setError("CRN deve ser validado antes de continuar")
+        return
+      }
+    }
+
+    // Validação específica para empresa
+    if (userType === "empresa") {
+      if (cnpjValidation.status !== "valid") {
+        setError("CNPJ deve ser validado antes de continuar")
+        return
+      }
+    }
+
+    setLoading(true)
+
+    try {
+      const formData = new FormData(e.currentTarget)
+      const email = formData.get("email") as string
+      const password = formData.get("password") as string
+
+      // Validações básicas
+      if (!email || !password) {
+        throw new Error("Email e senha são obrigatórios")
+      }
+
+      if (password.length < 6) {
+        throw new Error("A senha deve ter pelo menos 6 caracteres")
+      }
+
+      let additionalData: any = {}
+
+      if (userType === "nutricionista") {
+        const full_name = formData.get("full_name") as string
+        const phone = formData.get("phone") as string
+
+        if (!full_name || !crnValue) {
+          throw new Error("Nome completo e CRN são obrigatórios")
+        }
+
+        additionalData = {
+          full_name,
+          crn: crnValue, // Usa o valor formatado e validado
+          phone,
+        }
+      } else if (userType === "paciente") {
+        const full_name = formData.get("full_name") as string
+        const birth_date = formData.get("birth_date") as string
+        const phone = formData.get("phone") as string
+
+        if (!full_name) {
+          throw new Error("Nome completo é obrigatório")
+        }
+
+        additionalData = { full_name, birth_date, phone }
+      } else if (userType === "empresa") {
+        const company_name = formData.get("company_name") as string
+        const responsible_name = formData.get("responsible_name") as string
+        const responsible_position = formData.get("responsible_position") as string
+        const phone = formData.get("phone") as string
+
+        if (!company_name || !cnpjValue || !responsible_name) {
+          throw new Error("Nome da empresa, CNPJ e nome do responsável são obrigatórios")
+        }
+
+        additionalData = {
+          company_name,
+          cnpj: cnpjValue, // Usa o valor formatado e validado
+          responsible_name,
+          responsible_position,
+          phone,
+          // Adiciona dados da empresa se disponível
+          ...(cnpjValidation.companyData && {
+            company_legal_name: cnpjValidation.companyData.name,
+            company_fantasy_name: cnpjValidation.companyData.fantasyName,
+            company_activity: cnpjValidation.companyData.activity,
+          }),
+        }
+      }
+
+      console.log("🚀 Dados do cadastro:", { email, userType, additionalData })
+
+      const { data, error: signUpError } = await signUp(email, password, userType as any, additionalData)
+
+      if (signUpError) {
+        throw new Error(signUpError)
+      }
+
+      toast({
+        title: "✅ Cadastro realizado com sucesso!",
+        description: "Bem-vindo ao Busca Nutri",
+      })
+
+      // Aguardar antes de redirecionar
+      setTimeout(() => {
+        if (userType === "nutricionista") {
+          router.push("/dashboard/nutricionistas")
+        } else if (userType === "paciente") {
+          router.push("/dashboard/paciente")
+        } else if (userType === "empresa") {
+          router.push("/dashboard/empresa")
+        }
+      }, 2000)
+    } catch (error: any) {
+      console.error("💥 Erro no cadastro:", error)
+      const errorMessage = error.message || "Erro desconhecido. Tente novamente."
+      setError(errorMessage)
+      toast({
+        title: "❌ Erro no cadastro",
+        description: errorMessage,
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Função para renderizar ícone de validação CRN
+  const renderCRNValidationIcon = () => {
+    switch (crnValidation.status) {
+      case "validating":
+        return <Clock className="h-4 w-4 text-yellow-500 animate-pulse" />
+      case "valid":
+        return <CheckCircle className="h-4 w-4 text-green-500" />
+      case "invalid":
+        return <AlertCircle className="h-4 w-4 text-red-500" />
+      default:
+        return null
+    }
+  }
+
+  // Função para renderizar ícone de validação CNPJ
+  const renderCNPJValidationIcon = () => {
+    switch (cnpjValidation.status) {
+      case "validating":
+        return <Clock className="h-4 w-4 text-yellow-500 animate-pulse" />
+      case "valid":
+        return <CheckCircle className="h-4 w-4 text-green-500" />
+      case "invalid":
+        return <AlertCircle className="h-4 w-4 text-red-500" />
+      default:
+        return null
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-[#F2E6D8] to-white flex items-center justify-center p-4">
+      <div className="w-full max-w-2xl">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <Link href="/" className="inline-block mb-6">
+            <Image
+              src="/logo-busca-nutri.png"
+              alt="Busca Nutri"
+              width={180}
+              height={36}
+              className="h-8 w-auto mx-auto"
+            />
+          </Link>
+          <h1 className="text-2xl font-bold text-[#1E1D40] mb-2">Crie sua conta</h1>
+          <p className="text-[#1E1D40]/70">Junte-se à maior comunidade de nutrição do Brasil</p>
+        </div>
+
+        <Card className="border-0 shadow-xl">
+          <CardHeader className="space-y-1 pb-4">
+            <CardTitle className="text-xl text-center text-[#1E1D40]">Cadastro</CardTitle>
+            <CardDescription className="text-center">Escolha seu tipo de usuário e complete o cadastro</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {error && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700">
+                <AlertCircle className="h-4 w-4" />
+                <span className="text-sm">{error}</span>
+              </div>
+            )}
+
+            <Tabs value={userType} onValueChange={setUserType} className="w-full">
+              <TabsList className="grid w-full grid-cols-3 mb-6">
+                <TabsTrigger value="paciente" className="text-xs">
+                  Paciente
+                </TabsTrigger>
+                <TabsTrigger value="nutricionista" className="text-xs">
+                  Nutricionista
+                </TabsTrigger>
+                <TabsTrigger value="empresa" className="text-xs">
+                  Empresa
+                </TabsTrigger>
+              </TabsList>
+
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <TabsContent value="paciente" className="space-y-4 mt-0">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="full_name">Nome completo *</Label>
+                      <Input
+                        id="full_name"
+                        name="full_name"
+                        placeholder="Seu nome completo"
+                        className="h-11"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="birth_date">Data de nascimento</Label>
+                      <Input id="birth_date" name="birth_date" type="date" className="h-11" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="email">E-mail *</Label>
+                      <Input
+                        id="email"
+                        name="email"
+                        type="email"
+                        placeholder="seu@email.com"
+                        className="h-11"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="phone">Telefone</Label>
+                      <Input id="phone" name="phone" placeholder="(11) 99999-9999" className="h-11" />
+                    </div>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="nutricionista" className="space-y-4 mt-0">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="full_name">Nome completo *</Label>
+                      <Input
+                        id="full_name"
+                        name="full_name"
+                        placeholder="Seu nome completo"
+                        className="h-11"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="crn">CRN *</Label>
+                      <div className="relative">
+                        <Input
+                          id="crn"
+                          name="crn"
+                          placeholder="Ex: CRN3 12345"
+                          className="h-11 pr-10"
+                          value={crnValue}
+                          onChange={(e) => handleCRNChange(e.target.value)}
+                          required
+                        />
+                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                          {renderCRNValidationIcon()}
+                        </div>
+                      </div>
+                      {crnValidation.message && (
+                        <p
+                          className={`text-xs mt-1 ${
+                            crnValidation.status === "valid"
+                              ? "text-green-600"
+                              : crnValidation.status === "invalid"
+                                ? "text-red-600"
+                                : "text-yellow-600"
+                          }`}
+                        >
+                          {crnValidation.message}
+                        </p>
+                      )}
+                      <p className="text-xs text-gray-500 mt-1">Formato: CRN + região + número (ex: CRN3 12345)</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="email">E-mail profissional *</Label>
+                      <Input
+                        id="email"
+                        name="email"
+                        type="email"
+                        placeholder="seu@email.com"
+                        className="h-11"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="phone">Telefone</Label>
+                      <Input id="phone" name="phone" placeholder="(11) 99999-9999" className="h-11" />
+                    </div>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="empresa" className="space-y-4 mt-0">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="company_name">Nome da empresa *</Label>
+                      <Input
+                        id="company_name"
+                        name="company_name"
+                        placeholder="Razão social"
+                        className="h-11"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="cnpj">CNPJ *</Label>
+                      <div className="relative">
+                        <Input
+                          id="cnpj"
+                          name="cnpj"
+                          placeholder="00.000.000/0000-00"
+                          className="h-11 pr-10"
+                          value={cnpjValue}
+                          onChange={(e) => handleCNPJChange(e.target.value)}
+                          required
+                        />
+                        <div className="absolute right-3 top-1/2 transform -translate-y/1/2">
+                          {renderCNPJValidationIcon()}
+                        </div>
+                      </div>
+                      {cnpjValidation.message && (
+                        <p
+                          className={`text-xs mt-1 ${
+                            cnpjValidation.status === "valid"
+                              ? "text-green-600"
+                              : cnpjValidation.status === "invalid"
+                                ? "text-red-600"
+                                : "text-yellow-600"
+                          }`}
+                        >
+                          {cnpjValidation.message}
+                        </p>
+                      )}
+                      {cnpjValidation.companyData && cnpjValidation.status === "valid" && (
+                        <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-xs">
+                          <div className="flex items-center gap-1 text-green-700 font-medium">
+                            <Building className="h-3 w-3" />
+                            Empresa Encontrada
+                          </div>
+                          <div className="text-green-600 mt-1">
+                            <div>
+                              <strong>Razão Social:</strong> {cnpjValidation.companyData.name}
+                            </div>
+                            {cnpjValidation.companyData.fantasyName && (
+                              <div>
+                                <strong>Nome Fantasia:</strong> {cnpjValidation.companyData.fantasyName}
+                              </div>
+                            )}
+                            <div>
+                              <strong>Situação:</strong> {cnpjValidation.companyData.situation}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      <p className="text-xs text-gray-500 mt-1">Será validado automaticamente na Receita Federal</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="responsible_name">Nome do responsável *</Label>
+                      <Input
+                        id="responsible_name"
+                        name="responsible_name"
+                        placeholder="Nome completo"
+                        className="h-11"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="responsible_position">Cargo</Label>
+                      <Input
+                        id="responsible_position"
+                        name="responsible_position"
+                        placeholder="Ex: Gerente de RH"
+                        className="h-11"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="email">E-mail corporativo *</Label>
+                      <Input
+                        id="email"
+                        name="email"
+                        type="email"
+                        placeholder="contato@empresa.com"
+                        className="h-11"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="phone">Telefone</Label>
+                      <Input id="phone" name="phone" placeholder="(11) 3333-3333" className="h-11" />
+                    </div>
+                  </div>
+                </TabsContent>
+
+                <div className="space-y-2">
+                  <Label htmlFor="password">Senha *</Label>
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      name="password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Mínimo 6 caracteres"
+                      className="h-11 pr-10"
+                      required
+                      minLength={6}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4 text-gray-400" />
+                      ) : (
+                        <Eye className="h-4 w-4 text-gray-400" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Checkbox id="terms" checked={acceptTerms} onCheckedChange={setAcceptTerms} />
+                  <Label htmlFor="terms" className="text-sm">
+                    Aceito os{" "}
+                    <Link href="/termos" className="text-[#4AB0D9] hover:underline">
+                      Termos de Uso
+                    </Link>{" "}
+                    e{" "}
+                    <Link href="/privacidade" className="text-[#4AB0D9] hover:underline">
+                      Política de Privacidade
+                    </Link>
+                  </Label>
+                </div>
+
+                <Button
+                  type="submit"
+                  className={`w-full h-11 ${
+                    userType === "nutricionista"
+                      ? "bg-[#4AB0D9] hover:bg-[#4AB0D9]/90"
+                      : userType === "paciente"
+                        ? "bg-[#D90D32] hover:bg-[#D90D32]/90"
+                        : "bg-[#1E1D40] hover:bg-[#1E1D40]/90"
+                  } text-white`}
+                  disabled={
+                    !acceptTerms ||
+                    loading ||
+                    (userType === "nutricionista" && crnValidation.status !== "valid") ||
+                    (userType === "empresa" && cnpjValidation.status !== "valid")
+                  }
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Cadastrando...
+                    </>
+                  ) : (
+                    `Cadastrar como ${userType === "nutricionista" ? "Nutricionista" : userType === "paciente" ? "Paciente" : "Empresa"}`
+                  )}
+                </Button>
+              </form>
+            </Tabs>
+
+            <div className="mt-6 text-center">
+              <p className="text-sm text-[#1E1D40]/70">
+                Já tem uma conta?{" "}
+                <Link href="/login" className="text-[#4AB0D9] hover:underline font-medium">
+                  Faça login aqui
+                </Link>
+              </p>
+            </div>
+
+            <div className="mt-4 text-center">
+              <Button variant="outline" size="sm" onClick={() => setShowDebug(!showDebug)} className="text-xs">
+                {showDebug ? "Ocultar" : "Mostrar"} Debug
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {showDebug && <DebugInfo />}
+
+        <div className="mt-6 text-center">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 text-sm text-[#1E1D40]/70 hover:text-[#4AB0D9] transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Voltar ao início
+          </Link>
+        </div>
+      </div>
+    </div>
+  )
+}
