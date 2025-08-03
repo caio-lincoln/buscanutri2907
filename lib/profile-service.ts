@@ -1,4 +1,7 @@
-import { supabase } from "./supabase"
+import { createSupabaseClient } from "./supabase"
+
+// Usar o cliente que mantém a autenticação
+const supabase = createSupabaseClient()
 import type { PatientProfile, NutritionistProfile, CompanyProfile, UserType } from "./supabase"
 
 export async function updateUserProfile(

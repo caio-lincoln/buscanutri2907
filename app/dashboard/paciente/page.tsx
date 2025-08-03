@@ -7,13 +7,15 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Search, MapPin, Star, Calendar, Filter, Settings, User, Video, Shield, Heart, Activity, Users, ArrowRight, Zap, Target, Grid3X3, List, BookOpen } from 'lucide-react'
+import { Search, MapPin, Star, Calendar, Filter, Settings, User, Video, Shield, Heart, Activity, Users, ArrowRight, Zap, Target, Grid3X3, List, BookOpen, CheckCircle, Clock } from 'lucide-react'
 import { getCurrentUser, getUserProfile, signOut } from "@/lib/auth"
 import type { PatientProfile } from "@/lib/supabase"
-import { NotificationsPanel, type Notification } from "@/components/notifications-panel"
+import { NotificationsPanel } from "@/components/notifications-panel"
 import { DashboardSidebar, getMenuItems as getDashboardMenuItems } from "@/components/dashboard-sidebar"
 import { IrisChat } from "@/components/iris-chat"
 import { StatsCard } from "@/components/stats-card"
+// Importar o hook de estatísticas do dashboard
+import { useDashboardStats } from "@/hooks/use-dashboard-stats"
 import {
   getPatientConsultations,
   getPatientFavoriteNutritionists,
@@ -35,12 +37,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/lib/supabase"
 import RecentChatsList from "@/components/recent-chats-list"
 import { UserProfileModal } from "@/components/user-profile-modal"
+import { RatingCard, RatingDisplay } from "@/components/ui/rating-display"
+import { RatingModal } from "@/components/ui/rating-modal"
 import { Checkbox } from "@/components/ui/checkbox"
 import Link from "next/link"
 import { PatientForumTab } from "@/components/patient-forum-tab"
 import { PatientTelemedicineTab } from "@/components/dashboard/paciente/telemedicine-tab" // Importar a nova aba de telemedicina
 import { format, parseISO } from "date-fns"
 import { ptBR } from "date-fns/locale"
+
 
 // Adicionar interfaces para nutricionistas (movidas de app/nutricionistas/page.tsx)
 interface NutritionistService {
@@ -165,7 +170,6 @@ export default function PatientDashboard() {
   const [forumQuestions, setForumQuestions] = useState<ForumQuestion[]>([])
   const [patientForumQuestions, setPatientForumQuestions] = useState<ForumQuestion[]>([])
   const [loading, setLoading] = useState(true)
-  const [notifications, setNotifications] = useState<Notification[]>([])
   const [activeTab, setActiveTab] = useState("overview")
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
   const router = useRouter()
@@ -185,19 +189,26 @@ export default function PatientDashboard() {
   const [availableLocations, setAvailableLocations] = useState<string[]>([])
   const [favoritedNutritionists, setFavoritedNutritionists] = useState<Set<string>>(new Set())
 
+  // Estados para o modal de avaliação
+  const [isRatingModalOpen, setIsRatingModalOpen] = useState(false)
+  const [selectedConsultationForRating, setSelectedConsultationForRating] = useState<Consultation | null>(null)
+
+
+
   const upcomingConsultations = consultations
     .filter((c) => c.status === "scheduled" && c.start_time && parseISO(c.start_time) > new Date())
     .slice(0, 3)
 
-  const menuItems = getDashboardMenuItems(
-    "paciente",
-    consultations.filter((c) => c.status === "scheduled" && c.start_time && parseISO(c.start_time) > new Date()),
-  )
+  // Hook para estatísticas dinâmicas do dashboard
+  const { stats: dashboardStats, loading: statsLoading } = useDashboardStats(profile?.user_id || "", "paciente")
+
+  const menuItems = getDashboardMenuItems("paciente", dashboardStats)
 
   useEffect(() => {
     loadProfile()
-    loadNotifications()
   }, [])
+
+
 
   useEffect(() => {
     if (activeTab === "buscar") {
@@ -438,60 +449,8 @@ export default function PatientDashboard() {
   }
 
   // Funções gerais
-  const loadNotifications = async () => {
-    const mockNotifications: Notification[] = [
-      {
-        id: "1",
-        type: "appointment",
-        title: "Lembrete de consulta",
-        description: "Sua consulta com Dra. Maria Silva está agendada para amanhã às 14:00.",
-        time: "12 horas atrás",
-        read: false,
-        actionUrl: "/consultas",
-        sender: {
-          name: "Dra. Maria Silva",
-          role: "Nutricionista",
-        },
-        priority: "high",
-      },
-      {
-        id: "2",
-        type: "message",
-        title: "Nova mensagem recebida",
-        description: "Você recebeu uma nova mensagem no chat.",
-        time: "3 horas atrás",
-        read: false,
-        actionUrl: "/chat",
-        sender: {
-          name: "Dra. Maria Silva",
-          role: "Nutricionista",
-        },
-        priority: "medium",
-      },
-    ]
 
-    setNotifications(mockNotifications)
-  }
 
-  const handleMarkAsRead = (id: string) => {
-    setNotifications((prev) =>
-      prev.map((notification) =>
-        notification.id === id ? { ...notification, read: !notification.read } : notification,
-      ),
-    )
-  }
-
-  const handleMarkAllAsRead = () => {
-    setNotifications((prev) => prev.map((notification) => ({ ...notification, read: true })))
-  }
-
-  const handleDelete = (id: string) => {
-    setNotifications((prev) => prev.filter((notification) => notification.id !== id))
-  }
-
-  const handleClearAll = () => {
-    setNotifications([])
-  }
 
   const handleSignOut = async () => {
     await signOut()
@@ -529,6 +488,50 @@ export default function PatientDashboard() {
       }
     } catch (error) {
       console.error('Erro ao favoritar/desfavoritar nutricionista:', error)
+    }
+  }
+
+  // Funções para o modal de avaliação
+  const handleOpenRatingModal = (consultation: Consultation) => {
+    setSelectedConsultationForRating(consultation)
+    setIsRatingModalOpen(true)
+  }
+
+  const handleCloseRatingModal = () => {
+    setIsRatingModalOpen(false)
+    setSelectedConsultationForRating(null)
+  }
+
+  const handleRatingSubmit = async (rating: number, comment: string) => {
+    if (!selectedConsultationForRating || !profile) return
+
+    try {
+      // Usar a tabela consultation_ratings conforme a migração
+      const { error } = await supabase
+        .from("consultation_ratings")
+        .insert({
+          consultation_id: selectedConsultationForRating.id,
+          patient_id: profile.user_id,
+          nutritionist_id: selectedConsultationForRating.nutritionist_id,
+          rating,
+          comment,
+        })
+      
+      if (error) {
+        console.error('Erro ao salvar avaliação:', error)
+        return
+      }
+      
+      // Fechar o modal após salvar
+      handleCloseRatingModal()
+      
+      // Recarregar dados para refletir a nova avaliação
+      const user = await getCurrentUser()
+      if (user) {
+        await loadTelemedicineData(user.id)
+      }
+    } catch (error) {
+      console.error('Erro ao enviar avaliação:', error)
     }
   }
 
@@ -625,6 +628,20 @@ export default function PatientDashboard() {
                       <p className="text-sm text-red-100">Consultas realizadas</p>
                       <p className="font-semibold">{stats.completedConsultations}</p>
                     </div>
+                    <div className="bg-white/10 backdrop-blur-sm rounded-xl px-4 py-2">
+                      <p className="text-sm text-red-100">Sua avaliação</p>
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold">{profile?.rating?.toFixed(1) || "5.0"}</span>
+                        <RatingDisplay 
+                          rating={profile?.rating || 5.0} 
+                          totalReviews={profile?.total_reviews || 0}
+                          size="sm"
+                          showNumber={false}
+                          showReviewCount={false}
+                          className="text-white"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -656,11 +673,11 @@ export default function PatientDashboard() {
               />
               <StatsCard
                 title="Avaliação Média"
-                value={stats.averageRating.toFixed(1)}
+                value={profile?.rating?.toFixed(1) || "5.0"}
                 icon={Star}
                 color="yellow"
                 trend={{ value: 15, isPositive: true }}
-                description="Suas avaliações"
+                description={`Baseado em ${profile?.total_reviews || 0} avaliações`}
               />
               <StatsCard
                 title="Nutricionistas Favoritos"
@@ -1185,23 +1202,170 @@ export default function PatientDashboard() {
         {/* Telemedicina (nova aba dedicada) */}
         {activeTab === "telemedicina" && (
           <div className="space-y-8">
-            <div className="text-center space-y-6 py-16">
-              <div className="w-20 h-20 bg-gradient-to-br from-orange-500 to-orange-600 rounded-3xl flex items-center justify-center mx-auto shadow-2xl">
-                <Settings className="h-10 w-10 text-white" />
-              </div>
+            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
               <div>
-                <h2 className="text-3xl font-bold text-[#1E1D40] mb-2">Minhas Consultas</h2>
-                <p className="text-gray-600 text-lg">Esta funcionalidade está em desenvolvimento e no momento não está disponível.</p>
-                <p className="text-gray-500 text-sm mt-2">Em breve você poderá agendar e gerenciar suas consultas aqui.</p>
+                <h1 className="text-3xl lg:text-4xl font-bold text-[#1E1D40] mb-2">Minhas Consultas</h1>
+                <p className="text-gray-600">Gerencie suas consultas e avalie seus nutricionistas</p>
               </div>
               <Button
                 variant="outline"
                 className="hover-lift bg-white/80 backdrop-blur-sm border-gray-200"
                 onClick={() => setActiveTab("buscar")}
               >
-                Buscar Nutricionistas
+                <Calendar className="h-4 w-4 mr-2" />
+                Agendar Nova Consulta
               </Button>
             </div>
+
+            {/* Estatísticas das Consultas */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <Card className="border-0 shadow-lg backdrop-blur-sm">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">Total de Consultas</p>
+                      <p className="text-2xl font-bold text-[#1E1D40]">{stats.totalConsultations}</p>
+                    </div>
+                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
+                      <Calendar className="h-6 w-6 text-white" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-0 shadow-lg backdrop-blur-sm">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">Agendadas</p>
+                      <p className="text-2xl font-bold text-[#1E1D40]">{stats.scheduledConsultations}</p>
+                    </div>
+                    <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center">
+                      <Clock className="h-6 w-6 text-white" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-0 shadow-lg backdrop-blur-sm">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">Concluídas</p>
+                      <p className="text-2xl font-bold text-[#1E1D40]">{stats.completedConsultations}</p>
+                    </div>
+                    <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center">
+                      <CheckCircle className="h-6 w-6 text-white" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Lista de Consultas */}
+            <Card className="border-0 shadow-lg backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
+                    <Video className="h-4 w-4 text-white" />
+                  </div>
+                  <span>Histórico de Consultas</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {consultations.length > 0 ? (
+                  <div className="space-y-4">
+                    {consultations.map((consultation) => (
+                      <div
+                        key={consultation.id}
+                        className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors"
+                      >
+                        <div className="flex items-center gap-4">
+                          <Avatar className="h-12 w-12">
+                            <AvatarImage
+                              src={
+                                consultation.nutritionist_profiles?.profile_image_url ||
+                                `/placeholder.svg?height=48&width=48&query=${consultation.nutritionist_profiles?.full_name || "nutritionist"}`
+                              }
+                            />
+                            <AvatarFallback className="bg-gradient-to-br from-blue-500 to-blue-600 text-white">
+                              {consultation.nutritionist_profiles?.full_name?.charAt(0) || "N"}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <h4 className="font-semibold text-[#1E1D40]">
+                              {consultation.nutritionist_profiles?.full_name || "Nutricionista"}
+                            </h4>
+                            <p className="text-sm text-gray-600">
+                              {formatDate(consultation.start_time)}
+                            </p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <Badge
+                                variant={
+                                  consultation.status === "completed"
+                                    ? "default"
+                                    : consultation.status === "scheduled"
+                                    ? "secondary"
+                                    : "outline"
+                                }
+                                className={
+                                  consultation.status === "completed"
+                                    ? "bg-green-100 text-green-800"
+                                    : consultation.status === "scheduled"
+                                    ? "bg-blue-100 text-blue-800"
+                                    : ""
+                                }
+                              >
+                                {consultation.status === "completed" && "Concluída"}
+                                {consultation.status === "scheduled" && "Agendada"}
+                                {consultation.status === "cancelled" && "Cancelada"}
+                              </Badge>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {consultation.status === "completed" && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="hover-lift bg-white/80 backdrop-blur-sm"
+                              onClick={() => handleOpenRatingModal(consultation)}
+                            >
+                              <Star className="h-4 w-4 mr-2" />
+                              Avaliar
+                            </Button>
+                          )}
+                          {consultation.status === "scheduled" && (
+                            <Button
+                              size="sm"
+                              className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
+                            >
+                              <Video className="h-4 w-4 mr-2" />
+                              Entrar
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Calendar className="h-8 w-8 text-gray-400" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Nenhuma consulta encontrada</h3>
+                    <p className="text-gray-600 mb-4">Você ainda não possui consultas agendadas ou realizadas.</p>
+                    <Button
+                      onClick={() => setActiveTab("buscar")}
+                      className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700"
+                    >
+                      <Calendar className="h-4 w-4 mr-2" />
+                      Agendar Primeira Consulta
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
         )}
 
@@ -1242,14 +1406,7 @@ export default function PatientDashboard() {
         {/* Notificações */}
         {activeTab === "notificacoes" && (
           <div className="space-y-8">
-            <NotificationsPanel
-              notifications={notifications}
-              userType="paciente"
-              onMarkAsRead={handleMarkAsRead}
-              onMarkAllAsRead={handleMarkAllAsRead}
-              onDelete={handleDelete}
-              onClearAll={handleClearAll}
-            />
+            <NotificationsPanel userType="paciente" />
           </div>
         )}
 
@@ -1464,6 +1621,17 @@ export default function PatientDashboard() {
           initialProfileData={profile}
           onProfileUpdate={loadProfile}
           userId={profile.user_id}
+        />
+      )}
+
+      {/* Modal de Avaliação */}
+      {selectedConsultationForRating && (
+        <RatingModal
+          open={isRatingModalOpen}
+          onOpenChange={setIsRatingModalOpen}
+          consultationId={selectedConsultationForRating.id}
+          nutritionistName={selectedConsultationForRating.nutritionist_profiles?.full_name || "Nutricionista"}
+          onSubmit={handleRatingSubmit}
         />
       )}
     </DashboardSidebar>

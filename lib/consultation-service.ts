@@ -1,4 +1,7 @@
-import { supabase } from "./supabase"
+import { createSupabaseClient } from "./supabase"
+
+// Usar o cliente que mantém a autenticação
+const supabase = createSupabaseClient()
 import type { TelemedicineConsultation } from "./supabase"
 
 export interface Consultation {
@@ -100,12 +103,26 @@ export interface ConsultationReview {
   created_at: string
 }
 
-// Função para buscar consultas do paciente
+// Função auxiliar para garantir que o perfil do paciente existe
 async function ensurePatientProfile(userId: string): Promise<{ user_id: string } | null> {
   try {
     // Validar se o userId é válido
     if (!userId || userId === 'null' || userId === 'undefined') {
       console.error("Invalid userId provided:", userId)
+      return null
+    }
+
+    // Verificar se o usuário está autenticado
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    
+    if (authError || !user) {
+      console.error("User not authenticated:", authError)
+      return null
+    }
+
+    // Verificar se o usuário autenticado é o mesmo que está sendo solicitado
+    if (user.id !== userId) {
+      console.error("User ID mismatch. Authenticated user:", user.id, "Requested user:", userId)
       return null
     }
 
@@ -126,27 +143,18 @@ async function ensurePatientProfile(userId: string): Promise<{ user_id: string }
       return existingProfile
     }
 
-    // Se não existe, buscar dados do usuário para criar o perfil
-    const { data: userData, error: userError } = await supabase
-      .from("users")
-      .select("email")
-      .eq("id", userId)
-      .single()
-
-    if (userError || !userData) {
-      console.error("Error fetching user data:", userError)
-      return null
-    }
-
-    // Criar o perfil usando dados do usuário
+    // Se não existe, criar o perfil usando dados do usuário autenticado
     const insertData = {
       user_id: userId,
-      full_name: userData.email?.split('@')[0] || "Usuário"
+      full_name: user.email?.split('@')[0] || "Usuário"
     }
     
     const { data: newProfile, error: createError } = await supabase
       .from("patient_profiles")
-      .insert(insertData)
+      .upsert(insertData, { 
+        onConflict: 'user_id',
+        ignoreDuplicates: false 
+      })
       .select("user_id")
       .single()
 
@@ -155,7 +163,7 @@ async function ensurePatientProfile(userId: string): Promise<{ user_id: string }
       return null
     }
 
-    console.log("✅ Patient profile created successfully for user:", userId)
+    console.log("✅ Patient profile ensured successfully for user:", userId)
     return newProfile
   } catch (error) {
     console.error("Error ensuring patient profile:", error)
@@ -268,6 +276,32 @@ export async function getNutritionistConsultations(
 // Função para buscar estatísticas do paciente
 export async function getPatientStats(patientUserId: string): Promise<PatientStats> {
   try {
+    // Verificar se o usuário está autenticado
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    
+    if (authError || !user) {
+      console.error("User not authenticated:", authError)
+      return {
+        totalConsultations: 0,
+        scheduledConsultations: 0,
+        completedConsultations: 0,
+        favoriteNutritionists: 0,
+        averageRating: 0
+      }
+    }
+
+    // Verificar se o usuário autenticado é o mesmo que está sendo solicitado
+    if (user.id !== patientUserId) {
+      console.error("User ID mismatch. Authenticated user:", user.id, "Requested user:", patientUserId)
+      return {
+        totalConsultations: 0,
+        scheduledConsultations: 0,
+        completedConsultations: 0,
+        favoriteNutritionists: 0,
+        averageRating: 0
+      }
+    }
+
     const { data, error } = await supabase.rpc('get_patient_stats', {
       patient_user_id: patientUserId
     })
@@ -305,6 +339,36 @@ export async function getPatientStats(patientUserId: string): Promise<PatientSta
 // Função para buscar estatísticas do nutricionista
 export async function getNutritionistStats(nutritionistUserId: string): Promise<NutritionistStats> {
   try {
+    // Verificar se o usuário está autenticado
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    
+    if (authError || !user) {
+      console.error("User not authenticated:", authError)
+      return {
+        totalConsultations: 0,
+        scheduledConsultations: 0,
+        completedConsultations: 0,
+        totalPatients: 0,
+        averageRating: 0,
+        totalReviews: 0,
+        monthlyRevenue: 0
+      }
+    }
+
+    // Verificar se o usuário autenticado é o mesmo que está sendo solicitado
+    if (user.id !== nutritionistUserId) {
+      console.error("User ID mismatch. Authenticated user:", user.id, "Requested user:", nutritionistUserId)
+      return {
+        totalConsultations: 0,
+        scheduledConsultations: 0,
+        completedConsultations: 0,
+        totalPatients: 0,
+        averageRating: 0,
+        totalReviews: 0,
+        monthlyRevenue: 0
+      }
+    }
+
     const { data, error } = await supabase.rpc('get_nutritionist_stats', {
       nutritionist_user_id: nutritionistUserId
     })
@@ -345,6 +409,26 @@ export async function getNutritionistStats(nutritionistUserId: string): Promise<
 // Função para buscar nutricionistas favoritos do paciente
 export async function getPatientFavoriteNutritionists(patientUserId: string): Promise<FavoriteNutritionist[]> {
   try {
+    // Validar se o patientUserId é válido
+    if (!patientUserId || patientUserId === 'null' || patientUserId === 'undefined') {
+      console.error("Invalid patientUserId provided to getPatientFavoriteNutritionists:", patientUserId)
+      return []
+    }
+
+    // Verificar se o usuário está autenticado
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    
+    if (authError || !user) {
+      console.error("User not authenticated:", authError)
+      return []
+    }
+
+    // Verificar se o usuário autenticado é o mesmo que está sendo solicitado
+    if (user.id !== patientUserId) {
+      console.error("User ID mismatch. Authenticated user:", user.id, "Requested user:", patientUserId)
+      return []
+    }
+
     // Garantir que o perfil do paciente existe
     const patientProfile = await ensurePatientProfile(patientUserId)
     if (!patientProfile) {
@@ -352,27 +436,35 @@ export async function getPatientFavoriteNutritionists(patientUserId: string): Pr
       return []
     }
 
-    const { data, error } = await supabase
-      .from("patient_favorite_nutritionists")
-      .select(`
-        *,
-        nutritionist_profiles!patient_favorite_nutritionists_nutritionist_id_fkey (
-          full_name,
-          crn,
-          specialties,
-          rating,
-          total_reviews
-        )
-      `)
-      .eq("patient_id", patientUserId)
-      .order("created_at", { ascending: false })
+    // Usar função RPC para evitar problemas de permissão
+    const { data, error } = await supabase.rpc("get_patient_favorite_nutritionists", {
+      p_patient_user_id: patientUserId,
+    })
 
     if (error) {
       console.error("Error fetching favorite nutritionists:", error)
       return []
     }
 
-    return data || []
+    // Mapear os dados para o formato esperado
+    const favorites: FavoriteNutritionist[] = (data || []).map((item: any) => ({
+      id: item.id,
+      patient_id: item.patient_id,
+      nutritionist_id: item.nutritionist_id,
+      created_at: item.created_at,
+      nutritionist_profiles: {
+        full_name: item.nutritionist_full_name,
+        crn: item.nutritionist_crn,
+        rating: item.nutritionist_rating,
+        total_reviews: item.nutritionist_total_reviews,
+        specialties: item.nutritionist_specialties,
+        profile_image_url: item.nutritionist_profile_image_url,
+        location: item.nutritionist_location,
+        email: item.nutritionist_email,
+      }
+    }))
+
+    return favorites
   } catch (error) {
     console.error("Error in getPatientFavoriteNutritionists:", error)
     return []

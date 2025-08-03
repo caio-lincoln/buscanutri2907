@@ -9,13 +9,15 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, Send, Paperclip, ImageIcon, Phone, Video, MoreVertical } from "lucide-react"
-import { getCurrentUser, getUserProfile } from "@/lib/auth"
+import { getCurrentUser, getUserProfile, signOut } from "@/lib/auth"
 import { getChatMessages, sendChatMessage, type ChatMessage, type ChatConversation } from "@/lib/chat-forum-service"
 import { supabase } from "@/lib/supabase"
 import { toast } from "@/hooks/use-toast"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import Link from "next/link"
+import { DashboardSidebar, getMenuItems } from "@/components/dashboard-sidebar"
+import { useDashboardStats } from "@/hooks/use-dashboard-stats"
 
 export default function PatientChatPage() {
   const [user, setUser] = useState<any>(null)
@@ -30,6 +32,15 @@ export default function PatientChatPage() {
   const router = useRouter()
   const params = useParams()
   const conversationId = params.id as string
+
+  // Dashboard stats
+  const { stats, loading: statsLoading } = useDashboardStats(user?.id, "paciente")
+  const menuItems = getMenuItems("paciente", stats)
+
+  const handleSignOut = async () => {
+    await signOut()
+    router.push("/")
+  }
 
   useEffect(() => {
     loadChatData()
@@ -187,9 +198,17 @@ export default function PatientChatPage() {
   const nutritionist = conversation.nutritionist_profiles
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
+    <DashboardSidebar
+      userType="paciente"
+      userName={userProfile?.full_name || "Paciente"}
+      menuItems={menuItems}
+      activeItem="chat"
+      onItemClick={(item) => router.push(item.href)}
+      onSignOut={handleSignOut}
+    >
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50">
+        {/* Header */}
+        <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-4">
@@ -332,6 +351,7 @@ export default function PatientChatPage() {
           </div>
         </Card>
       </div>
-    </div>
+      </div>
+    </DashboardSidebar>
   )
 }

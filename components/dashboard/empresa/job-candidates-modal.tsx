@@ -428,7 +428,7 @@ export function JobCandidatesModal({ open, onOpenChange, job }: JobCandidatesMod
                             </div>
                             <div className="flex flex-wrap gap-2">
                               {candidate.specializations.map((spec, index) => (
-                                <Badge key={index} variant="outline" className="text-xs">
+                                <Badge key={`candidate-${candidate.id}-spec-${spec}-${index}`} variant="outline" className="text-xs">
                                   {spec}
                                 </Badge>
                               ))}
@@ -737,7 +737,7 @@ export function JobCandidatesModal({ open, onOpenChange, job }: JobCandidatesMod
                     <CardContent>
                       <div className="flex flex-wrap gap-2">
                         {selectedCandidate.specializations.map((spec, index) => (
-                          <Badge key={index} variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                          <Badge key={`selected-candidate-spec-${spec}-${index}`} variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
                             {spec}
                           </Badge>
                         ))}

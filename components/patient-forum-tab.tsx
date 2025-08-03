@@ -10,7 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { QuestionModal } from "@/components/question-modal"
-import { getForumQuestions, getPatientForumQuestions, likeForumQuestion, likeForumAnswer, selectBestAnswer, type ForumQuestion } from "@/lib/chat-forum-service"
+import { getAllForumQuestions, likeForumItem, incrementQuestionViews, type ForumQuestion } from "@/lib/forum-data"
 import { getCurrentUser } from "@/lib/auth"
 
 export function PatientForumTab() {
@@ -19,33 +19,26 @@ export function PatientForumTab() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedQuestionForModal, setSelectedQuestionForModal] = useState<ForumQuestion | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
-  const [selectedCategory, setSelectedCategory] = useState("all")
+  const [selectedCategory, setSelectedCategory] = useState("Todas")
   const [sortOrder, setSortOrder] = useState("recent") // 'recent', 'likes', 'replies', 'views'
 
   const specialtiesOptions = [
     "Todas", // Option to clear category filter
-    "Emagrecimento",
-    "Ganho de Massa",
-    "Diabetes",
-    "Vegetarianismo",
-    "Suplementação",
-    "Alimentação Infantil",
-    "Nutrição Clínica",
-    "Nutrição Esportiva",
-    "Distúrbios Alimentares",
-    "Nutrição Geriátrica",
-    "Nutrição Funcional",
+    "suplementos",
+    "exercicios", 
+    "dieta",
+    "saude",
+    "nutricao",
   ]
 
   useEffect(() => {
     // Initialize questions from forum data
     const loadQuestions = async () => {
       try {
-        const user = await getCurrentUser()
-        if (user) {
-          const allQuestions = await getForumQuestions()
-          setQuestions(allQuestions)
-        }
+        console.log("Loading real forum questions...")
+        const allQuestions = await getAllForumQuestions()
+        console.log("Loaded forum questions:", allQuestions)
+        setQuestions(allQuestions)
       } catch (error) {
         console.error('Error loading forum questions:', error)
       }
@@ -58,14 +51,20 @@ export function PatientForumTab() {
     setIsModalOpen(true)
   }
 
-  const handleOpenViewQuestionModal = (question: ForumQuestion) => {
-    // Navigate to the specific forum question page
-    router.push(`/forum/${question.id}`)
+  const handleOpenViewQuestionModal = async (question: ForumQuestion) => {
+    // Increment views when opening question
+    try {
+      await incrementQuestionViews(question.id)
+    } catch (error) {
+      console.error('Error incrementing views:', error)
+    }
+    // Navigate to the specific forum question page within patient dashboard
+    router.push(`/dashboard/paciente/forum/${question.id}`)
   }
 
   const handleQuestionPosted = async (newQuestion: ForumQuestion) => {
     try {
-      const allQuestions = await getForumQuestions()
+      const allQuestions = await getAllForumQuestions()
       setQuestions(allQuestions)
     } catch (error) {
       console.error('Error reloading forum questions:', error)
@@ -74,7 +73,7 @@ export function PatientForumTab() {
 
   const handleReplyPosted = async (questionId: string, reply: any) => {
     try {
-      const allQuestions = await getForumQuestions()
+      const allQuestions = await getAllForumQuestions()
       setQuestions(allQuestions)
     } catch (error) {
       console.error('Error reloading forum questions:', error)
@@ -86,36 +85,14 @@ export function PatientForumTab() {
       const user = await getCurrentUser()
       if (!user) return
 
-      let success = false
-      if (type === "question") {
-        success = await likeForumQuestion(itemId, user.id)
-      } else {
-        success = await likeForumAnswer(itemId, user.id)
-      }
-
+      const success = await likeForumItem(itemId, type, user.id)
       if (success) {
         // Reload questions to reflect the updated like count
-        const allQuestions = await getForumQuestions()
+        const allQuestions = await getAllForumQuestions()
         setQuestions(allQuestions)
       }
     } catch (error) {
       console.error('Error liking item:', error)
-    }
-  }
-
-  const handleBestAnswerSelected = async (questionId: string, replyId: string) => {
-    try {
-      const user = await getCurrentUser()
-      if (!user) return
-
-      const success = await selectBestAnswer(questionId, replyId, user.id)
-      if (success) {
-        // Reload questions to reflect the best answer selection
-        const allQuestions = await getForumQuestions()
-        setQuestions(allQuestions)
-      }
-    } catch (error) {
-      console.error('Error selecting best answer:', error)
     }
   }
 
@@ -125,7 +102,7 @@ export function PatientForumTab() {
     selectedCategory: string,
     sortOrder: string,
   ) => {
-    let filtered = allQuestions // All questions are already from patients when using getPatientForumQuestions
+    let filtered = allQuestions
 
     if (searchTerm) {
       filtered = filtered.filter(
@@ -142,14 +119,13 @@ export function PatientForumTab() {
     filtered.sort((a, b) => {
       switch (sortOrder) {
         case "recent":
-          // For mock data, we'll rely on the order in mockForumQuestions for "recent" if no better timestamp.
-          return 0 // Placeholder, needs real date for accurate sorting
+          return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
         case "likes":
-          return b.likes - a.likes
+          return (b.likes || 0) - (a.likes || 0)
         case "replies":
-          return b.repliesCount - a.repliesCount
+          return (b.repliesCount || 0) - (a.repliesCount || 0)
         case "views":
-          return b.views - a.views
+          return (b.views || 0) - (a.views || 0)
         default:
           return 0
       }
@@ -222,32 +198,37 @@ export function PatientForumTab() {
                   <Avatar className="h-9 w-9">
                     <AvatarImage
                       src={
-                        question.patient_profiles?.profile_image_url || `/placeholder.svg?height=36&width=36&query=${question.patient_profiles?.full_name || 'User'}`
+                        question.author?.avatar || `/placeholder.svg?height=36&width=36&query=${question.author?.name || 'User'}`
                       }
                     />
                     <AvatarFallback className="bg-blue-100 text-blue-700 text-sm font-semibold">
-                      {(question.patient_profiles?.full_name || 'U').charAt(0).toUpperCase()}
+                      {(question.author?.name || 'U').charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   <div>
                     <div className="flex items-center gap-2">
-                      <p className="font-semibold text-[#1E1D40]">{question.patient_profiles?.full_name || 'Usuário Anônimo'}</p>
+                      <p className="font-semibold text-[#1E1D40]">{question.author?.name || 'Usuário Anônimo'}</p>
+                      {question.author?.userType === 'nutricionista' && question.author?.isVerified && (
+                        <Award className="h-4 w-4 text-yellow-500" />
+                      )}
                     </div>
-                    <p className="text-xs text-gray-500">{question.timestamp}</p>
+                    <p className="text-xs text-gray-500">{new Date(question.timestamp).toLocaleDateString('pt-BR')}</p>
                   </div>
                 </div>
-                <Badge variant="outline">{question.category}</Badge>
+                <Badge variant="outline">{question.category || 'Geral'}</Badge>
               </CardHeader>
               <CardContent className="space-y-4">
                 <h3 className="text-xl font-bold text-[#1E1D40]">{question.title}</h3>
                 <p className="text-gray-700 line-clamp-2">{question.content}</p> {/* Limit content to 2 lines */}
                 <div className="flex flex-wrap gap-2">
-                  <Badge variant="outline" className="text-xs">
-                    #{question.category}
-                  </Badge>
+                  {question.tags?.map((tag, index) => (
+                    <Badge key={`question-${question.id}-tag-${tag}-${index}`} variant="outline" className="text-xs">
+                      #{tag}
+                    </Badge>
+                  ))}
                 </div>
                 <div className="flex items-center justify-between pt-3 border-t">
-                  <div className="flex items-center gap-4 text-sm text-gray-600">
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
                     <Button
                       variant="ghost"
                       size="sm"
@@ -255,16 +236,18 @@ export function PatientForumTab() {
                         e.stopPropagation()
                         handleLike(question.id, "question")
                       }}
-                      className="flex items-center gap-1"
+                      className="flex items-center gap-1 p-0 h-auto hover:bg-transparent"
                     >
-                      <ThumbsUp className="h-4 w-4" /> {question.likes} Curtir
+                      <ThumbsUp className="h-4 w-4" /> {question.likes || 0}
                     </Button>
-                    <div className="flex items-center gap-1">
-                      <MessageCircle className="h-4 w-4" /> {question.repliesCount} Respostas
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Eye className="h-4 w-4" /> {question.views} Visualizações
-                    </div>
+                    <span>•</span>
+                    <span className="flex items-center gap-1">
+                      <MessageCircle className="h-4 w-4" /> {question.repliesCount || 0}
+                    </span>
+                    <span>•</span>
+                    <span className="flex items-center gap-1">
+                      <Eye className="h-4 w-4" /> {question.views || 0}
+                    </span>
                   </div>
                   <Button
                     variant="outline"
@@ -294,7 +277,6 @@ export function PatientForumTab() {
         onQuestionPosted={handleQuestionPosted}
         onReplyPosted={handleReplyPosted}
         onLike={handleLike}
-        onBestAnswerSelected={handleBestAnswerSelected}
       />
     </div>
   )

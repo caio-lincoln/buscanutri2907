@@ -49,6 +49,8 @@ export interface PatientProfile extends UserProfile {
   health_conditions?: string[] | null
   allergies?: string[] | null
   dietary_preferences?: string[] | null
+  rating?: number | null
+  total_reviews?: number | null
 }
 
 export interface NutritionistProfile extends UserProfile {
@@ -168,14 +170,14 @@ export interface JobPosting {
   title: string
   description: string
   requirements: string[]
-  responsibilities: string[]
+  benefits: string[]
   location: string
-  salary_range_min: number
-  salary_range_max: number
-  employment_type: "full-time" | "part-time" | "contract" | "internship"
-  experience_level: "entry" | "mid" | "senior"
-  application_deadline: string
-  status: "open" | "closed" | "filled"
+  salary_min: number
+  salary_max: number
+  job_type: string
+  level: string
+  status: string
+  applications_count: number
   created_at: string
   updated_at: string
 }
@@ -196,10 +198,13 @@ export interface ForumQuestion {
   title: string
   content: string
   tags: string[]
-  created_at: string
-  updated_at: string
   views: number
   answers_count: number
+  likes_count: number
+  is_answered: boolean
+  best_answer_id?: string
+  created_at: string
+  updated_at: string
   last_activity_at: string
 }
 
@@ -208,9 +213,10 @@ export interface ForumAnswer {
   question_id: string
   author_id: string
   content: string
+  is_accepted: boolean
+  likes_count: number
   created_at: string
   updated_at: string
-  is_accepted: boolean
 }
 
 export interface BlogPost {

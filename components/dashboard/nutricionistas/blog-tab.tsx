@@ -15,6 +15,7 @@ import { Plus, Edit, Trash, Calendar, Clock, User, Search, List, Grid, Award } f
 import Image from "next/image"
 import Link from "next/link"
 import { toast } from "@/components/ui/use-toast"
+import { ImageUpload } from "@/components/ui/image-upload"
 import {
   type BlogPost,
   getBlogPostsByAuthor,
@@ -41,11 +42,8 @@ export function BlogTab() {
       setLoading(true)
       const user = await getCurrentUser()
       if (user) {
-        // For mock data, we'll use a fixed authorId for now.
-        // In a real app, this would be user.id
-        const mockAuthorId = "4363a1ad-149b-4fcd-b725-dffa33109493" // Real nutritionist ID for mock purposes
-        setAuthorId(mockAuthorId)
-        const posts = getBlogPostsByAuthor(mockAuthorId)
+        setAuthorId(user.id)
+        const posts = await getBlogPostsByAuthor(user.id)
         setMyPosts(posts)
       }
       setLoading(false)
@@ -80,11 +78,12 @@ export function BlogTab() {
     setCurrentPost({ ...post })
   }
 
-  const handleDeletePost = (id: string) => {
+  const handleDeletePost = async (id: string) => {
     if (window.confirm("Tem certeza que deseja excluir este artigo?")) {
-      const success = deleteBlogPost(id)
+      const success = await deleteBlogPost(id)
       if (success) {
-        setMyPosts(getBlogPostsByAuthor(authorId || "4363a1ad-149b-4fcd-b725-dffa33109493")) // Refresh posts
+        const posts = await getBlogPostsByAuthor(authorId || "") // Refresh posts
+        setMyPosts(posts)
         toast({ title: "Artigo excluído", description: "O artigo foi removido com sucesso." })
       } else {
         toast({ title: "Erro", description: "Não foi possível excluir o artigo.", variant: "destructive" })
@@ -92,7 +91,20 @@ export function BlogTab() {
     }
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Função para formatar o nome do autor
+  const formatAuthorName = (fullName: string) => {
+    const names = fullName.trim().split(' ')
+    if (names.length === 1) {
+      return names[0]
+    }
+    if (names.length === 2) {
+      return `${names[0]} ${names[1][0]}.`
+    }
+    // Para nomes com mais de 2 partes, pega o primeiro nome e a primeira letra do segundo
+    return `${names[0]} ${names[1][0]}.`
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!currentPost || !authorId) return
 
@@ -111,7 +123,7 @@ export function BlogTab() {
 
     if (currentPost.id) {
       // Update existing post
-      const updated = updateBlogPost({
+      const updated = await updateBlogPost({
         ...currentPost,
         author: authorName,
         authorId: authorId,
@@ -128,7 +140,7 @@ export function BlogTab() {
       }
     } else {
       // Add new post
-      const newPost = addBlogPost({
+      const newPost = await addBlogPost({
         ...currentPost,
         author: authorName,
         authorId: authorId,
@@ -136,7 +148,7 @@ export function BlogTab() {
         authorImage: authorImage,
         readTime: "5 min", // Default read time for new posts
         views: 0, // New posts start with 0 views
-      } as Omit<BlogPost, "id" | "date" | "views">)
+      } as Omit<BlogPost, "id" | "date" | "views" | "badges">)
       if (newPost) {
         toast({ title: "Artigo publicado", description: "Seu novo artigo foi publicado com sucesso!" })
       } else {
@@ -145,7 +157,8 @@ export function BlogTab() {
     }
     setIsEditing(false)
     setCurrentPost(null)
-    setMyPosts(getBlogPostsByAuthor(authorId || "4363a1ad-149b-4fcd-b725-dffa33109493")) // Refresh posts
+    const posts = await getBlogPostsByAuthor(authorId) // Refresh posts
+    setMyPosts(posts)
   }
 
   if (loading) {
@@ -229,12 +242,13 @@ export function BlogTab() {
                 </Select>
               </div>
               <div>
-                <Label htmlFor="image">URL da Imagem de Capa</Label>
-                <Input
-                  id="image"
-                  value={currentPost.image || ""}
-                  onChange={(e) => setCurrentPost({ ...currentPost, image: e.target.value })}
-                  placeholder="/placeholder.svg?height=400&width=800"
+                <Label htmlFor="image">Imagem de Capa</Label>
+                <ImageUpload
+                  onImageUploaded={(url) => setCurrentPost({ ...currentPost, image: url })}
+                  onImageRemoved={() => setCurrentPost({ ...currentPost, image: "" })}
+                  currentImageUrl={currentPost.image}
+                  userId={authorId || ""}
+                  disabled={!authorId}
                 />
               </div>
               <div>
@@ -321,12 +335,16 @@ export function BlogTab() {
                     className="pl-9 pr-4 py-2 rounded-full border-2 border-gray-200 focus:border-[#4AB0D9] focus:ring-0"
                   />
                 </div>
-                <div className="flex border rounded-lg">
+                <div className="flex border-2 border-gray-200 rounded-lg overflow-hidden shadow-sm">
                   <Button
                     variant={viewMode === "grid" ? "default" : "ghost"}
                     size="sm"
                     onClick={() => setViewMode("grid")}
-                    className="rounded-r-none"
+                    className={`rounded-none px-4 py-2 transition-all duration-200 ${
+                      viewMode === "grid" 
+                        ? "bg-[#4AB0D9] text-white shadow-md" 
+                        : "hover:bg-gray-50 text-gray-600"
+                    }`}
                   >
                     <Grid className="h-4 w-4" />
                   </Button>
@@ -334,7 +352,11 @@ export function BlogTab() {
                     variant={viewMode === "list" ? "default" : "ghost"}
                     size="sm"
                     onClick={() => setViewMode("list")}
-                    className="rounded-l-none"
+                    className={`rounded-none px-4 py-2 transition-all duration-200 ${
+                      viewMode === "list" 
+                        ? "bg-[#4AB0D9] text-white shadow-md" 
+                        : "hover:bg-gray-50 text-gray-600"
+                    }`}
                   >
                     <List className="h-4 w-4" />
                   </Button>
@@ -362,30 +384,31 @@ export function BlogTab() {
                   : "Você ainda não publicou nenhum artigo."}
               </p>
               {!searchTerm && (
-                <Button onClick={handleNewPost} className="mt-4">
-                  <Plus className="h-4 w-4 mr-2" />
+                <Button 
+                  onClick={handleNewPost} 
+                  className="mt-6 bg-gradient-to-r from-[#4AB0D9] to-[#3A9BC1] hover:from-[#3A9BC1] hover:to-[#2E8AA8] text-white font-medium py-3 px-6 rounded-lg shadow-md hover:shadow-lg transition-all duration-200"
+                >
+                  <Plus className="h-5 w-5 mr-2" />
                   Publicar seu primeiro artigo
                 </Button>
               )}
             </div>
           ) : (
-            <div className={viewMode === "grid" ? "grid md:grid-cols-2 lg:grid-cols-3 gap-8" : "space-y-6"}>
+            <div className={viewMode === "grid" ? "grid md:grid-cols-2 lg:grid-cols-3 gap-6" : "space-y-6"}>
               {filteredPosts.map((post) => (
                 <Card
                   key={post.id}
                   className={`overflow-hidden hover:shadow-xl transition-all duration-300 group border-0 shadow-md ${
-                    viewMode === "list" ? "flex" : ""
+                    viewMode === "list" ? "flex" : "flex flex-col h-full"
                   }`}
                 >
-                  <div className={`relative ${viewMode === "list" ? "w-80 flex-shrink-0" : ""}`}>
+                  <div className={`relative ${viewMode === "list" ? "w-80 flex-shrink-0" : "h-56"} bg-gray-50 rounded-t-lg overflow-hidden`}>
                     <Image
                       src={post.image || "/placeholder.svg"}
                       alt={post.title}
                       width={400}
                       height={200}
-                      className={`object-cover group-hover:scale-105 transition-transform duration-300 ${
-                        viewMode === "list" ? "w-full h-full" : "w-full h-56"
-                      }`}
+                      className={`w-full h-full object-contain group-hover:scale-105 transition-transform duration-300`}
                     />
                     <Badge
                       variant="secondary"
@@ -398,23 +421,23 @@ export function BlogTab() {
                     </Badge>
                   </div>
 
-                  <CardContent className={`p-6 ${viewMode === "list" ? "flex-1" : ""}`}>
+                  <CardContent className={`p-6 ${viewMode === "list" ? "flex-1" : "flex flex-col flex-1"}`}>
                     <Link href={`/blog/${post.id}`} className="block">
                       <h3
                         className={`font-bold text-[#1E1D40] mb-3 group-hover:text-[#4AB0D9] transition-colors ${
                           viewMode === "list" ? "text-xl" : "text-lg"
-                        }`}
+                        } line-clamp-2`}
                       >
                         {post.title}
                       </h3>
                     </Link>
 
-                    <p className={`text-gray-600 mb-4 ${viewMode === "list" ? "text-base" : "text-sm line-clamp-3"}`}>
+                    <p className={`text-gray-600 mb-4 ${viewMode === "list" ? "text-base" : "text-sm"} line-clamp-3 flex-grow`}>
                       {post.excerpt}
                     </p>
 
                     {/* Tags */}
-                    <div className="flex flex-wrap gap-1 mb-4">
+                    <div className="flex flex-wrap gap-1 mb-3">
                       {post.tags.slice(0, 3).map((tag) => (
                         <Badge key={tag} variant="outline" className="text-xs">
                           #{tag}
@@ -422,10 +445,10 @@ export function BlogTab() {
                       ))}
                     </div>
 
-                    <div className="flex items-center gap-4 text-xs text-gray-500 mb-4">
+                    <div className="flex items-center gap-4 text-xs text-gray-500 mb-3">
                       <div className="flex items-center gap-1">
                         <User className="h-3 w-3" />
-                        {post.author}
+                        <span className="truncate" title={post.author}>{formatAuthorName(post.author)}</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
@@ -439,15 +462,15 @@ export function BlogTab() {
 
                     {/* Author Badges */}
                     {post.badges && post.badges.length > 0 && (
-                      <div className="flex items-center gap-2 mb-4">
+                      <div className="flex items-center gap-2 mb-3">
                         <span className="text-xs text-gray-500">Badges:</span>
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1 flex-wrap">
                           {post.badges.slice(0, 2).map((badge, index) => {
                             const IconComponent = badge.icon ? eval(badge.icon) : Award
                             return (
-                              <div key={index} className="flex items-center gap-1 bg-yellow-50 text-yellow-700 px-2 py-1 rounded-full text-xs">
+                              <div key={`post-${post.id}-badge-${badge.name}-${index}`} className="flex items-center gap-1 bg-yellow-50 text-yellow-700 px-2 py-1 rounded-full text-xs">
                                 <IconComponent className="h-3 w-3" />
-                                <span>{badge.name}</span>
+                                <span className="truncate">{badge.name}</span>
                               </div>
                             )
                           })}
@@ -460,23 +483,32 @@ export function BlogTab() {
                       </div>
                     )}
 
-                    <div className="flex gap-2 mt-4">
+                    <div className="flex flex-col sm:flex-row gap-3 mt-auto pt-2">
+                      <Link href={`/dashboard/nutricionistas/blog/${post.id}`} className="flex-1">
+                        <Button
+                          variant="default"
+                          size="sm"
+                          className="w-full bg-gradient-to-r from-[#4AB0D9] to-[#3A9BC1] hover:from-[#3A9BC1] hover:to-[#2E8AA8] text-white font-medium py-2.5 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 text-sm"
+                        >
+                          Ver Post
+                        </Button>
+                      </Link>
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => handleEditPost(post)}
-                        className="flex-1 group-hover:bg-blue-50 group-hover:text-blue-700 group-hover:border-blue-200 transition-all bg-transparent"
+                        className="flex-1 border-2 border-blue-200 text-blue-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-800 font-medium py-2.5 px-4 rounded-lg transition-all duration-200 text-sm shadow-sm hover:shadow-md"
                       >
-                        <Edit className="h-3 w-3 mr-2" />
+                        <Edit className="h-4 w-4 mr-1.5" />
                         Editar
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => handleDeletePost(post.id)}
-                        className="flex-1 group-hover:bg-red-50 group-hover:text-red-700 group-hover:border-red-200 transition-all bg-transparent"
+                        className="flex-1 border-2 border-red-200 text-red-700 hover:bg-red-50 hover:border-red-300 hover:text-red-800 font-medium py-2.5 px-4 rounded-lg transition-all duration-200 text-sm shadow-sm hover:shadow-md"
                       >
-                        <Trash className="h-3 w-3 mr-2" />
+                        <Trash className="h-4 w-4 mr-1.5" />
                         Excluir
                       </Button>
                     </div>

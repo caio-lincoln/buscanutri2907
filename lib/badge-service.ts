@@ -1,8 +1,8 @@
 import { supabase } from "./supabase"
-import type { Database } from "./database.types"
+import type { Database } from "./supabase"
 
 export type Badge = Database["public"]["Tables"]["badges"]["Row"]
-export type NutritionistBadge = Database["public"]["Tables"]["nutritionist_badges"]["Row"] & {
+export type NutritionistBadge = Database["public"]["Tables"]["user_badges"]["Row"] & {
   badge?: Badge // Para incluir os detalhes da insígnia
 }
 
@@ -60,8 +60,8 @@ export async function assignBadgeToNutritionist(
   assignedByUserId: string,
 ): Promise<NutritionistBadge | null> {
   const { data, error } = await supabase
-    .from("nutritionist_badges")
-    .insert({ nutritionist_id: nutritionistId, badge_id: badgeId, assigned_by_user_id: assignedByUserId })
+    .from("user_badges")
+    .insert({ user_id: nutritionistId, badge_id: badgeId })
     .select()
     .single()
   if (error) {
@@ -73,9 +73,9 @@ export async function assignBadgeToNutritionist(
 
 export async function removeBadgeFromNutritionist(nutritionistId: string, badgeId: string): Promise<boolean> {
   const { error } = await supabase
-    .from("nutritionist_badges")
+    .from("user_badges")
     .delete()
-    .eq("nutritionist_id", nutritionistId)
+    .eq("user_id", nutritionistId)
     .eq("badge_id", badgeId)
   if (error) {
     console.error("Erro ao remover insígnia do nutricionista:", error)
@@ -87,14 +87,14 @@ export async function removeBadgeFromNutritionist(nutritionistId: string, badgeI
 export async function getNutritionistBadges(nutritionistId: string): Promise<NutritionistBadge[]> {
   try {
     const { data, error } = await supabase
-      .from("nutritionist_badges")
+      .from("user_badges")
       .select(
         `
         *,
         badges!inner(*)
       `,
       )
-      .eq("nutritionist_id", nutritionistId)
+      .eq("user_id", nutritionistId)
     
     if (error) {
       // Se o erro for relacionado a tabelas não encontradas, retornar array vazio silenciosamente

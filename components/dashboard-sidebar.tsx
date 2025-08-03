@@ -138,7 +138,7 @@ export function DashboardSidebar({
   onSignOut = () => {},
   children,
 }: DashboardSidebarProps) {
-  const config = userTypeConfig[userType]
+  const config = userTypeConfig[userType] || userTypeConfig.paciente
 
   return (
     <SidebarProvider>
@@ -285,7 +285,24 @@ export function DashboardSidebar({
 }
 
 // Menu items para cada tipo de usuário
-export const getMenuItems = (userType: string, upcomingConsultations: any[] = []): DashboardMenuItem[] => {
+export const getMenuItems = (
+  userType: string, 
+  stats?: {
+    upcomingAppointments?: number
+    availableJobs?: number
+    unreadNotifications?: number
+    pendingReports?: number
+    pendingModerations?: number
+  }
+): DashboardMenuItem[] => {
+  const {
+    upcomingAppointments = 0,
+    availableJobs = 0,
+    unreadNotifications = 0,
+    pendingReports = 0,
+    pendingModerations = 0,
+  } = stats || {}
+
   switch (userType) {
     case "paciente":
       return [
@@ -295,38 +312,69 @@ export const getMenuItems = (userType: string, upcomingConsultations: any[] = []
           id: "telemedicina",
           label: "Minhas Consultas",
           icon: Video,
-          badge: { count: upcomingConsultations.length, variant: "default" },
+          badge: upcomingAppointments > 0 ? { count: upcomingAppointments, variant: "default" } : undefined,
         },
         { id: "buscar", label: "Buscar", icon: Search },
         { id: "chat", label: "Chat", icon: MessageSquare },
         { id: "duvidas", label: "Fórum", icon: HelpCircle },
         { id: "iris", label: "Chat com Iris", icon: Bot },
-        { id: "notificacoes", label: "Notificações", icon: Bell },
+        { 
+          id: "notificacoes", 
+          label: "Notificações", 
+          icon: Bell,
+          badge: unreadNotifications > 0 ? { count: unreadNotifications, variant: "destructive" } : undefined,
+        },
         { id: "configuracoes", label: "Configurações", icon: Settings },
       ]
 
     case "nutricionista":
       return [
         { id: "overview", label: "Visão Geral", icon: Home },
-        { id: "agenda", label: "Agenda", icon: Calendar, badge: { count: 4, variant: "default" } },
+        { 
+          id: "agenda", 
+          label: "Agenda", 
+          icon: Calendar, 
+          badge: upcomingAppointments > 0 ? { count: upcomingAppointments, variant: "default" } : undefined,
+        },
         { id: "perfil", label: "Perfil", icon: User },
-        { id: "social", label: "Social", icon: Users },
+        { id: "blog", label: "Blog", icon: BookOpen },
         { id: "forum", label: "Fórum", icon: MessageSquare },
-        { id: "vagas", label: "Vagas", icon: Briefcase, badge: { count: 12, variant: "outline" } },
-        { id: "cursos", label: "Cursos", icon: BookOpen },
+        { 
+          id: "vagas", 
+          label: "Vagas", 
+          icon: Briefcase, 
+          badge: availableJobs > 0 ? { count: availableJobs, variant: "outline" } : undefined,
+        },
+        { id: "cursos", label: "Cursos", icon: Users },
         { id: "relatorios", label: "Relatórios", icon: BarChart3 },
         { id: "iris", label: "Iris Bot", icon: Video },
-        { id: "notificacoes", label: "Notificações", icon: Bell, badge: { count: 7, variant: "destructive" } },
+        { 
+          id: "notificacoes", 
+          label: "Notificações", 
+          icon: Bell, 
+          badge: unreadNotifications > 0 ? { count: unreadNotifications, variant: "destructive" } : undefined,
+        },
       ]
 
     case "empresa":
       return [
         { id: "overview", label: "Visão Geral", icon: Home },
-        { id: "vagas", label: "Vagas", icon: Briefcase },
+        { 
+          id: "vagas", 
+          label: "Vagas", 
+          icon: Briefcase,
+          badge: availableJobs > 0 ? { count: availableJobs, variant: "default" } : undefined,
+        },
         { id: "candidatos", label: "Candidatos", icon: Users },
         { id: "processos", label: "Processos", icon: FileText },
         { id: "relatorios", label: "Relatórios", icon: BarChart3 },
         { id: "perfil", label: "Perfil", icon: Building },
+        { 
+          id: "notificacoes", 
+          label: "Notificações", 
+          icon: Bell,
+          badge: unreadNotifications > 0 ? { count: unreadNotifications, variant: "destructive" } : undefined,
+        },
       ]
 
     case "admin":
@@ -334,12 +382,28 @@ export const getMenuItems = (userType: string, upcomingConsultations: any[] = []
         { id: "overview", label: "Visão Geral", icon: Home },
         { id: "usuarios", label: "Usuários", icon: Users },
         { id: "vagas", label: "Vagas", icon: Briefcase },
-        { id: "relatorios", label: "Relatórios", icon: FileText, badge: { count: 8, variant: "destructive" } },
+        { 
+          id: "relatorios", 
+          label: "Relatórios", 
+          icon: FileText, 
+          badge: pendingReports > 0 ? { count: pendingReports, variant: "destructive" } : undefined,
+        },
         { id: "financeiro", label: "Financeiro", icon: DollarSign },
         { id: "analytics", label: "Analytics", icon: TrendingUp },
-        { id: "moderacao", label: "Moderação", icon: Shield, badge: { count: 3, variant: "outline" } },
+        { 
+          id: "moderacao", 
+          label: "Moderação", 
+          icon: Shield, 
+          badge: pendingModerations > 0 ? { count: pendingModerations, variant: "outline" } : undefined,
+        },
         { id: "sistema", label: "Sistema", icon: Cog },
         { id: "configuracoes", label: "Configurações", icon: Settings },
+        { 
+          id: "notificacoes", 
+          label: "Notificações", 
+          icon: Bell,
+          badge: unreadNotifications > 0 ? { count: unreadNotifications, variant: "destructive" } : undefined,
+        },
       ]
 
     default:

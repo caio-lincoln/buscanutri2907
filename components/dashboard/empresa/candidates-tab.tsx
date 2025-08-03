@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -25,6 +25,7 @@ import {
   Briefcase,
   GraduationCap,
   Award,
+  Loader2,
 } from "lucide-react"
 import {
   DropdownMenu,
@@ -33,6 +34,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { getCompanyCandidates, type CandidateData } from "@/lib/company-data-service"
+import { useUser } from "@/hooks/use-user"
 
 interface Candidate {
   id: string
@@ -136,9 +139,29 @@ const mockCandidates: Candidate[] = [
 ]
 
 export function CandidatesTab() {
-  const [candidates] = useState<Candidate[]>(mockCandidates)
+  const { user } = useUser()
+  const [candidates, setCandidates] = useState<CandidateData[]>([])
+  const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
+
+  useEffect(() => {
+    async function loadCandidates() {
+      if (!user?.id) return
+      
+      try {
+        setLoading(true)
+        const candidatesData = await getCompanyCandidates(user.id)
+        setCandidates(candidatesData)
+      } catch (error) {
+        console.error('Error loading candidates:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadCandidates()
+  }, [user?.id])
 
   const filteredCandidates = candidates.filter((candidate) => {
     const matchesSearch =
@@ -190,6 +213,27 @@ export function CandidatesTab() {
     return "text-red-600"
   }
 
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('pt-BR')
+  }
+
+  const formatTime = (dateString: string) => {
+    const date = new Date(dateString)
+    const now = new Date()
+    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60))
+
+    if (diffInMinutes < 1) return "Agora"
+    if (diffInMinutes < 60) return `${diffInMinutes} min atrás`
+    
+    const diffInHours = Math.floor(diffInMinutes / 60)
+    if (diffInHours < 24) return `${diffInHours}h atrás`
+    
+    const diffInDays = Math.floor(diffInHours / 24)
+    if (diffInDays < 7) return `${diffInDays} dia${diffInDays > 1 ? 's' : ''} atrás`
+    
+    return date.toLocaleDateString('pt-BR')
+  }
+
   const statusStats = {
     new: candidates.filter((c) => c.status === "new").length,
     reviewing: candidates.filter((c) => c.status === "reviewing").length,
@@ -198,83 +242,99 @@ export function CandidatesTab() {
     rejected: candidates.filter((c) => c.status === "rejected").length,
   }
 
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold text-[#1E1D40]">Candidatos</h1>
+        <Card className="border-0 shadow-lg">
+          <CardContent className="flex items-center justify-center py-12">
+            <div className="flex items-center gap-2 text-gray-500">
+              <Loader2 className="h-5 w-5 animate-spin" />
+              Carregando candidatos...
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-[#1E1D40]">Candidatos</h1>
-          <p className="text-gray-600">Gerencie todos os candidatos das suas vagas</p>
+          <p className="text-gray-600">Gerencie os candidatos às suas vagas</p>
         </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-50 to-blue-100/50">
-          <CardContent className="p-6">
+          <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-blue-600">Novos</p>
-                <p className="text-3xl font-bold text-blue-700">{statusStats.new}</p>
+                <p className="text-2xl font-bold text-blue-700">{statusStats.new}</p>
               </div>
-              <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center">
-                <Users className="h-6 w-6 text-white" />
+              <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
+                <Users className="h-5 w-5 text-white" />
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Card className="border-0 shadow-lg bg-gradient-to-br from-yellow-50 to-yellow-100/50">
-          <CardContent className="p-6">
+          <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-yellow-600">Em Análise</p>
-                <p className="text-3xl font-bold text-yellow-700">{statusStats.reviewing}</p>
+                <p className="text-2xl font-bold text-yellow-700">{statusStats.reviewing}</p>
               </div>
-              <div className="w-12 h-12 bg-yellow-500 rounded-xl flex items-center justify-center">
-                <Clock className="h-6 w-6 text-white" />
+              <div className="w-10 h-10 bg-yellow-500 rounded-lg flex items-center justify-center">
+                <Eye className="h-5 w-5 text-white" />
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Card className="border-0 shadow-lg bg-gradient-to-br from-purple-50 to-purple-100/50">
-          <CardContent className="p-6">
+          <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-purple-600">Entrevistas</p>
-                <p className="text-3xl font-bold text-purple-700">{statusStats.interview}</p>
+                <p className="text-sm font-medium text-purple-600">Entrevista</p>
+                <p className="text-2xl font-bold text-purple-700">{statusStats.interview}</p>
               </div>
-              <div className="w-12 h-12 bg-purple-500 rounded-xl flex items-center justify-center">
-                <Calendar className="h-6 w-6 text-white" />
+              <div className="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center">
+                <MessageSquare className="h-5 w-5 text-white" />
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Card className="border-0 shadow-lg bg-gradient-to-br from-green-50 to-green-100/50">
-          <CardContent className="p-6">
+          <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-green-600">Aprovados</p>
-                <p className="text-3xl font-bold text-green-700">{statusStats.approved}</p>
+                <p className="text-2xl font-bold text-green-700">{statusStats.approved}</p>
               </div>
-              <div className="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center">
-                <UserCheck className="h-6 w-6 text-white" />
+              <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
+                <UserCheck className="h-5 w-5 text-white" />
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Card className="border-0 shadow-lg bg-gradient-to-br from-red-50 to-red-100/50">
-          <CardContent className="p-6">
+          <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-red-600">Rejeitados</p>
-                <p className="text-3xl font-bold text-red-700">{statusStats.rejected}</p>
+                <p className="text-2xl font-bold text-red-700">{statusStats.rejected}</p>
               </div>
-              <div className="w-12 h-12 bg-red-500 rounded-xl flex items-center justify-center">
-                <UserX className="h-6 w-6 text-white" />
+              <div className="w-10 h-10 bg-red-500 rounded-lg flex items-center justify-center">
+                <UserX className="h-5 w-5 text-white" />
               </div>
             </div>
           </CardContent>
@@ -316,127 +376,148 @@ export function CandidatesTab() {
 
       {/* Candidates List */}
       <div className="grid gap-6">
-        {filteredCandidates.map((candidate) => (
-          <Card
-            key={candidate.id}
-            className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover-lift"
-          >
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex items-start gap-4 flex-1">
-                  <Avatar className="h-16 w-16">
-                    <AvatarImage src={candidate.avatar || "/placeholder.svg"} />
-                    <AvatarFallback className="bg-blue-100 text-blue-600 font-semibold text-lg">
-                      {candidate.name
-                        .split(" ")
-                        .map((n) => n[0])
-                        .join("")
-                        .slice(0, 2)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 space-y-3">
-                    <div className="flex items-center gap-3">
-                      <h3 className="font-semibold text-[#1E1D40] text-xl">{candidate.name}</h3>
-                      <Badge className={getStatusColor(candidate.status)}>{getStatusLabel(candidate.status)}</Badge>
-                      <div className="flex items-center gap-1">
-                        <Star className={`h-4 w-4 ${getScoreColor(candidate.score)}`} />
-                        <span className={`font-semibold ${getScoreColor(candidate.score)}`}>{candidate.score}%</span>
+        {filteredCandidates.length === 0 ? (
+          <Card className="border-0 shadow-lg">
+            <CardContent className="p-12 text-center">
+              <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-gray-600 mb-2">
+                {candidates.length === 0 ? "Nenhum candidato encontrado" : "Nenhum candidato corresponde aos filtros"}
+              </h3>
+              <p className="text-gray-500">
+                {candidates.length === 0 
+                  ? "Aguarde candidaturas às suas vagas publicadas."
+                  : "Tente ajustar os filtros para encontrar os candidatos desejados."
+                }
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          filteredCandidates.map((candidate) => (
+            <Card key={candidate.id} className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover-lift">
+              <CardContent className="p-6">
+                <div className="flex flex-col lg:flex-row items-start lg:items-center gap-6">
+                  <div className="flex items-start gap-4 flex-1">
+                    <Avatar className="h-16 w-16">
+                      <AvatarImage src={candidate.avatar} alt={candidate.name} />
+                      <AvatarFallback className="bg-gradient-to-br from-blue-500 to-blue-600 text-white text-lg font-semibold">
+                        {candidate.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                      </AvatarFallback>
+                    </Avatar>
+
+                    <div className="flex-1 space-y-3">
+                      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-2">
+                        <div>
+                          <h3 className="text-xl font-bold text-[#1E1D40]">{candidate.name}</h3>
+                          <p className="text-gray-600 font-medium">{candidate.jobTitle}</p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className={`text-lg font-bold ${getScoreColor(candidate.score)}`}>
+                            {candidate.score}%
+                          </div>
+                          <Badge className={getStatusColor(candidate.status)}>
+                            {getStatusLabel(candidate.status)}
+                          </Badge>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 text-sm text-gray-600">
+                        <div className="flex items-center gap-2">
+                          <Mail className="h-4 w-4" />
+                          <span>{candidate.email}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Phone className="h-4 w-4" />
+                          <span>{candidate.phone}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <MapPin className="h-4 w-4" />
+                          <span>{candidate.location}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4" />
+                          <span>Candidatou-se em: {formatDate(candidate.appliedDate)}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Briefcase className="h-4 w-4" />
+                          <span>{candidate.experience}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <GraduationCap className="h-4 w-4" />
+                          <span>{candidate.education}</span>
+                        </div>
+                      </div>
+
+                      {candidate.specializations.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {candidate.specializations.map((spec, index) => (
+                            <Badge key={index} variant="outline" className="text-xs">
+                              {spec}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+
+                      <div className="flex items-center gap-4 text-xs text-gray-500">
+                        <div className="flex items-center gap-1">
+                          <Award className="h-3 w-3" />
+                          <span>{candidate.crn}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          <span>Última atividade: {formatTime(candidate.lastActivity)}</span>
+                        </div>
                       </div>
                     </div>
+                  </div>
 
-                    <div className="flex items-center gap-2">
-                      <Briefcase className="h-4 w-4 text-gray-500" />
-                      <span className="text-gray-700 font-medium">{candidate.jobTitle}</span>
-                    </div>
+                  <div className="flex flex-col gap-2 w-full lg:w-auto">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" className="w-full lg:w-auto">
+                          Ações
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem>
+                          <Eye className="h-4 w-4 mr-2" />
+                          Ver Perfil Completo
+                        </DropdownMenuItem>
+                        <DropdownMenuItem>
+                          <Download className="h-4 w-4 mr-2" />
+                          Baixar Currículo
+                        </DropdownMenuItem>
+                        <DropdownMenuItem>
+                          <MessageSquare className="h-4 w-4 mr-2" />
+                          Enviar Mensagem
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem className="text-green-600">
+                          <UserCheck className="h-4 w-4 mr-2" />
+                          Aprovar
+                        </DropdownMenuItem>
+                        <DropdownMenuItem className="text-red-600">
+                          <UserX className="h-4 w-4 mr-2" />
+                          Rejeitar
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
 
-                    <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
-                      <div className="flex items-center gap-1">
-                        <Mail className="h-4 w-4" />
-                        <span>{candidate.email}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Phone className="h-4 w-4" />
-                        <span>{candidate.phone}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <MapPin className="h-4 w-4" />
-                        <span>{candidate.location}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <GraduationCap className="h-4 w-4" />
-                        <span>{candidate.education}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Award className="h-4 w-4" />
-                        <span>{candidate.experience}</span>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-wrap gap-2">
-                      {candidate.specializations.map((spec, index) => (
-                        <Badge
-                          key={index}
-                          variant="outline"
-                          className="text-xs bg-blue-50 text-blue-700 border-blue-200"
-                        >
-                          {spec}
-                        </Badge>
-                      ))}
-                    </div>
-
-                    <div className="flex items-center gap-4 text-xs text-gray-500">
-                      <span>Aplicou em {new Date(candidate.appliedDate).toLocaleDateString("pt-BR")}</span>
-                      <span>•</span>
-                      <span>Última atividade: {candidate.lastActivity}</span>
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline">
+                        <Mail className="h-4 w-4 mr-2" />
+                        Contatar
+                      </Button>
+                      <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+                        <Eye className="h-4 w-4 mr-2" />
+                        Ver Detalhes
+                      </Button>
                     </div>
                   </div>
                 </div>
-
-                <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm">
-                    <Eye className="h-4 w-4 mr-2" />
-                    Ver Perfil
-                  </Button>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="sm">
-                        Ações
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem>
-                        <Clock className="h-4 w-4 mr-2" />
-                        Mover para Análise
-                      </DropdownMenuItem>
-                      <DropdownMenuItem>
-                        <Calendar className="h-4 w-4 mr-2" />
-                        Agendar Entrevista
-                      </DropdownMenuItem>
-                      <DropdownMenuItem>
-                        <UserCheck className="h-4 w-4 mr-2" />
-                        Aprovar
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem>
-                        <MessageSquare className="h-4 w-4 mr-2" />
-                        Enviar Mensagem
-                      </DropdownMenuItem>
-                      <DropdownMenuItem>
-                        <Download className="h-4 w-4 mr-2" />
-                        Baixar Currículo
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem className="text-red-600 hover:text-red-700">
-                        <UserX className="h-4 w-4 mr-2" />
-                        Rejeitar
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+              </CardContent>
+            </Card>
+          ))
+        )}
       </div>
     </div>
   )

@@ -266,7 +266,7 @@ export function IrisChat({ userType = "paciente" }: IrisChatProps) {
           <div className="flex flex-wrap gap-2">
             {(suggestedQuestions[userType] ?? []).map((question, index) => (
               <Button
-                key={index}
+                key={`suggested-question-${userType}-${index}-${question.slice(0, 20)}`}
                 variant="outline"
                 size="sm"
                 className="text-xs h-7 bg-white hover:bg-gray-100"

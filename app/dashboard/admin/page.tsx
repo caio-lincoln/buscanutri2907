@@ -23,6 +23,8 @@ import {
 import { getCurrentUser, signOut } from "@/lib/auth"
 import { DashboardSidebar, getMenuItems } from "@/components/dashboard-sidebar"
 import { StatsCard } from "@/components/stats-card"
+// Importar o hook de estatísticas do dashboard
+import { useDashboardStats } from "@/hooks/use-dashboard-stats"
 
 // Importar os novos componentes das abas
 import { UsersTab } from "@/components/dashboard/admin/users-tab"
@@ -40,8 +42,11 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("overview") // Default to overview
   const router = useRouter()
 
+  // Hook para estatísticas dinâmicas do dashboard
+  const { stats: dashboardStats, loading: statsLoading } = useDashboardStats("", "admin")
+
   // Adicionar "insignias" ao menu de itens do admin
-  const menuItems = getMenuItems("admin").map((item) => {
+  const menuItems = getMenuItems("admin", dashboardStats).map((item) => {
     if (item.id === "configuracoes") {
       return { ...item, id: "configuracoes" } // Keep settings
     }

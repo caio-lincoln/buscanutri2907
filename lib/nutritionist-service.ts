@@ -79,43 +79,37 @@ export async function getNutritionistById(
       return null
     }
 
-    const { data, error } = await supabase
-      .from("nutritionist_profiles")
-      .select(
-        `
-        *,
-        user:user_id (email)
-      `,
-      )
-      .eq("id", id)
-      .single()
+    const { data, error } = await supabase.rpc("get_nutritionists_safe", {
+      p_nutritionist_id: id
+    })
 
     if (error) {
       console.error("Erro ao buscar nutricionista por ID:", error)
       return null
     }
 
-    if (data) {
-      // Adiciona o email do usuário ao objeto do nutricionista
-      const nutritionistWithEmail = {
-        ...data,
-        email: data.user?.email || null,
-      } as NutritionistProfile
-
-      // Busca as insígnias do nutricionista
-      const badges = await getNutritionistBadges(nutritionistWithEmail.id)
-      
-      // Busca as estatísticas de visualizações
-      const viewStats = await profileViewsService.getViewStats(nutritionistWithEmail.id)
-      
-      return {
-        ...nutritionistWithEmail,
-        badges: badges,
-        viewStats: viewStats || undefined,
-      }
+    if (!data || data.length === 0) {
+      return null
     }
 
-    return null
+    const nutritionist = data[0]
+    // Adiciona o email do usuário ao objeto do nutricionista
+    const nutritionistWithEmail = {
+      ...nutritionist,
+      email: nutritionist.email || null,
+    } as NutritionistProfile
+
+    // Busca as insígnias do nutricionista
+    const badges = await getNutritionistBadges(nutritionistWithEmail.id)
+    
+    // Busca as estatísticas de visualizações
+    const viewStats = await profileViewsService.getViewStats(nutritionistWithEmail.id)
+    
+    return {
+      ...nutritionistWithEmail,
+      badges: badges,
+      viewStats: viewStats || undefined,
+    }
   } catch (err) {
     console.error("Error in getNutritionistById:", err)
     return null
@@ -124,15 +118,7 @@ export async function getNutritionistById(
 
 export async function getAllNutritionists(): Promise<(NutritionistProfile & { badges?: NutritionistBadge[]; viewStats?: ProfileViewStats })[]> {
   try {
-    const { data, error } = await supabase
-      .from("nutritionist_profiles")
-      .select(
-        `
-        *,
-        user:user_id (email)
-      `,
-      )
-      .order("rating", { ascending: false }) // Ordena por avaliação por padrão
+    const { data, error } = await supabase.rpc("get_nutritionists_safe", {})
 
     if (error) {
       console.error("Erro ao buscar todos os nutricionistas:", error)
@@ -144,9 +130,9 @@ export async function getAllNutritionists(): Promise<(NutritionistProfile & { ba
     }
 
     // Mapeia os dados para incluir o email e garantir a tipagem correta
-    const nutritionistsWithEmail = data.map((n) => ({
+    const nutritionistsWithEmail = data.map((n: any) => ({
       ...n,
-      email: n.user?.email || null,
+      email: n.email || null,
     })) as NutritionistProfile[]
 
     // Para cada nutricionista, busca suas insígnias
@@ -167,101 +153,107 @@ export async function getAllNutritionists(): Promise<(NutritionistProfile & { ba
 export async function getNutritionistsBySpecialty(
   specialty: string,
 ): Promise<(NutritionistProfile & { badges?: NutritionistBadge[]; viewStats?: ProfileViewStats })[]> {
-  const { data, error } = await supabase
-    .from("nutritionist_profiles")
-    .select(
-      `
-      *,
-      user:user_id (email)
-    `,
-    )
-    .contains("specialties", [specialty])
-    .order("rating", { ascending: false })
+  try {
+    const { data, error } = await supabase.rpc("get_nutritionists_safe", {
+      p_specialty: specialty
+    })
 
-  if (error) {
-    console.error(`Erro ao buscar nutricionistas por especialidade (${specialty}):`, error)
+    if (error) {
+      console.error("Erro ao buscar nutricionistas por especialidade:", error)
+      return []
+    }
+
+    if (!data || data.length === 0) {
+      return []
+    }
+
+    const nutritionistsWithEmail = data.map((n: any) => ({
+      ...n,
+      email: n.email || null,
+    })) as NutritionistProfile[]
+
+    const nutritionistsWithBadges = await Promise.all(
+      nutritionistsWithEmail.map(async (nutri) => {
+        const badges = await getNutritionistBadges(nutri.id)
+        return { ...nutri, badges }
+      }),
+    )
+
+    return nutritionistsWithBadges
+  } catch (err) {
+    console.error("Error in getNutritionistsBySpecialty:", err)
     return []
   }
-
-  const nutritionistsWithEmail = data.map((n) => ({
-    ...n,
-    email: n.user?.email || null,
-  })) as NutritionistProfile[]
-
-  const nutritionistsWithBadges = await Promise.all(
-    nutritionistsWithEmail.map(async (nutri) => {
-      const badges = await getNutritionistBadges(nutri.id)
-      return { ...nutri, badges }
-    }),
-  )
-
-  return nutritionistsWithBadges
 }
 
 export async function getNutritionistsByLocation(
   location: string,
 ): Promise<(NutritionistProfile & { badges?: NutritionistBadge[]; viewStats?: ProfileViewStats })[]> {
-  const { data, error } = await supabase
-    .from("nutritionist_profiles")
-    .select(
-      `
-      *,
-      user:user_id (email)
-    `,
-    )
-    .ilike("address", `%${location}%`) // Busca por parte do endereço
-    .order("rating", { ascending: false })
+  try {
+    const { data, error } = await supabase.rpc("get_nutritionists_safe", {
+      p_location: location
+    })
 
-  if (error) {
-    console.error(`Erro ao buscar nutricionistas por localização (${location}):`, error)
+    if (error) {
+      console.error("Erro ao buscar nutricionistas por localização:", error)
+      return []
+    }
+
+    if (!data || data.length === 0) {
+      return []
+    }
+
+    const nutritionistsWithEmail = data.map((n: any) => ({
+      ...n,
+      email: n.email || null,
+    })) as NutritionistProfile[]
+
+    const nutritionistsWithBadges = await Promise.all(
+      nutritionistsWithEmail.map(async (nutri) => {
+        const badges = await getNutritionistBadges(nutri.id)
+        return { ...nutri, badges }
+      }),
+    )
+
+    return nutritionistsWithBadges
+  } catch (err) {
+    console.error("Error in getNutritionistsByLocation:", err)
     return []
   }
-
-  const nutritionistsWithEmail = data.map((n) => ({
-    ...n,
-    email: n.user?.email || null,
-  })) as NutritionistProfile[]
-
-  const nutritionistsWithBadges = await Promise.all(
-    nutritionistsWithEmail.map(async (nutri) => {
-      const badges = await getNutritionistBadges(nutri.id)
-      return { ...nutri, badges }
-    }),
-  )
-
-  return nutritionistsWithBadges
 }
 
 export async function getTopRatedNutritionists(
   limit = 5,
 ): Promise<(NutritionistProfile & { badges?: NutritionistBadge[]; viewStats?: ProfileViewStats })[]> {
-  const { data, error } = await supabase
-    .from("nutritionist_profiles")
-    .select(
-      `
-      *,
-      user:user_id (email)
-    `,
-    )
-    .order("rating", { ascending: false })
-    .limit(limit)
+  try {
+    const { data, error } = await supabase.rpc("get_nutritionists_safe", {
+      p_limit: limit
+    })
 
-  if (error) {
-    console.error("Erro ao buscar nutricionistas mais bem avaliados:", error)
+    if (error) {
+      console.error("Erro ao buscar nutricionistas mais bem avaliados:", error)
+      return []
+    }
+
+    if (!data || data.length === 0) {
+      return []
+    }
+
+    const nutritionistsWithEmail = data.map((n: any) => ({
+      ...n,
+      email: n.email || null,
+    })) as NutritionistProfile[]
+
+    const nutritionistsWithBadges = await Promise.all(
+      nutritionistsWithEmail.map(async (nutri) => {
+        const badges = await getNutritionistBadges(nutri.id)
+        return { ...nutri, badges }
+      }),
+    )
+
+    return nutritionistsWithBadges
+  } catch (err) {
+    console.error("Error in getTopRatedNutritionists:", err)
     return []
   }
-
-  const nutritionistsWithEmail = data.map((n) => ({
-    ...n,
-    email: n.user?.email || null,
-  })) as NutritionistProfile[]
-
-  const nutritionistsWithBadges = await Promise.all(
-    nutritionistsWithEmail.map(async (nutri) => {
-      const badges = await getNutritionistBadges(nutri.id)
-      return { ...nutri, badges }
-    }),
-  )
-
-  return nutritionistsWithBadges
 }

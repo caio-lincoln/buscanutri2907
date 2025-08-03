@@ -9,7 +9,7 @@ import { Calendar, Clock, User, ArrowRight, Search, Filter, Grid, List, ArrowLef
 import Link from "next/link"
 import Image from "next/image"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { getAllBlogPosts, blogCategories, type BlogPost } from "@/lib/blog-data" // Importar do lib/blog-data
+import { getAllBlogPosts, blogCategories, type BlogPost } from "@/lib/blog-data"
 
 export default function BlogPage() {
   const [allBlogPosts, setAllBlogPosts] = useState<BlogPost[]>([])

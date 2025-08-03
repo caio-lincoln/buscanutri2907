@@ -2,6 +2,10 @@
 
 import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
+import { signOut } from "@/lib/auth"
+import { DashboardSidebar } from "@/components/dashboard-sidebar"
+import { getMenuItems } from "@/lib/dashboard-stats"
+import { useDashboardStats } from "@/hooks/use-dashboard-stats"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -37,6 +41,7 @@ export default function NutritionistConsultationPage() {
   const router = useRouter()
   const { user } = useAuth()
   const consultationId = params.id as string
+  const { stats, loading: statsLoading } = useDashboardStats()
 
   const [consultation, setConsultation] = useState<Consultation | null>(null)
   const [loading, setLoading] = useState(true)
@@ -46,6 +51,7 @@ export default function NutritionistConsultationPage() {
   const [isInCall, setIsInCall] = useState(false)
   const [callDuration, setCallDuration] = useState(0)
   const [showSettings, setShowSettings] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   useEffect(() => {
     if (consultationId) {
@@ -175,8 +181,33 @@ export default function NutritionistConsultationPage() {
     )
   }
 
+  const menuItems = getMenuItems(user?.user_metadata?.user_type || 'nutritionist', stats)
+
+  const handleSignOut = async () => {
+    try {
+      await signOut()
+      router.push('/login')
+    } catch (error) {
+      console.error('Erro ao fazer logout:', error)
+      toast({
+        title: "Erro ao sair",
+        description: "Não foi possível fazer logout",
+        variant: "destructive",
+      })
+    }
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex">
+      <DashboardSidebar
+        user={user}
+        menuItems={menuItems}
+        onSignOut={handleSignOut}
+        isOpen={sidebarOpen}
+        onToggle={() => setSidebarOpen(!sidebarOpen)}
+      />
+      
+      <div className="flex-1 lg:ml-64">
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -470,6 +501,7 @@ export default function NutritionistConsultationPage() {
             </Card>
           </div>
         </div>
+      </div>
       </div>
     </div>
   )

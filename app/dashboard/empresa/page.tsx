@@ -24,11 +24,13 @@ import {
 } from "lucide-react"
 import { getCurrentUser, getUserProfile, signOut } from "@/lib/auth"
 import type { CompanyProfile } from "@/lib/supabase"
-import { NotificationsPanel, type Notification } from "@/components/notifications-panel"
+import { NotificationsPanel } from "@/components/notifications-panel"
 import { DashboardSidebar, getMenuItems } from "@/components/dashboard-sidebar"
 import { IrisChat } from "@/components/iris-chat"
 import { StatsCard } from "@/components/stats-card"
 import { UserProfileModal } from "@/components/user-profile-modal"
+// Importar o hook de estatísticas do dashboard
+import { useDashboardStats } from "@/hooks/use-dashboard-stats"
 import { JobsTab } from "@/components/dashboard/empresa/jobs-tab"
 import { CandidatesTab } from "@/components/dashboard/empresa/candidates-tab"
 import { ProcessesTab } from "@/components/dashboard/empresa/processes-tab"
@@ -37,16 +39,17 @@ import { ReportsTab } from "@/components/dashboard/empresa/reports-tab"
 export default function CompanyDashboard() {
   const [profile, setProfile] = useState<CompanyProfile | null>(null)
   const [loading, setLoading] = useState(true)
-  const [notifications, setNotifications] = useState<Notification[]>([])
   const [activeTab, setActiveTab] = useState("overview")
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
   const router = useRouter()
 
-  const menuItems = getMenuItems("empresa")
+  // Hook para estatísticas dinâmicas do dashboard
+  const { stats: dashboardStats, loading: statsLoading } = useDashboardStats(profile?.user_id || "", "empresa")
+
+  const menuItems = getMenuItems("empresa", dashboardStats)
 
   useEffect(() => {
     loadProfile()
-    loadNotifications()
   }, [])
 
   const loadProfile = async () => {
@@ -66,60 +69,7 @@ export default function CompanyDashboard() {
     }
   }
 
-  const loadNotifications = async () => {
-    const mockNotifications: Notification[] = [
-      {
-        id: "1",
-        type: "application",
-        title: "Nova candidatura",
-        description: "Dr. Silva se candidatou à vaga de Nutricionista Clínico.",
-        time: "2 horas atrás",
-        read: false,
-        actionUrl: "/vagas",
-        sender: {
-          name: "Dr. Silva",
-          role: "Nutricionista",
-        },
-        priority: "high",
-      },
-      {
-        id: "2",
-        type: "message",
-        title: "Mensagem de candidato",
-        description: "Dra. Santos enviou uma pergunta sobre a vaga.",
-        time: "4 horas atrás",
-        read: false,
-        actionUrl: "/chat",
-        sender: {
-          name: "Dra. Santos",
-          role: "Nutricionista",
-        },
-        priority: "medium",
-      },
-    ]
 
-    setNotifications(mockNotifications)
-  }
-
-  const handleMarkAsRead = (id: string) => {
-    setNotifications((prev) =>
-      prev.map((notification) =>
-        notification.id === id ? { ...notification, read: !notification.read } : notification,
-      ),
-    )
-  }
-
-  const handleMarkAllAsRead = () => {
-    setNotifications((prev) => prev.map((notification) => ({ ...notification, read: true })))
-  }
-
-  const handleDelete = (id: string) => {
-    setNotifications((prev) => prev.filter((notification) => notification.id !== id))
-  }
-
-  const handleClearAll = () => {
-    setNotifications([])
-  }
 
   const handleSignOut = async () => {
     await signOut()
@@ -432,14 +382,7 @@ export default function CompanyDashboard() {
         {/* Notificações */}
         {activeTab === "notificacoes" && (
           <div className="space-y-8">
-            <NotificationsPanel
-              notifications={notifications}
-              userType="empresa"
-              onMarkAsRead={handleMarkAsRead}
-              onMarkAllAsRead={handleMarkAllAsRead}
-              onDelete={handleDelete}
-              onClearAll={handleClearAll}
-            />
+            <NotificationsPanel userType="empresa" />
           </div>
         )}
 

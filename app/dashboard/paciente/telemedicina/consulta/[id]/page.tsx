@@ -3,9 +3,12 @@
 import { useState, useEffect } from "react"
 import { useRouter, useParams } from "next/navigation"
 import { ConsultationRoom } from "@/components/telemedicine/consultation-room"
-import { getCurrentUser, getUserProfile } from "@/lib/auth"
+import { getCurrentUser, getUserProfile, signOut } from "@/lib/auth"
 import { getConsultationById, canStartConsultation, updateConsultationStatus } from "@/lib/consultation-service"
 import type { Consultation } from "@/lib/consultation-service"
+import { DashboardSidebar } from "@/components/dashboard-sidebar"
+import { getMenuItems } from "@/lib/dashboard-stats"
+import { useDashboardStats } from "@/hooks/use-dashboard-stats"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -23,6 +26,15 @@ export default function PatientConsultationPage() {
   const router = useRouter()
   const params = useParams()
   const consultationId = params.id as string
+
+  // Dashboard stats
+  const { stats, loading: statsLoading } = useDashboardStats(user?.id, "paciente")
+  const menuItems = getMenuItems("paciente", stats)
+
+  const handleSignOut = async () => {
+    await signOut()
+    router.push("/")
+  }
 
   useEffect(() => {
     loadConsultationData()
@@ -201,8 +213,16 @@ export default function PatientConsultationPage() {
 
   // Tela de espera/preparação
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto px-4 py-8">
+    <DashboardSidebar
+      userType="paciente"
+      userName={userProfile?.full_name || "Paciente"}
+      menuItems={menuItems}
+      activeItem="telemedicina"
+      onItemClick={(item) => router.push(item.href)}
+      onSignOut={handleSignOut}
+    >
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Consulta de Telemedicina</h1>
           <p className="text-gray-600">Prepare-se para sua consulta online</p>
@@ -347,7 +367,8 @@ export default function PatientConsultationPage() {
             </div>
           )}
         </div>
+        </div>
       </div>
-    </div>
+    </DashboardSidebar>
   )
 }

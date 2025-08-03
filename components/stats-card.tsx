@@ -79,9 +79,9 @@ export function StatsCard({ title, value, icon: Icon, color, trend, description,
         </div>
 
         <div className="space-y-1">
-          <p className="text-sm font-medium text-gray-600">{title}</p>
-          <p className="text-3xl font-bold text-[#1E1D40]">{value}</p>
-          {description && <p className="text-xs text-gray-500">{description}</p>}
+          <p className="text-sm font-medium text-gray-600 break-words">{title}</p>
+          <p className="text-2xl lg:text-3xl font-bold text-[#1E1D40] break-all">{value}</p>
+          {description && <p className="text-xs text-gray-500 break-words">{description}</p>}
         </div>
       </CardContent>
     </Card>

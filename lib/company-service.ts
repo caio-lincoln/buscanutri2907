@@ -16,6 +16,10 @@ export interface JobPosting {
   applications_count: number
   created_at: string
   updated_at: string
+  company_profiles?: {
+    company_name: string
+    logo_url?: string
+  }
 }
 
 export interface JobApplication {
@@ -158,6 +162,28 @@ export async function getCompanyJobs(companyId: string): Promise<JobPosting[]> {
     return data || []
   } catch (error) {
     console.error("Erro ao buscar vagas:", error)
+    return []
+  }
+}
+
+export async function getAllActiveJobs(): Promise<JobPosting[]> {
+  try {
+    const { data, error } = await supabase
+      .from("job_postings")
+      .select(`
+        *,
+        company_profiles (
+          company_name,
+          logo_url
+        )
+      `)
+      .eq("status", "ativa")
+      .order("created_at", { ascending: false })
+
+    if (error) throw error
+    return data || []
+  } catch (error) {
+    console.error("Erro ao buscar todas as vagas:", error)
     return []
   }
 }

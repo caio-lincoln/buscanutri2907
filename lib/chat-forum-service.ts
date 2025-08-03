@@ -1,4 +1,5 @@
 import { supabase } from "./supabase"
+import { ForumAuthor, ForumReply } from "./forum-data"
 
 // Chat interfaces
 export interface ChatConversation {
@@ -52,19 +53,24 @@ export interface ChatMessage {
 // Forum interfaces
 export interface ForumQuestion {
   id: string
-  patient_id: string
+  author_id: string
   title: string
   content: string
-  category: string
-  status: 'open' | 'closed'
-  is_anonymous: boolean
-  views_count: number
+  tags: string[]
+  views: number
   answers_count: number
+  likes_count: number
+  is_answered: boolean
+  best_answer_id?: string
   created_at: string
   updated_at: string
-  patient_profiles?: {
+  last_activity_at: string
+  author_profile?: {
     full_name: string
     profile_image_url?: string
+    user_type: string
+    crn?: string
+    is_verified?: boolean
   }
   forum_answers?: ForumAnswer[]
 }
@@ -72,17 +78,18 @@ export interface ForumQuestion {
 export interface ForumAnswer {
   id: string
   question_id: string
-  nutritionist_id: string
+  author_id: string
   content: string
-  is_best_answer: boolean
+  is_accepted: boolean
   likes_count: number
   created_at: string
   updated_at: string
-  nutritionist_profiles?: {
+  author_profile?: {
     full_name: string
     profile_image_url?: string
-    crn: string
-    is_verified: boolean
+    user_type: string
+    crn?: string
+    is_verified?: boolean
   }
 }
 
@@ -308,121 +315,64 @@ export async function createChatConversation(
 }
 
 // Forum functions
-export async function getForumQuestions(
-  patientUserId?: string,
-  category?: string,
-  limit: number = 20
-): Promise<ForumQuestion[]> {
+// Função para buscar perguntas do fórum
+export async function getForumQuestions(): Promise<ForumQuestion[]> {
   try {
-    let query = supabase
-      .from('forum_questions')
-      .select(`
-        *,
-        patient_profiles!forum_questions_patient_id_fkey (
-          full_name,
-          profile_image_url
-        ),
-        forum_answers!forum_answers_question_id_fkey (
-          id,
-          content,
-          is_best_answer,
-          likes_count,
-          created_at,
-          nutritionist_profiles!forum_answers_nutritionist_id_fkey (
-            full_name,
-            profile_image_url,
-            crn,
-            is_verified
-          )
-        )
-      `)
-
-    if (category && category !== 'all') {
-      query = query.eq('category', category)
-    }
-
-    const { data, error } = await query
-      .order('created_at', { ascending: false })
-      .limit(limit)
+    const { data, error } = await supabase.rpc('get_forum_questions_with_profiles')
 
     if (error) {
-      console.error('Error fetching forum questions:', error)
+      console.error("Error fetching forum questions:", error)
       return []
     }
 
     return data || []
   } catch (error) {
-    console.error('Error in getForumQuestions:', error)
+    console.error("Error in getForumQuestions:", error)
     return []
   }
 }
 
-export async function getPatientForumQuestions(patientUserId: string): Promise<ForumQuestion[]> {
+// Função para buscar perguntas do fórum específicas do paciente
+export async function getPatientForumQuestions(patientId: string): Promise<ForumQuestion[]> {
   try {
-    const { data, error } = await supabase
-      .from('forum_questions')
-      .select(`
-        *,
-        patient_profiles!forum_questions_patient_id_fkey (
-          full_name,
-          profile_image_url
-        ),
-        forum_answers!forum_answers_question_id_fkey (
-          id,
-          content,
-          is_best_answer,
-          likes_count,
-          created_at,
-          nutritionist_profiles!forum_answers_nutritionist_id_fkey (
-            full_name,
-            profile_image_url,
-            crn,
-            is_verified
-          )
-        )
-      `)
-      .eq('patient_id', patientUserId)
-      .order('created_at', { ascending: false })
+    const { data, error } = await supabase.rpc('get_forum_questions_with_profiles')
 
     if (error) {
-      console.error('Error fetching patient forum questions:', error)
+      console.error("Error fetching patient forum questions:", error)
       return []
     }
 
-    return data || []
+    // Filtrar por paciente no lado do cliente
+    const filteredData = data?.filter((question: ForumQuestion) => question.author_id === patientId) || []
+    
+    return filteredData
   } catch (error) {
-    console.error('Error in getPatientForumQuestions:', error)
+    console.error("Error in getPatientForumQuestions:", error)
     return []
   }
 }
 
 export async function createForumQuestion(
-  patientUserId: string,
+  userId: string,
   title: string,
   content: string,
-  category: string,
-  isAnonymous: boolean = false
+  tags: string[]
 ): Promise<ForumQuestion> {
   try {
     const { data, error } = await supabase
       .from('forum_questions')
       .insert({
-        patient_id: patientUserId,
+        author_id: userId,
         title: title.trim(),
         content: content.trim(),
-        category,
-        is_anonymous: isAnonymous,
-        status: 'open',
-        views_count: 0,
-        answers_count: 0
+        tags,
+        views: 0,
+        answers_count: 0,
+        likes_count: 0,
+        is_answered: false,
+        last_activity_at: new Date().toISOString()
       })
-      .select(`
-        *,
-        patient_profiles!forum_questions_patient_id_fkey (
-          full_name,
-          profile_image_url
-        )
-      `)
+      .select('*')
       .single()
 
     if (error) {
@@ -430,7 +380,17 @@ export async function createForumQuestion(
       throw error
     }
 
-    return data
+    // Get the author profile separately
+    const { data: authorProfile } = await supabase
+      .from('user_profiles')
+      .select('full_name, profile_image_url, user_type, crn, is_verified')
+      .eq('user_id', userId)
+      .single()
+
+    return {
+      ...data,
+      author_profile: authorProfile
+    }
   } catch (error) {
     console.error('Error in createForumQuestion:', error)
     throw error
@@ -439,12 +399,25 @@ export async function createForumQuestion(
 
 export async function incrementForumQuestionViews(questionId: string): Promise<void> {
   try {
-    const { error } = await supabase.rpc('increment_forum_question_views', {
-      question_id: questionId
-    })
+    // First get current views count
+    const { data: question } = await supabase
+      .from('forum_questions')
+      .select('views')
+      .eq('id', questionId)
+      .single()
 
-    if (error) {
-      console.error('Error incrementing forum question views:', error)
+    if (question) {
+      const { error } = await supabase
+        .from('forum_questions')
+        .update({ 
+          views: question.views + 1,
+          last_activity_at: new Date().toISOString()
+        })
+        .eq('id', questionId)
+
+      if (error) {
+        console.error('Error incrementing forum question views:', error)
+      }
     }
   } catch (error) {
     console.error('Error in incrementForumQuestionViews:', error)
@@ -454,29 +427,7 @@ export async function incrementForumQuestionViews(questionId: string): Promise<v
 export async function getForumQuestionById(questionId: string): Promise<ForumQuestion | null> {
   try {
     const { data, error } = await supabase
-      .from('forum_questions')
-      .select(`
-        *,
-        patient_profiles!forum_questions_patient_id_fkey (
-          full_name,
-          profile_image_url
-        ),
-        forum_answers!forum_answers_question_id_fkey (
-          id,
-          content,
-          is_best_answer,
-          likes_count,
-          created_at,
-          updated_at,
-          nutritionist_profiles!forum_answers_nutritionist_id_fkey (
-            full_name,
-            profile_image_url,
-            crn,
-            is_verified
-          )
-        )
-      `)
-      .eq('id', questionId)
+      .rpc('get_forum_question_with_answers', { question_id: questionId })
       .single()
 
     if (error) {
@@ -484,7 +435,52 @@ export async function getForumQuestionById(questionId: string): Promise<ForumQue
       return null
     }
 
-    return data
+    if (!data) {
+      return null
+    }
+
+    // Converter os dados da função RPC para o formato ForumQuestion
+    const author: ForumAuthor = {
+      id: data.patient_id,
+      name: data.author_profile?.full_name || "Usuário Anônimo",
+      userType: "paciente",
+      avatar: data.author_profile?.profile_image_url || "/placeholder.svg?height=40&width=40",
+      credentials: undefined,
+      isVerified: false,
+    }
+
+    const replies: ForumReply[] = (data.forum_answers || []).map((answer: any) => ({
+      id: answer.id,
+      content: answer.content,
+      author: {
+        id: answer.nutritionist_id,
+        name: answer.author_profile?.full_name || "Usuário Anônimo",
+        userType: "nutricionista",
+        avatar: answer.author_profile?.profile_image_url || "/placeholder.svg?height=40&width=40",
+        credentials: answer.author_profile?.crn ? `CRN ${answer.author_profile.crn}` : undefined,
+        isVerified: answer.author_profile?.is_verified || false,
+      },
+      timestamp: new Date(answer.created_at).toLocaleString('pt-BR'),
+      likes: answer.likes_count || 0,
+      isBestAnswer: answer.is_best_answer || false
+    }))
+
+    const question: ForumQuestion = {
+      id: data.id,
+      title: data.title,
+      content: data.content,
+      author,
+      timestamp: new Date(data.created_at).toLocaleString('pt-BR'),
+      likes: data.likes_count || 0,
+      repliesCount: data.answers_count || 0,
+      views: data.views_count || 0,
+      tags: data.tags || [],
+      category: data.category || "",
+      replies,
+      isBestAnswerSelected: data.is_answered || false
+    }
+
+    return question
   } catch (error) {
     console.error('Error in getForumQuestionById:', error)
     return null
@@ -588,31 +584,35 @@ export async function selectBestAnswer(questionId: string, answerId: string, use
     // Verify that the user is the question author
     const { data: question } = await supabase
       .from('forum_questions')
-      .select('patient_id')
+      .select('author_id')
       .eq('id', questionId)
       .single()
 
-    if (!question || question.patient_id !== userId) {
+    if (!question || question.author_id !== userId) {
       console.error('User is not authorized to select best answer')
       return false
     }
 
-    // Remove best answer from other answers
-    await supabase
-      .from('forum_answers')
-      .update({ is_best_answer: false })
-      .eq('question_id', questionId)
-
-    // Set the selected answer as best
+    // Update question with best answer and mark as answered
     const { error } = await supabase
-      .from('forum_answers')
-      .update({ is_best_answer: true })
-      .eq('id', answerId)
+      .from('forum_questions')
+      .update({ 
+        best_answer_id: answerId,
+        is_answered: true,
+        last_activity_at: new Date().toISOString()
+      })
+      .eq('id', questionId)
 
     if (error) {
       console.error('Error selecting best answer:', error)
       return false
     }
+
+    // Mark the answer as accepted
+    await supabase
+      .from('forum_answers')
+      .update({ is_accepted: true })
+      .eq('id', answerId)
 
     return true
   } catch (error) {
@@ -624,39 +624,19 @@ export async function selectBestAnswer(questionId: string, answerId: string, use
 export async function createForumAnswer(
   questionId: string,
   content: string,
-  userId: string,
-  userType: 'patient' | 'nutritionist'
+  userId: string
 ): Promise<ForumAnswer | null> {
   try {
-    const insertData: any = {
-      question_id: questionId,
-      content: content.trim(),
-      is_best_answer: false,
-      likes_count: 0
-    }
-
-    if (userType === 'nutritionist') {
-      insertData.nutritionist_id = userId
-    } else {
-      insertData.patient_id = userId
-    }
-
     const { data, error } = await supabase
       .from('forum_answers')
-      .insert(insertData)
-      .select(`
-        *,
-        nutritionist_profiles!forum_answers_nutritionist_id_fkey (
-          full_name,
-          profile_image_url,
-          crn,
-          is_verified
-        ),
-        patient_profiles!forum_answers_patient_id_fkey (
-          full_name,
-          profile_image_url
-        )
-      `)
+      .insert({
+        question_id: questionId,
+        author_id: userId,
+        content: content.trim(),
+        is_accepted: false,
+        likes_count: 0
+      })
+      .select('*')
       .single()
 
     if (error) {
@@ -664,12 +644,23 @@ export async function createForumAnswer(
       return null
     }
 
-    // Increment answers count
-    await supabase.rpc('increment_forum_answers_count', {
-      question_id: questionId
-    })
+    // Get the author profile separately
+    const { data: authorProfile } = await supabase
+      .from('user_profiles')
+      .select('full_name, profile_image_url, user_type, crn, is_verified')
+      .eq('user_id', userId)
+      .single()
 
-    return data
+    // Update question's last activity
+    await supabase
+      .from('forum_questions')
+      .update({ last_activity_at: new Date().toISOString() })
+      .eq('id', questionId)
+
+    return {
+      ...data,
+      author_profile: authorProfile
+    }
   } catch (error) {
     console.error('Error in createForumAnswer:', error)
     return null

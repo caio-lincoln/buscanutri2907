@@ -23,11 +23,12 @@ import {
 } from "lucide-react"
 import { getCurrentUser, getUserProfile, signOut } from "@/lib/auth"
 import type { NutritionistProfile } from "@/lib/supabase"
-import { NotificationsPanel, type Notification } from "@/components/notifications-panel"
+import { NotificationsPanel } from "@/components/notifications-panel"
 import { DashboardSidebar, getMenuItems } from "@/components/dashboard-sidebar"
 import { IrisChat } from "@/components/iris-chat"
 import { StatsCard } from "@/components/stats-card"
 import { UserProfileModal } from "@/components/user-profile-modal"
+import { RatingCard, RatingDisplay } from "@/components/ui/rating-display"
 // Importar os novos componentes das abas
 import { ReportsTab } from "@/components/dashboard/nutricionistas/reports-tab"
 import { CoursesTab } from "@/components/dashboard/nutricionistas/courses-tab"
@@ -37,21 +38,51 @@ import { BlogTab } from "@/components/dashboard/nutricionistas/blog-tab"
 import { NutritionistTelemedicineTab } from "@/components/dashboard/nutricionistas/telemedicine-tab"
 import { AppointmentsTab } from "@/components/dashboard/nutricionistas/appointments-tab" // Importar a nova aba de agenda
 import NutritionistRecentChatsList from "@/components/nutritionist-recent-chats-list"
+// Importar o serviço de dados do nutricionista
+import { 
+  getNutritionistStats, 
+  getActivePatients, 
+  getScheduledAppointments, 
+  getUnreadMessages,
+  getUpcomingAppointments,
+  type NutritionistStats,
+  type ActivePatient,
+  type ScheduledAppointment,
+  type UnreadMessage
+} from "@/lib/nutritionist-data-service"
+// Importar o hook de estatísticas do dashboard
+import { useDashboardStats } from "@/hooks/use-dashboard-stats"
 
 export default function NutritionistDashboard() {
   const [profile, setProfile] = useState<NutritionistProfile | null>(null)
   const [loading, setLoading] = useState(true)
-  const [notifications, setNotifications] = useState<Notification[]>([])
   const [activeTab, setActiveTab] = useState("overview")
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
+  const [stats, setStats] = useState<NutritionistStats>({
+    activePatients: 0,
+    scheduledAppointments: 0,
+    unreadMessages: 0,
+    totalConsultations: 0
+  })
+  const [activePatients, setActivePatients] = useState<ActivePatient[]>([])
+  const [upcomingAppointments, setUpcomingAppointments] = useState<ScheduledAppointment[]>([])
+  const [unreadMessages, setUnreadMessages] = useState<UnreadMessage[]>([])
   const router = useRouter()
 
-  const menuItems = getMenuItems("nutricionista")
+  // Hook para estatísticas dinâmicas do dashboard
+  const { stats: dashboardStats, loading: statsLoading } = useDashboardStats(profile?.user_id || "", "nutricionista")
+
+  const menuItems = getMenuItems("nutricionista", dashboardStats)
 
   useEffect(() => {
     loadProfile()
-    loadNotifications()
   }, [])
+
+  useEffect(() => {
+    if (profile?.user_id) {
+      loadDashboardData()
+    }
+  }, [profile?.user_id])
 
   const loadProfile = async () => {
     try {
@@ -70,60 +101,31 @@ export default function NutritionistDashboard() {
     }
   }
 
-  const loadNotifications = async () => {
-    const mockNotifications: Notification[] = [
-      {
-        id: "1",
-        type: "appointment",
-        title: "Nova consulta agendada",
-        description: "João Silva agendou uma consulta para amanhã às 10:00.",
-        time: "30 min atrás",
-        read: false,
-        actionUrl: "/agenda",
-        sender: {
-          name: "João Silva",
-          role: "Paciente",
-        },
-        priority: "high",
-      },
-      {
-        id: "2",
-        type: "message",
-        title: "Nova mensagem recebida",
-        description: "Maria Santos enviou uma pergunta sobre o plano alimentar.",
-        time: "1 hora atrás",
-        read: false,
-        actionUrl: "/chat",
-        sender: {
-          name: "Maria Santos",
-          role: "Paciente",
-        },
-        priority: "medium",
-      },
-    ]
+  const loadDashboardData = async () => {
+    if (!profile?.user_id) return
 
-    setNotifications(mockNotifications)
+    try {
+      // Carregar estatísticas
+      const statsData = await getNutritionistStats(profile.user_id)
+      setStats(statsData)
+
+      // Carregar pacientes ativos
+      const patientsData = await getActivePatients(profile.user_id)
+      setActivePatients(patientsData)
+
+      // Carregar próximas consultas
+      const appointmentsData = await getUpcomingAppointments(profile.user_id, 5)
+      setUpcomingAppointments(appointmentsData)
+
+      // Carregar mensagens não lidas
+      const messagesData = await getUnreadMessages(profile.user_id)
+      setUnreadMessages(messagesData)
+    } catch (error) {
+      console.error("Erro ao carregar dados do dashboard:", error)
+    }
   }
 
-  const handleMarkAsRead = (id: string) => {
-    setNotifications((prev) =>
-      prev.map((notification) =>
-        notification.id === id ? { ...notification, read: !notification.read } : notification,
-      ),
-    )
-  }
 
-  const handleMarkAllAsRead = () => {
-    setNotifications((prev) => prev.map((notification) => ({ ...notification, read: true })))
-  }
-
-  const handleDelete = (id: string) => {
-    setNotifications((prev) => prev.filter((notification) => notification.id !== id))
-  }
-
-  const handleClearAll = () => {
-    setNotifications([])
-  }
 
   const handleSignOut = async () => {
     await signOut()
@@ -173,12 +175,22 @@ export default function NutritionistDashboard() {
 
                   <div className="flex flex-wrap gap-4">
                     <div className="bg-white/10 backdrop-blur-sm rounded-xl px-4 py-2">
-                      <p className="text-sm text-blue-100">Consultas hoje</p>
-                      <p className="font-semibold">8 agendadas</p>
+                      <p className="text-sm text-blue-100">Consultas agendadas</p>
+                      <p className="font-semibold">{stats.scheduledAppointments} próximas</p>
                     </div>
                     <div className="bg-white/10 backdrop-blur-sm rounded-xl px-4 py-2">
                       <p className="text-sm text-blue-100">Avaliação média</p>
-                      <p className="font-semibold">4.9 ⭐</p>
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold">{profile?.rating?.toFixed(1) || "5.0"}</span>
+                        <RatingDisplay 
+                          rating={profile?.rating || 5.0} 
+                          totalReviews={profile?.total_reviews || 0}
+                          size="sm"
+                          showNumber={false}
+                          showReviewCount={false}
+                          className="text-white"
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -192,37 +204,34 @@ export default function NutritionistDashboard() {
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
               <StatsCard
                 title="Pacientes Ativos"
-                value="127"
+                value={stats.activePatients.toString()}
                 icon={Users}
                 color="blue"
-                trend={{ value: 12, isPositive: true }}
-                description="Este mês"
+                description="Pacientes com conversas ativas"
               />
               <StatsCard
                 title="Consultas Agendadas"
-                value="24"
+                value={stats.scheduledAppointments.toString()}
                 icon={Calendar}
                 color="green"
-                trend={{ value: 8, isPositive: true }}
-                description="Próximos 7 dias"
+                description="Próximas consultas"
               />
               <StatsCard
                 title="Mensagens Não Lidas"
-                value="7"
+                value={stats.unreadMessages.toString()}
                 icon={MessageSquare}
                 color="orange"
-                trend={{ value: 15, isPositive: false }}
-                description="Últimas 24h"
+                description="Aguardando resposta"
               />
               <StatsCard
-                title="Avaliação Média"
-                value="4.9"
+                title="Total de Consultas"
+                value={stats.totalConsultations.toString()}
                 icon={Star}
                 color="yellow"
-                description="Baseado em 89 avaliações"
+                description="Consultas realizadas"
               />
             </div>
 
@@ -235,61 +244,61 @@ export default function NutritionistDashboard() {
                 </Button>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                <Card className="group hover-lift cursor-pointer transition-all duration-300 border-0 shadow-lg hover:shadow-xl bg-gradient-to-br from-blue-50 to-blue-100/50 backdrop-blur-sm">
-                  <CardContent className="p-6 text-center">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+                <Card className="group hover-lift cursor-pointer transition-all duration-300 border-0 shadow-lg hover:shadow-xl bg-gradient-to-br from-blue-50 to-blue-100/50 backdrop-blur-sm h-full">
+                  <CardContent className="p-6 text-center flex flex-col h-full">
                     <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300">
                       <Calendar className="h-7 w-7 text-white" />
                     </div>
                     <h3 className="font-semibold text-[#1E1D40] mb-2 text-lg">Gerenciar Agenda</h3>
-                    <p className="text-sm text-gray-600 mb-4">Visualize e organize seus horários</p>
-                    <Button size="sm" variant="ghost" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50">
+                    <p className="text-sm text-gray-600 mb-4 flex-grow">Visualize e organize seus horários</p>
+                    <Button size="sm" variant="ghost" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 mt-auto">
                       Abrir agenda <ArrowRight className="h-3 w-3 ml-1" />
                     </Button>
                   </CardContent>
                 </Card>
 
-                <Card className="group hover-lift cursor-pointer transition-all duration-300 border-0 shadow-lg hover:shadow-xl bg-gradient-to-br from-green-50 to-green-100/50 backdrop-blur-sm">
-                  <CardContent className="p-6 text-center">
+                <Card className="group hover-lift cursor-pointer transition-all duration-300 border-0 shadow-lg hover:shadow-xl bg-gradient-to-br from-green-50 to-green-100/50 backdrop-blur-sm h-full">
+                  <CardContent className="p-6 text-center flex flex-col h-full">
                     <div className="w-14 h-14 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300">
                       <Users className="h-7 w-7 text-white" />
                     </div>
                     <h3 className="font-semibold text-[#1E1D40] mb-2 text-lg">Meus Pacientes</h3>
-                    <p className="text-sm text-gray-600 mb-4">Acompanhe o progresso dos pacientes</p>
-                    <Button size="sm" variant="ghost" className="text-green-600 hover:text-green-700 hover:bg-green-50">
+                    <p className="text-sm text-gray-600 mb-4 flex-grow">Acompanhe o progresso dos pacientes</p>
+                    <Button size="sm" variant="ghost" className="text-green-600 hover:text-green-700 hover:bg-green-50 mt-auto">
                       Ver pacientes <ArrowRight className="h-3 w-3 ml-1" />
                     </Button>
                   </CardContent>
                 </Card>
 
-                <Card className="group hover-lift cursor-pointer transition-all duration-300 border-0 shadow-lg hover:shadow-xl bg-gradient-to-br from-purple-50 to-purple-100/50 backdrop-blur-sm">
-                  <CardContent className="p-6 text-center">
+                <Card className="group hover-lift cursor-pointer transition-all duration-300 border-0 shadow-lg hover:shadow-xl bg-gradient-to-br from-purple-50 to-purple-100/50 backdrop-blur-sm h-full">
+                  <CardContent className="p-6 text-center flex flex-col h-full">
                     <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300">
                       <Briefcase className="h-7 w-7 text-white" />
                     </div>
                     <h3 className="font-semibold text-[#1E1D40] mb-2 text-lg">Oportunidades</h3>
-                    <p className="text-sm text-gray-600 mb-4">Explore vagas disponíveis</p>
+                    <p className="text-sm text-gray-600 mb-4 flex-grow">Explore vagas disponíveis</p>
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="text-purple-600 hover:text-purple-700 hover:bg-purple-50"
+                      className="text-purple-600 hover:text-purple-700 hover:bg-purple-50 mt-auto"
                     >
                       Ver vagas <ArrowRight className="h-3 w-3 ml-1" />
                     </Button>
                   </CardContent>
                 </Card>
 
-                <Card className="group hover-lift cursor-pointer transition-all duration-300 border-0 shadow-lg hover:shadow-xl bg-gradient-to-br from-orange-50 to-orange-100/50 backdrop-blur-sm">
-                  <CardContent className="p-6 text-center">
+                <Card className="group hover-lift cursor-pointer transition-all duration-300 border-0 shadow-lg hover:shadow-xl bg-gradient-to-br from-orange-50 to-orange-100/50 backdrop-blur-sm h-full">
+                  <CardContent className="p-6 text-center flex flex-col h-full">
                     <div className="w-14 h-14 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300">
                       <BookOpen className="h-7 w-7 text-white" />
                     </div>
                     <h3 className="font-semibold text-[#1E1D40] mb-2 text-lg">Cursos & Educação</h3>
-                    <p className="text-sm text-gray-600 mb-4">Continue sua formação</p>
+                    <p className="text-sm text-gray-600 mb-4 flex-grow">Continue sua formação</p>
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                      className="text-orange-600 hover:text-orange-700 hover:bg-orange-50 mt-auto"
                     >
                       Explorar <ArrowRight className="h-3 w-3 ml-1" />
                     </Button>
@@ -298,20 +307,98 @@ export default function NutritionistDashboard() {
               </div>
             </div>
 
-            {/* Recent Chats */}
-            <div>
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-[#1E1D40]">Conversas Recentes</h2>
-                <Button variant="ghost" size="sm" className="text-gray-500 hover:text-gray-700">
-                  Ver todas <ArrowRight className="h-4 w-4 ml-1" />
-                </Button>
+            {/* Recent Chats & Próximas Consultas */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-8">
+              {/* Recent Chats */}
+              <div>
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-bold text-[#1E1D40]">Conversas Recentes</h2>
+                  <Button variant="ghost" size="sm" className="text-gray-500 hover:text-gray-700">
+                    Ver todas <ArrowRight className="h-4 w-4 ml-1" />
+                  </Button>
+                </div>
+
+                <Card className="border-0 shadow-lg backdrop-blur-sm">
+                  <CardContent className="p-6">
+                    {profile?.user_id && <NutritionistRecentChatsList userId={profile.user_id} />}
+                  </CardContent>
+                </Card>
               </div>
 
-              <Card className="border-0 shadow-lg backdrop-blur-sm">
-                <CardContent className="p-6">
-                  {profile?.user_id && <NutritionistRecentChatsList userId={profile.user_id} />}
-                </CardContent>
-              </Card>
+              {/* Próximas Consultas */}
+              <div>
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-bold text-[#1E1D40]">Próximas Consultas</h2>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="text-gray-500 hover:text-gray-700"
+                    onClick={() => setActiveTab("agenda")}
+                  >
+                    Ver agenda completa <ArrowRight className="h-4 w-4 ml-1" />
+                  </Button>
+                </div>
+
+                <Card className="border-0 shadow-lg backdrop-blur-sm">
+                  <CardContent className="p-6">
+                  {upcomingAppointments.length > 0 ? (
+                    <div className="space-y-4">
+                      {upcomingAppointments.map((appointment, i) => (
+                        <div
+                          key={i}
+                          className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl bg-gradient-to-r from-blue-50/50 to-blue-100/30 hover:shadow-md transition-all duration-300 group gap-4"
+                        >
+                          <div className="flex items-center gap-4 flex-1 min-w-0">
+                            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-sm shadow-md group-hover:scale-105 transition-transform duration-300 flex-shrink-0">
+                              {appointment.time}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="font-semibold text-[#1E1D40] truncate">{appointment.patientName}</p>
+                              <p className="text-sm text-gray-600 truncate">{appointment.type}</p>
+                              <p className="text-xs text-gray-500">{appointment.date}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <Badge
+                              variant="outline"
+                              className={
+                                appointment.status === "confirmed"
+                                  ? "bg-green-50 text-green-700 border-green-200"
+                                  : "bg-yellow-50 text-yellow-700 border-yellow-200"
+                              }
+                            >
+                              {appointment.status === "confirmed" ? "Confirmado" : "Agendado"}
+                            </Badge>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="hover:bg-blue-100"
+                              onClick={() => router.push(`/dashboard/nutricionistas/telemedicina/consulta/${appointment.id}`)}
+                            >
+                              <Video className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                      <p className="text-gray-500 text-lg font-medium">Nenhuma consulta agendada</p>
+                      <p className="text-gray-400 text-sm mb-4">Suas próximas consultas aparecerão aqui</p>
+                      <Button 
+                        variant="outline" 
+                        onClick={() => setActiveTab("agenda")}
+                        className="hover-lift"
+                      >
+                        <Calendar className="h-4 w-4 mr-2" />
+                        Ver agenda
+                      </Button>
+                    </div>
+                  )}
+                  </CardContent>
+                </Card>
+              </div>
             </div>
 
             {/* Today's Schedule & Recent Activity (Removido para a aba de Agenda) */}
@@ -483,14 +570,7 @@ export default function NutritionistDashboard() {
         {/* Notificações */}
         {activeTab === "notificacoes" && (
           <div className="space-y-8">
-            <NotificationsPanel
-              notifications={notifications}
-              userType="nutricionista"
-              onMarkAsRead={handleMarkAsRead}
-              onMarkAllAsRead={handleMarkAllAsRead}
-              onDelete={handleDelete}
-              onClearAll={handleClearAll}
-            />
+            <NotificationsPanel userType="nutricionista" />
           </div>
         )}
 
@@ -512,8 +592,8 @@ export default function NutritionistDashboard() {
               </Button>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              <Card className="border-0 shadow-lg backdrop-blur-sm">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
+              <Card className="border-0 shadow-lg backdrop-blur-sm h-fit">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-3">
                     <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
@@ -584,7 +664,7 @@ export default function NutritionistDashboard() {
                 </CardContent>
               </Card>
 
-              <Card className="border-0 shadow-lg backdrop-blur-sm">
+              <Card className="border-0 shadow-lg backdrop-blur-sm h-fit">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-3">
                     <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center">
@@ -596,7 +676,7 @@ export default function NutritionistDashboard() {
                 <CardContent className="space-y-4">
                   <div>
                     <label className="text-sm font-medium text-gray-600">Áreas de Atuação</label>
-                    <div className="flex flex-wrap gap-2 mt-2">
+                    <div className="flex flex-wrap gap-2 mt-2 min-h-[2rem]">
                       {profile?.specialties?.map((specialty, i) => (
                         <Badge key={i} variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
                           {specialty}
@@ -630,7 +710,7 @@ export default function NutritionistDashboard() {
                 </CardContent>
               </Card>
 
-              <Card className="border-0 shadow-lg backdrop-blur-sm">
+              <Card className="border-0 shadow-lg backdrop-blur-sm h-fit">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-3">
                     <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
@@ -642,11 +722,11 @@ export default function NutritionistDashboard() {
                 <CardContent className="space-y-4">
                   <div>
                     <label className="text-sm font-medium text-gray-600">Endereço do Consultório</label>
-                    <p className="text-[#1E1D40] font-semibold">{profile?.address || "Não informado"}</p>
+                    <p className="text-[#1E1D40] font-semibold break-words">{profile?.address || "Não informado"}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-600">Idiomas</label>
-                    <div className="flex flex-wrap gap-2 mt-2">
+                    <div className="flex flex-wrap gap-2 mt-2 min-h-[2rem]">
                       {profile?.languages?.map((lang, i) => (
                         <Badge key={i} variant="outline" className="text-xs bg-gray-50 text-gray-700 border-gray-200">
                           {lang}
@@ -656,7 +736,7 @@ export default function NutritionistDashboard() {
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-600">Certificações</label>
-                    <div className="flex flex-wrap gap-2 mt-2">
+                    <div className="flex flex-wrap gap-2 mt-2 min-h-[2rem]">
                       {profile?.certifications?.map((cert, i) => (
                         <Badge
                           key={i}
@@ -670,7 +750,7 @@ export default function NutritionistDashboard() {
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-600">Conquistas</label>
-                    <div className="flex flex-wrap gap-2 mt-2">
+                    <div className="flex flex-wrap gap-2 mt-2 min-h-[2rem]">
                       {profile?.achievements?.map((ach, i) => (
                         <Badge
                           key={i}

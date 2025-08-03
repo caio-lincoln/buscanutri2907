@@ -99,7 +99,7 @@ export function JobDetailsModal({ job, isOpen, onClose }: JobDetailsModalProps) 
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="sr-only">Detalhes da Vaga</DialogTitle>
+          <DialogTitle>Detalhes da Vaga</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6">
@@ -173,7 +173,7 @@ export function JobDetailsModal({ job, isOpen, onClose }: JobDetailsModalProps) 
                   <h2 className="text-xl font-semibold text-[#1E1D40] mb-3">Requisitos</h2>
                   <ul className="space-y-2">
                     {job.requirements.map((requirement, index) => (
-                      <li key={index} className="flex items-start gap-2">
+                      <li key={`requirement-${job.id}-${index}-${requirement.slice(0, 20)}`} className="flex items-start gap-2">
                         <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
                         <span className="text-[#1E1D40]/80">{requirement}</span>
                       </li>
@@ -188,7 +188,7 @@ export function JobDetailsModal({ job, isOpen, onClose }: JobDetailsModalProps) 
                   <h2 className="text-xl font-semibold text-[#1E1D40] mb-3">Benefícios</h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {job.benefits.map((benefit, index) => (
-                      <div key={index} className="flex items-center gap-2 p-3 bg-green-50 rounded-lg">
+                      <div key={`benefit-${job.id}-${index}-${benefit.slice(0, 20)}`} className="flex items-center gap-2 p-3 bg-green-50 rounded-lg">
                         <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0" />
                         <span className="text-sm text-[#1E1D40]">{benefit}</span>
                       </div>

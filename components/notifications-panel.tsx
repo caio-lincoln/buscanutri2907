@@ -5,8 +5,10 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Bell, Calendar, MessageSquare, CheckCircle, Trash2, MoreHorizontal, Clock, AlertCircle } from "lucide-react"
+import { Bell, Calendar, MessageSquare, CheckCircle, Trash2, MoreHorizontal, Clock, AlertCircle, Loader2 } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { useRealtimeNotifications } from "@/hooks/use-realtime-notifications"
+import type { NotificationData } from "@/lib/notifications-service"
 
 export interface Notification {
   id: string
@@ -25,12 +27,7 @@ export interface Notification {
 }
 
 interface NotificationsPanelProps {
-  notifications: Notification[]
   userType: "paciente" | "nutricionista" | "empresa" | "admin"
-  onMarkAsRead: (id: string) => void
-  onMarkAllAsRead: () => void
-  onDelete: (id: string) => void
-  onClearAll: () => void
 }
 
 const notificationIcons = {
@@ -46,19 +43,18 @@ const priorityColors = {
   high: "bg-red-100 text-red-700 border-red-200",
 }
 
-export function NotificationsPanel({
-  notifications,
-  userType,
-  onMarkAsRead,
-  onMarkAllAsRead,
-  onDelete,
-  onClearAll,
-}: NotificationsPanelProps) {
+export function NotificationsPanel({ userType }: NotificationsPanelProps) {
   const [filter, setFilter] = useState<"all" | "unread">("all")
+  const { 
+    notifications, 
+    unreadCount, 
+    loading, 
+    markAsRead, 
+    markAllAsRead,
+    deleteNotification 
+  } = useRealtimeNotifications()
 
   const filteredNotifications = notifications.filter((notification) => filter === "all" || !notification.read)
-
-  const unreadCount = notifications.filter((n) => !n.read).length
 
   return (
     <div className="space-y-6">
@@ -81,13 +77,9 @@ export function NotificationsPanel({
 
       {notifications.length > 0 && (
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" size="sm" onClick={onMarkAllAsRead}>
-            <CheckCircle className="h-4 w-4 mr-2" />
+          <Button variant="outline" size="sm" onClick={markAllAsRead} disabled={loading}>
+            {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <CheckCircle className="h-4 w-4 mr-2" />}
             Marcar todas como lidas
-          </Button>
-          <Button variant="outline" size="sm" onClick={onClearAll}>
-            <Trash2 className="h-4 w-4 mr-2" />
-            Limpar todas
           </Button>
         </div>
       )}
@@ -151,11 +143,11 @@ export function NotificationsPanel({
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => onMarkAsRead(notification.id)}>
+                              <DropdownMenuItem onClick={() => markAsRead(notification.id)}>
                                 <CheckCircle className="h-4 w-4 mr-2" />
                                 {notification.read ? "Marcar como não lida" : "Marcar como lida"}
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => onDelete(notification.id)} className="text-red-600">
+                              <DropdownMenuItem onClick={() => deleteNotification(notification.id)} className="text-red-600">
                                 <Trash2 className="h-4 w-4 mr-2" />
                                 Excluir
                               </DropdownMenuItem>

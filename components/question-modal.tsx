@@ -17,7 +17,8 @@ import { Send } from "lucide-react"
 import { toast } from "@/components/ui/use-toast"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
-import { type ForumQuestion, addForumQuestion } from "@/lib/forum-data"
+import { type ForumQuestion, createForumQuestion } from "@/lib/forum-data"
+import { getCurrentUser } from "@/lib/auth"
 
 interface QuestionModalProps {
   open: boolean
@@ -31,17 +32,11 @@ export function QuestionModal({ open, onOpenChange, onQuestionPosted }: Question
   const [questionCategory, setQuestionCategory] = useState("")
 
   const specialtiesOptions = [
-    "Emagrecimento",
-    "Ganho de Massa",
-    "Diabetes",
-    "Vegetarianismo",
-    "Suplementação",
-    "Alimentação Infantil",
-    "Nutrição Clínica",
-    "Nutrição Esportiva",
-    "Distúrbios Alimentares",
-    "Nutrição Geriátrica",
-    "Nutrição Funcional",
+    { value: "suplementos", label: "Suplementos" },
+    { value: "exercicios", label: "Exercícios" }, 
+    { value: "dieta", label: "Dieta" },
+    { value: "saude", label: "Saúde" },
+    { value: "nutricao", label: "Nutrição" },
   ]
 
   useEffect(() => {
@@ -53,7 +48,7 @@ export function QuestionModal({ open, onOpenChange, onQuestionPosted }: Question
     }
   }, [open])
 
-  const handlePostQuestion = () => {
+  const handlePostQuestion = async () => {
     if (!questionTitle.trim() || !questionContent.trim() || !questionCategory.trim()) {
       toast({
         title: "Campos obrigatórios",
@@ -63,21 +58,43 @@ export function QuestionModal({ open, onOpenChange, onQuestionPosted }: Question
       return
     }
 
-    const newQuestionData: Omit<
-      ForumQuestion,
-      "id" | "timestamp" | "likes" | "views" | "repliesCount" | "replies" | "isBestAnswerSelected" | "tags"
-    > = {
-      title: questionTitle,
-      content: questionContent,
-      author: { name: "Usuário Logado", userType: "paciente" }, // Placeholder for current user
-      category: questionCategory,
-      tags: [],
-    }
+    try {
+      const user = await getCurrentUser()
+      if (!user) {
+        toast({
+          title: "Erro de autenticação",
+          description: "Você precisa estar logado para fazer uma pergunta.",
+          variant: "destructive",
+        })
+        return
+      }
 
-    const addedQuestion = addForumQuestion(newQuestionData)
-    onQuestionPosted?.(addedQuestion)
-    toast({ title: "Pergunta publicada!", description: "Sua pergunta foi enviada para a comunidade." })
-    onOpenChange(false) // Close modal after posting
+      const addedQuestion = await createForumQuestion(
+        questionTitle,
+        questionContent,
+        [questionCategory],
+        user.id
+      )
+      
+      if (addedQuestion) {
+        onQuestionPosted?.(addedQuestion)
+        toast({ title: "Pergunta publicada!", description: "Sua pergunta foi enviada para a comunidade." })
+        onOpenChange(false) // Close modal after posting
+      } else {
+        toast({
+          title: "Erro ao publicar",
+          description: "Não foi possível publicar sua pergunta. Tente novamente.",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error("Erro ao publicar pergunta:", error)
+      toast({
+        title: "Erro ao publicar",
+        description: "Não foi possível publicar sua pergunta. Tente novamente.",
+        variant: "destructive",
+      })
+    }
   }
 
   return (
@@ -121,8 +138,8 @@ export function QuestionModal({ open, onOpenChange, onQuestionPosted }: Question
               </SelectTrigger>
               <SelectContent>
                 {specialtiesOptions.map((specialty) => (
-                  <SelectItem key={specialty} value={specialty}>
-                    {specialty}
+                  <SelectItem key={specialty.value} value={specialty.value}>
+                    {specialty.label}
                   </SelectItem>
                 ))}
               </SelectContent>

@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import {
@@ -15,14 +15,16 @@ import {
   BarChart,
   LineChart,
   PieChart,
+  Loader2,
 } from "lucide-react"
 import type { DateRange } from "react-day-picker"
 import { format, subDays } from "date-fns"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
+import { getReportMetrics, type ReportMetric } from "@/lib/admin-data-service"
 
-interface ReportMetric {
+interface MetricDisplay {
   title: string
   value: string
   icon: React.ComponentType<{ className?: string }>
@@ -30,46 +32,100 @@ interface ReportMetric {
   description: string
 }
 
-const mockMetrics: ReportMetric[] = [
-  {
-    title: "Novos Usuários",
-    value: "320",
-    icon: Users,
-    color: "blue",
-    description: "Últimos 30 dias",
-  },
-  {
-    title: "Vagas Aprovadas",
-    value: "45",
-    icon: Briefcase,
-    color: "green",
-    description: "Últimos 30 dias",
-  },
-  {
-    title: "Receita Gerada",
-    value: "R$ 12.5k",
-    icon: DollarSign,
-    color: "purple",
-    description: "Últimos 30 dias",
-  },
-  {
-    title: "Taxa de Engajamento",
-    value: "68%",
-    icon: TrendingUp,
-    color: "orange",
-    description: "Média da plataforma",
-  },
-]
-
 export function ReportsTab() {
+  const [metrics, setMetrics] = useState<ReportMetric[]>([])
+  const [loading, setLoading] = useState(true)
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: subDays(new Date(), 30),
     to: new Date(),
   })
 
+  useEffect(() => {
+    async function loadMetrics() {
+      try {
+        setLoading(true)
+        const metricsData = await getReportMetrics()
+        setMetrics(metricsData)
+      } catch (error) {
+        console.error('Error loading metrics:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadMetrics()
+  }, [])
+
+  const formatMetricValue = (metric: ReportMetric): string => {
+    switch (metric.type) {
+      case 'revenue':
+        return `R$ ${(metric.value / 1000).toFixed(1)}k`
+      case 'users':
+      case 'consultations':
+      case 'posts':
+        return metric.value.toString()
+      default:
+        return metric.value.toString()
+    }
+  }
+
+  const getMetricIcon = (type: string): React.ComponentType<{ className?: string }> => {
+    switch (type) {
+      case 'users':
+        return Users
+      case 'revenue':
+        return DollarSign
+      case 'consultations':
+        return Briefcase
+      case 'posts':
+        return TrendingUp
+      default:
+        return TrendingUp
+    }
+  }
+
+  const getMetricColor = (type: string): string => {
+    switch (type) {
+      case 'users':
+        return 'blue'
+      case 'revenue':
+        return 'green'
+      case 'consultations':
+        return 'purple'
+      case 'posts':
+        return 'orange'
+      default:
+        return 'gray'
+    }
+  }
+
+  const displayMetrics: MetricDisplay[] = metrics.map(metric => ({
+    title: metric.title,
+    value: formatMetricValue(metric),
+    icon: getMetricIcon(metric.type),
+    color: getMetricColor(metric.type),
+    description: `${metric.change > 0 ? '+' : ''}${metric.change}% ${metric.period}`
+  }))
+
   const handleDownloadReport = (type: string) => {
     console.log(`Downloading ${type} report for date range:`, dateRange)
     alert(`Baixando relatório de ${type} para o período selecionado.`)
+  }
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <h2 className="text-3xl font-bold text-[#1E1D40]">Relatórios e Analytics</h2>
+        <Card className="border-0 shadow-lg">
+          <CardContent className="flex items-center justify-center py-12">
+            <div className="flex items-center gap-2 text-gray-500">
+              <Loader2 className="h-5 w-5 animate-spin" />
+              Carregando métricas...
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   return (
@@ -126,7 +182,7 @@ export function ReportsTab() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {mockMetrics.map((metric, i) => {
+            {displayMetrics.map((metric, i) => {
               const IconComponent = metric.icon
               return (
                 <Card key={i} className="border-0 shadow-md bg-white/80 backdrop-blur-sm">
@@ -214,7 +270,7 @@ export function ReportsTab() {
             <Card className="border-0 shadow-md bg-white/80 backdrop-blur-sm">
               <CardHeader className="pb-4">
                 <CardTitle className="text-lg font-semibold text-[#1E1D40] flex items-center gap-2">
-                  <Briefcase className="h-5 w-5 text-gray-600" /> Tendências de Vagas
+                  <Briefcase className="h-5 w-5 text-gray-600" /> Tendências de Consultas
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -225,7 +281,7 @@ export function ReportsTab() {
                   variant="outline"
                   size="sm"
                   className="mt-4 w-full bg-transparent"
-                  onClick={() => handleDownloadReport("job-trends")}
+                  onClick={() => handleDownloadReport("consultation-trends")}
                 >
                   <Download className="h-4 w-4 mr-2" /> Baixar Dados
                 </Button>

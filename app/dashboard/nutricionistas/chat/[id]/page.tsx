@@ -9,13 +9,15 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, Send, Paperclip, ImageIcon, Phone, Video, MoreVertical } from "lucide-react"
-import { getCurrentUser, getUserProfile } from "@/lib/auth"
+import { getCurrentUser, getUserProfile, signOut } from "@/lib/auth"
 import { getChatMessages, sendChatMessage, type ChatMessage, type ChatConversation } from "@/lib/chat-forum-service"
 import { supabase } from "@/lib/supabase"
 import { toast } from "@/hooks/use-toast"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import Link from "next/link"
+import { DashboardSidebar, getMenuItems } from "@/components/dashboard-sidebar"
+import { useDashboardStats } from "@/hooks/use-dashboard-stats"
 
 export default function NutritionistChatPage() {
   const [user, setUser] = useState<any>(null)
@@ -30,6 +32,10 @@ export default function NutritionistChatPage() {
   const router = useRouter()
   const params = useParams()
   const conversationId = params.id as string
+
+  // Dashboard stats
+  const { stats, loading: statsLoading } = useDashboardStats(user?.id, "nutricionista")
+  const menuItems = getMenuItems("nutricionista", stats)
 
   useEffect(() => {
     loadChatData()
@@ -160,6 +166,11 @@ export default function NutritionistChatPage() {
     }
   }
 
+  const handleSignOut = async () => {
+    await signOut()
+    router.push("/")
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center">
@@ -187,18 +198,26 @@ export default function NutritionistChatPage() {
   const patient = conversation.patient_profiles
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-4">
-              <Link href="/dashboard/nutricionistas">
-                <Button variant="ghost" size="sm">
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Voltar
-                </Button>
-              </Link>
+    <DashboardSidebar
+      userType="nutricionista"
+      userName={userProfile?.full_name || "Nutricionista"}
+      menuItems={menuItems}
+      activeItem="chat"
+      onItemClick={() => {}}
+      onSignOut={handleSignOut}
+    >
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="bg-white border-b border-gray-200 rounded-lg shadow-sm">
+          <div className="px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <Link href="/dashboard/nutricionistas">
+                  <Button variant="ghost" size="sm">
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Voltar
+                  </Button>
+                </Link>
               
               <div className="flex items-center gap-3">
                 <Avatar className="h-10 w-10">
@@ -218,23 +237,22 @@ export default function NutritionistChatPage() {
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm">
-                <Phone className="h-4 w-4" />
-              </Button>
-              <Button variant="outline" size="sm">
-                <Video className="h-4 w-4" />
-              </Button>
-              <Button variant="ghost" size="sm">
-                <MoreVertical className="h-4 w-4" />
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm">
+                  <Phone className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" size="sm">
+                  <Video className="h-4 w-4" />
+                </Button>
+                <Button variant="ghost" size="sm">
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Chat Content */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* Chat Content */}
         <Card className="h-[calc(100vh-200px)] flex flex-col">
           {/* Messages Area */}
           <CardContent className="flex-1 p-0">
@@ -323,6 +341,6 @@ export default function NutritionistChatPage() {
           </div>
         </Card>
       </div>
-    </div>
+    </DashboardSidebar>
   )
 }

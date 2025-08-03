@@ -2,6 +2,10 @@
 
 import { useState, useEffect } from "react"
 import { useRouter, useParams } from "next/navigation"
+import { signOut } from "@/lib/auth"
+import { DashboardSidebar } from "@/components/dashboard-sidebar"
+import { getMenuItems } from "@/lib/dashboard-stats"
+import { useDashboardStats } from "@/hooks/use-dashboard-stats"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -67,6 +71,22 @@ export default function ScheduleConsultationPage() {
   const [consultationType, setConsultationType] = useState<"video" | "in-person">("video")
   const [notes, setNotes] = useState("")
   const [availableTimes, setAvailableTimes] = useState<string[]>([])
+  const [user, setUser] = useState<any>(null)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  
+  const { stats, loading: statsLoading } = useDashboardStats(user?.id, "patient")
+
+  useEffect(() => {
+    const loadUser = async () => {
+      const currentUser = await getCurrentUser()
+      if (!currentUser) {
+        router.push("/login")
+        return
+      }
+      setUser(currentUser)
+    }
+    loadUser()
+  }, [])
 
   useEffect(() => {
     if (nutritionistId && nutritionistId !== "null" && nutritionistId !== "undefined") {
@@ -286,9 +306,35 @@ export default function ScheduleConsultationPage() {
     )
   }
 
+  const menuItems = user ? getMenuItems("patient", stats) : []
+
+  const handleSignOut = async () => {
+    try {
+      await signOut()
+      router.push("/login")
+    } catch (error) {
+      console.error("Error signing out:", error)
+      toast({
+        title: "❌ Erro",
+        description: "Erro ao fazer logout",
+        variant: "destructive",
+      })
+    }
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-red-50/50 via-white to-white">
-      <div className="container mx-auto px-4 py-8 max-w-6xl">
+    <div className="min-h-screen bg-gradient-to-br from-red-50/50 via-white to-white flex">
+      <DashboardSidebar
+        user={user}
+        userType="patient"
+        menuItems={menuItems}
+        onSignOut={handleSignOut}
+        isOpen={sidebarOpen}
+        onToggle={() => setSidebarOpen(!sidebarOpen)}
+      />
+      
+      <div className="flex-1 lg:ml-64">
+        <div className="container mx-auto px-4 py-8 max-w-6xl">
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
           <Button variant="ghost" onClick={() => router.push("/dashboard/paciente")} className="hover:bg-red-50">
@@ -656,6 +702,7 @@ export default function ScheduleConsultationPage() {
             )}
           </div>
         </div>
+      </div>
       </div>
     </div>
   )

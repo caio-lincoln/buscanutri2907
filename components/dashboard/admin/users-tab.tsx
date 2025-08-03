@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -29,7 +29,9 @@ import {
   Eye,
   CheckCircle,
   XCircle,
+  Loader2,
 } from "lucide-react"
+import { getAllUsers, type UserData } from "@/lib/admin-data-service"
 
 interface UserData {
   id: string
@@ -138,13 +140,31 @@ const userStatusColors = {
 }
 
 export function UsersTab() {
+  const [users, setUsers] = useState<UserData[]>([])
+  const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [filterType, setFilterType] = useState<UserData["type"] | "all">("all")
   const [filterStatus, setFilterStatus] = useState<UserData["status"] | "all">("all")
   const [currentPage, setCurrentPage] = useState(1)
   const usersPerPage = 10
 
-  const filteredUsers = mockUsers.filter((user) => {
+  useEffect(() => {
+    async function loadUsers() {
+      try {
+        setLoading(true)
+        const userData = await getAllUsers()
+        setUsers(userData)
+      } catch (error) {
+        console.error('Error loading users:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadUsers()
+  }, [])
+
+  const filteredUsers = users.filter((user) => {
     const matchesSearch =
       user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -169,13 +189,35 @@ export function UsersTab() {
     alert(`Ação: ${action} para ${user.name} (${user.type})`)
   }
 
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('pt-BR')
+  }
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <h2 className="text-3xl font-bold text-[#1E1D40]">Gerenciamento de Usuários</h2>
+        <Card className="border-0 shadow-lg">
+          <CardContent className="flex items-center justify-center py-12">
+            <div className="flex items-center gap-2 text-gray-500">
+              <Loader2 className="h-5 w-5 animate-spin" />
+              Carregando usuários...
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       <h2 className="text-3xl font-bold text-[#1E1D40]">Gerenciamento de Usuários</h2>
 
       <Card className="border-0 shadow-lg">
         <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4">
-          <CardTitle className="text-xl font-semibold text-[#1E1D40]">Lista de Usuários</CardTitle>
+          <CardTitle className="text-xl font-semibold text-[#1E1D40]">
+            Lista de Usuários ({users.length} total)
+          </CardTitle>
           <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
             <div className="relative flex-1">
               <Input
@@ -196,7 +238,6 @@ export function UsersTab() {
                 <SelectItem value="paciente">Paciente</SelectItem>
                 <SelectItem value="nutricionista">Nutricionista</SelectItem>
                 <SelectItem value="empresa">Empresa</SelectItem>
-                <SelectItem value="admin">Admin</SelectItem>
               </SelectContent>
             </Select>
             <Select
@@ -228,14 +269,17 @@ export function UsersTab() {
                   <TableHead>Tipo</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Registro</TableHead>
+                  <TableHead>Último Login</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {currentUsers.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-gray-500">
-                      Nenhum usuário encontrado com os filtros aplicados.
+                    <TableCell colSpan={8} className="text-center py-8 text-gray-500">
+                      {filteredUsers.length === 0 && users.length > 0
+                        ? "Nenhum usuário encontrado com os filtros aplicados."
+                        : "Nenhum usuário encontrado."}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -243,7 +287,9 @@ export function UsersTab() {
                     const IconComponent = userTypeIcons[user.type]
                     return (
                       <TableRow key={user.id} className="hover:bg-gray-50">
-                        <TableCell className="font-medium text-gray-700">{user.id}</TableCell>
+                        <TableCell className="font-medium text-gray-700">
+                          {user.id.substring(0, 8)}...
+                        </TableCell>
                         <TableCell>{user.name}</TableCell>
                         <TableCell>{user.email}</TableCell>
                         <TableCell>
@@ -255,7 +301,10 @@ export function UsersTab() {
                         <TableCell>
                           <Badge className={`capitalize ${userStatusColors[user.status]}`}>{user.status}</Badge>
                         </TableCell>
-                        <TableCell className="text-gray-500 text-sm">{user.registeredAt}</TableCell>
+                        <TableCell className="text-gray-500 text-sm">{formatDate(user.createdAt)}</TableCell>
+                        <TableCell className="text-gray-500 text-sm">
+                          {user.lastLogin ? formatDate(user.lastLogin) : "Nunca"}
+                        </TableCell>
                         <TableCell className="text-right">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
