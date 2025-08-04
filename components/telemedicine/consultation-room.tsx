@@ -88,7 +88,7 @@ export function ConsultationRoom({
   }
 
   const formatScheduledTime = () => {
-    return new Date(consultation.scheduled_time).toLocaleString("pt-BR", {
+    return new Date(consultation.scheduled_at).toLocaleString("pt-BR", {
       day: "2-digit",
       month: "2-digit",
       year: "numeric",

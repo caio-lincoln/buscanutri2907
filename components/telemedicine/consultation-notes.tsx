@@ -63,13 +63,6 @@ export function ConsultationNotes({
     general: "bg-gray-50 text-gray-700 border-gray-200",
   }
 
-  useEffect(() => {
-    if (isVisible) {
-      loadNotes()
-      setupRealtimeSubscription()
-    }
-  }, [isVisible, consultationId, loadNotes, setupRealtimeSubscription])
-
   const loadNotes = useCallback(async () => {
     try {
       setLoading(true)
@@ -111,6 +104,13 @@ export function ConsultationNotes({
       channel.unsubscribe()
     }
   }, [consultationId])
+
+  useEffect(() => {
+    if (isVisible) {
+      loadNotes()
+      setupRealtimeSubscription()
+    }
+  }, [isVisible, consultationId, loadNotes, setupRealtimeSubscription])
 
   const createNote = async () => {
     if (!newNote.title.trim() || !newNote.content.trim() || saving) return
