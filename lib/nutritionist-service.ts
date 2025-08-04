@@ -79,6 +79,12 @@ export async function getNutritionistById(
       return null
     }
 
+    // Durante o build, retorne null se as variáveis de ambiente não estiverem definidas
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+      console.warn("Supabase environment variables not found during build, returning null")
+      return null
+    }
+
     const { data, error } = await supabase.rpc("get_nutritionists_safe", {
       p_nutritionist_id: id
     })

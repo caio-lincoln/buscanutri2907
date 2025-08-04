@@ -5,19 +5,28 @@ import { createBrowserClient } from "@supabase/ssr"
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error(
+// Durante o build, use valores padrão para evitar erros
+const defaultUrl = "https://placeholder.supabase.co"
+const defaultKey = "placeholder-key"
+
+// Use valores padrão durante o build se as variáveis não estiverem definidas
+const finalUrl = supabaseUrl || defaultUrl
+const finalKey = supabaseAnonKey || defaultKey
+
+// Só lance erro em runtime se as variáveis não estiverem definidas
+if (typeof window !== 'undefined' && (!supabaseUrl || !supabaseAnonKey)) {
+  console.error(
     "As variáveis de ambiente NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY devem ser definidas.",
   )
 }
 
 // Cliente antigo para compatibilidade
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+export const supabase = createClient(finalUrl, finalKey)
 
 // Novo cliente para autenticação
 export const createSupabaseClient = () => createBrowserClient<Database>(
-  supabaseUrl!,
-  supabaseAnonKey!
+  finalUrl,
+  finalKey
 )
 
 // Export UserType for use in other files
