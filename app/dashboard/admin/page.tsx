@@ -43,7 +43,11 @@ export default function AdminDashboard() {
   const router = useRouter()
 
   // Hook para estatísticas dinâmicas do dashboard
-  const { stats: dashboardStats, loading: statsLoading } = useDashboardStats("", "admin")
+  const { stats: dashboardStats, loading: statsLoading } = useDashboardStats({
+    userType: "admin",
+    userId: "",
+    enabled: false
+  })
 
   // Adicionar "insignias" ao menu de itens do admin
   const menuItems = getMenuItems("admin", dashboardStats).map((item) => {

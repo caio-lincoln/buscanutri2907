@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Search, MapPin, Star, Calendar, Filter, Settings, User, Video, Shield, Heart, Activity, Users, ArrowRight, Zap, Target, Grid3X3, List, BookOpen, CheckCircle, Clock } from 'lucide-react'
+import { Search, MapPin, Star, Calendar, Filter, Settings, User, Video, Shield, Heart, Activity, Users, ArrowRight, Bot, Target, Grid3X3, List, BookOpen, CheckCircle, Clock } from 'lucide-react'
 import { getCurrentUser, getUserProfile, signOut } from "@/lib/auth"
 import type { PatientProfile } from "@/lib/supabase"
 import { NotificationsPanel } from "@/components/notifications-panel"
@@ -200,7 +200,11 @@ export default function PatientDashboard() {
     .slice(0, 3)
 
   // Hook para estatísticas dinâmicas do dashboard
-  const { stats: dashboardStats, loading: statsLoading } = useDashboardStats(profile?.user_id || "", "paciente")
+  const { stats: dashboardStats, loading: statsLoading } = useDashboardStats({
+    userType: "paciente",
+    userId: profile?.user_id || "",
+    enabled: !!profile?.user_id
+  })
 
   const menuItems = getDashboardMenuItems("paciente", dashboardStats)
 
@@ -589,6 +593,7 @@ export default function PatientDashboard() {
     <DashboardSidebar
       userType="paciente"
       userName={profile?.full_name || "Paciente"}
+      userAvatar={profile?.profile_image_url}
       menuItems={menuItems}
       activeItem={activeTab}
       onItemClick={setActiveTab}
@@ -733,7 +738,7 @@ export default function PatientDashboard() {
                 <Card className="group hover-lift cursor-pointer transition-all duration-300 border-0 shadow-lg hover:shadow-xl bg-gradient-to-br from-purple-50 to-purple-100/50 backdrop-blur-sm">
                   <CardContent className="p-6 text-center">
                     <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300">
-                      <Zap className="h-7 w-7 text-white" />
+                      <Bot className="h-7 w-7 text-white" />
                     </div>
                     <h3 className="font-semibold text-[#1E1D40] mb-2 text-lg">Chat com Iris</h3>
                     <p className="text-sm text-gray-600 mb-4">Tire suas dúvidas com IA</p>
@@ -1374,7 +1379,7 @@ export default function PatientDashboard() {
           <div className="space-y-8">
             <div className="text-center space-y-4">
               <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-purple-600 rounded-3xl flex items-center justify-center mx-auto shadow-2xl">
-                <Zap className="h-10 w-10 text-white" />
+                <Bot className="h-10 w-10 text-white" />
               </div>
               <div>
                 <h1 className="text-3xl lg:text-4xl font-bold text-[#1E1D40] mb-2">Chat com Iris</h1>

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -30,48 +30,172 @@ import {
   Clock,
   CheckCircle,
   Star,
+  Loader2,
 } from "lucide-react"
+import { useUser } from "@/hooks/use-user"
+import { 
+  getCompanyKPIs, 
+  getCompanyReportsData, 
+  getJobPerformanceDetails,
+  type CompanyKPIs,
+  type CompanyReportsData,
+  type JobPerformanceData
+} from "@/lib/company-reports-service"
 
-const monthlyData = [
-  { month: "Jan", applications: 45, hires: 3, interviews: 12 },
-  { month: "Fev", applications: 52, hires: 4, interviews: 15 },
-  { month: "Mar", applications: 38, hires: 2, interviews: 10 },
-  { month: "Abr", applications: 61, hires: 5, interviews: 18 },
-  { month: "Mai", applications: 55, hires: 4, interviews: 16 },
-  { month: "Jun", applications: 67, hires: 6, interviews: 20 },
-]
+interface ReportsTabProps {
+  companyId?: string
+}
 
-const jobPerformanceData = [
-  { job: "Nutricionista Clínico", applications: 23, views: 156, conversion: 14.7 },
-  { job: "Nutricionista Esportivo", applications: 15, views: 89, conversion: 16.9 },
-  { job: "Coordenador de Nutrição", applications: 8, views: 67, conversion: 11.9 },
-  { job: "Estagiário", applications: 12, views: 45, conversion: 26.7 },
-]
-
-const sourceData = [
-  { name: "Busca Nutri", value: 45, color: "#3B82F6" },
-  { name: "LinkedIn", value: 25, color: "#10B981" },
-  { name: "Indeed", value: 15, color: "#F59E0B" },
-  { name: "Indicação", value: 10, color: "#8B5CF6" },
-  { name: "Outros", value: 5, color: "#6B7280" },
-]
-
-const timeToHireData = [
-  { stage: "Candidatura", days: 1 },
-  { stage: "Triagem", days: 3 },
-  { stage: "Entrevista", days: 7 },
-  { stage: "Decisão", days: 5 },
-  { stage: "Proposta", days: 2 },
-]
-
-export function ReportsTab() {
+export function ReportsTab({ companyId }: ReportsTabProps) {
+  const { user } = useUser()
   const [timeRange, setTimeRange] = useState("6months")
   const [selectedMetric, setSelectedMetric] = useState("applications")
+  const [loading, setLoading] = useState(true)
+  const [kpis, setKpis] = useState<CompanyKPIs | null>(null)
+  const [reportsData, setReportsData] = useState<CompanyReportsData | null>(null)
+  const [jobPerformanceData, setJobPerformanceData] = useState<JobPerformanceData[]>([])
 
-  const totalApplications = monthlyData.reduce((sum, month) => sum + month.applications, 0)
-  const totalHires = monthlyData.reduce((sum, month) => sum + month.hires, 0)
-  const totalInterviews = monthlyData.reduce((sum, month) => sum + month.interviews, 0)
-  const conversionRate = ((totalHires / totalApplications) * 100).toFixed(1)
+  const currentCompanyId = companyId || user?.id
+
+  // Função para exportar dados para CSV
+  const exportToCSV = () => {
+    if (!kpis || !reportsData || !jobPerformanceData) {
+      alert('Não há dados para exportar')
+      return
+    }
+
+    try {
+      // Criar dados para exportação
+      const exportData = {
+        kpis: {
+          'Total de Candidaturas': kpis.totalApplications,
+          'Total de Contratações': kpis.totalHires,
+          'Total de Entrevistas': kpis.totalInterviews,
+          'Taxa de Conversão (%)': kpis.conversionRate,
+          'Tempo Médio de Contratação (dias)': kpis.avgHiringTime,
+          'Tendência de Candidaturas (%)': kpis.applicationsTrend,
+          'Tendência de Contratações (%)': kpis.hiresTrend
+        },
+        monthlyStats: reportsData.monthlyStats || [],
+        sourceData: reportsData.sourceData || [],
+        timeToHire: reportsData.timeToHire || [],
+        jobPerformance: jobPerformanceData || []
+      }
+
+      // Criar conteúdo CSV
+      let csvContent = "data:text/csv;charset=utf-8,"
+
+      // Seção KPIs
+      csvContent += "=== INDICADORES PRINCIPAIS ===\n"
+      csvContent += "Métrica,Valor\n"
+      Object.entries(exportData.kpis).forEach(([key, value]) => {
+        csvContent += `"${key}","${value}"\n`
+      })
+      csvContent += "\n"
+
+      // Seção Estatísticas Mensais
+      if (exportData.monthlyStats.length > 0) {
+        csvContent += "=== ESTATÍSTICAS MENSAIS ===\n"
+        csvContent += "Mês,Candidaturas,Entrevistas,Contratações\n"
+        exportData.monthlyStats.forEach(stat => {
+          csvContent += `"${stat.month}","${stat.applications || 0}","${stat.interviews || 0}","${stat.hires || 0}"\n`
+        })
+        csvContent += "\n"
+      }
+
+      // Seção Origem dos Candidatos
+      if (exportData.sourceData.length > 0) {
+        csvContent += "=== ORIGEM DOS CANDIDATOS ===\n"
+        csvContent += "Fonte,Percentual (%)\n"
+        exportData.sourceData.forEach(source => {
+          csvContent += `"${source.name}","${source.value}"\n`
+        })
+        csvContent += "\n"
+      }
+
+      // Seção Tempo por Etapa
+      if (exportData.timeToHire.length > 0) {
+        csvContent += "=== TEMPO POR ETAPA ===\n"
+        csvContent += "Etapa,Dias\n"
+        exportData.timeToHire.forEach(stage => {
+          csvContent += `"${stage.stage}","${stage.days}"\n`
+        })
+        csvContent += "\n"
+      }
+
+      // Seção Performance por Vaga
+      if (exportData.jobPerformance.length > 0) {
+        csvContent += "=== PERFORMANCE POR VAGA ===\n"
+        csvContent += "Vaga,Candidaturas,Entrevistas,Contratações,Taxa de Conversão (%),Status\n"
+        exportData.jobPerformance.forEach(job => {
+          csvContent += `"${job.title}","${job.applications}","${job.interviews || 0}","${job.hires || 0}","${job.conversionRate.toFixed(1)}","${job.status}"\n`
+        })
+      }
+
+      // Criar e baixar arquivo
+      const encodedUri = encodeURI(csvContent)
+      const link = document.createElement("a")
+      link.setAttribute("href", encodedUri)
+      
+      // Nome do arquivo com data atual
+      const currentDate = new Date().toISOString().split('T')[0]
+      link.setAttribute("download", `relatorio_empresa_${currentDate}.csv`)
+      
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+
+      // Feedback para o usuário
+      alert('Relatório exportado com sucesso!')
+    } catch (error) {
+      console.error('Erro ao exportar relatório:', error)
+      alert('Erro ao exportar relatório. Tente novamente.')
+    }
+  }
+
+  useEffect(() => {
+    const loadReportsData = async () => {
+      if (!currentCompanyId) return
+
+      try {
+        setLoading(true)
+        
+        // Carregar dados em paralelo
+        const [kpisData, reportsDataResult, jobPerformanceResult] = await Promise.all([
+          getCompanyKPIs(currentCompanyId),
+          getCompanyReportsData(currentCompanyId),
+          getJobPerformanceDetails(currentCompanyId)
+        ])
+
+        setKpis(kpisData)
+        setReportsData(reportsDataResult)
+        setJobPerformanceData(jobPerformanceResult)
+      } catch (error) {
+        console.error('Erro ao carregar dados de relatórios:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadReportsData()
+  }, [currentCompanyId, timeRange])
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <span className="ml-2 text-gray-600">Carregando relatórios...</span>
+      </div>
+    )
+  }
+
+  if (!kpis || !reportsData) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-gray-600">Não foi possível carregar os dados de relatórios.</p>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -94,7 +218,12 @@ export function ReportsTab() {
               <SelectItem value="1year">Último ano</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" className="hover-lift bg-transparent">
+          <Button 
+            variant="outline" 
+            className="hover-lift bg-transparent"
+            onClick={exportToCSV}
+            disabled={loading || !kpis || !reportsData}
+          >
             <Download className="h-4 w-4 mr-2" />
             Exportar
           </Button>
@@ -108,10 +237,16 @@ export function ReportsTab() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-blue-600">Total de Candidaturas</p>
-                <p className="text-3xl font-bold text-blue-700">{totalApplications}</p>
+                <p className="text-3xl font-bold text-blue-700">{kpis.totalApplications}</p>
                 <div className="flex items-center gap-1 mt-2">
-                  <TrendingUp className="h-4 w-4 text-green-600" />
-                  <span className="text-sm text-green-600 font-medium">+12% vs mês anterior</span>
+                  {kpis.applicationsTrend >= 0 ? (
+                    <TrendingUp className="h-4 w-4 text-green-600" />
+                  ) : (
+                    <TrendingDown className="h-4 w-4 text-red-600" />
+                  )}
+                  <span className={`text-sm font-medium ${kpis.applicationsTrend >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {kpis.applicationsTrend >= 0 ? '+' : ''}{kpis.applicationsTrend}% vs mês anterior
+                  </span>
                 </div>
               </div>
               <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center">
@@ -126,10 +261,16 @@ export function ReportsTab() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-green-600">Contratações</p>
-                <p className="text-3xl font-bold text-green-700">{totalHires}</p>
+                <p className="text-3xl font-bold text-green-700">{kpis.totalHires}</p>
                 <div className="flex items-center gap-1 mt-2">
-                  <TrendingUp className="h-4 w-4 text-green-600" />
-                  <span className="text-sm text-green-600 font-medium">+8% vs mês anterior</span>
+                  {kpis.hiresTrend >= 0 ? (
+                    <TrendingUp className="h-4 w-4 text-green-600" />
+                  ) : (
+                    <TrendingDown className="h-4 w-4 text-red-600" />
+                  )}
+                  <span className={`text-sm font-medium ${kpis.hiresTrend >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {kpis.hiresTrend >= 0 ? '+' : ''}{kpis.hiresTrend}% vs mês anterior
+                  </span>
                 </div>
               </div>
               <div className="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center">
@@ -144,10 +285,16 @@ export function ReportsTab() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-purple-600">Taxa de Conversão</p>
-                <p className="text-3xl font-bold text-purple-700">{conversionRate}%</p>
+                <p className="text-3xl font-bold text-purple-700">{kpis.conversionRate}%</p>
                 <div className="flex items-center gap-1 mt-2">
-                  <TrendingDown className="h-4 w-4 text-red-600" />
-                  <span className="text-sm text-red-600 font-medium">-2% vs mês anterior</span>
+                  {kpis.conversionRate >= 10 ? (
+                    <TrendingUp className="h-4 w-4 text-green-600" />
+                  ) : (
+                    <TrendingDown className="h-4 w-4 text-red-600" />
+                  )}
+                  <span className={`text-sm font-medium ${kpis.conversionRate >= 10 ? 'text-green-600' : 'text-red-600'}`}>
+                    {kpis.conversionRate >= 10 ? 'Boa' : 'Baixa'} conversão
+                  </span>
                 </div>
               </div>
               <div className="w-12 h-12 bg-purple-500 rounded-xl flex items-center justify-center">
@@ -162,10 +309,16 @@ export function ReportsTab() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-orange-600">Tempo Médio de Contratação</p>
-                <p className="text-3xl font-bold text-orange-700">18 dias</p>
+                <p className="text-3xl font-bold text-orange-700">{kpis.avgHiringTime} dias</p>
                 <div className="flex items-center gap-1 mt-2">
-                  <TrendingUp className="h-4 w-4 text-green-600" />
-                  <span className="text-sm text-green-600 font-medium">-3 dias vs mês anterior</span>
+                  {kpis.avgHiringTime <= 20 ? (
+                    <TrendingUp className="h-4 w-4 text-green-600" />
+                  ) : (
+                    <TrendingDown className="h-4 w-4 text-red-600" />
+                  )}
+                  <span className={`text-sm font-medium ${kpis.avgHiringTime <= 20 ? 'text-green-600' : 'text-red-600'}`}>
+                    {kpis.avgHiringTime <= 20 ? 'Rápido' : 'Lento'} processo
+                  </span>
                 </div>
               </div>
               <div className="w-12 h-12 bg-orange-500 rounded-xl flex items-center justify-center">
@@ -187,7 +340,7 @@ export function ReportsTab() {
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <AreaChart data={monthlyData}>
+              <AreaChart data={reportsData.monthlyStats || []}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" />
                 <YAxis />
@@ -232,7 +385,7 @@ export function ReportsTab() {
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
-                  data={sourceData}
+                  data={reportsData.sourceData || []}
                   cx="50%"
                   cy="50%"
                   innerRadius={60}
@@ -240,7 +393,7 @@ export function ReportsTab() {
                   paddingAngle={5}
                   dataKey="value"
                 >
-                  {sourceData.map((entry, index) => (
+                  {(reportsData.sourceData || []).map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
@@ -248,7 +401,7 @@ export function ReportsTab() {
               </PieChart>
             </ResponsiveContainer>
             <div className="grid grid-cols-2 gap-2 mt-4">
-              {sourceData.map((item, index) => (
+              {(reportsData.sourceData || []).map((item, index) => (
                 <div key={index} className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
                   <span className="text-sm text-gray-600">
@@ -272,7 +425,7 @@ export function ReportsTab() {
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={jobPerformanceData} layout="horizontal">
+              <BarChart data={jobPerformanceData || []} layout="horizontal">
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis type="number" />
                 <YAxis dataKey="job" type="category" width={120} />
@@ -293,7 +446,7 @@ export function ReportsTab() {
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={timeToHireData}>
+              <BarChart data={reportsData.timeToHire || []}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="stage" />
                 <YAxis />
@@ -305,56 +458,53 @@ export function ReportsTab() {
         </Card>
       </div>
 
-      {/* Detailed Table */}
+      {/* Job Performance Table */}
       <Card className="border-0 shadow-lg">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Star className="h-5 w-5" />
-            Desempenho Detalhado por Vaga
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+            <Star className="h-5 w-5 text-indigo-600" />
+            Performance Detalhada por Vaga
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b">
+                <tr className="border-b border-gray-200">
                   <th className="text-left py-3 px-4 font-semibold text-gray-700">Vaga</th>
-                  <th className="text-center py-3 px-4 font-semibold text-gray-700">Candidaturas</th>
-                  <th className="text-center py-3 px-4 font-semibold text-gray-700">Visualizações</th>
-                  <th className="text-center py-3 px-4 font-semibold text-gray-700">Taxa de Conversão</th>
-                  <th className="text-center py-3 px-4 font-semibold text-gray-700">Status</th>
-                  <th className="text-center py-3 px-4 font-semibold text-gray-700">Ações</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Candidaturas</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Entrevistas</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Contratações</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Taxa de Conversão</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Status</th>
                 </tr>
               </thead>
               <tbody>
-                {jobPerformanceData.map((job, index) => (
-                  <tr key={index} className="border-b hover:bg-gray-50 transition-colors">
-                    <td className="py-4 px-4">
-                      <div className="font-semibold text-[#1E1D40]">{job.job}</div>
-                    </td>
-                    <td className="py-4 px-4 text-center">
-                      <span className="font-semibold">{job.applications}</span>
-                    </td>
-                    <td className="py-4 px-4 text-center">
-                      <span className="font-semibold">{job.views}</span>
-                    </td>
-                    <td className="py-4 px-4 text-center">
-                      <span
-                        className={`font-semibold ${job.conversion > 15 ? "text-green-600" : job.conversion > 10 ? "text-yellow-600" : "text-red-600"}`}
-                      >
-                        {job.conversion}%
+                {(jobPerformanceData || []).map((job, index) => (
+                  <tr key={index} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                    <td className="py-3 px-4 font-medium text-gray-900">{job.title}</td>
+                    <td className="py-3 px-4 text-gray-700">{job.applications}</td>
+                    <td className="py-3 px-4 text-gray-700">{job.interviews || 0}</td>
+                    <td className="py-3 px-4 text-gray-700">{job.hires || 0}</td>
+                    <td className="py-3 px-4">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        job.conversionRate > 10 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {job.conversionRate.toFixed(1)}%
                       </span>
                     </td>
-                    <td className="py-4 px-4 text-center">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                        Ativa
+                    <td className="py-3 px-4">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        job.status === 'ativa' 
+                          ? 'bg-green-100 text-green-800' 
+                          : job.status === 'pausada'
+                          ? 'bg-yellow-100 text-yellow-800'
+                          : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {job.status}
                       </span>
-                    </td>
-                    <td className="py-4 px-4 text-center">
-                      <Button variant="outline" size="sm">
-                        <Eye className="h-4 w-4 mr-2" />
-                        Ver Detalhes
-                      </Button>
                     </td>
                   </tr>
                 ))}

@@ -39,11 +39,12 @@ export function ForumTab() {
 
   // Calculate forum statistics
   const forumStats = useMemo(() => {
-    const totalQuestions = questions.length
+    const allQuestions = [...questions, ...nutritionistQuestions]
+    const totalQuestions = allQuestions.length
     let totalReplies = 0
     let totalLikes = 0
 
-    questions.forEach((q) => {
+    allQuestions.forEach((q) => {
       totalLikes += q.likes
       totalReplies += q.replies.length
       q.replies.forEach((r) => {
@@ -52,7 +53,7 @@ export function ForumTab() {
     })
 
     return { totalQuestions, totalReplies, totalLikes }
-  }, [questions])
+  }, [questions, nutritionistQuestions])
 
   return (
     <div className="space-y-8">

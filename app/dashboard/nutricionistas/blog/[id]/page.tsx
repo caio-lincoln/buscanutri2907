@@ -2,10 +2,9 @@
 
 import { useState, useEffect } from "react"
 import { useRouter, useParams } from "next/navigation"
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import { supabase } from "@/lib/supabase"
 import { signOut } from "@/lib/auth"
-import { DashboardSidebar } from "@/components/dashboard-sidebar"
-import { getMenuItems } from "@/lib/dashboard-stats"
+import { DashboardSidebar, getMenuItems } from "@/components/dashboard-sidebar"
 import { useDashboardStats } from "@/hooks/use-dashboard-stats"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -57,7 +56,11 @@ export default function NutritionistBlogPostPage() {
   const [currentUser, setCurrentUser] = useState<any>(null)
 
   // Dashboard stats
-  const { stats, loading: statsLoading } = useDashboardStats(currentUserId, "nutricionista")
+  const { stats, loading: statsLoading } = useDashboardStats({
+    userType: "nutricionista",
+    userId: currentUserId || "",
+    enabled: !!currentUserId
+  })
   const menuItems = getMenuItems("nutricionista", stats)
 
   const handleSignOut = async () => {
@@ -196,6 +199,7 @@ export default function NutritionistBlogPostPage() {
     <DashboardSidebar
       userType="nutricionista"
       userName={currentUser?.user_metadata?.full_name || "Nutricionista"}
+      userAvatar={currentUser?.user_metadata?.profile_image_url}
       menuItems={menuItems}
       activeItem="blog"
       onItemClick={(item) => router.push(item.href)}

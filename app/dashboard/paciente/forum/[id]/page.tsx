@@ -2,10 +2,10 @@
 
 import { useState, useEffect, useMemo } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import { supabase } from "@/lib/supabase"
 import { signOut } from "@/lib/auth"
 import { DashboardSidebar } from "@/components/dashboard-sidebar"
-import { getMenuItems } from "@/lib/dashboard-stats"
+import { getMenuItems } from "@/components/dashboard-sidebar"
 import { useDashboardStats } from "@/hooks/use-dashboard-stats"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -36,8 +36,12 @@ export default function PatientForumQuestionPage() {
   const params = useParams()
   const router = useRouter()
   const questionId = params.id as string
-  const supabase = createClientComponentClient()
-  const { stats, loading: statsLoading } = useDashboardStats()
+
+  const { stats, loading: statsLoading } = useDashboardStats({
+    userType: "paciente",
+    userId: "",
+    enabled: false
+  })
 
   const [question, setQuestion] = useState<ForumQuestion | null>(null)
   const [loading, setLoading] = useState(true)
@@ -227,19 +231,19 @@ export default function PatientForumQuestionPage() {
       <div className="flex-1 flex flex-col overflow-hidden">
         <main className="flex-1 overflow-y-auto">
           <div className="container mx-auto px-4 py-8">
-      <div className="mb-6">
-        <Button
-          variant="ghost"
-          onClick={() => router.back()}
-          className="mb-4"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Voltar ao Fórum
-        </Button>
-      </div>
+            <div className="mb-6">
+              <Button
+                variant="ghost"
+                onClick={() => router.back()}
+                className="mb-4"
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Voltar ao Fórum
+              </Button>
+            </div>
 
-      {/* Question Card */}
-      <Card className="mb-8">
+            {/* Question Card */}
+            <Card className="mb-8">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -302,8 +306,8 @@ export default function PatientForumQuestionPage() {
         </CardContent>
       </Card>
 
-      {/* Replies Section */}
-      <div className="space-y-6">
+            {/* Replies Section */}
+            <div className="space-y-6">
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
           <h2 className="text-xl font-bold text-[#1E1D40]">
             Respostas ({question.repliesCount || 0})
@@ -434,6 +438,7 @@ export default function PatientForumQuestionPage() {
             </CardContent>
           </Card>
         )}
+            </div>
           </div>
         </main>
       </div>

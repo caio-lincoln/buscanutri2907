@@ -7,7 +7,7 @@ import { getCurrentUser, getUserProfile, signOut } from "@/lib/auth"
 import { getConsultationById, canStartConsultation, updateConsultationStatus } from "@/lib/consultation-service"
 import type { Consultation } from "@/lib/consultation-service"
 import { DashboardSidebar } from "@/components/dashboard-sidebar"
-import { getMenuItems } from "@/lib/dashboard-stats"
+import { getMenuItems } from "@/components/dashboard-sidebar"
 import { useDashboardStats } from "@/hooks/use-dashboard-stats"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -28,7 +28,11 @@ export default function PatientConsultationPage() {
   const consultationId = params.id as string
 
   // Dashboard stats
-  const { stats, loading: statsLoading } = useDashboardStats(user?.id, "paciente")
+  const { stats, loading: statsLoading } = useDashboardStats({
+    userType: "paciente",
+    userId: user?.id || "",
+    enabled: !!user?.id
+  })
   const menuItems = getMenuItems("paciente", stats)
 
   const handleSignOut = async () => {

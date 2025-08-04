@@ -102,6 +102,9 @@ export function ImageUpload({
               src={currentImageUrl}
               alt="Imagem selecionada"
               className="w-full h-full object-cover"
+              key={currentImageUrl} // Force re-render when URL changes
+              onLoad={() => console.log('Imagem carregada:', currentImageUrl)}
+              onError={(e) => console.error('Erro ao carregar imagem:', currentImageUrl, e)}
             />
             {!disabled && (
               <Button
@@ -114,6 +117,9 @@ export function ImageUpload({
                 <X className="h-4 w-4" />
               </Button>
             )}
+          </div>
+          <div className="p-2 text-xs text-gray-500 text-center truncate">
+            {currentImageUrl}
           </div>
         </Card>
       ) : (

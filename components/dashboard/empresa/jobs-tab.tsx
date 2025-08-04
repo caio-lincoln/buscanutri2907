@@ -37,7 +37,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { JobCandidatesModal } from "./job-candidates-modal"
-import { getCompanyJobs, type JobData } from "@/lib/company-data-service"
+import { getCompanyJobs, createCompanyJob, type JobData } from "@/lib/company-data-service"
 import { useUser } from "@/hooks/use-user"
 
 export function JobsTab() {
@@ -53,21 +53,21 @@ export function JobsTab() {
 
   useEffect(() => {
     async function loadJobs() {
-      if (!user?.id) return
+      if (!user?.companyProfile?.id) return
       
       try {
         setLoading(true)
-        const jobsData = await getCompanyJobs(user.id)
+        const jobsData = await getCompanyJobs(user.companyProfile.id)
         setJobs(jobsData)
       } catch (error) {
-        console.error('Error loading jobs:', error)
+        console.error("Erro ao carregar vagas:", error)
       } finally {
         setLoading(false)
       }
     }
 
     loadJobs()
-  }, [user?.id])
+  }, [user?.companyProfile?.id])
 
   const filteredJobs = jobs.filter((job) => {
     const matchesSearch =
@@ -152,7 +152,15 @@ export function JobsTab() {
             <DialogHeader>
               <DialogTitle>Criar Nova Vaga</DialogTitle>
             </DialogHeader>
-            <CreateJobForm onClose={() => setIsCreateModalOpen(false)} />
+            <CreateJobForm 
+              onClose={() => setIsCreateModalOpen(false)} 
+              onJobCreated={async () => {
+                if (user?.companyProfile?.id) {
+                  const jobsData = await getCompanyJobs(user.companyProfile.id)
+                  setJobs(jobsData)
+                }
+              }}
+            />
           </DialogContent>
         </Dialog>
       </div>
@@ -461,33 +469,189 @@ export function JobsTab() {
   )
 }
 
-function CreateJobForm({ onClose }: { onClose: () => void }) {
+function CreateJobForm({ onClose, onJobCreated }: { onClose: () => void; onJobCreated: () => void }) {
+  const { user } = useUser()
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [formData, setFormData] = useState({
+    title: '',
+    location: '',
+    description: '',
+    jobType: 'CLT',
+    level: 'Pleno',
+    salaryMin: '',
+    salaryMax: '',
+    requirements: '',
+    benefits: ''
+  })
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    if (!user?.companyProfile?.id) {
+      alert('Erro: Perfil da empresa não encontrado')
+      return
+    }
+
+    if (!formData.title || !formData.location || !formData.description) {
+      alert('Por favor, preencha todos os campos obrigatórios')
+      return
+    }
+
+    setIsSubmitting(true)
+
+    try {
+      const jobData = {
+        title: formData.title,
+        description: formData.description,
+        location: formData.location,
+        jobType: formData.jobType,
+        level: formData.level,
+        salaryMin: formData.salaryMin ? parseFloat(formData.salaryMin) : undefined,
+        salaryMax: formData.salaryMax ? parseFloat(formData.salaryMax) : undefined,
+        requirements: formData.requirements ? formData.requirements.split('\n').filter(req => req.trim()) : [],
+        benefits: formData.benefits ? formData.benefits.split('\n').filter(benefit => benefit.trim()) : []
+      }
+
+      const result = await createCompanyJob(user.companyProfile.id, jobData)
+
+      if (result.success) {
+        alert('Vaga criada com sucesso!')
+        onJobCreated()
+        onClose()
+      } else {
+        alert(`Erro ao criar vaga: ${result.error}`)
+      }
+    } catch (error) {
+      console.error('Error creating job:', error)
+      alert('Erro interno. Tente novamente.')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
   return (
-    <div className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <Label htmlFor="title">Título da Vaga</Label>
-        <Input id="title" placeholder="Ex: Nutricionista Clínico" />
+        <Label htmlFor="title">Título da Vaga *</Label>
+        <Input 
+          id="title" 
+          placeholder="Ex: Nutricionista Clínico" 
+          value={formData.title}
+          onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+          required
+        />
       </div>
+      
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label htmlFor="location">Localização *</Label>
+          <Input 
+            id="location" 
+            placeholder="Ex: São Paulo, SP" 
+            value={formData.location}
+            onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
+            required
+          />
+        </div>
+        <div>
+          <Label htmlFor="jobType">Tipo de Contrato</Label>
+          <Select value={formData.jobType} onValueChange={(value) => setFormData(prev => ({ ...prev, jobType: value }))}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="CLT">CLT</SelectItem>
+              <SelectItem value="PJ">PJ</SelectItem>
+              <SelectItem value="Estágio">Estágio</SelectItem>
+              <SelectItem value="Freelance">Freelance</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label htmlFor="level">Nível</Label>
+          <Select value={formData.level} onValueChange={(value) => setFormData(prev => ({ ...prev, level: value }))}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Júnior">Júnior</SelectItem>
+              <SelectItem value="Pleno">Pleno</SelectItem>
+              <SelectItem value="Sênior">Sênior</SelectItem>
+              <SelectItem value="Especialista">Especialista</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label>Salário (opcional)</Label>
+          <div className="grid grid-cols-2 gap-2">
+            <Input 
+              placeholder="Mín" 
+              type="number"
+              value={formData.salaryMin}
+              onChange={(e) => setFormData(prev => ({ ...prev, salaryMin: e.target.value }))}
+            />
+            <Input 
+              placeholder="Máx" 
+              type="number"
+              value={formData.salaryMax}
+              onChange={(e) => setFormData(prev => ({ ...prev, salaryMax: e.target.value }))}
+            />
+          </div>
+        </div>
+      </div>
+
       <div>
-        <Label htmlFor="location">Localização</Label>
-        <Input id="location" placeholder="Ex: São Paulo, SP" />
+        <Label htmlFor="description">Descrição *</Label>
+        <Textarea 
+          id="description" 
+          placeholder="Descreva a vaga, responsabilidades e o que a empresa oferece..." 
+          value={formData.description}
+          onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+          rows={4}
+          required
+        />
       </div>
+
       <div>
-        <Label htmlFor="salary">Salário</Label>
-        <Input id="salary" placeholder="Ex: R$ 5.000 - R$ 8.000" />
+        <Label htmlFor="requirements">Requisitos (um por linha)</Label>
+        <Textarea 
+          id="requirements" 
+          placeholder="Ex:&#10;Graduação em Nutrição&#10;CRN ativo&#10;Experiência em atendimento clínico" 
+          value={formData.requirements}
+          onChange={(e) => setFormData(prev => ({ ...prev, requirements: e.target.value }))}
+          rows={3}
+        />
       </div>
+
       <div>
-        <Label htmlFor="description">Descrição</Label>
-        <Textarea id="description" placeholder="Descreva a vaga..." />
+        <Label htmlFor="benefits">Benefícios (um por linha)</Label>
+        <Textarea 
+          id="benefits" 
+          placeholder="Ex:&#10;Vale alimentação&#10;Plano de saúde&#10;Horário flexível" 
+          value={formData.benefits}
+          onChange={(e) => setFormData(prev => ({ ...prev, benefits: e.target.value }))}
+          rows={3}
+        />
       </div>
+
       <div className="flex gap-2 justify-end">
-        <Button variant="outline" onClick={onClose}>
+        <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
           Cancelar
         </Button>
-        <Button onClick={onClose}>
-          Criar Vaga
+        <Button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Criando...
+            </>
+          ) : (
+            'Criar Vaga'
+          )}
         </Button>
       </div>
-    </div>
+    </form>
   )
 }

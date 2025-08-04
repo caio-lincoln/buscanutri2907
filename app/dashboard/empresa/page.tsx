@@ -18,7 +18,7 @@ import {
   ArrowRight,
   Activity,
   Target,
-  Zap,
+  Bot,
   TrendingUp,
   FileText,
 } from "lucide-react"
@@ -35,22 +35,35 @@ import { JobsTab } from "@/components/dashboard/empresa/jobs-tab"
 import { CandidatesTab } from "@/components/dashboard/empresa/candidates-tab"
 import { ProcessesTab } from "@/components/dashboard/empresa/processes-tab"
 import { ReportsTab } from "@/components/dashboard/empresa/reports-tab"
+import { getCompanyOverviewData, type CompanyOverviewStats } from "@/lib/company-data-service"
 
 export default function CompanyDashboard() {
   const [profile, setProfile] = useState<CompanyProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState("overview")
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
+  const [overviewData, setOverviewData] = useState<CompanyOverviewStats | null>(null)
+  const [overviewLoading, setOverviewLoading] = useState(false)
   const router = useRouter()
 
   // Hook para estatísticas dinâmicas do dashboard
-  const { stats: dashboardStats, loading: statsLoading } = useDashboardStats(profile?.user_id || "", "empresa")
+  const { stats: dashboardStats, loading: statsLoading } = useDashboardStats({
+    userType: "empresa",
+    userId: profile?.user_id || "",
+    enabled: !!profile?.user_id
+  })
 
   const menuItems = getMenuItems("empresa", dashboardStats)
 
   useEffect(() => {
     loadProfile()
   }, [])
+
+  useEffect(() => {
+    if (profile?.id && activeTab === "overview") {
+      loadOverviewData()
+    }
+  }, [profile?.id, activeTab])
 
   const loadProfile = async () => {
     try {
@@ -66,6 +79,20 @@ export default function CompanyDashboard() {
       console.error("Error loading profile:", error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const loadOverviewData = async () => {
+    if (!profile?.id) return
+    
+    setOverviewLoading(true)
+    try {
+      const data = await getCompanyOverviewData(profile.id)
+      setOverviewData(data)
+    } catch (error) {
+      console.error("Error loading overview data:", error)
+    } finally {
+      setOverviewLoading(false)
     }
   }
 
@@ -91,6 +118,7 @@ export default function CompanyDashboard() {
     <DashboardSidebar
       userType="empresa"
       userName={profile?.company_name || "Empresa"}
+      userAvatar={profile?.logo_url}
       menuItems={menuItems}
       activeItem={activeTab}
       onItemClick={setActiveTab}
@@ -118,11 +146,15 @@ export default function CompanyDashboard() {
                   <div className="flex flex-wrap gap-4">
                     <div className="bg-white/10 backdrop-blur-sm rounded-xl px-4 py-2">
                       <p className="text-sm text-purple-100">Vagas ativas</p>
-                      <p className="font-semibold">5 abertas</p>
+                      <p className="font-semibold">
+                        {overviewLoading ? "..." : `${overviewData?.activeJobs || 0} abertas`}
+                      </p>
                     </div>
                     <div className="bg-white/10 backdrop-blur-sm rounded-xl px-4 py-2">
                       <p className="text-sm text-purple-100">Candidaturas</p>
-                      <p className="font-semibold">23 novas</p>
+                      <p className="font-semibold">
+                        {overviewLoading ? "..." : `${overviewData?.newApplications || 0} novas`}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -139,33 +171,30 @@ export default function CompanyDashboard() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               <StatsCard
                 title="Vagas Publicadas"
-                value="12"
+                value={overviewLoading ? "..." : overviewData?.totalJobs?.toString() || "0"}
                 icon={Briefcase}
                 color="blue"
-                trend={{ value: 3, isPositive: true }}
-                description="Este mês"
+                description="Total"
               />
               <StatsCard
                 title="Candidaturas Recebidas"
-                value="89"
+                value={overviewLoading ? "..." : overviewData?.totalApplications?.toString() || "0"}
                 icon={Users}
                 color="green"
-                trend={{ value: 15, isPositive: true }}
-                description="Últimos 30 dias"
+                description="Total"
               />
               <StatsCard
                 title="Entrevistas Agendadas"
-                value="8"
+                value={overviewLoading ? "..." : overviewData?.scheduledInterviews?.toString() || "0"}
                 icon={Calendar}
                 color="orange"
-                description="Esta semana"
+                description="Agendadas"
               />
               <StatsCard
                 title="Taxa de Conversão"
-                value="12%"
+                value={overviewLoading ? "..." : `${overviewData?.conversionRate || 0}%`}
                 icon={TrendingUp}
                 color="purple"
-                trend={{ value: 2, isPositive: true }}
                 description="Candidatura → Contratação"
               />
             </div>
@@ -180,7 +209,10 @@ export default function CompanyDashboard() {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                <Card className="group hover-lift cursor-pointer transition-all duration-300 border-0 shadow-lg hover:shadow-xl bg-gradient-to-br from-blue-50 to-blue-100/50 backdrop-blur-sm">
+                <Card 
+                  className="group hover-lift cursor-pointer transition-all duration-300 border-0 shadow-lg hover:shadow-xl bg-gradient-to-br from-blue-50 to-blue-100/50 backdrop-blur-sm"
+                  onClick={() => setActiveTab("vagas")}
+                >
                   <CardContent className="p-6 text-center">
                     <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300">
                       <Plus className="h-7 w-7 text-white" />
@@ -193,7 +225,10 @@ export default function CompanyDashboard() {
                   </CardContent>
                 </Card>
 
-                <Card className="group hover-lift cursor-pointer transition-all duration-300 border-0 shadow-lg hover:shadow-xl bg-gradient-to-br from-green-50 to-green-100/50 backdrop-blur-sm">
+                <Card 
+                  className="group hover-lift cursor-pointer transition-all duration-300 border-0 shadow-lg hover:shadow-xl bg-gradient-to-br from-green-50 to-green-100/50 backdrop-blur-sm"
+                  onClick={() => setActiveTab("candidatos")}
+                >
                   <CardContent className="p-6 text-center">
                     <div className="w-14 h-14 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300">
                       <Users className="h-7 w-7 text-white" />
@@ -206,7 +241,10 @@ export default function CompanyDashboard() {
                   </CardContent>
                 </Card>
 
-                <Card className="group hover-lift cursor-pointer transition-all duration-300 border-0 shadow-lg hover:shadow-xl bg-gradient-to-br from-purple-50 to-purple-100/50 backdrop-blur-sm">
+                <Card 
+                  className="group hover-lift cursor-pointer transition-all duration-300 border-0 shadow-lg hover:shadow-xl bg-gradient-to-br from-purple-50 to-purple-100/50 backdrop-blur-sm"
+                  onClick={() => setActiveTab("processos")}
+                >
                   <CardContent className="p-6 text-center">
                     <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300">
                       <Calendar className="h-7 w-7 text-white" />
@@ -223,7 +261,10 @@ export default function CompanyDashboard() {
                   </CardContent>
                 </Card>
 
-                <Card className="group hover-lift cursor-pointer transition-all duration-300 border-0 shadow-lg hover:shadow-xl bg-gradient-to-br from-orange-50 to-orange-100/50 backdrop-blur-sm">
+                <Card 
+                  className="group hover-lift cursor-pointer transition-all duration-300 border-0 shadow-lg hover:shadow-xl bg-gradient-to-br from-orange-50 to-orange-100/50 backdrop-blur-sm"
+                  onClick={() => setActiveTab("relatorios")}
+                >
                   <CardContent className="p-6 text-center">
                     <div className="w-14 h-14 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300">
                       <FileText className="h-7 w-7 text-white" />
@@ -254,41 +295,61 @@ export default function CompanyDashboard() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {[
-                    { title: "Nutricionista Clínico", applications: 15, status: "active", posted: "3 dias" },
-                    { title: "Nutricionista Esportivo", applications: 8, status: "active", posted: "1 semana" },
-                    { title: "Coordenador de Nutrição", applications: 23, status: "active", posted: "2 semanas" },
-                    { title: "Nutricionista Materno-Infantil", applications: 12, status: "paused", posted: "1 mês" },
-                  ].map((job, i) => (
-                    <div
-                      key={i}
-                      className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-blue-50/50 to-blue-100/30 hover:shadow-md transition-all duration-300 group"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-sm shadow-md group-hover:scale-105 transition-transform duration-300">
-                          {job.applications}
+                  {overviewLoading ? (
+                    <div className="space-y-4">
+                      {[1, 2, 3].map((i) => (
+                        <div key={i} className="flex items-center gap-4 p-4 rounded-xl bg-gray-50/50 animate-pulse">
+                          <div className="w-12 h-12 bg-gray-200 rounded-xl"></div>
+                          <div className="flex-1">
+                            <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                            <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                          </div>
+                          <div className="w-16 h-6 bg-gray-200 rounded"></div>
                         </div>
-                        <div>
-                          <p className="font-semibold text-[#1E1D40]">{job.title}</p>
-                          <p className="text-sm text-gray-600">Publicado há {job.posted}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge
-                          variant="outline"
-                          className={
-                            job.status === "active"
-                              ? "bg-green-50 text-green-700 border-green-200"
-                              : "bg-yellow-50 text-yellow-700 border-yellow-200"
-                          }
-                        >
-                          {job.status === "active" ? "Ativa" : "Pausada"}
-                        </Badge>
-                      </div>
+                      ))}
                     </div>
-                  ))}
+                  ) : overviewData?.recentJobs && overviewData.recentJobs.length > 0 ? (
+                    overviewData.recentJobs.map((job, i) => (
+                      <div
+                        key={i}
+                        className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-blue-50/50 to-blue-100/30 hover:shadow-md transition-all duration-300 group"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-sm shadow-md group-hover:scale-105 transition-transform duration-300">
+                            {job.applications}
+                          </div>
+                          <div>
+                            <p className="font-semibold text-[#1E1D40]">{job.title}</p>
+                            <p className="text-sm text-gray-600">Publicado há {job.timeAgo}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge
+                            variant="outline"
+                            className={
+                              job.status === "ativa"
+                                ? "bg-green-50 text-green-700 border-green-200"
+                                : "bg-yellow-50 text-yellow-700 border-yellow-200"
+                            }
+                          >
+                            {job.status === "ativa" ? "Ativa" : "Pausada"}
+                          </Badge>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      <Briefcase className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                      <p>Nenhuma vaga encontrada</p>
+                      <p className="text-sm">Publique sua primeira vaga para começar</p>
+                    </div>
+                  )}
 
-                  <Button variant="ghost" className="w-full mt-4 text-gray-600 hover:text-gray-800">
+                  <Button 
+                    variant="ghost" 
+                    className="w-full mt-4 text-gray-600 hover:text-gray-800"
+                    onClick={() => setActiveTab("vagas")}
+                  >
                     Ver todas as vagas <ArrowRight className="h-4 w-4 ml-1" />
                   </Button>
                 </CardContent>
@@ -304,52 +365,42 @@ export default function CompanyDashboard() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {[
-                    {
-                      icon: Users,
-                      title: "Nova candidatura",
-                      desc: "Dr. Silva se candidatou à vaga",
-                      time: "2h",
-                      color: "blue",
-                    },
-                    {
-                      icon: Calendar,
-                      title: "Entrevista agendada",
-                      desc: "Entrevista com Dra. Santos marcada",
-                      time: "4h",
-                      color: "green",
-                    },
-                    {
-                      icon: Briefcase,
-                      title: "Vaga publicada",
-                      desc: "Nutricionista Clínico foi publicada",
-                      time: "1d",
-                      color: "purple",
-                    },
-                    {
-                      icon: MessageSquare,
-                      title: "Mensagem recebida",
-                      desc: "Candidato enviou uma pergunta",
-                      time: "2d",
-                      color: "orange",
-                    },
-                  ].map((item, i) => (
-                    <div
-                      key={i}
-                      className="flex items-center gap-4 p-4 rounded-xl bg-gray-50/50 hover:bg-gray-100/50 transition-colors duration-200 group"
-                    >
-                      <div
-                        className={`w-10 h-10 bg-gradient-to-br from-${item.color}-500 to-${item.color}-600 rounded-xl flex items-center justify-center shadow-md group-hover:scale-105 transition-transform duration-200`}
-                      >
-                        <item.icon className="h-5 w-5 text-white" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-[#1E1D40] text-sm">{item.title}</p>
-                        <p className="text-sm text-gray-600 truncate">{item.desc}</p>
-                      </div>
-                      <span className="text-xs text-gray-500 font-medium">{item.time}</span>
+                  {overviewLoading ? (
+                    <div className="space-y-4">
+                      {[1, 2, 3, 4].map((i) => (
+                        <div key={i} className="flex items-center gap-4 p-4 rounded-xl bg-gray-50/50 animate-pulse">
+                          <div className="w-10 h-10 bg-gray-200 rounded-xl"></div>
+                          <div className="flex-1">
+                            <div className="h-4 bg-gray-200 rounded w-2/3 mb-2"></div>
+                            <div className="h-3 bg-gray-200 rounded w-full"></div>
+                          </div>
+                          <div className="w-8 h-3 bg-gray-200 rounded"></div>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  ) : overviewData?.recentActivity && overviewData.recentActivity.length > 0 ? (
+                    overviewData.recentActivity.map((item, i) => (
+                      <div
+                        key={i}
+                        className="flex items-center gap-4 p-4 rounded-xl bg-gray-50/50 hover:bg-gray-100/50 transition-colors duration-200 group"
+                      >
+                        <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-md group-hover:scale-105 transition-transform duration-200">
+                          <Activity className="h-5 w-5 text-white" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-[#1E1D40] text-sm">{item.title}</p>
+                          <p className="text-sm text-gray-600 truncate">{item.description}</p>
+                        </div>
+                        <span className="text-xs text-gray-500 font-medium">{item.timeAgo}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      <Activity className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                      <p>Nenhuma atividade recente</p>
+                      <p className="text-sm">As atividades aparecerão aqui conforme você usar o sistema</p>
+                    </div>
+                  )}
 
                   <Button variant="ghost" className="w-full mt-4 text-gray-600 hover:text-gray-800">
                     Ver todas as atividades <ArrowRight className="h-4 w-4 ml-1" />
@@ -365,7 +416,7 @@ export default function CompanyDashboard() {
           <div className="space-y-8">
             <div className="text-center space-y-4">
               <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-purple-600 rounded-3xl flex items-center justify-center mx-auto shadow-2xl">
-                <Zap className="h-10 w-10 text-white" />
+                <Bot className="h-10 w-10 text-white" />
               </div>
               <div>
                 <h1 className="text-3xl lg:text-4xl font-bold text-[#1E1D40] mb-2">Chat com Iris</h1>

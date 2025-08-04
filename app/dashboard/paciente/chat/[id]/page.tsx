@@ -34,7 +34,11 @@ export default function PatientChatPage() {
   const conversationId = params.id as string
 
   // Dashboard stats
-  const { stats, loading: statsLoading } = useDashboardStats(user?.id, "paciente")
+  const { stats, loading: statsLoading } = useDashboardStats({
+    userType: "paciente",
+    userId: user?.id || "",
+    enabled: !!user?.id
+  })
   const menuItems = getMenuItems("paciente", stats)
 
   const handleSignOut = async () => {

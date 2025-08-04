@@ -18,7 +18,6 @@ import {
   Star,
   MapPin,
   Target,
-  Zap,
   Heart,
 } from "lucide-react"
 import { getCurrentUser, getUserProfile, signOut } from "@/lib/auth"
@@ -70,7 +69,11 @@ export default function NutritionistDashboard() {
   const router = useRouter()
 
   // Hook para estatísticas dinâmicas do dashboard
-  const { stats: dashboardStats, loading: statsLoading } = useDashboardStats(profile?.user_id || "", "nutricionista")
+  const { stats: dashboardStats, loading: statsLoading } = useDashboardStats({
+    userType: "nutricionista",
+    userId: profile?.user_id || "",
+    enabled: !!profile?.user_id
+  })
 
   const menuItems = getMenuItems("nutricionista", dashboardStats)
 
@@ -147,6 +150,7 @@ export default function NutritionistDashboard() {
     <DashboardSidebar
       userType="nutricionista"
       userName={profile?.full_name || "Nutricionista"}
+      userAvatar={profile?.profile_image_url}
       menuItems={menuItems}
       activeItem={activeTab}
       onItemClick={setActiveTab}
@@ -553,7 +557,7 @@ export default function NutritionistDashboard() {
           <div className="space-y-8">
             <div className="text-center space-y-4">
               <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-purple-600 rounded-3xl flex items-center justify-center mx-auto shadow-2xl">
-                <Zap className="h-10 w-10 text-white" />
+                <img src="/bot-icon.svg" alt="Bot Icon" className="h-10 w-10 text-white" style={{filter: 'brightness(0) invert(1)'}} />
               </div>
               <div>
                 <h1 className="text-3xl lg:text-4xl font-bold text-[#1E1D40] mb-2">Chat com Iris</h1>

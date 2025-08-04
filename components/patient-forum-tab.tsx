@@ -10,7 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { QuestionModal } from "@/components/question-modal"
-import { getAllForumQuestions, likeForumItem, incrementQuestionViews, type ForumQuestion } from "@/lib/forum-data"
+import { getAllForumQuestionsWithNutritionists, likeForumItem, incrementQuestionViews, type ForumQuestion } from "@/lib/forum-data"
 import { getCurrentUser } from "@/lib/auth"
 
 export function PatientForumTab() {
@@ -36,7 +36,7 @@ export function PatientForumTab() {
     const loadQuestions = async () => {
       try {
         console.log("Loading real forum questions...")
-        const allQuestions = await getAllForumQuestions()
+        const allQuestions = await getAllForumQuestionsWithNutritionists()
         console.log("Loaded forum questions:", allQuestions)
         setQuestions(allQuestions)
       } catch (error) {
@@ -64,7 +64,7 @@ export function PatientForumTab() {
 
   const handleQuestionPosted = async (newQuestion: ForumQuestion) => {
     try {
-      const allQuestions = await getAllForumQuestions()
+      const allQuestions = await getAllForumQuestionsWithNutritionists()
       setQuestions(allQuestions)
     } catch (error) {
       console.error('Error reloading forum questions:', error)
@@ -73,7 +73,7 @@ export function PatientForumTab() {
 
   const handleReplyPosted = async (questionId: string, reply: any) => {
     try {
-      const allQuestions = await getAllForumQuestions()
+      const allQuestions = await getAllForumQuestionsWithNutritionists()
       setQuestions(allQuestions)
     } catch (error) {
       console.error('Error reloading forum questions:', error)
@@ -88,7 +88,7 @@ export function PatientForumTab() {
       const success = await likeForumItem(itemId, type, user.id)
       if (success) {
         // Reload questions to reflect the updated like count
-        const allQuestions = await getAllForumQuestions()
+        const allQuestions = await getAllForumQuestionsWithNutritionists()
         setQuestions(allQuestions)
       }
     } catch (error) {

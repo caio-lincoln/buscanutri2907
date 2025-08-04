@@ -11,7 +11,6 @@ import {
   Search,
   Filter,
   Mail,
-  Phone,
   MapPin,
   Calendar,
   Download,
@@ -19,12 +18,9 @@ import {
   UserCheck,
   UserX,
   Clock,
-  Star,
   Users,
   Eye,
   Briefcase,
-  GraduationCap,
-  Award,
   Loader2,
 } from "lucide-react"
 import {
@@ -147,11 +143,11 @@ export function CandidatesTab() {
 
   useEffect(() => {
     async function loadCandidates() {
-      if (!user?.id) return
+      if (!user?.companyProfile?.id) return
       
       try {
         setLoading(true)
-        const candidatesData = await getCompanyCandidates(user.id)
+        const candidatesData = await getCompanyCandidates(user.companyProfile.id)
         setCandidates(candidatesData)
       } catch (error) {
         console.error('Error loading candidates:', error)
@@ -161,28 +157,28 @@ export function CandidatesTab() {
     }
 
     loadCandidates()
-  }, [user?.id])
+  }, [user?.companyProfile?.id])
 
   const filteredCandidates = candidates.filter((candidate) => {
     const matchesSearch =
       candidate.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       candidate.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      candidate.jobTitle.toLowerCase().includes(searchTerm.toLowerCase())
+      candidate.position.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesStatus = statusFilter === "all" || candidate.status === statusFilter
     return matchesSearch && matchesStatus
   })
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "new":
+      case "novo":
         return "bg-blue-100 text-blue-800 border-blue-200"
-      case "reviewing":
+      case "em_analise":
         return "bg-yellow-100 text-yellow-800 border-yellow-200"
-      case "interview":
+      case "entrevista":
         return "bg-purple-100 text-purple-800 border-purple-200"
-      case "approved":
+      case "aprovado":
         return "bg-green-100 text-green-800 border-green-200"
-      case "rejected":
+      case "rejeitado":
         return "bg-red-100 text-red-800 border-red-200"
       default:
         return "bg-gray-100 text-gray-800 border-gray-200"
@@ -191,27 +187,22 @@ export function CandidatesTab() {
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case "new":
+      case "novo":
         return "Novo"
-      case "reviewing":
+      case "em_analise":
         return "Em Análise"
-      case "interview":
+      case "entrevista":
         return "Entrevista"
-      case "approved":
+      case "aprovado":
         return "Aprovado"
-      case "rejected":
+      case "rejeitado":
         return "Rejeitado"
       default:
         return status
     }
   }
 
-  const getScoreColor = (score: number) => {
-    if (score >= 90) return "text-green-600"
-    if (score >= 80) return "text-yellow-600"
-    if (score >= 70) return "text-orange-600"
-    return "text-red-600"
-  }
+
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('pt-BR')
@@ -235,11 +226,11 @@ export function CandidatesTab() {
   }
 
   const statusStats = {
-    new: candidates.filter((c) => c.status === "new").length,
-    reviewing: candidates.filter((c) => c.status === "reviewing").length,
-    interview: candidates.filter((c) => c.status === "interview").length,
-    approved: candidates.filter((c) => c.status === "approved").length,
-    rejected: candidates.filter((c) => c.status === "rejected").length,
+    novo: candidates.filter((c) => c.status === "novo").length,
+    em_analise: candidates.filter((c) => c.status === "em_analise").length,
+    entrevista: candidates.filter((c) => c.status === "entrevista").length,
+    aprovado: candidates.filter((c) => c.status === "aprovado").length,
+    rejeitado: candidates.filter((c) => c.status === "rejeitado").length,
   }
 
   if (loading) {
@@ -275,7 +266,7 @@ export function CandidatesTab() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-blue-600">Novos</p>
-                <p className="text-2xl font-bold text-blue-700">{statusStats.new}</p>
+                <p className="text-2xl font-bold text-blue-700">{statusStats.novo}</p>
               </div>
               <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
                 <Users className="h-5 w-5 text-white" />
@@ -289,7 +280,7 @@ export function CandidatesTab() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-yellow-600">Em Análise</p>
-                <p className="text-2xl font-bold text-yellow-700">{statusStats.reviewing}</p>
+                <p className="text-2xl font-bold text-yellow-700">{statusStats.em_analise}</p>
               </div>
               <div className="w-10 h-10 bg-yellow-500 rounded-lg flex items-center justify-center">
                 <Eye className="h-5 w-5 text-white" />
@@ -303,7 +294,7 @@ export function CandidatesTab() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-purple-600">Entrevista</p>
-                <p className="text-2xl font-bold text-purple-700">{statusStats.interview}</p>
+                <p className="text-2xl font-bold text-purple-700">{statusStats.entrevista}</p>
               </div>
               <div className="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center">
                 <MessageSquare className="h-5 w-5 text-white" />
@@ -317,7 +308,7 @@ export function CandidatesTab() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-green-600">Aprovados</p>
-                <p className="text-2xl font-bold text-green-700">{statusStats.approved}</p>
+                <p className="text-2xl font-bold text-green-700">{statusStats.aprovado}</p>
               </div>
               <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
                 <UserCheck className="h-5 w-5 text-white" />
@@ -331,7 +322,7 @@ export function CandidatesTab() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-red-600">Rejeitados</p>
-                <p className="text-2xl font-bold text-red-700">{statusStats.rejected}</p>
+                <p className="text-2xl font-bold text-red-700">{statusStats.rejeitado}</p>
               </div>
               <div className="w-10 h-10 bg-red-500 rounded-lg flex items-center justify-center">
                 <UserX className="h-5 w-5 text-white" />
@@ -363,11 +354,11 @@ export function CandidatesTab() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos os Status</SelectItem>
-                <SelectItem value="new">Novos</SelectItem>
-                <SelectItem value="reviewing">Em Análise</SelectItem>
-                <SelectItem value="interview">Entrevista</SelectItem>
-                <SelectItem value="approved">Aprovados</SelectItem>
-                <SelectItem value="rejected">Rejeitados</SelectItem>
+                <SelectItem value="novo">Novos</SelectItem>
+                <SelectItem value="em_analise">Em Análise</SelectItem>
+                <SelectItem value="entrevista">Entrevista</SelectItem>
+                <SelectItem value="aprovado">Aprovados</SelectItem>
+                <SelectItem value="rejeitado">Rejeitados</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -408,12 +399,9 @@ export function CandidatesTab() {
                       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-2">
                         <div>
                           <h3 className="text-xl font-bold text-[#1E1D40]">{candidate.name}</h3>
-                          <p className="text-gray-600 font-medium">{candidate.jobTitle}</p>
+                          <p className="text-gray-600 font-medium">{candidate.position}</p>
                         </div>
                         <div className="flex items-center gap-3">
-                          <div className={`text-lg font-bold ${getScoreColor(candidate.score)}`}>
-                            {candidate.score}%
-                          </div>
                           <Badge className={getStatusColor(candidate.status)}>
                             {getStatusLabel(candidate.status)}
                           </Badge>
@@ -426,32 +414,24 @@ export function CandidatesTab() {
                           <span>{candidate.email}</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Phone className="h-4 w-4" />
-                          <span>{candidate.phone}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
                           <MapPin className="h-4 w-4" />
                           <span>{candidate.location}</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <Calendar className="h-4 w-4" />
-                          <span>Candidatou-se em: {formatDate(candidate.appliedDate)}</span>
+                          <span>Candidatou-se em: {formatDate(candidate.appliedAt)}</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <Briefcase className="h-4 w-4" />
                           <span>{candidate.experience}</span>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <GraduationCap className="h-4 w-4" />
-                          <span>{candidate.education}</span>
-                        </div>
                       </div>
 
-                      {candidate.specializations.length > 0 && (
+                      {candidate.skills.length > 0 && (
                         <div className="flex flex-wrap gap-2">
-                          {candidate.specializations.map((spec, index) => (
+                          {candidate.skills.map((skill, index) => (
                             <Badge key={index} variant="outline" className="text-xs">
-                              {spec}
+                              {skill}
                             </Badge>
                           ))}
                         </div>
@@ -459,12 +439,8 @@ export function CandidatesTab() {
 
                       <div className="flex items-center gap-4 text-xs text-gray-500">
                         <div className="flex items-center gap-1">
-                          <Award className="h-3 w-3" />
-                          <span>{candidate.crn}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
                           <Clock className="h-3 w-3" />
-                          <span>Última atividade: {formatTime(candidate.lastActivity)}</span>
+                          <span>Candidatou-se: {formatTime(candidate.appliedAt)}</span>
                         </div>
                       </div>
                     </div>

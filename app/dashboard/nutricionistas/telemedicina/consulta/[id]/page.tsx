@@ -3,8 +3,7 @@
 import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { signOut } from "@/lib/auth"
-import { DashboardSidebar } from "@/components/dashboard-sidebar"
-import { getMenuItems } from "@/lib/dashboard-stats"
+import { DashboardSidebar, getMenuItems } from "@/components/dashboard-sidebar"
 import { useDashboardStats } from "@/hooks/use-dashboard-stats"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -34,14 +33,18 @@ import { toast } from "@/hooks/use-toast"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import { getConsultationById, updateConsultationStatus, type Consultation } from "@/lib/consultation-service"
-import { useAuth } from "@/hooks/use-auth"
+import { useUser } from "@/hooks/use-user"
 
 export default function NutritionistConsultationPage() {
   const params = useParams()
   const router = useRouter()
-  const { user } = useAuth()
+  const { user } = useUser()
   const consultationId = params.id as string
-  const { stats, loading: statsLoading } = useDashboardStats()
+  const { stats, loading: statsLoading } = useDashboardStats({
+    userType: "nutricionista",
+    userId: user?.id || "",
+    enabled: !!user?.id
+  })
 
   const [consultation, setConsultation] = useState<Consultation | null>(null)
   const [loading, setLoading] = useState(true)

@@ -147,7 +147,7 @@ export function DashboardSidebar({
         <SidebarHeader className="border-b border-gray-100/50 bg-white/90 backdrop-blur-sm p-6">
           <div className="flex items-center gap-3">
             <div className="relative w-10 h-10">
-              <Image src="/logo-busca-nutri.png" alt="Busca Nutri" fill className="object-contain" priority />
+              <Image src="/Rosa.png" alt="Busca Nutri" fill className="object-contain" priority />
             </div>
             <div>
               <h2 className="font-bold text-lg text-[#1E1D40]">Busca Nutri</h2>
@@ -271,7 +271,7 @@ export function DashboardSidebar({
         <div className="md:hidden flex items-center justify-between p-4 border-b bg-white/90 backdrop-blur-sm sticky top-0 z-40">
           <SidebarTrigger className="h-8 w-8 p-0 hover:bg-gray-100 rounded-lg transition-colors" />
           <div className="flex items-center gap-2">
-            <Image src="/logo-busca-nutri.png" alt="Busca Nutri" width={120} height={24} className="h-6 w-auto" />
+            <Image src="/Rosa.png" alt="Busca Nutri" width={120} height={24} className="h-6 w-auto" />
           </div>
           <div className="w-8 h-8" /> {/* Spacer para centralizar o logo */}
         </div>
@@ -307,7 +307,6 @@ export const getMenuItems = (
     case "paciente":
       return [
         { id: "overview", label: "Início", icon: Home },
-        { id: "perfil", label: "Meu Perfil", icon: User },
         {
           id: "telemedicina",
           label: "Minhas Consultas",
@@ -325,6 +324,7 @@ export const getMenuItems = (
           badge: unreadNotifications > 0 ? { count: unreadNotifications, variant: "destructive" } : undefined,
         },
         { id: "configuracoes", label: "Configurações", icon: Settings },
+        { id: "perfil", label: "Meu Perfil", icon: User },
       ]
 
     case "nutricionista":
@@ -336,7 +336,6 @@ export const getMenuItems = (
           icon: Calendar, 
           badge: upcomingAppointments > 0 ? { count: upcomingAppointments, variant: "default" } : undefined,
         },
-        { id: "perfil", label: "Perfil", icon: User },
         { id: "blog", label: "Blog", icon: BookOpen },
         { id: "forum", label: "Fórum", icon: MessageSquare },
         { 
@@ -354,6 +353,7 @@ export const getMenuItems = (
           icon: Bell, 
           badge: unreadNotifications > 0 ? { count: unreadNotifications, variant: "destructive" } : undefined,
         },
+        { id: "perfil", label: "Meu Perfil", icon: User },
       ]
 
     case "empresa":
@@ -368,13 +368,13 @@ export const getMenuItems = (
         { id: "candidatos", label: "Candidatos", icon: Users },
         { id: "processos", label: "Processos", icon: FileText },
         { id: "relatorios", label: "Relatórios", icon: BarChart3 },
-        { id: "perfil", label: "Perfil", icon: Building },
         { 
           id: "notificacoes", 
           label: "Notificações", 
           icon: Bell,
           badge: unreadNotifications > 0 ? { count: unreadNotifications, variant: "destructive" } : undefined,
         },
+        { id: "perfil", label: "Perfil", icon: Building },
       ]
 
     case "admin":

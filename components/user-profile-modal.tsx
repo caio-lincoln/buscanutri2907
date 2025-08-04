@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar" // Import Avatar components
+import { ImageUpload } from "@/components/ui/image-upload" // Import ImageUpload component
 import { User, Clock, CheckCircle, AlertCircle, Loader2, Camera, FileText, BadgeIcon as IdCard } from "lucide-react" // Add Camera, FileText, IdCard icons
 import { toast } from "@/hooks/use-toast"
 import type { PatientProfile, NutritionistProfile, CompanyProfile, UserType } from "@/lib/supabase"
@@ -140,6 +141,16 @@ export function UserProfileModal({
 
   const handleSelectChange = (id: string, value: string) => {
     setFormData((prev) => ({ ...prev, [id]: value }))
+  }
+
+  const handleImageUploaded = (url: string) => {
+    const imageField = userType === "empresa" ? "logo_url" : "profile_image_url"
+    setFormData((prev) => ({ ...prev, [imageField]: url }))
+  }
+
+  const handleImageRemoved = () => {
+    const imageField = userType === "empresa" ? "logo_url" : "profile_image_url"
+    setFormData((prev) => ({ ...prev, [imageField]: "" }))
   }
 
   const handleCRNChange = async (value: string) => {
@@ -359,23 +370,51 @@ export function UserProfileModal({
         {/* ---------- FORM ---------- */}
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Profile Image Section */}
-          <div className="flex flex-col items-center gap-4 mb-6">
-            <Avatar className="h-24 w-24">
-              <AvatarImage
-                src={
-                  userType === "empresa"
-                    ? formData.logo_url || "/placeholder.svg?height=96&width=96&query=company logo"
-                    : formData.profile_image_url || "/placeholder.svg?height=96&width=96&query=user profile"
-                }
-                alt={formData.full_name || formData.company_name || "Profile Image"}
+          <div className="space-y-4 mb-6">
+            <div className="flex flex-col items-center gap-4">
+              <Avatar className="h-24 w-24">
+                <AvatarImage
+                  src={
+                    userType === "empresa"
+                      ? formData.logo_url || "/placeholder.svg?height=96&width=96&query=company logo"
+                      : formData.profile_image_url || "/placeholder.svg?height=96&width=96&query=user profile"
+                  }
+                  alt={formData.full_name || formData.company_name || "Profile Image"}
+                  key={userType === "empresa" ? formData.logo_url : formData.profile_image_url} // Force re-render when image changes
+                />
+                <AvatarFallback className="bg-gray-200 text-gray-600 text-2xl font-semibold">
+                  {(formData.full_name || formData.company_name)?.charAt(0).toUpperCase() || "U"}
+                </AvatarFallback>
+              </Avatar>
+              <h3 className="text-lg font-semibold text-gray-900">
+                {userType === "empresa" ? "Logo da Empresa" : "Foto de Perfil"}
+              </h3>
+              {/* Mostrar URL da imagem atual para debug */}
+              {(userType === "empresa" ? formData.logo_url : formData.profile_image_url) && (
+                <p className="text-xs text-gray-500 text-center max-w-xs truncate">
+                  Imagem atual: {userType === "empresa" ? formData.logo_url : formData.profile_image_url}
+                </p>
+              )}
+            </div>
+            
+            {/* Upload de imagem do computador */}
+            <div className="max-w-md mx-auto">
+              <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                Enviar {userType === "empresa" ? "logo" : "foto"} do computador
+              </Label>
+              <ImageUpload
+                onImageUploaded={handleImageUploaded}
+                onImageRemoved={handleImageRemoved}
+                currentImageUrl={userType === "empresa" ? formData.logo_url : formData.profile_image_url}
+                userId={userId}
+                className="w-full"
               />
-              <AvatarFallback className="bg-gray-200 text-gray-600 text-2xl font-semibold">
-                {(formData.full_name || formData.company_name)?.charAt(0).toUpperCase() || "U"}
-              </AvatarFallback>
-            </Avatar>
-            <div className="w-full max-w-xs">
-              <Label htmlFor="profile_image_url" className="sr-only">
-                URL da Imagem de Perfil
+            </div>
+
+            {/* Ou inserir URL manualmente */}
+            <div className="max-w-md mx-auto">
+              <Label htmlFor="profile_image_url" className="text-sm font-medium text-gray-700 mb-2 block">
+                Ou inserir URL da imagem
               </Label>
               <div className="relative">
                 <Input

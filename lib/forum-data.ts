@@ -40,25 +40,54 @@ export interface ForumQuestion {
 
 // Função auxiliar para converter dados do Supabase para o formato do fórum
 function convertSupabaseToForumQuestion(data: any): ForumQuestion {
-  const author: ForumAuthor = {
-    id: data.patient_id, // Usar patient_id
-    name: data.author_profile?.full_name || "Usuário Anônimo",
-    userType: "paciente", // Sempre paciente já que vem de patient_profiles
-    avatar: data.author_profile?.profile_image_url || "/placeholder.svg?height=40&width=40",
-    credentials: undefined, // Pacientes não têm CRN
-    isVerified: false, // Pacientes não são verificados por padrão
+  // Determinar o tipo de autor baseado nas colunas preenchidas
+  let author: ForumAuthor
+  
+  if (data.patient_id && data.author_profile) {
+    // Pergunta de paciente
+    author = {
+      id: data.patient_id,
+      name: data.author_profile?.full_name || "Paciente Anônimo",
+      userType: "paciente",
+      avatar: data.author_profile?.profile_image_url || "/placeholder.svg?height=40&width=40",
+      credentials: undefined,
+      isVerified: false,
+    }
+  } else if (data.nutritionist_id && data.author_profile) {
+    // Pergunta de nutricionista
+    author = {
+      id: data.nutritionist_id,
+      name: data.author_profile?.full_name || "Nutricionista Anônimo",
+      userType: "nutricionista",
+      avatar: data.author_profile?.profile_image_url || "/placeholder.svg?height=40&width=40",
+      credentials: data.author_profile?.crn || undefined,
+      isVerified: true,
+      specialties: data.author_profile?.specialties || []
+    }
+  } else {
+    // Fallback para compatibilidade
+    author = {
+      id: data.patient_id || data.nutritionist_id || data.author_id,
+      name: data.author_profile?.full_name || "Usuário Anônimo",
+      userType: data.nutritionist_id ? "nutricionista" : "paciente",
+      avatar: data.author_profile?.profile_image_url || "/placeholder.svg?height=40&width=40",
+      credentials: data.author_profile?.crn || undefined,
+      isVerified: data.nutritionist_id ? true : false,
+      specialties: data.author_profile?.specialties || []
+    }
   }
 
   const replies: ForumReply[] = (data.forum_answers || []).map((answer: any) => ({
     id: answer.id,
     content: answer.content,
     author: {
-      id: answer.nutritionist_id, // Usar nutritionist_id
-      name: answer.author_profile?.full_name || "Usuário Anônimo",
-      userType: "nutricionista", // Sempre nutricionista já que vem de nutritionist_profiles
+      id: answer.nutritionist_id,
+      name: answer.author_profile?.full_name || "Nutricionista Anônimo",
+      userType: "nutricionista",
       avatar: answer.author_profile?.profile_image_url || "/placeholder.svg?height=40&width=40",
-      credentials: answer.author_profile?.crn ? `CRN ${answer.author_profile.crn}` : undefined,
-      isVerified: answer.author_profile?.is_verified || false,
+      credentials: answer.author_profile?.crn || undefined,
+      isVerified: true,
+      specialties: answer.author_profile?.specialties || []
     },
     timestamp: new Date(answer.created_at).toLocaleString('pt-BR'),
     likes: answer.likes_count || 0,
@@ -95,10 +124,10 @@ const addBadgesToAuthor = async (author: ForumAuthor): Promise<ForumAuthor> => {
   return author
 }
 
-// Função para buscar todas as perguntas do fórum
+// Função para buscar todas as perguntas do fórum (apenas de pacientes)
 export async function getAllForumQuestions(): Promise<ForumQuestion[]> {
   try {
-    // Buscar diretamente da tabela para testar
+    // Buscar apenas perguntas de pacientes
     const { data: questionsData, error: questionsError } = await supabase
       .from('forum_questions')
       .select(`
@@ -108,6 +137,7 @@ export async function getAllForumQuestions(): Promise<ForumQuestion[]> {
           profile_image_url
         )
       `)
+      .not('patient_id', 'is', null)
       .order('created_at', { ascending: false })
 
     if (questionsError) {
@@ -123,10 +153,10 @@ export async function getAllForumQuestions(): Promise<ForumQuestion[]> {
       const author: ForumAuthor = {
         id: data.patient_id,
         name: data.author_profile?.full_name || "Usuário Anônimo",
-        userType: "paciente", // Sempre paciente já que vem de patient_profiles
+        userType: "paciente",
         avatar: data.author_profile?.profile_image_url || "/placeholder.svg?height=40&width=40",
-        credentials: undefined, // Pacientes não têm CRN
-        isVerified: false, // Pacientes não são verificados por padrão
+        credentials: undefined,
+        isVerified: false,
       }
 
       return {
@@ -140,7 +170,7 @@ export async function getAllForumQuestions(): Promise<ForumQuestion[]> {
         views: data.views_count || 0,
         tags: data.tags || [],
         category: data.category || "",
-        replies: [], // Vamos carregar as respostas separadamente se necessário
+        replies: [],
         isBestAnswerSelected: data.is_resolved || false
       }
     })
@@ -160,31 +190,41 @@ export async function getAllForumQuestions(): Promise<ForumQuestion[]> {
   }
 }
 
+// Função para buscar todas as perguntas (pacientes e nutricionistas)
+export async function getAllForumQuestionsWithNutritionists(): Promise<ForumQuestion[]> {
+  try {
+    const [patientQuestions, nutritionistQuestions] = await Promise.all([
+      getAllForumQuestions(),
+      getNutritionistForumQuestions()
+    ])
+
+    // Combinar e ordenar por data de criação
+    const allQuestions = [...patientQuestions, ...nutritionistQuestions]
+    allQuestions.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+
+    return allQuestions
+  } catch (error) {
+    console.error('❌ Erro em getAllForumQuestionsWithNutritionists:', error)
+    return []
+  }
+}
+
 // Função para buscar perguntas feitas por nutricionistas
 export async function getNutritionistForumQuestions(): Promise<ForumQuestion[]> {
   try {
-    // Primeiro, buscar os IDs dos usuários nutricionistas
-    const { data: nutritionistUsers, error: usersError } = await supabase
-      .from('users')
-      .select('id')
-      .eq('user_type', 'nutricionista')
-
-    if (usersError) {
-      console.error('❌ Erro ao buscar usuários nutricionistas:', usersError)
-      return []
-    }
-
-    if (!nutritionistUsers || nutritionistUsers.length === 0) {
-      return []
-    }
-
-    const nutritionistIds = nutritionistUsers.map(user => user.id)
-
-    // Buscar perguntas feitas por esses nutricionistas
+    // Buscar perguntas de nutricionistas usando a nova coluna nutritionist_id
     const { data: questionsData, error: questionsError } = await supabase
       .from('forum_questions')
-      .select('*')
-      .in('author_id', nutritionistIds)
+      .select(`
+        *,
+        nutritionist_profiles!inner(
+          full_name,
+          profile_image_url,
+          crn,
+          specialties
+        )
+      `)
+      .not('nutritionist_id', 'is', null)
       .order('created_at', { ascending: false })
 
     if (questionsError) {
@@ -196,33 +236,16 @@ export async function getNutritionistForumQuestions(): Promise<ForumQuestion[]> 
       return []
     }
 
-    // Buscar os perfis dos nutricionistas
-    const { data: nutritionistProfiles, error: profilesError } = await supabase
-      .from('nutritionist_profiles')
-      .select('user_id, full_name, profile_image_url, crn, is_verified')
-      .in('user_id', nutritionistIds)
-
-    if (profilesError) {
-      console.error('❌ Erro ao buscar perfis de nutricionistas:', profilesError)
-      return []
-    }
-
-    // Criar um mapa de perfis por user_id
-    const profilesMap = new Map()
-    nutritionistProfiles?.forEach(profile => {
-      profilesMap.set(profile.user_id, profile)
-    })
-
     const questions: ForumQuestion[] = questionsData.map((data: any) => {
-      const profile = profilesMap.get(data.author_id)
-      
+      const nutritionistProfile = data.nutritionist_profiles
       const author: ForumAuthor = {
-        id: data.author_id,
-        name: profile?.full_name || "Nutricionista",
+        id: data.nutritionist_id,
+        name: nutritionistProfile?.full_name || "Nutricionista Anônimo",
         userType: "nutricionista",
-        avatar: profile?.profile_image_url || "/placeholder.svg?height=40&width=40",
-        credentials: profile?.crn ? `CRN ${profile.crn}` : undefined,
-        isVerified: profile?.is_verified || false,
+        avatar: nutritionistProfile?.profile_image_url || "/placeholder.svg?height=40&width=40",
+        credentials: nutritionistProfile?.crn || undefined,
+        isVerified: true,
+        specialties: nutritionistProfile?.specialties || []
       }
 
       return {
@@ -236,8 +259,8 @@ export async function getNutritionistForumQuestions(): Promise<ForumQuestion[]> 
         views: data.views_count || 0,
         tags: data.tags || [],
         category: data.category || "",
-        replies: [], // Vamos carregar as respostas separadamente se necessário
-        isBestAnswerSelected: data.is_answered || false
+        replies: [],
+        isBestAnswerSelected: data.is_resolved || false
       }
     })
     
@@ -259,39 +282,86 @@ export async function getNutritionistForumQuestions(): Promise<ForumQuestion[]> 
 // Função para buscar uma pergunta por ID
 export async function getForumQuestionById(id: string): Promise<ForumQuestion | null> {
   try {
-    const { data, error } = await supabase
-      .rpc('get_forum_question_with_answers', { question_id: id })
+    // Buscar a pergunta com joins condicionais para ambos os tipos de perfil
+    const { data: questionData, error: questionError } = await supabase
+      .from('forum_questions')
+      .select(`
+        *,
+        patient_profile:patient_profiles!forum_questions_patient_id_fkey(
+          full_name,
+          profile_image_url
+        ),
+        nutritionist_profile:nutritionist_profiles!forum_questions_nutritionist_id_fkey(
+          full_name,
+          profile_image_url,
+          crn,
+          specialties
+        )
+      `)
+      .eq('id', id)
       .single()
 
-    if (error) {
-      console.error('Error fetching forum question:', error)
+    if (questionError || !questionData) {
+      console.error('Error fetching forum question:', questionError)
       return null
     }
 
-    if (!data) {
+    // Determinar o tipo de autor e criar o objeto author
+    let author: ForumAuthor
+    if (questionData.patient_id) {
+      author = {
+        id: questionData.patient_id,
+        name: questionData.patient_profile?.full_name || "Paciente Anônimo",
+        userType: "paciente",
+        avatar: questionData.patient_profile?.profile_image_url || "/placeholder.svg?height=40&width=40",
+        credentials: undefined,
+        isVerified: false,
+      }
+    } else if (questionData.nutritionist_id) {
+      author = {
+        id: questionData.nutritionist_id,
+        name: questionData.nutritionist_profile?.full_name || "Nutricionista Anônimo",
+        userType: "nutricionista",
+        avatar: questionData.nutritionist_profile?.profile_image_url || "/placeholder.svg?height=40&width=40",
+        credentials: questionData.nutritionist_profile?.crn || undefined,
+        isVerified: true,
+        specialties: questionData.nutritionist_profile?.specialties || []
+      }
+    } else {
+      console.error('Pergunta sem autor válido')
       return null
     }
 
-    // Converter os dados da função RPC para o formato ForumQuestion
-    const author: ForumAuthor = {
-      id: data.patient_id,
-      name: data.author_profile?.full_name || "Usuário Anônimo",
-      userType: "paciente",
-      avatar: data.author_profile?.profile_image_url || "/placeholder.svg?height=40&width=40",
-      credentials: undefined,
-      isVerified: false,
+    // Buscar as respostas
+    const { data: answersData, error: answersError } = await supabase
+      .from('forum_answers')
+      .select(`
+        *,
+        nutritionist_profile:nutritionist_profiles!forum_answers_nutritionist_id_fkey(
+          full_name,
+          profile_image_url,
+          crn,
+          specialties
+        )
+      `)
+      .eq('question_id', id)
+      .order('created_at', { ascending: true })
+
+    if (answersError) {
+      console.error('Error fetching forum answers:', answersError)
     }
 
-    const replies: ForumReply[] = (data.forum_answers || []).map((answer: any) => ({
+    const replies: ForumReply[] = (answersData || []).map((answer: any) => ({
       id: answer.id,
       content: answer.content,
       author: {
-        id: answer.author_id,
-        name: answer.author_profile?.full_name || "Usuário Anônimo",
-        userType: answer.user_type === 'nutricionista' ? "nutricionista" : "paciente",
-        avatar: answer.author_profile?.profile_image_url || "/placeholder.svg?height=40&width=40",
-        credentials: answer.user_type === 'nutricionista' && answer.author_profile?.crn ? `CRN ${answer.author_profile.crn}` : undefined,
-        isVerified: answer.user_type === 'nutricionista' ? (answer.author_profile?.is_verified || false) : false,
+        id: answer.nutritionist_id,
+        name: answer.nutritionist_profile?.full_name || "Nutricionista Anônimo",
+        userType: "nutricionista",
+        avatar: answer.nutritionist_profile?.profile_image_url || "/placeholder.svg?height=40&width=40",
+        credentials: answer.nutritionist_profile?.crn || undefined,
+        isVerified: true,
+        specialties: answer.nutritionist_profile?.specialties || []
       },
       timestamp: new Date(answer.created_at).toLocaleString('pt-BR'),
       likes: answer.likes_count || 0,
@@ -299,18 +369,18 @@ export async function getForumQuestionById(id: string): Promise<ForumQuestion | 
     }))
 
     const question: ForumQuestion = {
-      id: data.id,
-      title: data.title,
-      content: data.content,
+      id: questionData.id,
+      title: questionData.title,
+      content: questionData.content,
       author,
-      timestamp: new Date(data.created_at).toLocaleString('pt-BR'),
-      likes: data.likes_count || 0,
-      repliesCount: data.answers_count || 0,
-      views: data.views_count || 0,
-      tags: data.tags || [],
-      category: data.category || "",
+      timestamp: new Date(questionData.created_at).toLocaleString('pt-BR'),
+      likes: questionData.likes_count || 0,
+      repliesCount: questionData.answers_count || 0,
+      views: questionData.views_count || 0,
+      tags: questionData.tags || [],
+      category: questionData.category || "",
       replies,
-      isBestAnswerSelected: data.is_answered || false
+      isBestAnswerSelected: questionData.is_resolved || false
     }
 
     // Adicionar badges aos autores
@@ -334,55 +404,152 @@ export async function createForumQuestion(
   title: string,
   content: string,
   tags: string[],
-  authorId: string
+  authorId: string,
+  category?: string
 ): Promise<ForumQuestion | null> {
   try {
-    // Primeiro, buscar o patient_profile_id do usuário
-    const { data: patientProfile, error: profileError } = await supabase
-      .from('patient_profiles')
-      .select('id, full_name, profile_image_url')
-      .eq('user_id', authorId)
+    // Primeiro, verificar o tipo de usuário
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('user_type')
+      .eq('id', authorId)
       .single()
 
-    if (profileError || !patientProfile) {
-      console.error('Erro ao buscar perfil do paciente:', profileError)
+    if (userError || !userData) {
+      console.error('Erro ao buscar tipo de usuário:', userError)
       return null
     }
 
-    const { data, error } = await supabase
-      .from('forum_questions')
-      .insert({
+    const userType = userData.user_type
+
+    if (userType === 'paciente') {
+      // Pacientes podem fazer perguntas (para nutricionistas responderem)
+      const { data: patientProfile, error: profileError } = await supabase
+        .from('patient_profiles')
+        .select('id, full_name, profile_image_url')
+        .eq('user_id', authorId)
+        .single()
+
+      if (profileError || !patientProfile) {
+        console.error('Erro ao buscar perfil do paciente:', profileError)
+        return null
+      }
+
+      // insertData apenas com patient_id (sem nutritionist_id)
+      const insertData: any = {
         title,
         content,
         tags,
-        patient_id: patientProfile.id, // Usar o ID do perfil do paciente
-        author_id: authorId, // Usar o user_id como author_id
-      })
-      .select('*')
-      .single()
+        author_id: authorId,
+        category: category || tags[0] || 'geral',
+        patient_id: patientProfile.id
+      }
 
-    if (error) {
-      console.error('Erro ao criar pergunta:', error)
+      const { data, error } = await supabase
+        .from('forum_questions')
+        .insert(insertData)
+        .select('*')
+        .single()
+
+      if (error) {
+        console.error('Erro ao criar pergunta:', error?.message || error)
+        return null
+      }
+
+      // Criar objeto de pergunta para paciente
+      const question: ForumQuestion = {
+        id: data.id,
+        title: data.title,
+        content: data.content,
+        author: {
+          id: patientProfile.id,
+          name: patientProfile.full_name || "Paciente Anônimo",
+          userType: "paciente",
+          avatar: patientProfile.profile_image_url || "/placeholder.svg?height=40&width=40",
+          credentials: undefined,
+          isVerified: false,
+        },
+        timestamp: new Date(data.created_at).toLocaleString('pt-BR'),
+        likes: data.likes_count || 0,
+        repliesCount: data.answers_count || 0,
+        views: data.views_count || 0,
+        tags: data.tags || [],
+        category: data.category || "",
+        replies: [],
+        isBestAnswerSelected: data.is_resolved || false
+      }
+
+      const authorWithBadges = await addBadgesToAuthor(question.author)
+      return { ...question, author: authorWithBadges }
+
+    } else if (userType === 'nutricionista') {
+      // Nutricionistas fazem perguntas APENAS para outros nutricionistas
+      const { data: nutritionistProfile, error: profileError } = await supabase
+        .from('nutritionist_profiles')
+        .select('id, full_name, profile_image_url, crn, is_verified, specialties')
+        .eq('user_id', authorId)
+        .single()
+
+      if (profileError || !nutritionistProfile) {
+        console.error('Erro ao buscar perfil do nutricionista:', profileError)
+        console.error('Detalhes do erro:', profileError)
+        return null
+      }
+
+      // insertData apenas com nutritionist_id (sem patient_id)
+      const insertData: any = {
+        title,
+        content,
+        tags,
+        author_id: authorId,
+        category: category || tags[0] || 'geral',
+        nutritionist_id: nutritionistProfile.id
+      }
+
+      const { data, error } = await supabase
+        .from('forum_questions')
+        .insert(insertData)
+        .select('*')
+        .single()
+
+      if (error) {
+        console.error('Erro ao criar pergunta:', error?.message || error)
+        return null
+      }
+
+      // Criar objeto de pergunta para nutricionista
+      const question: ForumQuestion = {
+        id: data.id,
+        title: data.title,
+        content: data.content,
+        author: {
+          id: nutritionistProfile.id,
+          name: nutritionistProfile.full_name || "Nutricionista Anônimo",
+          userType: "nutricionista",
+          avatar: nutritionistProfile.profile_image_url || "/placeholder.svg?height=40&width=40",
+          credentials: nutritionistProfile.crn || undefined,
+          isVerified: nutritionistProfile.is_verified || true,
+          specialties: nutritionistProfile.specialties || []
+        },
+        timestamp: new Date(data.created_at).toLocaleString('pt-BR'),
+        likes: data.likes_count || 0,
+        repliesCount: data.answers_count || 0,
+        views: data.views_count || 0,
+        tags: data.tags || [],
+        category: data.category || "",
+        replies: [],
+        isBestAnswerSelected: data.is_resolved || false
+      }
+
+      const authorWithBadges = await addBadgesToAuthor(question.author)
+      return { ...question, author: authorWithBadges }
+
+    } else {
+      console.error('Tipo de usuário não permitido para criar perguntas:', userType)
       return null
     }
-
-    // Use the already fetched author profile
-    const authorProfile = {
-      full_name: patientProfile.full_name,
-      profile_image_url: patientProfile.profile_image_url
-    }
-
-    const questionWithProfile = {
-      ...data,
-      author_profile: authorProfile
-    }
-
-    const question = convertSupabaseToForumQuestion(questionWithProfile)
-    const authorWithBadges = await addBadgesToAuthor(question.author)
-    
-    return { ...question, author: authorWithBadges }
   } catch (error) {
-    console.error('Erro em createForumQuestion:', error)
+    console.error('Erro em createForumQuestion:', error instanceof Error ? error.message : error)
     return null
   }
 }
@@ -414,11 +581,23 @@ export async function createForumAnswer(
       throw new Error('Apenas nutricionistas podem responder no fórum')
     }
 
+    // Buscar o perfil do nutricionista para obter o ID correto
+    const { data: nutritionistProfile, error: profileError } = await supabase
+      .from('nutritionist_profiles')
+      .select('id, full_name, profile_image_url, crn, is_verified')
+      .eq('user_id', authorId)
+      .single()
+
+    if (profileError || !nutritionistProfile) {
+      console.error('Erro ao buscar perfil do nutricionista:', profileError)
+      return null
+    }
+
     const insertData: any = {
       question_id: questionId,
       content,
       author_id: authorId,
-      nutritionist_id: authorId, // Sempre será nutricionista agora
+      nutritionist_id: nutritionistProfile.id, // ID do perfil do nutricionista
     }
 
     const { data, error } = await supabase
@@ -428,22 +607,15 @@ export async function createForumAnswer(
       .single()
 
     if (error) {
-      console.error('Erro ao criar resposta:', error)
+      console.error('Erro ao criar resposta:', error?.message || error)
       return null
     }
-
-    // Buscar o perfil do nutricionista
-    const { data: nutritionistProfile } = await supabase
-      .from('nutritionist_profiles')
-      .select('full_name, profile_image_url, crn, is_verified')
-      .eq('user_id', authorId)
-      .single()
 
     const reply: ForumReply = {
       id: data.id,
       content: data.content,
       author: {
-        id: authorId,
+        id: nutritionistProfile.id,
         name: nutritionistProfile?.full_name || "Nutricionista",
         userType: "nutricionista",
         avatar: nutritionistProfile?.profile_image_url || "/placeholder.svg?height=40&width=40",
@@ -458,7 +630,7 @@ export async function createForumAnswer(
     const authorWithBadges = await addBadgesToAuthor(reply.author)
     return { ...reply, author: authorWithBadges }
   } catch (error) {
-    console.error('Erro em createForumAnswer:', error)
+    console.error('Erro em createForumAnswer:', error instanceof Error ? error.message : error)
     return null
   }
 }

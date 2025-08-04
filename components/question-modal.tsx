@@ -30,6 +30,7 @@ export function QuestionModal({ open, onOpenChange, onQuestionPosted }: Question
   const [questionTitle, setQuestionTitle] = useState("")
   const [questionContent, setQuestionContent] = useState("")
   const [questionCategory, setQuestionCategory] = useState("")
+  const [userType, setUserType] = useState<string | null>(null)
 
   const specialtiesOptions = [
     { value: "suplementos", label: "Suplementos" },
@@ -45,6 +46,20 @@ export function QuestionModal({ open, onOpenChange, onQuestionPosted }: Question
       setQuestionTitle("")
       setQuestionContent("")
       setQuestionCategory("")
+      
+      // Detectar tipo de usuário
+      const detectUserType = async () => {
+        try {
+          const user = await getCurrentUser()
+          if (user) {
+            setUserType(user.user_type)
+          }
+        } catch (error) {
+          console.error("Erro ao detectar tipo de usuário:", error)
+        }
+      }
+      
+      detectUserType()
     }
   }, [open])
 
@@ -73,7 +88,8 @@ export function QuestionModal({ open, onOpenChange, onQuestionPosted }: Question
         questionTitle,
         questionContent,
         [questionCategory],
-        user.id
+        user.id,
+        questionCategory
       )
       
       if (addedQuestion) {
@@ -102,7 +118,25 @@ export function QuestionModal({ open, onOpenChange, onQuestionPosted }: Question
       <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Fazer uma Nova Pergunta</DialogTitle>
-          <DialogDescription>Descreva sua dúvida para a comunidade Busca Nutri.</DialogDescription>
+          <DialogDescription>
+            {userType === 'nutricionista' 
+              ? "Faça uma pergunta para outros nutricionistas da comunidade Busca Nutri."
+              : "Descreva sua dúvida para a comunidade Busca Nutri."
+            }
+          </DialogDescription>
+          {userType === 'nutricionista' && (
+            <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                <span className="text-sm font-medium text-blue-800">
+                  Pergunta direcionada para nutricionistas
+                </span>
+              </div>
+              <p className="text-xs text-blue-600 mt-1">
+                Esta pergunta será visível apenas para outros nutricionistas da plataforma.
+              </p>
+            </div>
+          )}
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div>

@@ -70,9 +70,9 @@ interface Job {
 }
 
 interface JobCandidatesModalProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  job: Job | null
+  isOpen: boolean
+  onClose: () => void
+  job: any
 }
 
 const mockCandidates: Candidate[] = [
@@ -160,7 +160,7 @@ const mockCandidates: Candidate[] = [
   },
 ]
 
-export function JobCandidatesModal({ open, onOpenChange, job }: JobCandidatesModalProps) {
+export function JobCandidatesModal({ isOpen, onClose, job }: JobCandidatesModalProps) {
   const [candidates] = useState<Candidate[]>(mockCandidates)
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
@@ -269,12 +269,12 @@ export function JobCandidatesModal({ open, onOpenChange, job }: JobCandidatesMod
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
+      <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="max-w-7xl max-h-[90vh] overflow-hidden">
           <DialogHeader>
             <DialogTitle className="text-2xl">Candidatos - {job.title}</DialogTitle>
             <p className="text-gray-600">
-              {job.applications} candidaturas • {job.department} • {job.location}
+              {job.applicationsCount} candidaturas • {job.department || job.company} • {job.location}
             </p>
           </DialogHeader>
 

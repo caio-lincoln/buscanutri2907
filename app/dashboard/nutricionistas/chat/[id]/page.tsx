@@ -34,7 +34,11 @@ export default function NutritionistChatPage() {
   const conversationId = params.id as string
 
   // Dashboard stats
-  const { stats, loading: statsLoading } = useDashboardStats(user?.id, "nutricionista")
+  const { stats, loading: statsLoading } = useDashboardStats({
+    userType: "nutricionista",
+    userId: user?.id || "",
+    enabled: !!user?.id
+  })
   const menuItems = getMenuItems("nutricionista", stats)
 
   useEffect(() => {
@@ -201,6 +205,7 @@ export default function NutritionistChatPage() {
     <DashboardSidebar
       userType="nutricionista"
       userName={userProfile?.full_name || "Nutricionista"}
+      userAvatar={userProfile?.profile_image_url}
       menuItems={menuItems}
       activeItem="chat"
       onItemClick={() => {}}
