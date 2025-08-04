@@ -20,10 +20,11 @@ NODE_ENV=production
 
 ### 2. Configurações de Build
 O projeto já está configurado com:
-- ✅ `vercel.json` - Configurações específicas do Vercel
+- ✅ `vercel.json` - Configurações específicas do Vercel (runtime corrigido)
 - ✅ `next.config.mjs` - Ignora erros de TypeScript durante build
 - ✅ Build command: `npm run build`
 - ✅ Install command: `npm install`
+- ✅ Framework: Next.js (detectado automaticamente)
 
 ### 3. Passos para Deploy
 
