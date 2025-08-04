@@ -93,6 +93,20 @@ export default function NutricionistasPage() {
     loadNutritionists()
   }, [])
 
+  // Gerenciar overflow do body quando o menu mobile está aberto
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = "hidden"
+    } else {
+      document.body.style.overflow = "unset"
+    }
+
+    // Cleanup function para restaurar o overflow quando o componente for desmontado
+    return () => {
+      document.body.style.overflow = "unset"
+    }
+  }, [mobileMenuOpen])
+
   // Filtrar e ordenar nutricionistas
   const filteredNutritionists = useMemo(() => {
     const filtered = nutritionists.filter((nutritionist) => {
@@ -178,6 +192,8 @@ export default function NutricionistasPage() {
     }),
   }
 
+
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 flex items-center justify-center">
@@ -196,7 +212,7 @@ export default function NutricionistasPage() {
 
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
         {/* Header */}
-        <header className="sticky top-0 z-50 w-full bg-white/95 backdrop-blur-md border-b border-gray-100">
+        <header className="sticky top-0 z-30 w-full bg-white/95 backdrop-blur-md border-b border-gray-100">
           <div className="container flex h-16 items-center justify-between px-4 md:px-6">
             <Link href="/" className="flex items-center">
               <Image
@@ -249,112 +265,144 @@ export default function NutricionistasPage() {
 
         {/* Mobile Menu Overlay */}
         {mobileMenuOpen && (
-          <div className="fixed inset-0 z-60 bg-black/50 md:hidden" onClick={() => setMobileMenuOpen(false)} />
+          <div className="fixed inset-0 z-40 bg-black/50 md:hidden" onClick={() => setMobileMenuOpen(false)} />
         )}
 
         {/* Mobile Menu */}
         <div
-          className={`fixed top-0 right-0 z-70 h-full w-80 bg-white transform transition-transform duration-300 md:hidden ${
+          className={`fixed top-0 right-0 z-50 h-full w-80 bg-white shadow-2xl transform transition-transform duration-300 ease-in-out md:hidden overflow-hidden ${
             mobileMenuOpen ? "translate-x-0" : "translate-x-full"
           }`}
         >
-          <div className="flex items-center justify-between p-4 border-b">
-            <Image src="/logo-busca-nutri.png" alt="Busca Nutri" width={120} height={24} className="h-5 w-auto" />
-            <Button variant="ghost" size="sm" onClick={() => setMobileMenuOpen(false)} className="p-2">
-              <X className="h-5 w-5" />
+          {/* Header do Menu Mobile */}
+          <div className="flex items-center justify-between p-4 border-b border-gray-100 bg-white">
+            <Image src="/logo-busca-nutri.png" alt="Busca Nutri" width={120} height={24} className="h-6 w-auto" />
+            <Button variant="ghost" size="icon" onClick={() => setMobileMenuOpen(false)} className="hover:bg-gray-100 p-2">
+              <X className="h-5 w-5 text-[#1E1D40]" />
             </Button>
           </div>
 
+          {/* Menu Content */}
           <div className="flex flex-col h-full">
-            <div className="flex-1 overflow-y-auto p-4">
-              <div className="space-y-6">
-                <div>
-                  <h3 className="font-semibold text-[#1E1D40] mb-3">Para Pacientes</h3>
-                  <div className="space-y-2 ml-4">
-                    <Link
-                      href="/para-pacientes"
-                      className="block text-[#1E1D40]/70 hover:text-[#4AB0D9] transition-colors"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      Encontrar Nutricionista
-                    </Link>
-                    <div className="flex items-center gap-2 text-[#4AB0D9] text-sm">
-                      <div className="w-1 h-1 bg-[#4AB0D9] rounded-full"></div>
-                      <span>Plataforma Inovadora</span>
-                    </div>
-                  </div>
+            {/* Navigation Links */}
+            <div className="flex-1 overflow-y-auto py-4">
+              {/* Para Pacientes */}
+              <div className="px-4 mb-6">
+                <h3 className="text-[#1E1D40] font-semibold text-sm mb-3 px-3">Para Pacientes</h3>
+                <div className="space-y-1">
+                  <Link
+                    href="/para-pacientes"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center px-3 py-2.5 text-[#1E1D40]/70 hover:text-[#4AB0D9] hover:bg-[#4AB0D9]/5 rounded-lg transition-all duration-200 text-sm"
+                  >
+                    Encontrar Nutricionista
+                  </Link>
+                  <Link
+                    href="/nutricionistas"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center px-3 py-2.5 text-[#1E1D40]/70 hover:text-[#4AB0D9] hover:bg-[#4AB0D9]/5 rounded-lg transition-all duration-200 text-sm"
+                  >
+                    Ver Profissionais
+                  </Link>
+                  <Link
+                    href="/cadastro?tipo=paciente"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center px-3 py-2.5 text-[#1E1D40]/70 hover:text-[#4AB0D9] hover:bg-[#4AB0D9]/5 rounded-lg transition-all duration-200 text-sm"
+                  >
+                    Cadastrar-se
+                  </Link>
                 </div>
+              </div>
 
-                <div>
-                  <h3 className="font-semibold text-[#1E1D40] mb-3">Para Nutricionistas</h3>
-                  <div className="space-y-2 ml-4">
-                    <Link
-                      href="/para-nutricionistas"
-                      className="block text-[#1E1D40]/70 hover:text-[#4AB0D9] transition-colors"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      Cadastre-se
-                    </Link>
-                    <Link
-                      href="/vagas"
-                      className="block text-[#1E1D40]/70 hover:text-[#4AB0D9] transition-colors"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      Vagas
-                    </Link>
-                  </div>
+              {/* Para Nutricionistas */}
+              <div className="px-4 mb-6">
+                <h3 className="text-[#1E1D40] font-semibold text-sm mb-3 px-3">Para Nutricionistas</h3>
+                <div className="space-y-1">
+                  <Link
+                    href="/para-nutricionistas"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center px-3 py-2.5 text-[#1E1D40]/70 hover:text-[#4AB0D9] hover:bg-[#4AB0D9]/5 rounded-lg transition-all duration-200 text-sm"
+                  >
+                    Expandir Prática
+                  </Link>
+                  <Link
+                    href="/vagas"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center px-3 py-2.5 text-[#1E1D40]/70 hover:text-[#4AB0D9] hover:bg-[#4AB0D9]/5 rounded-lg transition-all duration-200 text-sm"
+                  >
+                    Oportunidades
+                  </Link>
+                  <Link
+                    href="/cadastro?tipo=nutricionista"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center px-3 py-2.5 text-[#1E1D40]/70 hover:text-[#4AB0D9] hover:bg-[#4AB0D9]/5 rounded-lg transition-all duration-200 text-sm"
+                  >
+                    Cadastrar-se
+                  </Link>
                 </div>
+              </div>
 
-                <div>
-                  <h3 className="font-semibold text-[#1E1D40] mb-3">Para Empresas</h3>
-                  <div className="space-y-2 ml-4">
-                    <Link
-                      href="/para-empresas"
-                      className="block text-[#1E1D40]/70 hover:text-[#4AB0D9] transition-colors"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      Soluções Corporativas
-                    </Link>
-                  </div>
+              {/* Para Empresas */}
+              <div className="px-4 mb-6">
+                <h3 className="text-[#1E1D40] font-semibold text-sm mb-3 px-3">Para Empresas</h3>
+                <div className="space-y-1">
+                  <Link
+                    href="/para-empresas"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center px-3 py-2.5 text-[#1E1D40]/70 hover:text-[#4AB0D9] hover:bg-[#4AB0D9]/5 rounded-lg transition-all duration-200 text-sm"
+                  >
+                    Soluções Corporativas
+                  </Link>
+                  <Link
+                    href="/cadastro?tipo=empresa"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center px-3 py-2.5 text-[#1E1D40]/70 hover:text-[#4AB0D9] hover:bg-[#4AB0D9]/5 rounded-lg transition-all duration-200 text-sm"
+                  >
+                    Cadastrar Empresa
+                  </Link>
                 </div>
+              </div>
 
-                <div>
-                  <h3 className="font-semibold text-[#1E1D40] mb-3">Recursos</h3>
-                  <div className="space-y-2 ml-4">
-                    <Link
-                      href="/blog"
-                      className="block text-[#1E1D40]/70 hover:text-[#4AB0D9] transition-colors"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      Blog
-                    </Link>
-                    <Link
-                      href="/central-ajuda"
-                      className="block text-[#1E1D40]/70 hover:text-[#4AB0D9] transition-colors"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      Central de Ajuda
-                    </Link>
-                    <Link
-                      href="/faq"
-                      className="block text-[#1E1D40]/70 hover:text-[#4AB0D9] transition-colors"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      FAQ
-                    </Link>
-                  </div>
+              {/* Links Diretos */}
+              <div className="px-4 mb-6">
+                <div className="space-y-1">
+                  <Link
+                    href="/blog"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center px-3 py-2.5 text-[#1E1D40]/70 hover:text-[#4AB0D9] hover:bg-[#4AB0D9]/5 rounded-lg transition-all duration-200 text-sm font-medium"
+                  >
+                    Blog
+                  </Link>
+                  <Link
+                    href="/central-ajuda"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center px-3 py-2.5 text-[#1E1D40]/70 hover:text-[#4AB0D9] hover:bg-[#4AB0D9]/5 rounded-lg transition-all duration-200 text-sm font-medium"
+                  >
+                    Central de Ajuda
+                  </Link>
+                  <Link
+                    href="/faq"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center px-3 py-2.5 text-[#1E1D40]/70 hover:text-[#4AB0D9] hover:bg-[#4AB0D9]/5 rounded-lg transition-all duration-200 text-sm font-medium"
+                  >
+                    FAQ
+                  </Link>
                 </div>
               </div>
             </div>
 
-            <div className="p-4 border-t bg-gray-50">
+            {/* Bottom Actions */}
+            <div className="p-4 border-t border-gray-100 bg-white">
               <div className="space-y-3">
-                <Link href="/login" onClick={() => setMobileMenuOpen(false)}>
-                  <Button variant="outline" className="w-full bg-transparent">
+                <Link href="/login" onClick={() => setMobileMenuOpen(false)} className="block">
+                  <Button
+                    variant="outline"
+                    className="w-full border-[#4AB0D9] text-[#4AB0D9] hover:bg-[#4AB0D9] hover:text-white bg-transparent"
+                  >
                     Entrar
                   </Button>
                 </Link>
-                <Link href="/cadastro?tipo=paciente" onClick={() => setMobileMenuOpen(false)}>
+                <Link href="/cadastro" onClick={() => setMobileMenuOpen(false)} className="block">
                   <Button className="w-full bg-[#4AB0D9] hover:bg-[#4AB0D9]/90 text-white">Cadastrar</Button>
                 </Link>
               </div>

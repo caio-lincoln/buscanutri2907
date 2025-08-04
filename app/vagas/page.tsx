@@ -43,13 +43,36 @@ export default function VagasPage() {
   const [selectedJob, setSelectedJob] = useState<JobPosting | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
 
+  const filterJobs = useCallback(() => {
+    let filtered = jobs
+
+    if (searchTerm) {
+      filtered = filtered.filter(
+        (job) =>
+          job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (job.company_profiles?.company_name?.toLowerCase() ?? "").includes(searchTerm.toLowerCase()) ||
+          job.description.toLowerCase().includes(searchTerm.toLowerCase()),
+      )
+    }
+
+    if (locationFilter) {
+      filtered = filtered.filter((job) => job.location.toLowerCase().includes(locationFilter.toLowerCase()))
+    }
+
+    if (levelFilter) {
+      filtered = filtered.filter((job) => job.level.toLowerCase() === levelFilter.toLowerCase())
+    }
+
+    setFilteredJobs(filtered)
+  }, [jobs, searchTerm, locationFilter, levelFilter])
+
   useEffect(() => {
     loadJobs()
   }, [])
 
   useEffect(() => {
     filterJobs()
-  }, [searchTerm, locationFilter, levelFilter, jobs, filterJobs])
+  }, [filterJobs])
 
   const loadJobs = async () => {
     try {
@@ -107,29 +130,6 @@ export default function VagasPage() {
       setLoading(false)
     }
   }
-
-  const filterJobs = useCallback(() => {
-    let filtered = jobs
-
-    if (searchTerm) {
-      filtered = filtered.filter(
-        (job) =>
-          job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (job.company_profiles?.company_name?.toLowerCase() ?? "").includes(searchTerm.toLowerCase()) ||
-          job.description.toLowerCase().includes(searchTerm.toLowerCase()),
-      )
-    }
-
-    if (locationFilter) {
-      filtered = filtered.filter((job) => job.location.toLowerCase().includes(locationFilter.toLowerCase()))
-    }
-
-    if (levelFilter) {
-      filtered = filtered.filter((job) => job.level.toLowerCase() === levelFilter.toLowerCase())
-    }
-
-    setFilteredJobs(filtered)
-  }, [jobs, searchTerm, locationFilter, levelFilter])
 
   const clearFilters = () => {
     setSearchTerm("")

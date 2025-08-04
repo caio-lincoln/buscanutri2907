@@ -130,12 +130,35 @@ export function IrisChat({ userType = "paciente" }: IrisChatProps) {
       }
 
       let receivedText = ""
+      const decoder = new TextDecoder()
+      
       while (true) {
         const { done, value } = await reader.read()
         if (done) break
-        receivedText += new TextDecoder().decode(value)
-        // Update typing message with partial content
-        setMessages((prev) => prev.map((m) => (m.id === "typing" ? { ...m, content: receivedText } : m)))
+        
+        const chunk = decoder.decode(value, { stream: true })
+        const lines = chunk.split('\n')
+        
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6) // Remove 'data: '
+            if (data === '[DONE]') {
+              break
+            }
+            try {
+              const parsed = JSON.parse(data)
+              if (parsed.content) {
+                receivedText += parsed.content
+                // Update typing message with partial content
+                setMessages((prev) => prev.map((m) => (m.id === "typing" ? { ...m, content: receivedText } : m)))
+              }
+            } catch (e) {
+              // Se não conseguir fazer parse do JSON, trata como texto simples
+              receivedText += data
+              setMessages((prev) => prev.map((m) => (m.id === "typing" ? { ...m, content: receivedText } : m)))
+            }
+          }
+        }
       }
 
       const irisResponse: Message = {

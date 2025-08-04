@@ -1,15 +1,15 @@
-import { openai } from "@ai-sdk/openai"
-import { streamText } from "ai"
+import { GoogleGenerativeAI } from "@google/generative-ai"
 
 export async function POST(req: Request) {
   try {
     const { messages } = await req.json()
 
-    const result = await streamText({
-      model: openai("gpt-4o", {
-        apiKey: process.env.OPENAI_API_KEY, // A chave da OpenAI é lida daqui
-      }),
-      system: `Você é Iris, a assistente virtual da plataforma Busca Nutri. Seu principal objetivo é guiar os usuários, fornecer informações gerais sobre nutrição e saúde, e auxiliar na navegação da plataforma.
+    // Inicializar o cliente do Gemini
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" })
+
+    // Configurar o prompt do sistema
+    const systemPrompt = `Você é Iris, a assistente virtual da plataforma Busca Nutri. Seu principal objetivo é guiar os usuários, fornecer informações gerais sobre nutrição e saúde, e auxiliar na navegação da plataforma.
 
 🎯 SUAS CARACTERÍSTICAS PRINCIPAIS:
 - Nome: Iris
@@ -43,16 +43,54 @@ export async function POST(req: Request) {
 -   Informativa e clara.
 -   Segura e responsável.
 -   Focada em direcionar o usuário para as ferramentas da plataforma ou para um profissional.
--   Empática e útil.`,
-      messages,
-      maxTokens: 1500,
-      temperature: 0.3, // Reduzido para respostas mais consistentes e assertivas
-      topP: 0.9,
-      frequencyPenalty: 0.1,
-      presencePenalty: 0.1,
+-   Empática e útil.`
+
+    // Converter mensagens para o formato do Gemini
+    const lastMessage = messages[messages.length - 1]
+    const conversationHistory = messages.slice(0, -1).map((msg: any) => 
+      `${msg.role === 'user' ? 'Usuário' : 'Iris'}: ${msg.content}`
+    ).join('\n')
+
+    const fullPrompt = `${systemPrompt}
+
+Histórico da conversa:
+${conversationHistory}
+
+Usuário: ${lastMessage.content}
+
+Iris:`
+
+    // Gerar resposta com streaming
+    const result = await model.generateContentStream(fullPrompt)
+
+    // Criar um ReadableStream para streaming da resposta
+    const encoder = new TextEncoder()
+    const stream = new ReadableStream({
+      async start(controller) {
+        try {
+          for await (const chunk of result.stream) {
+            const chunkText = chunk.text()
+            if (chunkText) {
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ content: chunkText })}\n\n`))
+            }
+          }
+          controller.enqueue(encoder.encode('data: [DONE]\n\n'))
+          controller.close()
+        } catch (error) {
+          console.error('Erro no streaming:', error)
+          controller.error(error)
+        }
+      }
     })
 
-    return result.toDataStreamResponse()
+    return new Response(stream, {
+      headers: {
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+      },
+    })
+
   } catch (error) {
     console.error("❌ Erro na API do chat:", error)
     return new Response(

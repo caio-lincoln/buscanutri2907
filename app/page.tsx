@@ -36,11 +36,13 @@ import {
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { getCurrentUser, signOut } from "@/lib/auth"
 import type { UserType } from "@/lib/supabase"
+import { getPlatformStats, formatNumber, formatRating, type PlatformStats } from "@/lib/stats"
 
 export default function Home() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [stats, setStats] = useState<PlatformStats | null>(null)
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen)
@@ -50,7 +52,7 @@ export default function Home() {
     setIsMobileMenuOpen(false)
   }
 
-  // Check authentication status
+  // Check authentication status and load stats
   useEffect(() => {
     const checkAuth = async () => {
       try {
@@ -63,7 +65,17 @@ export default function Home() {
       }
     }
 
+    const loadStats = async () => {
+      try {
+        const platformStats = await getPlatformStats()
+        setStats(platformStats)
+      } catch (error) {
+        console.error("Error loading stats:", error)
+      }
+    }
+
     checkAuth()
+    loadStats()
   }, [])
 
   // Handle logout
@@ -277,7 +289,7 @@ export default function Home() {
       {/* Mobile Menu Sidebar */}
       <div
         className={cn(
-          "fixed top-0 right-0 w-80 h-full bg-white shadow-2xl transform transition-transform duration-300 ease-in-out z-[70] lg:hidden overflow-hidden",
+          "fixed top-0 right-0 w-full max-w-sm h-full bg-white shadow-2xl transform transition-transform duration-300 ease-in-out z-[70] lg:hidden overflow-hidden",
           isMobileMenuOpen ? "translate-x-0" : "translate-x-full",
         )}
       >
@@ -292,7 +304,7 @@ export default function Home() {
         {/* Menu Content */}
         <div className="flex flex-col h-full">
           {/* Navigation Links */}
-          <div className="flex-1 overflow-y-auto py-4">
+          <div className="flex-1 overflow-y-auto py-4 pb-0">
             {/* Para Pacientes */}
             <div className="px-4 mb-6">
               <h3 className="text-[#1E1D40] font-semibold text-sm mb-3 px-3">Para Pacientes</h3>
@@ -399,104 +411,120 @@ export default function Home() {
           </div>
 
           {/* Bottom Actions */}
-          <div className="p-4 border-t border-gray-100 bg-white">
-            <div className="space-y-3">
-              {loading ? (
-                <div className="space-y-3">
-                  <div className="w-full h-10 bg-gray-200 animate-pulse rounded" />
-                  <div className="w-full h-10 bg-gray-200 animate-pulse rounded" />
-                </div>
-              ) : user && user.user_type ? (
-                // User is logged in - show dashboard and logout buttons
-                <>
-                  <Link href={getDashboardUrl(user.user_type)} onClick={closeMobileMenu} className="block">
-                    <Button
+          <div className="flex-shrink-0 p-4 pt-6 border-t border-gray-100 bg-white">
+            {loading ? (
+              <div className="space-y-3">
+                <div className="w-full h-12 bg-gray-200 animate-pulse rounded" />
+                <div className="w-full h-12 bg-gray-200 animate-pulse rounded" />
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {user && user.user_type ? (
+                  // User is logged in - show dashboard and logout buttons
+                  <>
+                    <Link href={getDashboardUrl(user.user_type)} onClick={closeMobileMenu} className="block">
+                      <Button
+                        variant="outline"
+                        size="lg"
+                        className="w-full h-12 border-[#4AB0D9] text-[#4AB0D9] hover:bg-[#4AB0D9] hover:text-white bg-transparent flex items-center gap-2 text-base"
+                      >
+                        <LayoutDashboard className="h-4 w-4" />
+                        Dashboard
+                      </Button>
+                    </Link>
+                    <Button 
+                      onClick={() => { handleLogout(); closeMobileMenu(); }}
                       variant="outline"
-                      className="w-full border-[#4AB0D9] text-[#4AB0D9] hover:bg-[#4AB0D9] hover:text-white bg-transparent flex items-center gap-2"
+                      size="lg"
+                      className="w-full h-12 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 bg-transparent flex items-center gap-2 text-base"
                     >
-                      <LayoutDashboard className="h-4 w-4" />
-                      Dashboard
+                      <LogOut className="h-4 w-4" />
+                      Sair
                     </Button>
-                  </Link>
-                  <Button 
-                    onClick={() => { handleLogout(); closeMobileMenu(); }}
-                    variant="outline"
-                    className="w-full border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 bg-transparent flex items-center gap-2"
-                  >
-                    <LogOut className="h-4 w-4" />
-                    Sair
-                  </Button>
-                </>
-              ) : (
-                // User is not logged in - show login and register buttons
-                <>
-                  <Link href="/login" onClick={closeMobileMenu} className="block">
-                    <Button
-                      variant="outline"
-                      className="w-full border-[#4AB0D9] text-[#4AB0D9] hover:bg-[#4AB0D9] hover:text-white bg-transparent"
-                    >
-                      Entrar
-                    </Button>
-                  </Link>
-                  <Link href="/cadastro" onClick={closeMobileMenu} className="block">
-                    <Button className="w-full bg-[#4AB0D9] hover:bg-[#4AB0D9]/90 text-white">Cadastrar</Button>
-                  </Link>
-                </>
-              )}
-            </div>
+                  </>
+                ) : (
+                  // User is not logged in - show login and register buttons
+                  <>
+                    <Link href="/login" onClick={closeMobileMenu} className="block">
+                      <Button
+                        variant="outline"
+                        size="lg"
+                        className="w-full h-12 border-[#4AB0D9] text-[#4AB0D9] hover:bg-[#4AB0D9] hover:text-white bg-transparent text-base"
+                      >
+                        Entrar
+                      </Button>
+                    </Link>
+                    <Link href="/cadastro" onClick={closeMobileMenu} className="block">
+                      <Button 
+                        size="lg"
+                        className="w-full h-12 bg-[#4AB0D9] hover:bg-[#4AB0D9]/90 text-white text-base"
+                      >
+                        Cadastrar
+                      </Button>
+                    </Link>
+                  </>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
 
       <main className="flex-1">
         {/* Hero Section */}
-        <section className="relative py-24 md:py-32 overflow-hidden bg-gradient-to-br from-[#F2E6D8] via-white to-[#F2E6D8]/50">
+        <section className="relative py-16 md:py-24 lg:py-32 overflow-hidden bg-gradient-to-br from-[#F2E6D8] via-white to-[#F2E6D8]/50">
           <div className="container relative px-4 md:px-6">
-            <div className="grid gap-12 lg:grid-cols-2 items-center">
-              <div className="space-y-8">
-                <div className="space-y-6">
+            <div className="grid gap-8 lg:gap-12 lg:grid-cols-2 items-center">
+              <div className="space-y-6 md:space-y-8">
+                <div className="space-y-4 md:space-y-6">
                   <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#4AB0D9]/10 text-[#4AB0D9] rounded-full text-sm font-medium">
                     <Zap className="h-4 w-4" />
                     Plataforma Inovadora
                   </div>
-                  <h1 className="text-4xl md:text-6xl font-bold text-[#1E1D40] leading-tight">
+                  <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-[#1E1D40] leading-tight">
                     Conectando <span className="text-[#4AB0D9]">Nutricionistas</span>, Transformando Vidas
                   </h1>
-                  <p className="text-xl text-[#1E1D40]/70 leading-relaxed">
+                  <p className="text-lg md:text-xl text-[#1E1D40]/70 leading-relaxed">
                     Uma plataforma feita por e para nutricionistas. Alcance mais pacientes, compartilhe conhecimento e
                     cresça com quem entende suas necessidades.
                   </p>
                 </div>
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <Link href="/cadastro">
+                <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
+                  <Link href="/cadastro" className="w-full sm:w-auto">
                     <Button
                       size="lg"
-                      className="bg-[#4AB0D9] hover:bg-[#4AB0D9]/90 text-white shadow-lg text-lg px-8 py-6"
+                      className="w-full sm:w-auto bg-[#4AB0D9] hover:bg-[#4AB0D9]/90 text-white shadow-lg text-base md:text-lg px-6 md:px-8 py-4 md:py-6"
                     >
                       Quero me cadastrar
-                      <ArrowRight className="ml-2 h-5 w-5" />
+                      <ArrowRight className="ml-2 h-4 md:h-5 w-4 md:w-5" />
                     </Button>
                   </Link>
                   <Button
                     size="lg"
                     variant="outline"
-                    className="border-2 border-[#1E1D40] text-[#1E1D40] hover:bg-[#1E1D40] hover:text-white text-lg px-8 py-6 bg-transparent"
+                    className="w-full sm:w-auto border-2 border-[#1E1D40] text-[#1E1D40] hover:bg-[#1E1D40] hover:text-white text-base md:text-lg px-6 md:px-8 py-4 md:py-6 bg-transparent"
                   >
                     Explorar funcionalidades
                   </Button>
                 </div>
-                <div className="flex items-center gap-8 pt-4">
+                <div className="flex items-center justify-center sm:justify-start gap-4 sm:gap-6 md:gap-8 pt-2 md:pt-4">
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-[#1E1D40]">500+</div>
-                    <div className="text-sm text-[#1E1D40]/60">Nutricionistas</div>
+                    <div className="text-xl md:text-2xl font-bold text-[#1E1D40]">
+                      {stats ? formatNumber(stats.totalNutricionistas) : '500+'}
+                    </div>
+                    <div className="text-xs md:text-sm text-[#1E1D40]/60">Nutricionistas</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-[#1E1D40]">2.5k+</div>
-                    <div className="text-sm text-[#1E1D40]/60">Pacientes</div>
+                    <div className="text-xl md:text-2xl font-bold text-[#1E1D40]">
+                      {stats ? formatNumber(stats.totalPacientes) : '2.5k+'}
+                    </div>
+                    <div className="text-xs md:text-sm text-[#1E1D40]/60">Pacientes</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-[#1E1D40]">98%</div>
-                    <div className="text-sm text-[#1E1D40]/60">Satisfação</div>
+                    <div className="text-xl md:text-2xl font-bold text-[#1E1D40]">
+                      {stats ? formatRating(stats.averageRating) : '98%'}
+                    </div>
+                    <div className="text-xs md:text-sm text-[#1E1D40]/60">Satisfação</div>
                   </div>
                 </div>
               </div>
@@ -517,24 +545,24 @@ export default function Home() {
         </section>
 
         {/* About Section */}
-        <section id="sobre" className="py-20 bg-white">
+        <section id="sobre" className="py-16 md:py-20 bg-white">
           <div className="container px-4 md:px-6">
-            <div className="max-w-4xl mx-auto text-center space-y-8">
-              <div className="space-y-6">
-                <h2 className="text-3xl md:text-5xl font-bold text-[#1E1D40]">
+            <div className="max-w-4xl mx-auto text-center space-y-6 md:space-y-8">
+              <div className="space-y-4 md:space-y-6">
+                <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#1E1D40]">
                   Muito além de uma plataforma. <span className="text-[#4AB0D9]">Uma comunidade.</span>
                 </h2>
-                <p className="text-xl text-[#1E1D40]/70 leading-relaxed">
+                <p className="text-lg md:text-xl text-[#1E1D40]/70 leading-relaxed">
                   A <strong className="text-[#4AB0D9]">Busca Nutri</strong> é uma plataforma digital desenvolvida para
                   fortalecer a prática da nutrição por meio da colaboração. Aqui, profissionais trocam experiências,
                   acessam ferramentas exclusivas e expandem sua visibilidade.
                 </p>
-                <p className="text-lg text-[#1E1D40]/70">
+                <p className="text-base md:text-lg text-[#1E1D40]/70">
                   Mais do que tecnologia, promovemos{" "}
                   <strong className="text-[#D90D32]">relacionamentos, aprendizado e transformação</strong>.
                 </p>
               </div>
-              <div className="grid md:grid-cols-3 gap-8 mt-12">
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 mt-8 md:mt-12">
                 <Card className="border border-[#F2E6D8] shadow-lg hover:shadow-xl transition-shadow bg-[#F2E6D8]/30">
                   <CardContent className="p-8 text-center">
                     <div className="w-12 h-12 bg-[#4AB0D9] rounded-xl flex items-center justify-center mx-auto mb-4">
@@ -572,9 +600,9 @@ export default function Home() {
         </section>
 
         {/* For Patients */}
-        <section id="pacientes" className="py-20 bg-white">
+        <section id="pacientes" className="py-16 md:py-20 bg-white">
           <div className="container px-4 md:px-6">
-            <div className="grid gap-12 lg:grid-cols-2 items-center">
+            <div className="grid gap-8 lg:gap-12 lg:grid-cols-2 items-center">
               <div className="relative lg:order-first">
                 <div className="absolute inset-0 bg-[#D90D32]/20 rounded-3xl transform rotate-6"></div>
                 <Card className="relative border-0 shadow-2xl">
@@ -589,17 +617,17 @@ export default function Home() {
                   </CardContent>
                 </Card>
               </div>
-              <div className="space-y-8">
-                <div className="space-y-4">
+              <div className="space-y-6 md:space-y-8">
+                <div className="space-y-3 md:space-y-4">
                   <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#D90D32]/10 text-[#D90D32] rounded-full text-sm font-medium">
                     <Heart className="h-4 w-4" />
                     Para Pacientes
                   </div>
-                  <h2 className="text-3xl md:text-5xl font-bold text-[#1E1D40]">
+                  <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#1E1D40]">
                     Encontre o nutricionista ideal de forma{" "}
                     <span className="text-[#4AB0D9]">rápida, segura e acessível</span>
                   </h2>
-                  <p className="text-xl text-[#1E1D40]/70 leading-relaxed">
+                  <p className="text-lg md:text-xl text-[#1E1D40]/70 leading-relaxed">
                     Através da Busca Nutri, você conecta-se com profissionais verificados, agendando consultas
                     presenciais ou online com facilidade e confiança.
                   </p>
@@ -640,20 +668,20 @@ export default function Home() {
         </section>
 
         {/* For Companies */}
-        <section id="empresas" className="py-20 bg-[#F2E6D8]/30">
+        <section id="empresas" className="py-16 md:py-20 bg-[#F2E6D8]/30">
           <div className="container px-4 md:px-6">
-            <div className="grid gap-12 lg:grid-cols-2 items-center">
-              <div className="space-y-8">
-                <div className="space-y-4">
+            <div className="grid gap-8 lg:gap-12 lg:grid-cols-2 items-center">
+              <div className="space-y-6 md:space-y-8">
+                <div className="space-y-3 md:space-y-4">
                   <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#1E1D40]/10 text-[#1E1D40] rounded-full text-sm font-medium">
                     <Building className="h-4 w-4" />
                     Para Empresas
                   </div>
-                  <h2 className="text-3xl md:text-5xl font-bold text-[#1E1D40]">
+                  <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#1E1D40]">
                     Encontre os melhores profissionais de nutrição para sua{" "}
                     <span className="text-[#4AB0D9]">empresa</span>
                   </h2>
-                  <p className="text-xl text-[#1E1D40]/70 leading-relaxed">
+                  <p className="text-lg md:text-xl text-[#1E1D40]/70 leading-relaxed">
                     Conecte-se com nutricionistas qualificados para programas de bem-estar corporativo, consultorias e
                     contratações. Transforme a saúde da sua equipe.
                   </p>
@@ -704,21 +732,21 @@ export default function Home() {
         </section>
 
         {/* Newsletter Section */}
-        <section className="py-20 bg-gradient-to-br from-[#1E1D40] via-[#2D2B5F] to-[#3A3875] text-white">
+        <section className="py-16 md:py-20 bg-gradient-to-br from-[#1E1D40] via-[#2D2B5F] to-[#3A3875] text-white">
           <div className="container px-4 md:px-6">
             <div className="max-w-2xl mx-auto">
-              <div className="text-center space-y-6 mb-12">
-                <h2 className="text-3xl md:text-5xl font-bold leading-tight">
+              <div className="text-center space-y-4 md:space-y-6 mb-8 md:mb-12">
+                <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold leading-tight">
                   Comece agora a transformar sua prática com a <span className="text-[#4AB0D9]">Busca Nutri</span>
                 </h2>
-                <p className="text-lg text-white/80">
+                <p className="text-base md:text-lg text-white/80">
                   Cadastre-se gratuitamente e descubra como é fácil crescer em comunidade.
                 </p>
               </div>
               <Card className="border-0 shadow-2xl bg-white">
-                <CardContent className="p-8">
-                  <form className="space-y-6">
-                    <div className="grid md:grid-cols-2 gap-4">
+                <CardContent className="p-6 md:p-8">
+                  <form className="space-y-4 md:space-y-6">
+                    <div className="grid sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="name" className="text-[#1E1D40] font-medium text-sm">
                           Nome completo
@@ -745,7 +773,7 @@ export default function Home() {
                     </div>
                     <div className="space-y-3">
                       <Label className="text-[#1E1D40] font-medium text-sm">Qual é o seu perfil?</Label>
-                      <RadioGroup defaultValue="nutricionista" className="grid grid-cols-3 gap-4">
+                      <RadioGroup defaultValue="nutricionista" className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
                         <div className="flex items-center space-x-2 p-3 border border-gray-200 rounded-lg hover:border-[#4AB0D9] transition-colors cursor-pointer">
                           <RadioGroupItem
                             value="nutricionista"
@@ -790,8 +818,8 @@ export default function Home() {
       <footer className="bg-[#1E1D40] text-white">
         <div className="container px-4 md:px-6">
           {/* Main Footer Content */}
-          <div className="py-16">
-            <div className="grid gap-8 lg:grid-cols-4 md:grid-cols-2">
+          <div className="py-12 md:py-16">
+            <div className="grid gap-6 md:gap-8 sm:grid-cols-2 lg:grid-cols-4">
               {/* Company Info */}
               <div className="space-y-6">
                 <Image
@@ -799,7 +827,7 @@ export default function Home() {
                   alt="Busca Nutri"
                   width={160}
                   height={32}
-                  className="h-7 w-auto brightness-0 invert mx-auto md:mx-0"
+                  className="h-6 md:h-7 w-auto brightness-0 invert mx-auto sm:mx-0"
                 />
                 <p className="text-white/70 text-sm leading-relaxed">
                   Conectando nutricionistas e transformando vidas através da tecnologia e colaboração. A plataforma que
@@ -813,7 +841,9 @@ export default function Home() {
                       </svg>
                     ))}
                   </div>
-                  <span className="text-white/70 text-sm">4.9 (1.2k avaliações)</span>
+                  <span className="text-white/70 text-sm">
+                    {stats ? `${formatRating(stats.averageRating)} (${formatNumber(stats.totalAvaliacoes)} avaliações)` : '4.9 (1.2k avaliações)'}
+                  </span>
                 </div>
               </div>
 
@@ -901,12 +931,12 @@ export default function Home() {
           </div>
 
           {/* Bottom Footer */}
-          <div className="border-t border-white/20 py-8">
-            <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-              <div className="text-white/70 text-sm">
+          <div className="border-t border-white/20 py-6 md:py-8">
+            <div className="flex flex-col md:flex-row justify-between items-center gap-3 md:gap-4">
+              <div className="text-white/70 text-xs md:text-sm text-center md:text-left">
                 © {new Date().getFullYear()} Busca Nutri. Todos os direitos reservados.
               </div>
-              <div className="flex gap-6 text-sm">
+              <div className="flex flex-wrap justify-center gap-4 md:gap-6 text-xs md:text-sm">
                 <Link href="/termos" className="text-white/70 hover:text-[#4AB0D9] transition-colors">
                   Termos de Uso
                 </Link>
