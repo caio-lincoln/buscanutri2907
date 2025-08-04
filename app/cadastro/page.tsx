@@ -15,7 +15,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { ArrowLeft, Eye, EyeOff, Loader2, AlertCircle, CheckCircle, Clock, Building } from "lucide-react"
 import { signUp } from "@/lib/auth"
 import { toast } from "@/hooks/use-toast"
-import { DebugInfo } from "@/components/debug-info"
+
 import { validateCRNFormat, validateCRNWithAPI, formatCRN } from "@/lib/crn-validator"
 import { validateCNPJFormat, validateCNPJWithAPI, formatCNPJ } from "@/lib/cnpj-validator"
 
@@ -25,7 +25,7 @@ export default function CadastroPage() {
   const [acceptTerms, setAcceptTerms] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
-  const [showDebug, setShowDebug] = useState(false)
+
 
   // Estados para validação de CRN
   const [crnValue, setCrnValue] = useState("")
@@ -445,7 +445,7 @@ export default function CadastroPage() {
                           onChange={(e) => handleCNPJChange(e.target.value)}
                           required
                         />
-                        <div className="absolute right-3 top-1/2 transform -translate-y/1/2">
+                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
                           {renderCNPJValidationIcon()}
                         </div>
                       </div>
@@ -604,16 +604,8 @@ export default function CadastroPage() {
                 </Link>
               </p>
             </div>
-
-            <div className="mt-4 text-center">
-              <Button variant="outline" size="sm" onClick={() => setShowDebug(!showDebug)} className="text-xs">
-                {showDebug ? "Ocultar" : "Mostrar"} Debug
-              </Button>
-            </div>
           </CardContent>
         </Card>
-
-        {showDebug && <DebugInfo />}
 
         <div className="mt-6 text-center">
           <Link
