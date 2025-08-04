@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -49,13 +49,13 @@ export function ConsultationChat({
       loadMessages()
       setupRealtimeSubscription()
     }
-  }, [isVisible, consultationId])
+  }, [isVisible, consultationId, loadMessages, setupRealtimeSubscription])
 
   useEffect(() => {
     scrollToBottom()
-  }, [messages])
+  }, [messages, scrollToBottom])
 
-  const loadMessages = async () => {
+  const loadMessages = useCallback(async () => {
     try {
       setLoading(true)
       const messagesData = await getConsultationMessages(consultationId)
@@ -65,9 +65,9 @@ export function ConsultationChat({
     } finally {
       setLoading(false)
     }
-  }
+  }, [consultationId])
 
-  const setupRealtimeSubscription = () => {
+  const setupRealtimeSubscription = useCallback(() => {
     const channel = supabase
       .channel(`consultation_messages_${consultationId}`)
       .on(
@@ -88,7 +88,7 @@ export function ConsultationChat({
     return () => {
       channel.unsubscribe()
     }
-  }
+  }, [consultationId])
 
   const sendMessage = async () => {
     if (!newMessage.trim() || sending) return
@@ -120,9 +120,9 @@ export function ConsultationChat({
     }
   }
 
-  const scrollToBottom = () => {
+  const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }
+  }, [])
 
   const formatMessageTime = (timestamp: string) => {
     return new Date(timestamp).toLocaleTimeString("pt-BR", {

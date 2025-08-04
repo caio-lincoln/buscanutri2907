@@ -783,9 +783,8 @@ export function JobCandidatesModal({ isOpen, onClose, job }: JobCandidatesModalP
                         Aprovar Candidato
                       </Button>
                       <Button
-                        className="w-full bg-transparent"
                         variant="outline"
-                        className="text-red-600 hover:text-red-700 border-red-200 hover:bg-red-50"
+                        className="w-full bg-transparent text-red-600 hover:text-red-700 border-red-200 hover:bg-red-50"
                       >
                         <UserX className="h-4 w-4 mr-2" />
                         Rejeitar Candidato

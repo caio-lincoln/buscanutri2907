@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -50,24 +50,7 @@ export function NewProcessModal({ isOpen, onClose, onSuccess }: NewProcessModalP
     notes: ""
   })
 
-  // Carregar vagas da empresa
-  useEffect(() => {
-    if (isOpen && user?.companyProfile?.id) {
-      loadJobs()
-    }
-  }, [isOpen, user?.companyProfile?.id])
-
-  // Carregar candidatos quando uma vaga for selecionada
-  useEffect(() => {
-    if (formData.jobId) {
-      loadCandidates(formData.jobId)
-    } else {
-      setCandidates([])
-      setFormData(prev => ({ ...prev, candidateId: "" }))
-    }
-  }, [formData.jobId])
-
-  const loadJobs = async () => {
+  const loadJobs = useCallback(async () => {
     if (!user?.companyProfile?.id) return
     
     setLoadingJobs(true)
@@ -87,9 +70,16 @@ export function NewProcessModal({ isOpen, onClose, onSuccess }: NewProcessModalP
     } finally {
       setLoadingJobs(false)
     }
-  }
+  }, [user?.companyProfile?.id])
 
-  const loadCandidates = async (jobId: string) => {
+  // Carregar vagas da empresa
+  useEffect(() => {
+    if (isOpen && user?.companyProfile?.id) {
+      loadJobs()
+    }
+  }, [isOpen, user?.companyProfile?.id, loadJobs])
+
+  const loadCandidates = useCallback(async (jobId: string) => {
     setLoadingCandidates(true)
     try {
       const supabase = createSupabaseClient()
@@ -113,7 +103,17 @@ export function NewProcessModal({ isOpen, onClose, onSuccess }: NewProcessModalP
     } finally {
       setLoadingCandidates(false)
     }
-  }
+  }, [])
+
+  // Carregar candidatos quando uma vaga for selecionada
+  useEffect(() => {
+    if (formData.jobId) {
+      loadCandidates(formData.jobId)
+    } else {
+      setCandidates([])
+      setFormData(prev => ({ ...prev, candidateId: "" }))
+    }
+  }, [formData.jobId, loadCandidates])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

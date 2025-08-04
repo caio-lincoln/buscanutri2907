@@ -289,7 +289,7 @@ export function TestConsultationCreator() {
             <div className="bg-yellow-50 rounded-lg p-4">
               <h4 className="font-semibold text-yellow-900 mb-2">🧪 Como testar:</h4>
               <ol className="text-sm text-yellow-800 space-y-1 list-decimal list-inside">
-                <li>Clique em "Abrir Consulta" para acessar a página da consulta</li>
+                <li>Clique em &quot;Abrir Consulta&quot; para acessar a página da consulta</li>
                 <li>Teste a entrada na sala de telemedicina</li>
                 <li>Verifique os controles de vídeo e áudio</li>
                 <li>Teste o chat em tempo real</li>

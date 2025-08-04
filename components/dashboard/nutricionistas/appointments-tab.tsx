@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -75,9 +75,9 @@ export function AppointmentsTab({ userId }: AppointmentsTabProps) {
     if (userId) {
       fetchConsultations()
     }
-  }, [userId, selectedDate, viewMode, filterStatus, filterType, filterPatientName])
+  }, [userId, selectedDate, viewMode, filterStatus, filterType, filterPatientName, fetchConsultations])
 
-  const fetchConsultations = async () => {
+  const fetchConsultations = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
@@ -115,7 +115,7 @@ export function AppointmentsTab({ userId }: AppointmentsTabProps) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [userId, selectedDate, viewMode, filterStatus, filterType, filterPatientName])
 
   const handleDateChange = (date: Date | undefined) => {
     if (date) {

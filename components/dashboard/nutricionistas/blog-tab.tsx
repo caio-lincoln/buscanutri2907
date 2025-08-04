@@ -367,7 +367,7 @@ export function BlogTab() {
               Mostrando {filteredPosts.length} de {myPosts.length} artigos
               {searchTerm && (
                 <span className="ml-2">
-                  para "<strong>{searchTerm}</strong>"
+                  para &quot;<strong>{searchTerm}</strong>&quot;
                 </span>
               )}
             </div>
@@ -380,8 +380,8 @@ export function BlogTab() {
               <h3 className="text-2xl font-bold text-gray-600 mb-2">Nenhum artigo encontrado</h3>
               <p className="text-gray-500">
                 {searchTerm
-                  ? `Não encontramos artigos para "${searchTerm}". Tente outros termos.`
-                  : "Você ainda não publicou nenhum artigo."}
+                    ? `Não encontramos artigos para "${searchTerm}". Tente outros termos.`
+                    : "Você ainda não publicou nenhum artigo."}
               </p>
               {!searchTerm && (
                 <Button 

@@ -249,6 +249,8 @@ export default function NutritionistForumQuestionPage() {
   useEffect(() => {
     if (!questionId) return;
 
+    console.log('🔄 Configurando subscriptions do Realtime para pergunta:', questionId);
+
     // Subscribe to forum_questions changes (likes and views)
     const questionSubscription = supabase
       .channel(`forum_question_${questionId}`)
@@ -261,6 +263,7 @@ export default function NutritionistForumQuestionPage() {
           filter: `id=eq.${questionId}`
         },
         (payload) => {
+          console.log('📝 Pergunta atualizada em tempo real:', payload);
           setQuestion(prev => prev ? {
             ...prev,
             likes: payload.new.likes_count || 0,
@@ -269,7 +272,9 @@ export default function NutritionistForumQuestionPage() {
           } : null);
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('📡 Status da subscription da pergunta:', status);
+      });
 
     // Subscribe to forum_answers changes (new replies)
     const answersSubscription = supabase
@@ -283,6 +288,7 @@ export default function NutritionistForumQuestionPage() {
           filter: `question_id=eq.${questionId}`
         },
         (payload) => {
+          console.log('💬 Nova resposta adicionada em tempo real:', payload);
           loadReplies(); // Reload replies when new answer is added
         }
       )
@@ -295,6 +301,7 @@ export default function NutritionistForumQuestionPage() {
           filter: `question_id=eq.${questionId}`
         },
         (payload) => {
+          console.log('✏️ Resposta atualizada em tempo real:', payload);
           setReplies(prev => prev.map(reply => 
             reply.id === payload.new.id 
               ? { 
@@ -315,10 +322,13 @@ export default function NutritionistForumQuestionPage() {
           filter: `question_id=eq.${questionId}`
         },
         (payload) => {
+          console.log('🗑️ Resposta deletada em tempo real:', payload);
           setReplies(prev => prev.filter(reply => reply.id !== payload.old.id));
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('📡 Status da subscription das respostas:', status);
+      });
 
     // Subscribe to forum_question_likes changes
     const questionLikesSubscription = supabase
@@ -332,6 +342,7 @@ export default function NutritionistForumQuestionPage() {
           filter: `question_id=eq.${questionId}`
         },
         (payload) => {
+          console.log('👍 Pergunta curtida em tempo real:', payload);
           // Check if current user liked it
           if (currentUser && payload.new.user_id === currentUser.id) {
             setQuestion(prev => prev ? {
@@ -350,6 +361,7 @@ export default function NutritionistForumQuestionPage() {
           filter: `question_id=eq.${questionId}`
         },
         (payload) => {
+          console.log('👎 Like da pergunta removido em tempo real:', payload);
           // Check if current user unliked it
           if (currentUser && payload.old.user_id === currentUser.id) {
             setQuestion(prev => prev ? {
@@ -359,7 +371,9 @@ export default function NutritionistForumQuestionPage() {
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('📡 Status da subscription dos likes da pergunta:', status);
+      });
 
     // Subscribe to forum_answer_likes changes
     const answerLikesSubscription = supabase
@@ -372,6 +386,7 @@ export default function NutritionistForumQuestionPage() {
           table: 'forum_answer_likes'
         },
         (payload) => {
+          console.log('👍 Resposta curtida em tempo real:', payload);
           // Check if current user liked it
           if (currentUser && payload.new.user_id === currentUser.id) {
             setReplies(prev => prev.map(reply => 
@@ -390,6 +405,7 @@ export default function NutritionistForumQuestionPage() {
           table: 'forum_answer_likes'
         },
         (payload) => {
+          console.log('👎 Like da resposta removido em tempo real:', payload);
           // Check if current user unliked it
           if (currentUser && payload.old.user_id === currentUser.id) {
             setReplies(prev => prev.map(reply => 
@@ -400,10 +416,13 @@ export default function NutritionistForumQuestionPage() {
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('📡 Status da subscription dos likes das respostas:', status);
+      });
 
     // Cleanup subscriptions
     return () => {
+      console.log('🧹 Limpando subscriptions do Realtime');
       questionSubscription.unsubscribe();
       answersSubscription.unsubscribe();
       questionLikesSubscription.unsubscribe();

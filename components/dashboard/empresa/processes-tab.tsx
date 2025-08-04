@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { getCompanyProcesses, type ProcessData } from "@/lib/company-data-service"
 import { useUser } from "@/hooks/use-user"
 import { Card, CardContent } from "@/components/ui/card"
@@ -57,11 +57,7 @@ export function ProcessesTab() {
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [isNewProcessModalOpen, setIsNewProcessModalOpen] = useState(false)
 
-  useEffect(() => {
-    loadProcesses()
-  }, [user])
-
-  const loadProcesses = async () => {
+  const loadProcesses = useCallback(async () => {
     if (!user?.id) return
 
     try {
@@ -88,7 +84,11 @@ export function ProcessesTab() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [user?.id])
+
+  useEffect(() => {
+    loadProcesses()
+  }, [loadProcesses])
 
   const handleProcessCreated = () => {
     loadProcesses()

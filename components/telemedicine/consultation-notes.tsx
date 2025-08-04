@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -68,9 +68,9 @@ export function ConsultationNotes({
       loadNotes()
       setupRealtimeSubscription()
     }
-  }, [isVisible, consultationId])
+  }, [isVisible, consultationId, loadNotes, setupRealtimeSubscription])
 
-  const loadNotes = async () => {
+  const loadNotes = useCallback(async () => {
     try {
       setLoading(true)
       const notesData = await getConsultationNotes(consultationId)
@@ -80,9 +80,9 @@ export function ConsultationNotes({
     } finally {
       setLoading(false)
     }
-  }
+  }, [consultationId])
 
-  const setupRealtimeSubscription = () => {
+  const setupRealtimeSubscription = useCallback(() => {
     const channel = supabase
       .channel(`consultation_notes_${consultationId}`)
       .on(
@@ -110,7 +110,7 @@ export function ConsultationNotes({
     return () => {
       channel.unsubscribe()
     }
-  }
+  }, [consultationId])
 
   const createNote = async () => {
     if (!newNote.title.trim() || !newNote.content.trim() || saving) return

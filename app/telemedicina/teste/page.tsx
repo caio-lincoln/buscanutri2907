@@ -235,7 +235,7 @@ export default function TelemedicineTestPage() {
                 <h4 className="font-semibold text-gray-900 mb-3">🔧 Preparação:</h4>
                 <ol className="text-sm text-gray-700 space-y-2 list-decimal list-inside">
                   <li>Execute os scripts SQL para criar dados de teste</li>
-                  <li>Verifique se todos os status estão "OK"</li>
+                  <li>Verifique se todos os status estão &quot;OK&quot;</li>
                   <li>Crie uma consulta de teste usando o formulário</li>
                 </ol>
               </div>

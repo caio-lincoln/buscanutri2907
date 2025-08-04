@@ -1,6 +1,7 @@
 "use client"
 
-import * as React from "react"
+import React from "react"
+import * as ReactAll from "react"
 import {
   format,
   addMonths,
@@ -41,9 +42,9 @@ export function CustomCalendar({
 
   React.useEffect(() => {
     generateCalendarDays()
-  }, [currentMonth])
+  }, [currentMonth, generateCalendarDays])
 
-  const generateCalendarDays = () => {
+  const generateCalendarDays = React.useCallback(() => {
     const start = startOfMonth(currentMonth)
     const end = endOfMonth(currentMonth)
     const days = eachDayOfInterval({ start, end })
@@ -67,7 +68,7 @@ export function CustomCalendar({
     }
 
     setCalendarDays([...previousMonthDays, ...days, ...nextMonthDays])
-  }
+  }, [currentMonth])
 
   const isDateDisabled = (date: Date) => {
     const today = startOfDay(new Date())

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -84,11 +84,7 @@ export default function ScheduleConsultationPage() {
     },
   ]
 
-  useEffect(() => {
-    loadUserData()
-  }, [])
-
-  const loadUserData = async () => {
+  const loadUserData = useCallback(async () => {
     try {
       const currentUser = await getCurrentUser()
       if (!currentUser) {
@@ -102,7 +98,11 @@ export default function ScheduleConsultationPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [router])
+
+  useEffect(() => {
+    loadUserData()
+  }, [loadUserData])
 
   const handleSelectNutritionist = (nutritionist: Nutritionist) => {
     setSelectedNutritionist(nutritionist)

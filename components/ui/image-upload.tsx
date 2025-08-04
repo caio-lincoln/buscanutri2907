@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useRef } from 'react'
+import Image from 'next/image'
 import { Button } from './button'
 import { Card } from './card'
 import { uploadBlogImage, UploadResult } from '@/lib/image-upload'
@@ -98,10 +99,11 @@ export function ImageUpload({
       {currentImageUrl ? (
         <Card className="relative overflow-hidden">
           <div className="aspect-video relative">
-            <img
+            <Image
               src={currentImageUrl}
               alt="Imagem selecionada"
-              className="w-full h-full object-cover"
+              fill
+              className="object-cover"
               key={currentImageUrl} // Force re-render when URL changes
               onLoad={() => console.log('Imagem carregada:', currentImageUrl)}
               onError={(e) => console.error('Erro ao carregar imagem:', currentImageUrl, e)}

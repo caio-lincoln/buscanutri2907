@@ -39,7 +39,7 @@ export function TestimonialCard({
       )}
 
       {/* Quote */}
-      <blockquote className="text-[#1E1D40]/80 mb-6">"{quote}"</blockquote>
+      <blockquote className="text-[#1E1D40]/80 mb-6">&quot;{quote}&quot;</blockquote>
 
       {/* Author */}
       <div className="flex items-center gap-3">

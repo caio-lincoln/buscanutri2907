@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
@@ -49,7 +49,7 @@ export default function VagasPage() {
 
   useEffect(() => {
     filterJobs()
-  }, [searchTerm, locationFilter, levelFilter, jobs])
+  }, [searchTerm, locationFilter, levelFilter, jobs, filterJobs])
 
   const loadJobs = async () => {
     try {
@@ -108,7 +108,7 @@ export default function VagasPage() {
     }
   }
 
-  const filterJobs = () => {
+  const filterJobs = useCallback(() => {
     let filtered = jobs
 
     if (searchTerm) {
@@ -129,7 +129,7 @@ export default function VagasPage() {
     }
 
     setFilteredJobs(filtered)
-  }
+  }, [jobs, searchTerm, locationFilter, levelFilter])
 
   const clearFilters = () => {
     setSearchTerm("")
