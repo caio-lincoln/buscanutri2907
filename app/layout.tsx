@@ -2,6 +2,8 @@ import type React from "react"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
+import { Toaster } from "@/components/ui/toaster"
+
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -10,9 +12,12 @@ export const metadata: Metadata = {
   description:
     "Plataforma que conecta nutricionistas e pacientes. Encontre profissionais qualificados ou expanda sua prática profissional.",
   icons: {
-    icon: "https://i.ibb.co/W49PNh0f/cone.jpg",
-    shortcut: "https://i.ibb.co/W49PNh0f/cone.jpg",
-    apple: "https://i.ibb.co/W49PNh0f/cone.jpg",
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/Rosa.png", type: "image/png" }
+    ],
+    shortcut: "/favicon.ico",
+    apple: "/Rosa.png",
   },
     generator: 'v0.dev'
 }
@@ -24,7 +29,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-BR">
-      <body className={inter.className}>{children}</body>
+      <body className={inter.className}>
+        {children}
+        <Toaster />
+      </body>
     </html>
   )
 }

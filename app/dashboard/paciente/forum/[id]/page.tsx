@@ -27,7 +27,7 @@ import {
   ArrowDownWideNarrow,
 } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { toast } from "@/hooks/use-toast"
+import { toast } from "@/components/ui/use-toast"
 
 import { type ForumQuestion, getForumQuestionById, createForumAnswer, likeForumItem } from "@/lib/forum-data"
 import { getCurrentUser } from "@/lib/auth"

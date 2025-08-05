@@ -31,7 +31,7 @@ import {
   Instagram,
   Calendar
 } from "lucide-react"
-import { toast } from "@/hooks/use-toast"
+import { toast } from "@/components/ui/use-toast"
 import { supabase } from "@/lib/supabase"
 
 // Opções para os campos de seleção

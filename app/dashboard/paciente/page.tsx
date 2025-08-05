@@ -15,7 +15,7 @@ import { DashboardSidebar, getMenuItems } from "@/components/dashboard-sidebar"
 import { IrisChat } from "@/components/iris-chat"
 import { StatsCard } from "@/components/stats-card"
 // Importar o hook de estatísticas do dashboard
-import { useDashboardStats } from "@/hooks/use-dashboard-stats"
+import { useDashboardStats } from "@/hooks/use-dashboard-stats.ts"
 import {
   getPatientConsultations,
   getPatientFavoriteNutritionists,

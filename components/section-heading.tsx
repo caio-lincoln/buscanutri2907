@@ -22,6 +22,7 @@ export function SectionHeading({
     if (highlightWords.length === 0) return title
 
     let parts = [title]
+    let keyIndex = 0
 
     highlightWords.forEach((word) => {
       parts = parts.flatMap((part) => {
@@ -29,7 +30,7 @@ export function SectionHeading({
           const splitParts = part.split(new RegExp(`(${word})`, "gi"))
           return splitParts.map((p) =>
             p.toLowerCase() === word.toLowerCase() ? (
-              <span key={`${p}-${Math.random()}`} className="text-gradient">
+              <span key={`${p}-${keyIndex++}`} className="text-gradient">
                 {p}
               </span>
             ) : (

@@ -5,42 +5,39 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Bell, Calendar, MessageSquare, CheckCircle, Trash2, MoreHorizontal, Clock, AlertCircle, Loader2 } from "lucide-react"
+import { Bell, Calendar, MessageSquare, CheckCircle, Trash2, MoreHorizontal, Clock, AlertCircle, Loader2, Info, AlertTriangle, XCircle, Users } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { useRealtimeNotifications } from "@/hooks/use-realtime-notifications"
 import type { NotificationData } from "@/lib/notifications-service"
-
-export interface Notification {
-  id: string
-  type: "appointment" | "message" | "system" | "reminder"
-  title: string
-  description: string
-  time: string
-  read: boolean
-  actionUrl?: string
-  sender?: {
-    name: string
-    role: string
-    avatar?: string
-  }
-  priority: "low" | "medium" | "high"
-}
 
 interface NotificationsPanelProps {
   userType: "paciente" | "nutricionista" | "empresa" | "admin"
 }
 
+// Mapeamento de ícones por tipo original
 const notificationIcons = {
-  appointment: Calendar,
   message: MessageSquare,
-  system: Bell,
+  appointment: Calendar,
+  forum: Users,
   reminder: Clock,
+  system: AlertCircle,
 }
 
-const priorityColors = {
-  low: "bg-gray-100 text-gray-700 border-gray-200",
-  medium: "bg-blue-100 text-blue-700 border-blue-200",
-  high: "bg-red-100 text-red-700 border-red-200",
+// Mapeamento de cores por tipo
+const typeColors = {
+  info: "bg-blue-100 text-blue-600",
+  success: "bg-green-100 text-green-600", 
+  warning: "bg-yellow-100 text-yellow-600",
+  error: "bg-red-100 text-red-600",
+}
+
+// Mapeamento de cores por tipo original
+const originalTypeColors = {
+  message: "bg-blue-100 text-blue-600",
+  appointment: "bg-green-100 text-green-600",
+  forum: "bg-purple-100 text-purple-600",
+  reminder: "bg-yellow-100 text-yellow-600",
+  system: "bg-red-100 text-red-600",
 }
 
 export function NotificationsPanel({ userType }: NotificationsPanelProps) {
@@ -101,7 +98,26 @@ export function NotificationsPanel({ userType }: NotificationsPanelProps) {
           </Card>
         ) : (
           filteredNotifications.map((notification) => {
-            const IconComponent = notificationIcons[notification.type]
+            const originalType = notification.originalType || 'system'
+            const IconComponent = notificationIcons[originalType] || AlertCircle
+            
+            // Função para formatar a data
+            const formatTime = (dateString: string) => {
+              const date = new Date(dateString)
+              const now = new Date()
+              const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60))
+
+              if (diffInMinutes < 1) return "Agora"
+              if (diffInMinutes < 60) return `${diffInMinutes} min atrás`
+              
+              const diffInHours = Math.floor(diffInMinutes / 60)
+              if (diffInHours < 24) return `${diffInHours}h atrás`
+              
+              const diffInDays = Math.floor(diffInHours / 24)
+              if (diffInDays < 7) return `${diffInDays} dia${diffInDays > 1 ? 's' : ''} atrás`
+              
+              return date.toLocaleDateString('pt-BR')
+            }
 
             return (
               <Card
@@ -113,16 +129,9 @@ export function NotificationsPanel({ userType }: NotificationsPanelProps) {
                 <CardContent className="p-6">
                   <div className="flex items-start gap-4">
                     <div className="flex-shrink-0">
-                      {notification.sender ? (
-                        <Avatar className="h-12 w-12">
-                          <AvatarImage src={notification.sender.avatar || "/placeholder.svg"} />
-                          <AvatarFallback>{notification.sender.name.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                      ) : (
-                        <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
-                          <IconComponent className="h-6 w-6 text-white" />
-                        </div>
-                      )}
+                      <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
+                        <IconComponent className="h-6 w-6 text-white" />
+                      </div>
                     </div>
 
                     <div className="flex-1 min-w-0">
@@ -132,9 +141,9 @@ export function NotificationsPanel({ userType }: NotificationsPanelProps) {
                           {!notification.read && <div className="w-2 h-2 bg-blue-500 rounded-full"></div>}
                         </div>
                         <div className="flex items-center gap-2">
-                          <Badge variant="outline" className={`text-xs ${priorityColors[notification.priority]}`}>
-                            {notification.priority === "high" && <AlertCircle className="h-3 w-3 mr-1" />}
-                            {notification.priority}
+                          <Badge variant="outline" className={`text-xs ${originalTypeColors[originalType] || typeColors[notification.type]}`}>
+                            {notification.type === "error" && <AlertCircle className="h-3 w-3 mr-1" />}
+                            {originalType}
                           </Badge>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -156,21 +165,19 @@ export function NotificationsPanel({ userType }: NotificationsPanelProps) {
                         </div>
                       </div>
 
-                      <p className="text-gray-600 mb-3">{notification.description}</p>
+                      <p className="text-gray-600 mb-3">{notification.message}</p>
+
+                      {notification.metadata?.sender_name && (
+                        <p className="text-sm text-gray-500 mb-3">
+                          De: {notification.metadata.sender_name}
+                          {notification.metadata.sender_role && ` (${notification.metadata.sender_role})`}
+                        </p>
+                      )}
 
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2 text-sm text-gray-500">
                           <Clock className="h-4 w-4" />
-                          <span>{notification.time}</span>
-                          {notification.sender && (
-                            <>
-                              <span>•</span>
-                              <span>{notification.sender.name}</span>
-                              <Badge variant="outline" className="text-xs">
-                                {notification.sender.role}
-                              </Badge>
-                            </>
-                          )}
+                          <span>{formatTime(notification.createdAt)}</span>
                         </div>
                         {notification.actionUrl && (
                           <Button size="sm" variant="outline">

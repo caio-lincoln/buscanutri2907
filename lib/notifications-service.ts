@@ -7,11 +7,30 @@ export interface NotificationData {
   title: string
   message: string
   type: "info" | "success" | "warning" | "error"
+  originalType?: "message" | "appointment" | "forum" | "reminder" | "system"
   read: boolean
   createdAt: string
   userId: string
   actionUrl?: string
   metadata?: Record<string, any>
+}
+
+// Função para mapear tipos do banco para tipos da interface
+function mapNotificationType(dbType: string): "info" | "success" | "warning" | "error" {
+  switch (dbType) {
+    case "appointment":
+      return "success"
+    case "message":
+      return "info"
+    case "forum":
+      return "info"
+    case "reminder":
+      return "warning"
+    case "system":
+      return "error"
+    default:
+      return "info"
+  }
 }
 
 /**
@@ -35,7 +54,8 @@ export async function getUserNotifications(userId: string, limit = 50): Promise<
       id: notification.id,
       title: notification.title || 'Notificação',
       message: notification.message || '',
-      type: notification.notification_type || 'info',
+      type: mapNotificationType(notification.notification_type || 'info'),
+      originalType: notification.notification_type as "message" | "appointment" | "forum" | "reminder" | "system",
       read: notification.read || false,
       createdAt: notification.created_at,
       userId: notification.user_id,

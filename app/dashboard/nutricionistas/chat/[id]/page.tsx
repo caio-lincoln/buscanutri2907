@@ -12,7 +12,7 @@ import { ArrowLeft, Send, Paperclip, ImageIcon, Phone, Video, MoreVertical } fro
 import { getCurrentUser, getUserProfile, signOut } from "@/lib/auth"
 import { getChatMessages, sendChatMessage, type ChatMessage, type ChatConversation } from "@/lib/chat-forum-service"
 import { supabase } from "@/lib/supabase"
-import { toast } from "@/hooks/use-toast"
+import { toast } from "@/components/ui/use-toast"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import Link from "next/link"

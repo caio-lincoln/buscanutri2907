@@ -30,7 +30,7 @@ import {
 } from "lucide-react"
 import { getCurrentUser } from "@/lib/auth"
 import { getBlogPostById, updateBlogPost, type BlogPost } from "@/lib/blog-data"
-import { toast } from "@/hooks/use-toast"
+import { toast } from "@/components/ui/use-toast"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import Link from "next/link"

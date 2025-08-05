@@ -32,18 +32,37 @@ export function useRealtimeNotifications() {
   const [channel, setChannel] = useState<RealtimeChannel | null>(null)
   const supabase = createSupabaseClient()
 
+  // Função para mapear tipos do banco para tipos da interface
+  const mapNotificationType = useCallback((dbType: string): "info" | "success" | "warning" | "error" => {
+    switch (dbType) {
+      case "appointment":
+        return "success"
+      case "message":
+        return "info"
+      case "forum":
+        return "info"
+      case "reminder":
+        return "warning"
+      case "system":
+        return "error"
+      default:
+        return "info"
+    }
+  }, [])
+
   // Converter notificação do banco para o formato da interface
   const convertNotification = useCallback((dbNotification: RealtimeNotification): NotificationData => ({
     id: dbNotification.id,
     title: dbNotification.title,
     message: dbNotification.message || '',
-    type: (dbNotification.notification_type as NotificationData['type']) || 'info',
+    type: mapNotificationType(dbNotification.notification_type || 'info'),
+    originalType: dbNotification.notification_type as "message" | "appointment" | "forum" | "reminder" | "system",
     read: dbNotification.read,
     createdAt: dbNotification.created_at,
     userId: dbNotification.user_id,
     actionUrl: undefined,
     metadata: dbNotification.data
-  }), [])
+  }), [mapNotificationType])
 
   // Carregar notificações iniciais
   const loadNotifications = useCallback(async () => {

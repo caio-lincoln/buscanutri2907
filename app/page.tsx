@@ -934,7 +934,7 @@ export default function Home() {
           <div className="border-t border-white/20 py-6 md:py-8">
             <div className="flex flex-col md:flex-row justify-between items-center gap-3 md:gap-4">
               <div className="text-white/70 text-xs md:text-sm text-center md:text-left">
-                © {new Date().getFullYear()} Busca Nutri. Todos os direitos reservados.
+                © 2024 Busca Nutri. Todos os direitos reservados.
               </div>
               <div className="flex flex-wrap justify-center gap-4 md:gap-6 text-xs md:text-sm">
                 <Link href="/termos" className="text-white/70 hover:text-[#4AB0D9] transition-colors">
