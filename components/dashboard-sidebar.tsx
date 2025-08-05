@@ -248,10 +248,6 @@ export function DashboardSidebar({
                 <User className="h-4 w-4 mr-3 text-gray-600" />
                 <span className="font-medium text-sm">Meu Perfil</span>
               </DropdownMenuItem>
-              <DropdownMenuItem className="hover:bg-gray-50 rounded-lg m-2 p-3 transition-colors duration-200">
-                <Settings className="h-4 w-4 mr-3 text-gray-600" />
-                <span className="font-medium text-sm">Configurações</span>
-              </DropdownMenuItem>
               <DropdownMenuSeparator className="my-2" />
               <DropdownMenuItem
                 onClick={onSignOut}
@@ -307,23 +303,23 @@ export const getMenuItems = (
     case "paciente":
       return [
         { id: "overview", label: "Início", icon: Home },
-        {
-          id: "telemedicina",
-          label: "Minhas Consultas",
-          icon: Video,
-          badge: upcomingAppointments > 0 ? { count: upcomingAppointments, variant: "default" } : undefined,
-        },
+        // Telemedicina temporariamente removida
+        // {
+        //   id: "telemedicina",
+        //   label: "Minhas Consultas",
+        //   icon: Video,
+        //   badge: upcomingAppointments > 0 ? { count: upcomingAppointments, variant: "default" } : undefined,
+        // },
         { id: "buscar", label: "Buscar", icon: Search },
         { id: "chat", label: "Chat", icon: MessageSquare },
         { id: "duvidas", label: "Fórum", icon: HelpCircle },
-        { id: "iris", label: "Chat com Iris", icon: Bot },
+        { id: "iris", label: "IrisBot", icon: Bot },
         { 
           id: "notificacoes", 
           label: "Notificações", 
           icon: Bell,
           badge: unreadNotifications > 0 ? { count: unreadNotifications, variant: "destructive" } : undefined,
         },
-        { id: "configuracoes", label: "Configurações", icon: Settings },
         { id: "perfil", label: "Meu Perfil", icon: User },
       ]
 
@@ -346,7 +342,7 @@ export const getMenuItems = (
         },
         { id: "cursos", label: "Cursos", icon: Users },
         { id: "relatorios", label: "Relatórios", icon: BarChart3 },
-        { id: "iris", label: "Iris Bot", icon: Video },
+        { id: "iris", label: "IrisBot", icon: Bot },
         { 
           id: "notificacoes", 
           label: "Notificações", 

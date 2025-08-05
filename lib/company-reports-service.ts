@@ -138,14 +138,7 @@ export async function getMonthlyApplicationsData(companyId: string): Promise<Mon
 
     const { data, error } = await supabase
       .from('job_applications')
-      .select(`
-        applied_at,
-        status,
-        job_postings!inner (
-          company_id
-        )
-      `)
-      .eq('job_postings.company_id', companyId)
+      .select('applied_at, status, job_id')
       .gte('applied_at', sixMonthsAgo.toISOString())
 
     if (error) {

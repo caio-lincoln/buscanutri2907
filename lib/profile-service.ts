@@ -31,6 +31,8 @@ export async function updateUserProfile(
   delete dataToUpdate.created_at
   delete dataToUpdate.updated_at
   delete dataToUpdate.email // Email é do auth, não do profile
+  
+
 
   // Converter arrays de string para o formato correto se necessário (ex: de string separada por vírgulas)
   if (userType === "paciente") {
@@ -83,24 +85,9 @@ export async function updateUserProfile(
         .map((s: string) => s.trim())
         .filter(Boolean)
     }
-    // Para campos JSON como services, testimonials, working_hours, social_media
-    try {
-      if (dataToUpdate.services && typeof dataToUpdate.services === "string") {
-        dataToUpdate.services = JSON.parse(dataToUpdate.services)
-      }
-      if (dataToUpdate.testimonials && typeof dataToUpdate.testimonials === "string") {
-        dataToUpdate.testimonials = JSON.parse(dataToUpdate.testimonials)
-      }
-      if (dataToUpdate.working_hours && typeof dataToUpdate.working_hours === "string") {
-        dataToUpdate.working_hours = JSON.parse(dataToUpdate.working_hours)
-      }
-      if (dataToUpdate.social_media && typeof dataToUpdate.social_media === "string") {
-        dataToUpdate.social_media = JSON.parse(dataToUpdate.social_media)
-      }
-    } catch (e) {
-      console.error("Erro ao parsear campo JSON:", e)
-      throw new Error("Formato JSON inválido para um dos campos.")
-    }
+    // Campos JSON removidos - agora usando campos individuais
+    // Os campos services, testimonials, working_hours e social_media foram
+    // convertidos para campos individuais para evitar erros de parsing JSON
   }
 
   const { data, error } = await supabase.from(tableName).update(dataToUpdate).eq("user_id", userId).select().single()

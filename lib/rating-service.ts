@@ -146,50 +146,12 @@ export async function updateNutritionistRating(nutritionistId: string): Promise<
 
 // Verificar se uma consulta pode ser avaliada
 export async function canRateConsultation(consultationId: string): Promise<boolean> {
-  // Verificar se a consulta foi concluída
-  const { data: consultation, error: consultationError } = await supabase
-    .from("consultations")
-    .select("status")
-    .eq("id", consultationId)
-    .single()
-
-  if (consultationError || !consultation) {
-    return false
-  }
-
-  if (consultation.status !== "completed") {
-    return false
-  }
-
-  // Verificar se já foi avaliada
-  const existingRating = await getRatingByConsultation(consultationId)
-  return !existingRating
+  // Função removida - não há mais consultas de telemedicina
+  return false
 }
 
 // Buscar consultas que podem ser avaliadas por um paciente
 export async function getConsultationsToRate(patientId: string): Promise<any[]> {
-  const { data, error } = await supabase
-    .from("consultations")
-    .select(`
-      id,
-      start_time,
-      end_time,
-      nutritionist_id,
-      nutritionist_profiles!inner(full_name, profile_image_url)
-    `)
-    .eq("patient_id", patientId)
-    .eq("status", "completed")
-    .not("id", "in", `(
-      SELECT consultation_id 
-      FROM consultation_ratings 
-      WHERE patient_id = '${patientId}'
-    )`)
-    .order("end_time", { ascending: false })
-
-  if (error) {
-    console.error("Erro ao buscar consultas para avaliar:", error)
-    throw error
-  }
-
-  return data || []
+  // Função removida - não há mais consultas de telemedicina
+  return []
 }

@@ -81,7 +81,7 @@ export function Navbar() {
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href="/telemedicina/agendar" className="w-full">
+                <Link href="/nutricionistas" className="w-full">
                   Agendar Consulta
                 </Link>
               </DropdownMenuItem>
@@ -289,7 +289,7 @@ export function Navbar() {
                   Encontrar Nutricionistas
                 </Link>
                 <Link
-                  href="/telemedicina/agendar"
+                  href="/nutricionistas"
                   onClick={closeMobileMenu}
                   className="text-gray-600 hover:text-[#1E1D40] transition duration-300 block py-1"
                 >

@@ -130,7 +130,7 @@ export default function NutricionistasPage() {
         (nutritionist.consultation_price >= selectedPriceRange.min &&
           nutritionist.consultation_price <= selectedPriceRange.max)
 
-      const matchesOnline = !onlineOnly || nutritionist.online_consultation || false
+      const matchesOnline = !onlineOnly || nutritionist.service_online_available || false
 
       return matchesSearch && matchesSpecialty && matchesState && matchesPrice && matchesOnline
     })

@@ -86,14 +86,9 @@ export async function removeBadgeFromNutritionist(nutritionistId: string, badgeI
 
 export async function getNutritionistBadges(nutritionistId: string): Promise<NutritionistBadge[]> {
   try {
-    const { data, error } = await supabase
+    const { data: userBadges, error } = await supabase
       .from("user_badges")
-      .select(
-        `
-        *,
-        badges!inner(*)
-      `,
-      )
+      .select("*")
       .eq("user_id", nutritionistId)
     
     if (error) {
@@ -106,11 +101,27 @@ export async function getNutritionistBadges(nutritionistId: string): Promise<Nut
       return []
     }
     
+    if (!userBadges || userBadges.length === 0) {
+      return []
+    }
+
+    // Buscar informações das badges separadamente
+    const badgeIds = userBadges.map(ub => ub.badge_id)
+    const { data: badges, error: badgesError } = await supabase
+      .from("badges")
+      .select("*")
+      .in("id", badgeIds)
+
+    if (badgesError) {
+      console.error("Erro ao buscar detalhes das badges:", badgesError)
+      return userBadges.map(ub => ({ ...ub, badge: undefined }))
+    }
+    
     // Mapear os dados para incluir a badge corretamente
-    const mappedData = data?.map(item => ({
+    const mappedData = userBadges.map(item => ({
       ...item,
-      badge: item.badges
-    })) || []
+      badge: badges?.find(badge => badge.id === item.badge_id)
+    }))
     
     return mappedData as NutritionistBadge[]
   } catch (error) {

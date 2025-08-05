@@ -96,11 +96,12 @@ BEGIN
     -- Criar consulta de teste com horário atual (para poder testar imediatamente)
     test_consultation_id := gen_random_uuid();
     
-    INSERT INTO consultations (
+    INSERT INTO telemedicine_consultations (
         id,
         patient_id,
         nutritionist_id,
-        scheduled_time,
+        start_time,
+        end_time,
         duration,
         status,
         consultation_type,
@@ -114,6 +115,7 @@ BEGIN
         test_patient_id,
         test_nutritionist_id,
         NOW() + INTERVAL '2 minutes', -- 2 minutos no futuro para permitir teste
+        NOW() + INTERVAL '47 minutes', -- 45 minutos de duração + 2 minutos de início
         45,
         'scheduled',
         'video',
@@ -187,14 +189,14 @@ END $$;
 -- Verificar se a consulta foi criada corretamente
 SELECT 
     c.id,
-    c.scheduled_time,
+    c.start_time,
     c.status,
     c.consultation_type,
     pp.full_name as patient_name,
     np.full_name as nutritionist_name,
     np.crn,
     np.specialties
-FROM consultations c
+FROM telemedicine_consultations c
 JOIN patient_profiles pp ON c.patient_id = pp.user_id
 JOIN nutritionist_profiles np ON c.nutritionist_id = np.user_id
 WHERE c.notes LIKE '%CONSULTA DE TESTE%'

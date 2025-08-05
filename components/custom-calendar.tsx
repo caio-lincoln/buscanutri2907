@@ -42,7 +42,7 @@ export function CustomCalendar({
 
   React.useEffect(() => {
     generateCalendarDays()
-  }, [currentMonth, generateCalendarDays])
+  }, [currentMonth])
 
   const generateCalendarDays = React.useCallback(() => {
     const start = startOfMonth(currentMonth)

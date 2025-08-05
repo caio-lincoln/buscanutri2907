@@ -218,15 +218,24 @@ export async function getJobApplications(
   },
 ): Promise<JobApplication[]> {
   try {
+    // Primeiro, buscar os job_ids da empresa
+    const { data: companyJobs, error: jobsError } = await supabase
+      .from("job_postings")
+      .select("id")
+      .eq("company_id", companyId)
+
+    if (jobsError) throw jobsError
+
+    const jobIds = companyJobs?.map(job => job.id) || []
+    
+    if (jobIds.length === 0) {
+      return []
+    }
+
     let query = supabase
       .from("job_applications")
       .select(`
         *,
-        job_postings!inner (
-          id,
-          title,
-          company_id
-        ),
         nutritionist_profiles (
           id,
           full_name,
@@ -238,7 +247,7 @@ export async function getJobApplications(
           profile_image_url
         )
       `)
-      .eq("job_postings.company_id", companyId)
+      .in("job_id", jobIds)
 
     if (filters?.status && filters.status !== "all") {
       query = query.eq("status", filters.status)
@@ -252,19 +261,36 @@ export async function getJobApplications(
 
     if (error) throw error
 
-    let filteredData = data || []
+    let applications = data || []
+
+    // Buscar informações dos job_postings separadamente
+    if (applications.length > 0) {
+      const uniqueJobIds = [...new Set(applications.map(app => app.job_id))]
+      const { data: jobsData, error: jobsError } = await supabase
+        .from("job_postings")
+        .select("id, title, company_id")
+        .in("id", uniqueJobIds)
+
+      if (jobsError) throw jobsError
+
+      // Enriquecer applications com dados dos job_postings
+      applications = applications.map(app => ({
+        ...app,
+        job_postings: jobsData?.find(job => job.id === app.job_id) || null
+      }))
+    }
 
     // Filtro de busca por nome
     if (filters?.search) {
       const searchTerm = filters.search.toLowerCase()
-      filteredData = filteredData.filter(
+      applications = applications.filter(
         (app) =>
           app.nutritionist_profiles?.full_name.toLowerCase().includes(searchTerm) ||
           app.nutritionist_profiles?.crn.toLowerCase().includes(searchTerm),
       )
     }
 
-    return filteredData
+    return applications
   } catch (error) {
     console.error("Erro ao buscar candidaturas:", error)
     return []

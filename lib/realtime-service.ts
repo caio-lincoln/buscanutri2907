@@ -61,56 +61,57 @@ export class RealtimeService {
       const channelName = `consultation_${consultationId}`
       const channel = supabase.channel(channelName)
 
+      // TELEMEDICINA TEMPORARIAMENTE DESABILITADA
       // Escutar mensagens - usar tabela real, não view
-      channel.on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "telemedicine_consultation_messages",
-          filter: `consultation_id=eq.${consultationId}`,
-        },
-        (payload) => {
-          const message = payload.new as RealtimeMessage
-          if (message.sender_id !== this.userId) {
-            this.onMessageReceived?.(message)
-          }
-        },
-      )
+      // channel.on(
+      //   "postgres_changes",
+      //   {
+      //     event: "INSERT",
+      //     schema: "public",
+      //     table: "telemedicine_consultation_messages",
+      //     filter: `consultation_id=eq.${consultationId}`,
+      //   },
+      //   (payload) => {
+      //     const message = payload.new as RealtimeMessage
+      //     if (message.sender_id !== this.userId) {
+      //       this.onMessageReceived?.(message)
+      //     }
+      //   },
+      // )
 
       // Escutar notas - usar tabela real, não view
-      channel.on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "telemedicine_consultation_notes",
-          filter: `consultation_id=eq.${consultationId}`,
-        },
-        (payload) => {
-          const note = payload.new as RealtimeNote
-          if (note.author_id !== this.userId) {
-            this.onNoteAdded?.(note)
-          }
-        },
-      )
+      // channel.on(
+      //   "postgres_changes",
+      //   {
+      //     event: "INSERT",
+      //     schema: "public",
+      //     table: "telemedicine_consultation_notes",
+      //     filter: `consultation_id=eq.${consultationId}`,
+      //   },
+      //   (payload) => {
+      //     const note = payload.new as RealtimeNote
+      //     if (note.author_id !== this.userId) {
+      //       this.onNoteAdded?.(note)
+      //     }
+      //   },
+      // )
 
       // Escutar atualizações de notas
-      channel.on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "consultation_notes",
-          filter: `consultation_id=eq.${consultationId}`,
-        },
-        (payload) => {
-          const note = payload.new as RealtimeNote
-          if (note.author_id !== this.userId) {
-            this.onNoteAdded?.(note)
-          }
-        },
-      )
+      // channel.on(
+      //   "postgres_changes",
+      //   {
+      //     event: "UPDATE",
+      //     schema: "public",
+      //     table: "consultation_notes",
+      //     filter: `consultation_id=eq.${consultationId}`,
+      //   },
+      //   (payload) => {
+      //     const note = payload.new as RealtimeNote
+      //     if (note.author_id !== this.userId) {
+      //       this.onNoteAdded?.(note)
+      //     }
+      //   },
+      // )
 
       // Escutar presença (quem está online)
       channel.on("presence", { event: "sync" }, () => {
@@ -191,29 +192,33 @@ export class RealtimeService {
     fileName?: string,
     fileSize?: number,
   ): Promise<RealtimeMessage | null> {
-    try {
-      const { data, error } = await supabase
-        .from("telemedicine_consultation_messages")
-        .insert({
-          consultation_id: consultationId,
-          sender_id: this.userId,
-          message,
-          message_type: messageType,
-          file_url: fileUrl,
-          file_name: fileName,
-          file_size: fileSize,
-        })
-        .select()
-        .single()
+    // TELEMEDICINA TEMPORARIAMENTE DESABILITADA
+    console.log("⚠️ Funcionalidade de telemedicina temporariamente desabilitada")
+    return null
+    
+    // try {
+    //   const { data, error } = await supabase
+    //     .from("telemedicine_consultation_messages")
+    //     .insert({
+    //       consultation_id: consultationId,
+    //       sender_id: this.userId,
+    //       message,
+    //       message_type: messageType,
+    //       file_url: fileUrl,
+    //       file_name: fileName,
+    //       file_size: fileSize,
+    //     })
+    //     .select()
+    //     .single()
 
-      if (error) throw error
+    //   if (error) throw error
 
-      console.log("✅ Mensagem enviada")
-      return data as RealtimeMessage
-    } catch (error) {
-      console.error("❌ Erro ao enviar mensagem:", error)
-      throw error
-    }
+    //   console.log("✅ Mensagem enviada")
+    //   return data as RealtimeMessage
+    // } catch (error) {
+    //   console.error("❌ Erro ao enviar mensagem:", error)
+    //   throw error
+    // }
   }
 
   async addNote(
@@ -223,65 +228,77 @@ export class RealtimeService {
     category: RealtimeNote["category"] = "general",
     isPrivate = false,
   ): Promise<RealtimeNote | null> {
-    try {
-      const { data, error } = await supabase
-        .from("telemedicine_consultation_notes")
-        .insert({
-          consultation_id: consultationId,
-          author_id: this.userId,
-          title,
-          content,
-          category,
-          is_private: isPrivate,
-        })
-        .select()
-        .single()
+    // TELEMEDICINA TEMPORARIAMENTE DESABILITADA
+    console.log("⚠️ Funcionalidade de telemedicina temporariamente desabilitada")
+    return null
+    
+    // try {
+    //   const { data, error } = await supabase
+    //     .from("telemedicine_consultation_notes")
+    //     .insert({
+    //       consultation_id: consultationId,
+    //       author_id: this.userId,
+    //       title,
+    //       content,
+    //       category,
+    //       is_private: isPrivate,
+    //     })
+    //     .select()
+    //     .single()
 
-      if (error) throw error
+    //   if (error) throw error
 
-      console.log("✅ Nota adicionada")
-      return data as RealtimeNote
-    } catch (error) {
-      console.error("❌ Erro ao adicionar nota:", error)
-      throw error
-    }
+    //   console.log("✅ Nota adicionada")
+    //   return data as RealtimeNote
+    // } catch (error) {
+    //   console.error("❌ Erro ao adicionar nota:", error)
+    //   throw error
+    // }
   }
 
   async updateNote(noteId: string, title: string, content: string): Promise<RealtimeNote | null> {
-    try {
-      const { data, error } = await supabase
-        .from("telemedicine_consultation_notes")
-        .update({
-          title,
-          content,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", noteId)
-        .eq("author_id", this.userId)
-        .select()
-        .single()
+    // TELEMEDICINA TEMPORARIAMENTE DESABILITADA
+    console.log("⚠️ Funcionalidade de telemedicina temporariamente desabilitada")
+    return null
+    
+    // try {
+    //   const { data, error } = await supabase
+    //     .from("telemedicine_consultation_notes")
+    //     .update({
+    //       title,
+    //       content,
+    //       updated_at: new Date().toISOString(),
+    //     })
+    //     .eq("id", noteId)
+    //     .eq("author_id", this.userId)
+    //     .select()
+    //     .single()
 
-      if (error) throw error
+    //   if (error) throw error
 
-      console.log("✅ Nota atualizada")
-      return data as RealtimeNote
-    } catch (error) {
-      console.error("❌ Erro ao atualizar nota:", error)
-      throw error
-    }
+    //   console.log("✅ Nota atualizada")
+    //   return data as RealtimeNote
+    // } catch (error) {
+    //   console.error("❌ Erro ao atualizar nota:", error)
+    //   throw error
+    // }
   }
 
   async markMessageAsRead(messageId: string): Promise<void> {
-    try {
-      const { error } = await supabase
-        .from("telemedicine_consultation_messages")
-        .update({ read_at: new Date().toISOString() })
-        .eq("id", messageId)
+    // TELEMEDICINA TEMPORARIAMENTE DESABILITADA
+    console.log("⚠️ Funcionalidade de telemedicina temporariamente desabilitada")
+    return
+    
+    // try {
+    //   const { error } = await supabase
+    //     .from("telemedicine_consultation_messages")
+    //     .update({ read_at: new Date().toISOString() })
+    //     .eq("id", messageId)
 
-      if (error) throw error
-    } catch (error) {
-      console.error("❌ Erro ao marcar mensagem como lida:", error)
-    }
+    //   if (error) throw error
+    // } catch (error) {
+    //   console.error("❌ Erro ao marcar mensagem como lida:", error)
+    // }
   }
 
   async markNotificationAsRead(notificationId: string): Promise<void> {
@@ -317,37 +334,45 @@ export class RealtimeService {
   }
 
   async loadMessages(consultationId: string): Promise<RealtimeMessage[]> {
-    try {
-      const { data, error } = await supabase
-        .from("telemedicine_consultation_messages")
-        .select("*")
-        .eq("consultation_id", consultationId)
-        .order("created_at", { ascending: true })
+    // TELEMEDICINA TEMPORARIAMENTE DESABILITADA
+    console.log("⚠️ Funcionalidade de telemedicina temporariamente desabilitada")
+    return []
+    
+    // try {
+    //   const { data, error } = await supabase
+    //     .from("telemedicine_consultation_messages")
+    //     .select("*")
+    //     .eq("consultation_id", consultationId)
+    //     .order("created_at", { ascending: true })
 
-      if (error) throw error
+    //   if (error) throw error
 
-      return data || []
-    } catch (error) {
-      console.error("❌ Erro ao carregar mensagens:", error)
-      return []
-    }
+    //   return data || []
+    // } catch (error) {
+    //   console.error("❌ Erro ao carregar mensagens:", error)
+    //   return []
+    // }
   }
 
   async loadNotes(consultationId: string): Promise<RealtimeNote[]> {
-    try {
-      const { data, error } = await supabase
-        .from("telemedicine_consultation_notes")
-        .select("*")
-        .eq("consultation_id", consultationId)
-        .order("created_at", { ascending: false })
+    // TELEMEDICINA TEMPORARIAMENTE DESABILITADA
+    console.log("⚠️ Funcionalidade de telemedicina temporariamente desabilitada")
+    return []
+    
+    // try {
+    //   const { data, error } = await supabase
+    //     .from("telemedicine_consultation_notes")
+    //     .select("*")
+    //     .eq("consultation_id", consultationId)
+    //     .order("created_at", { ascending: false })
 
-      if (error) throw error
+    //   if (error) throw error
 
-      return data || []
-    } catch (error) {
-      console.error("❌ Erro ao carregar notas:", error)
-      return []
-    }
+    //   return data || []
+    // } catch (error) {
+    //   console.error("❌ Erro ao carregar notas:", error)
+    //   return []
+    // }
   }
 
   async loadNotifications(): Promise<RealtimeNotification[]> {

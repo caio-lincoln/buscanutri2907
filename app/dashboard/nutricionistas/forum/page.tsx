@@ -195,10 +195,12 @@ export default function NutritionistForumPage() {
               </div>
             </div>
             
-            <Button onClick={() => setIsQuestionModalOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Nova Pergunta
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button onClick={() => setIsQuestionModalOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Nova Pergunta
+              </Button>
+            </div>
           </div>
 
         {/* Stats Cards */}

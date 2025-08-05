@@ -113,14 +113,15 @@ BEGIN
     -- Inserir consultas de exemplo
     -- Consulta 1: agendada para hoje
     consultation_id_1 := gen_random_uuid();
-    INSERT INTO consultations (
-        id, patient_id, nutritionist_id, scheduled_time, duration, status,
+    INSERT INTO telemedicine_consultations (
+        id, patient_id, nutritionist_id, start_time, end_time, duration, status,
         consultation_type, notes, price, payment_status
     ) VALUES (
         consultation_id_1,
         patient_user_id,
         nutritionist_user_id,
         NOW() + INTERVAL '2 hours',
+        NOW() + INTERVAL '2 hours 45 minutes',
         45,
         'scheduled',
         'video',
@@ -131,14 +132,15 @@ BEGIN
     
     -- Consulta 2: agendada para amanhã
     consultation_id_2 := gen_random_uuid();
-    INSERT INTO consultations (
-        id, patient_id, nutritionist_id, scheduled_time, duration, status,
+    INSERT INTO telemedicine_consultations (
+        id, patient_id, nutritionist_id, start_time, end_time, duration, status,
         consultation_type, notes, price, payment_status
     ) VALUES (
         consultation_id_2,
         patient_user_id,
         nutritionist_user_id,
         NOW() + INTERVAL '1 day' + INTERVAL '3 hours',
+        NOW() + INTERVAL '1 day' + INTERVAL '3 hours 30 minutes',
         30,
         'scheduled',
         'video',
@@ -149,14 +151,15 @@ BEGIN
     
     -- Consulta 3: concluída (1 semana atrás)
     consultation_id_3 := gen_random_uuid();
-    INSERT INTO consultations (
-        id, patient_id, nutritionist_id, scheduled_time, duration, status,
+    INSERT INTO telemedicine_consultations (
+        id, patient_id, nutritionist_id, start_time, end_time, duration, status,
         consultation_type, notes, price, payment_status
     ) VALUES (
         consultation_id_3,
         patient_user_id,
         nutritionist_user_id,
         NOW() - INTERVAL '1 week',
+        NOW() - INTERVAL '1 week' + INTERVAL '45 minutes',
         45,
         'completed',
         'video',
@@ -167,14 +170,15 @@ BEGIN
     
     -- Consulta 4: concluída mais antiga (2 semanas atrás)
     consultation_id_4 := gen_random_uuid();
-    INSERT INTO consultations (
-        id, patient_id, nutritionist_id, scheduled_time, duration, status,
+    INSERT INTO telemedicine_consultations (
+        id, patient_id, nutritionist_id, start_time, end_time, duration, status,
         consultation_type, notes, price, payment_status
     ) VALUES (
         consultation_id_4,
         patient_user_id,
         nutritionist_user_id,
         NOW() - INTERVAL '2 weeks',
+        NOW() - INTERVAL '2 weeks' + INTERVAL '30 minutes',
         30,
         'completed',
         'video',
@@ -185,14 +189,15 @@ BEGIN
     
     -- Consulta 5: com segundo nutricionista
     consultation_id_5 := gen_random_uuid();
-    INSERT INTO consultations (
-        id, patient_id, nutritionist_id, scheduled_time, duration, status,
+    INSERT INTO telemedicine_consultations (
+        id, patient_id, nutritionist_id, start_time, end_time, duration, status,
         consultation_type, notes, price, payment_status
     ) VALUES (
         consultation_id_5,
         patient_user_id,
         nutritionist_2_id,
         NOW() - INTERVAL '3 weeks',
+        NOW() - INTERVAL '3 weeks' + INTERVAL '45 minutes',
         45,
         'completed',
         'video',
@@ -240,7 +245,7 @@ END $$;
 SELECT 
     'Consultas inseridas' as tipo,
     COUNT(*) as quantidade
-FROM consultations
+FROM telemedicine_consultations
 UNION ALL
 SELECT 
     'Mensagens inseridas' as tipo,

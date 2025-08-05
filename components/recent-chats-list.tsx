@@ -89,7 +89,7 @@ export default function RecentChatsList({ userId }: RecentChatsListProps) {
               >
                 <div className="flex items-center gap-4">
                   <Avatar className="h-12 w-12 ring-2 ring-gray-200 shadow-md group-hover:scale-105 transition-transform duration-200">
-                    <AvatarImage src={conversation.nutritionist_profiles?.profile_image_url || undefined} />
+                    <AvatarImage src={conversation.nutritionist_profiles?.profile_image_url || "/placeholder.svg"} />
                     <AvatarFallback className="bg-gradient-to-br from-blue-500 to-blue-600 text-white font-semibold">
                       {conversation.nutritionist_profiles?.full_name?.charAt(0) || "N"}
                     </AvatarFallback>

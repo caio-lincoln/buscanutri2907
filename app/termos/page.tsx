@@ -122,11 +122,10 @@ export default function TermosPage() {
                 </p>
                 <ul className="list-disc pl-6 space-y-2 text-[#1E1D40]/80">
                   <li>Cadastro e verificação de profissionais de nutrição</li>
-                  <li>Sistema de busca e agendamento de consultas</li>
+                  <li>Sistema de busca e agendamento de consultas presenciais</li>
                   <li>Ferramentas de comunicação entre usuários</li>
                   <li>Publicação de conteúdo educativo e científico</li>
                   <li>Marketplace de oportunidades profissionais</li>
-                  <li>Serviços de telemedicina nutricional</li>
                 </ul>
               </CardContent>
             </Card>

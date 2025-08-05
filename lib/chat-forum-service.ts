@@ -96,22 +96,9 @@ export interface ForumAnswer {
 // Chat functions
 export async function getPatientChatConversations(patientUserId: string): Promise<ChatConversation[]> {
   try {
-    const { data, error } = await supabase
+    const { data: conversations, error } = await supabase
       .from('chat_conversations')
-      .select(`
-        *,
-        nutritionist_profiles!chat_conversations_nutritionist_id_fkey (
-          full_name,
-          profile_image_url,
-          crn,
-          is_verified
-        ),
-        last_message:chat_messages!chat_messages_conversation_id_fkey (
-          message_text,
-          sender_type,
-          created_at
-        )
-      `)
+      .select('*')
       .eq('patient_id', patientUserId)
       .order('last_message_at', { ascending: false, nullsFirst: false })
 
@@ -120,19 +107,51 @@ export async function getPatientChatConversations(patientUserId: string): Promis
       return []
     }
 
-    // Process the data to get the last message
-    const conversations = (data || []).map(conv => {
-      const lastMessage = Array.isArray(conv.last_message) && conv.last_message.length > 0
-        ? conv.last_message.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0]
-        : null
+    if (!conversations || conversations.length === 0) {
+      return []
+    }
+
+    // Buscar perfis dos nutricionistas separadamente
+    const nutritionistIds = [...new Set(conversations.map(c => c.nutritionist_id).filter(Boolean))]
+    let nutritionistProfiles: any[] = []
+    
+    if (nutritionistIds.length > 0) {
+      const { data: profiles } = await supabase
+        .from('nutritionist_profiles')
+        .select('user_id, full_name, profile_image_url, crn, is_verified')
+        .in('user_id', nutritionistIds)
+      
+      nutritionistProfiles = profiles || []
+    }
+
+    // Buscar últimas mensagens separadamente
+    const conversationIds = conversations.map(c => c.id)
+    let lastMessages: any[] = []
+    
+    if (conversationIds.length > 0) {
+      const { data: messages } = await supabase
+        .from('chat_messages')
+        .select('conversation_id, message_text, sender_type, created_at')
+        .in('conversation_id', conversationIds)
+        .order('created_at', { ascending: false })
+      
+      lastMessages = messages || []
+    }
+
+    // Combinar os dados
+    const result = conversations.map((conv: any) => {
+      const nutritionistProfile = nutritionistProfiles.find(np => np.user_id === conv.nutritionist_id)
+      const conversationMessages = lastMessages.filter(msg => msg.conversation_id === conv.id)
+      const lastMessage = conversationMessages.length > 0 ? conversationMessages[0] : null
       
       return {
         ...conv,
+        nutritionist_profiles: nutritionistProfile || null,
         last_message: lastMessage
       }
     })
 
-    return conversations
+    return result
   } catch (error) {
     console.error('Error in getPatientChatConversations:', error)
     return []
@@ -141,20 +160,9 @@ export async function getPatientChatConversations(patientUserId: string): Promis
 
 export async function getNutritionistChatConversations(nutritionistUserId: string): Promise<ChatConversation[]> {
   try {
-    const { data, error } = await supabase
+    const { data: conversations, error } = await supabase
       .from('chat_conversations')
-      .select(`
-        *,
-        patient_profiles!chat_conversations_patient_id_fkey (
-          full_name,
-          profile_image_url
-        ),
-        last_message:chat_messages!chat_messages_conversation_id_fkey (
-          message_text,
-          sender_type,
-          created_at
-        )
-      `)
+      .select('*')
       .eq('nutritionist_id', nutritionistUserId)
       .order('last_message_at', { ascending: false, nullsFirst: false })
 
@@ -163,19 +171,51 @@ export async function getNutritionistChatConversations(nutritionistUserId: strin
       return []
     }
 
-    // Process the data to get the last message
-    const conversations = (data || []).map(conv => {
-      const lastMessage = Array.isArray(conv.last_message) && conv.last_message.length > 0
-        ? conv.last_message.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0]
-        : null
+    if (!conversations || conversations.length === 0) {
+      return []
+    }
+
+    // Buscar perfis dos pacientes separadamente
+    const patientIds = [...new Set(conversations.map(c => c.patient_id).filter(Boolean))]
+    let patientProfiles: any[] = []
+    
+    if (patientIds.length > 0) {
+      const { data: profiles } = await supabase
+        .from('patient_profiles')
+        .select('user_id, full_name, profile_image_url')
+        .in('user_id', patientIds)
+      
+      patientProfiles = profiles || []
+    }
+
+    // Buscar últimas mensagens separadamente
+    const conversationIds = conversations.map(c => c.id)
+    let lastMessages: any[] = []
+    
+    if (conversationIds.length > 0) {
+      const { data: messages } = await supabase
+        .from('chat_messages')
+        .select('conversation_id, message_text, sender_type, created_at')
+        .in('conversation_id', conversationIds)
+        .order('created_at', { ascending: false })
+      
+      lastMessages = messages || []
+    }
+
+    // Combinar os dados
+    const result = conversations.map((conv: any) => {
+      const patientProfile = patientProfiles.find(pp => pp.user_id === conv.patient_id)
+      const conversationMessages = lastMessages.filter(msg => msg.conversation_id === conv.id)
+      const lastMessage = conversationMessages.length > 0 ? conversationMessages[0] : null
       
       return {
         ...conv,
+        patient_profiles: patientProfile || null,
         last_message: lastMessage
       }
     })
 
-    return conversations
+    return result
   } catch (error) {
     console.error('Error in getNutritionistChatConversations:', error)
     return []
@@ -287,19 +327,7 @@ export async function createChatConversation(
         appointment_id: appointmentId,
         status: 'active'
       })
-      .select(`
-        *,
-        nutritionist_profiles!chat_conversations_nutritionist_id_fkey (
-          full_name,
-          profile_image_url,
-          crn,
-          is_verified
-        ),
-        patient_profiles!chat_conversations_patient_id_fkey (
-          full_name,
-          profile_image_url
-        )
-      `)
+      .select('*')
       .single()
 
     if (error) {

@@ -6,11 +6,14 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Briefcase, MapPin, DollarSign, Clock, ArrowRight, Building } from "lucide-react"
 import { getAllActiveJobs, JobPosting } from "@/lib/company-service"
+import { JobDetailsModal } from "@/components/job-details-modal"
 import Image from "next/image"
 
 export function JobsTab() {
   const [jobs, setJobs] = useState<JobPosting[]>([])
   const [loading, setLoading] = useState(true)
+  const [selectedJob, setSelectedJob] = useState<JobPosting | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
   useEffect(() => {
     loadJobs()
@@ -46,6 +49,11 @@ export function JobsTab() {
     if (diffDays < 7) return `${diffDays} dias atrás`
     if (diffDays < 30) return `${Math.ceil(diffDays / 7)} semana(s) atrás`
     return `${Math.ceil(diffDays / 30)} mês(es) atrás`
+  }
+
+  const handleViewDetails = (job: JobPosting) => {
+    setSelectedJob(job)
+    setIsModalOpen(true)
   }
 
   if (loading) {
@@ -124,7 +132,11 @@ export function JobsTab() {
                   <span className="text-xs text-gray-500 flex items-center gap-1">
                     <Clock className="h-3 w-3" /> {formatDate(job.created_at)}
                   </span>
-                  <Button variant="ghost" className="text-blue-600 hover:bg-blue-50">
+                  <Button 
+                    variant="ghost" 
+                    className="text-blue-600 hover:bg-blue-50"
+                    onClick={() => handleViewDetails(job)}
+                  >
                     Ver Detalhes <ArrowRight className="h-3 w-3 ml-1" />
                   </Button>
                 </div>
@@ -132,6 +144,18 @@ export function JobsTab() {
             </Card>
           ))}
         </div>
+      )}
+
+      {/* Modal de Detalhes */}
+      {selectedJob && (
+        <JobDetailsModal
+          job={selectedJob}
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false)
+            setSelectedJob(null)
+          }}
+        />
       )}
     </div>
   )

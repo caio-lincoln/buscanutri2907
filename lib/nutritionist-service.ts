@@ -16,21 +16,26 @@ export function formatNutritionistData(
   const formattedPrice = nutritionist.consultation_price || 0
   const formattedBio = nutritionist.bio || "Sem biografia disponível."
   const formattedImage =
-    nutritionist.profile_image_url || `/placeholder.svg?height=400&width=400&text=${encodeURIComponent(formattedName)}`
-  const formattedOnlineConsultation = nutritionist.online_consultation || false
+    nutritionist?.profile_image_url || `/placeholder.svg?height=400&width=400&text=${encodeURIComponent(formattedName)}`
+  const formattedOnlineConsultation = nutritionist.service_online_available || false
   const formattedCrn = nutritionist.crn || "Não informado"
 
   // Garante que os valores são arrays, mesmo que venham como string ou null
   const toArray = (value: unknown): string[] => {
-    if (Array.isArray(value)) return value
+    if (Array.isArray(value)) {
+      return value.map(item => typeof item === 'string' ? item.replace(/\\"/g, '"') : item)
+    }
     if (typeof value === "string" && value.trim() !== "") {
+      // Remover escapes duplos se existirem
+      const cleanValue = value.replace(/\\"/g, '"')
+      
       try {
-        const parsed = JSON.parse(value)
+        const parsed = JSON.parse(cleanValue)
         if (Array.isArray(parsed)) return parsed
       } catch {
         /* not JSON, continue */
       }
-      return value
+      return cleanValue
         .split(",")
         .map((v) => v.trim())
         .filter(Boolean)

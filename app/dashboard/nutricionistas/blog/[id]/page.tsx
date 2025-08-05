@@ -199,7 +199,7 @@ export default function NutritionistBlogPostPage() {
     <DashboardSidebar
       userType="nutricionista"
       userName={currentUser?.user_metadata?.full_name || "Nutricionista"}
-      userAvatar={currentUser?.user_metadata?.profile_image_url}
+      userAvatar={currentUser?.user_metadata?.profile_image_url || "/placeholder.svg"}
       menuItems={menuItems}
       activeItem="blog"
       onItemClick={(item) => router.push(item.href)}

@@ -69,13 +69,7 @@ export async function getActivePatients(nutritionistId: string): Promise<ActiveP
   try {
     const { data, error } = await supabase
       .from('chat_conversations')
-      .select(`
-        id,
-        patient_id,
-        last_message_at,
-        patient_profiles!inner(full_name, profile_image_url),
-        chat_messages(message_text, created_at)
-      `)
+      .select('id, patient_id, last_message_at')
       .eq('nutritionist_id', nutritionistId)
       .eq('status', 'active')
       .order('last_message_at', { ascending: false })
@@ -91,7 +85,7 @@ export async function getActivePatients(nutritionistId: string): Promise<ActiveP
       name: conv.patient_profiles?.full_name || 'Paciente',
       lastMessage: conv.chat_messages?.[0]?.message_text || 'Sem mensagens',
       lastMessageTime: conv.last_message_at ? new Date(conv.last_message_at).toLocaleString('pt-BR') : '',
-      avatar: conv.patient_profiles?.profile_image_url
+      avatar: conv.patient_profiles?.profile_image_url || "/placeholder.svg"
     })) || []
   } catch (error) {
     console.error('Erro ao buscar pacientes ativos:', error)
@@ -100,59 +94,15 @@ export async function getActivePatients(nutritionistId: string): Promise<ActiveP
 }
 
 export async function getScheduledAppointments(nutritionistId: string): Promise<ScheduledAppointment[]> {
-  try {
-    const { data, error } = await supabase
-      .from('consultations')
-      .select(`
-        id,
-        scheduled_time,
-        consultation_type,
-        status,
-        patient_profiles!inner(full_name)
-      `)
-      .eq('nutritionist_id', nutritionistId)
-      .eq('status', 'scheduled')
-      .gte('scheduled_time', new Date().toISOString())
-      .order('scheduled_time', { ascending: true })
-      .limit(10)
-
-    if (error) {
-      console.error('Erro ao buscar consultas agendadas:', error)
-      return []
-    }
-
-    return data?.map(consultation => ({
-      id: consultation.id,
-      patientName: consultation.patient_profiles?.full_name || 'Paciente',
-      date: new Date(consultation.scheduled_time).toLocaleDateString('pt-BR'),
-      time: new Date(consultation.scheduled_time).toLocaleTimeString('pt-BR', { 
-        hour: '2-digit', 
-        minute: '2-digit' 
-      }),
-      type: consultation.consultation_type as 'video' | 'audio',
-      status: consultation.status
-    })) || []
-  } catch (error) {
-    console.error('Erro ao buscar consultas agendadas:', error)
-    return []
-  }
+  // Função removida - não há mais consultas de telemedicina
+  return []
 }
 
 export async function getUnreadMessages(nutritionistId: string): Promise<UnreadMessage[]> {
   try {
     const { data, error } = await supabase
       .from('chat_messages')
-      .select(`
-        id,
-        message_text,
-        created_at,
-        conversation_id,
-        chat_conversations!inner(
-          patient_id,
-          patient_profiles!inner(full_name)
-        )
-      `)
-      .eq('chat_conversations.nutritionist_id', nutritionistId)
+      .select('id, message_text, created_at, conversation_id, sender_id')
       .neq('sender_id', nutritionistId)
       .is('read_at', null)
       .order('created_at', { ascending: false })
@@ -197,40 +147,6 @@ export async function markMessagesAsRead(conversationId: string, nutritionistId:
 }
 
 export async function getUpcomingAppointments(nutritionistId: string, limit: number = 5): Promise<ScheduledAppointment[]> {
-  try {
-    const { data, error } = await supabase
-      .from('consultations')
-      .select(`
-        id,
-        scheduled_time,
-        consultation_type,
-        status,
-        patient_profiles!inner(full_name)
-      `)
-      .eq('nutritionist_id', nutritionistId)
-      .in('status', ['scheduled', 'confirmed'])
-      .gte('scheduled_time', new Date().toISOString())
-      .order('scheduled_time', { ascending: true })
-      .limit(limit)
-
-    if (error) {
-      console.error('Erro ao buscar próximas consultas:', error)
-      return []
-    }
-
-    return data?.map(consultation => ({
-      id: consultation.id,
-      patientName: consultation.patient_profiles?.full_name || 'Paciente',
-      date: new Date(consultation.scheduled_time).toLocaleDateString('pt-BR'),
-      time: new Date(consultation.scheduled_time).toLocaleTimeString('pt-BR', { 
-        hour: '2-digit', 
-        minute: '2-digit' 
-      }),
-      type: consultation.consultation_type as 'video' | 'audio',
-      status: consultation.status
-    })) || []
-  } catch (error) {
-    console.error('Erro ao buscar próximas consultas:', error)
-    return []
-  }
+  // Função removida - não há mais consultas de telemedicina
+  return []
 }

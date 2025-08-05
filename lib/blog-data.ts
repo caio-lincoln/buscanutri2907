@@ -40,14 +40,7 @@ export async function getAllBlogPosts(): Promise<BlogPost[]> {
   try {
     const { data: posts, error } = await supabase
       .from('blog_posts')
-      .select(`
-        *,
-        nutritionist_profiles!author_id (
-          full_name,
-          bio,
-          profile_image_url
-        )
-      `)
+      .select('*')
       .eq('published', true)
       .order('created_at', { ascending: false })
 
@@ -92,14 +85,7 @@ export async function getBlogPostById(id: string): Promise<BlogPost | null> {
   try {
     const { data: post, error } = await supabase
       .from('blog_posts')
-      .select(`
-        *,
-        nutritionist_profiles!author_id (
-          full_name,
-          bio,
-          profile_image_url
-        )
-      `)
+      .select('*')
       .eq('id', id)
       .eq('published', true)
       .single()
@@ -146,14 +132,7 @@ export async function getBlogPostsByAuthor(authorId: string): Promise<BlogPost[]
   try {
     const { data: posts, error } = await supabase
       .from('blog_posts')
-      .select(`
-        *,
-        nutritionist_profiles!author_id (
-          full_name,
-          bio,
-          profile_image_url
-        )
-      `)
+      .select('*')
       .eq('author_id', authorId)
       .order('created_at', { ascending: false })
 

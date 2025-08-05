@@ -175,12 +175,12 @@ export async function getTransactions(): Promise<TransactionData[]> {
         id,
         price,
         status,
-        scheduled_time,
+        start_time,
         patient_profiles(full_name),
         nutritionist_profiles(full_name)
       `)
       .not('price', 'is', null)
-      .order('scheduled_time', { ascending: false })
+      .order('start_time', { ascending: false })
       .limit(50)
 
     if (error) {
@@ -193,7 +193,7 @@ export async function getTransactions(): Promise<TransactionData[]> {
       type: "receita" as const,
       amount: apt.price || 0,
       description: `Consulta - ${apt.patient_profiles?.full_name || 'Paciente'} com ${apt.nutritionist_profiles?.full_name || 'Nutricionista'}`,
-      date: apt.scheduled_time,
+      date: apt.start_time,
       status: apt.status === 'completed' ? "concluída" : 
               apt.status === 'scheduled' ? "pendente" : "cancelada",
       userName: apt.patient_profiles?.full_name || 'Usuário'

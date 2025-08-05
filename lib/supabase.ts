@@ -76,16 +76,50 @@ export interface NutritionistProfile extends UserProfile {
   consultation_mode?: "online_only" | "presential_only" | "online_and_presential"
   default_consultation_duration?: number // em minutos (ex: 30, 45, 60)
   min_time_between_appointments?: number // em minutos
+  // Campo online_only_consultation removido - simplificado para service_online_available
   address?: string | null // Endereço completo para consultas presenciais
   cancellation_policy?: string | null // Política de cancelamento
   // Campos adicionais usados no código
   specialties?: string[] | null // Especialidades do nutricionista
-  services?: any[] | null // Serviços oferecidos
   consultation_price?: number | null // Preço da consulta
-  online_consultation?: boolean | null // Se oferece consulta online
+  // Campo online_consultation removido - substituído por service_online_available
   crn?: string | null // Alias para crn_number
   profile_image_url?: string | null // URL da imagem de perfil
   badges?: Badge[] | null // Badges/insígnias do nutricionista
+  
+  // Redes sociais (campos individuais)
+  instagram_username?: string | null
+  linkedin_username?: string | null
+  facebook_username?: string | null
+  youtube_channel?: string | null
+  tiktok_username?: string | null
+  website_url?: string | null
+  
+  // Serviços (campos individuais)
+  service_consultation_price?: number | null
+  service_followup_price?: number | null
+  service_meal_plan_price?: number | null
+  service_group_consultation?: boolean | null
+  service_online_available?: boolean | null
+  service_presential_available?: boolean | null
+  
+  // Horários de trabalho (campos individuais)
+  monday_hours?: string | null
+  tuesday_hours?: string | null
+  wednesday_hours?: string | null
+  thursday_hours?: string | null
+  friday_hours?: string | null
+  saturday_hours?: string | null
+  sunday_hours?: string | null
+  break_time?: string | null
+  
+  // Preferências e configurações
+  accepts_insurance?: boolean | null
+  emergency_consultation?: boolean | null
+  consultation_languages?: string | null // separado por vírgula
+  payment_methods?: string | null // separado por vírgula
+  max_patients_per_day?: number | null
+  
   // Estatísticas de visualização
   totalViews?: number | null // Total de visualizações do perfil
   uniqueViews?: number | null // Visualizações únicas do perfil
@@ -106,68 +140,10 @@ export interface CompanyProfile extends UserProfile {
 }
 
 // ────────────────────────────────────────────────────────────────────────────────
-// Interfaces de Telemedicina
+// Interfaces de Telemedicina - REMOVIDAS
 // ────────────────────────────────────────────────────────────────────────────────
 
-export interface TelemedicineConsultation {
-  id: string
-  nutritionist_id: string
-  patient_id: string | null // Pode ser null para slots bloqueados
-  start_time: string
-  end_time: string
-  status: "scheduled" | "completed" | "cancelled" | "pending" | "rescheduled" | "in-progress"
-  consultation_type: "online" | "presential"
-  notes: string | null
-  recording_url: string | null
-  room_id: string | null
-  patient_notes: string | null
-  nutritionist_notes: string | null
-  is_blocked_slot: boolean
-  block_reason: string | null
-  price: number
-  payment_status: "pending" | "paid" | "refunded"
-  created_at: string
-  updated_at: string
-  // Novos campos para cancelamento/reagendamento
-  cancelled_by_user_id?: string | null
-  cancel_reason?: string | null
-  rescheduled_by_user_id?: string | null
-  reschedule_reason?: string | null
-}
-
-export interface TelemedicineMessage {
-  id: string
-  consultation_id: string
-  sender_id: string
-  message: string
-  message_type: "text" | "file" | "image"
-  file_url?: string
-  file_name?: string
-  sent_at: string
-  read_at?: string
-  delivered_at: string
-}
-
-export interface TelemedicineNote {
-  id: string
-  consultation_id: string
-  author_id: string
-  title: string
-  content: string
-  category: "symptoms" | "diagnosis" | "treatment" | "followup" | "general"
-  created_at: string
-  updated_at: string
-}
-
-export interface TelemedicineReview {
-  id: string
-  consultation_id: string
-  patient_id: string
-  nutritionist_id: string
-  rating: number
-  comment?: string
-  created_at: string
-}
+// Funcionalidade de telemedicina removida temporariamente
 
 // ────────────────────────────────────────────────────────────────────────────────
 // Outras Interfaces
@@ -299,11 +275,7 @@ export interface Database {
         Insert: Omit<CompanyProfile, 'id' | 'created_at' | 'updated_at'>
         Update: Partial<Omit<CompanyProfile, 'id' | 'created_at' | 'updated_at'>>
       }
-      consultations: {
-        Row: TelemedicineConsultation
-        Insert: Omit<TelemedicineConsultation, 'id' | 'created_at' | 'updated_at'>
-        Update: Partial<Omit<TelemedicineConsultation, 'id' | 'created_at' | 'updated_at'>>
-      }
+      // consultations: Tabela removida - funcionalidade de telemedicina desabilitada
       job_postings: {
         Row: JobPosting
         Insert: Omit<JobPosting, 'id' | 'created_at' | 'updated_at'>

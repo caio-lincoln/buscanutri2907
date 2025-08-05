@@ -105,21 +105,7 @@ export async function getCompanyJobs(companyId: string): Promise<JobData[]> {
   try {
     const { data: jobs, error } = await supabase
       .from('job_postings')
-      .select(`
-        id,
-        title,
-        location,
-        job_type,
-        salary_min,
-        salary_max,
-        description,
-        requirements,
-        benefits,
-        status,
-        created_at,
-        applications_count,
-        company_profiles!inner(company_name)
-      `)
+      .select('id, title, location, job_type, salary_min, salary_max, description, requirements, benefits, status, created_at, applications_count, company_id')
       .eq('company_id', companyId)
       .order('created_at', { ascending: false })
 
@@ -181,7 +167,7 @@ export async function getCompanyCandidates(companyId: string): Promise<Candidate
       status: candidate.application_status as "novo" | "em_analise" | "aprovado" | "rejeitado",
       appliedAt: candidate.applied_at,
       resumeUrl: undefined, // Campo não existe na tabela job_applications
-      skills: candidate.specialties ? candidate.specialties.split(', ') : [],
+      skills: candidate.specialties && typeof candidate.specialties === "string" ? candidate.specialties.split(', ') : [],
       location: candidate.location
     }))
   } catch (error) {

@@ -76,19 +76,7 @@ export default function PatientChatPage() {
       // Get conversation details
       const { data: conversationData, error: conversationError } = await supabase
         .from('chat_conversations')
-        .select(`
-          *,
-          nutritionist_profiles!chat_conversations_nutritionist_id_fkey (
-            full_name,
-            profile_image_url,
-            crn,
-            is_verified
-          ),
-          patient_profiles!chat_conversations_patient_id_fkey (
-            full_name,
-            profile_image_url
-          )
-        `)
+        .select('*')
         .eq('id', conversationId)
         .eq('patient_id', currentUser.id)
         .single()
@@ -104,7 +92,20 @@ export default function PatientChatPage() {
         return
       }
 
-      setConversation(conversationData)
+      // Buscar perfil do nutricionista separadamente
+      const { data: nutritionistProfile } = await supabase
+        .from('nutritionist_profiles')
+        .select('full_name, profile_image_url, crn, is_verified')
+        .eq('user_id', conversationData.nutritionist_id)
+        .single()
+
+      // Enriquecer dados da conversa com perfil do nutricionista
+      const enrichedConversation = {
+        ...conversationData,
+        nutritionist_profiles: nutritionistProfile
+      }
+
+      setConversation(enrichedConversation)
 
       // Load messages
       const chatMessages = await getChatMessages(conversationId, currentUser.id, 'patient')
@@ -225,7 +226,7 @@ export default function PatientChatPage() {
               
               <div className="flex items-center gap-3">
                 <Avatar className="h-10 w-10">
-                  <AvatarImage src={nutritionist?.profile_image_url} />
+                  <AvatarImage src={nutritionist?.profile_image_url || ''} />
                   <AvatarFallback>
                     {nutritionist?.full_name?.charAt(0) || "N"}
                   </AvatarFallback>
@@ -285,7 +286,7 @@ export default function PatientChatPage() {
                     >
                       {!isFromPatient && (
                         <Avatar className="h-8 w-8 mt-1">
-                          <AvatarImage src={nutritionist?.profile_image_url} />
+                          <AvatarImage src={nutritionist?.profile_image_url || ''} />
                           <AvatarFallback className="text-xs">
                             {nutritionist?.full_name?.charAt(0) || "N"}
                           </AvatarFallback>
@@ -311,7 +312,7 @@ export default function PatientChatPage() {
                       
                       {isFromPatient && (
                         <Avatar className="h-8 w-8 mt-1">
-                          <AvatarImage src={userProfile?.profile_image_url} />
+                          <AvatarImage src={userProfile?.profile_image_url || ''} />
                           <AvatarFallback className="text-xs">
                             {userProfile?.full_name?.charAt(0) || "P"}
                           </AvatarFallback>

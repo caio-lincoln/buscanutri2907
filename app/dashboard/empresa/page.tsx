@@ -419,7 +419,7 @@ export default function CompanyDashboard() {
                 <Bot className="h-10 w-10 text-white" />
               </div>
               <div>
-                <h1 className="text-3xl lg:text-4xl font-bold text-[#1E1D40] mb-2">Chat com Iris</h1>
+                <h1 className="text-3xl lg:text-4xl font-bold text-[#1E1D40] mb-2">Chat com IrisBot</h1>
                 <p className="text-gray-600 text-lg">Sua assistente virtual para recrutamento</p>
               </div>
             </div>
@@ -624,7 +624,7 @@ export default function CompanyDashboard() {
           open={isProfileModalOpen}
           onOpenChange={setIsProfileModalOpen}
           userType="empresa"
-          initialProfileData={profile}
+          initialData={profile}
           onProfileUpdate={loadProfile}
           userId={profile.user_id}
         />

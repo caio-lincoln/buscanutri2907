@@ -89,7 +89,7 @@ export default function NutritionistRecentChatsList({ userId }: NutritionistRece
               >
                 <div className="flex items-center gap-4">
                   <Avatar className="h-12 w-12 ring-2 ring-gray-200 shadow-md group-hover:scale-105 transition-transform duration-200">
-                    <AvatarImage src={conversation.patient_profiles?.profile_image_url || undefined} />
+                    <AvatarImage src={conversation.patient_profiles?.profile_image_url || "/placeholder.svg"} />
                     <AvatarFallback className="bg-gradient-to-br from-blue-500 to-blue-600 text-white font-semibold">
                       {conversation.patient_profiles?.full_name?.charAt(0) || "P"}
                     </AvatarFallback>

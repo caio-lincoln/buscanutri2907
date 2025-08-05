@@ -17,11 +17,22 @@ import {
   ArrowLeft,
   Shield,
   CheckCircle,
-  Eye
+  Eye,
+  Edit,
+  Trash2,
+  MoreVertical
 } from "lucide-react";
+import { EditForumModal } from "@/components/edit-forum-modal";
+import { DeleteForumModal } from "@/components/delete-forum-modal";
+import { ForumCleanupModal } from "@/components/forum-cleanup-modal";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { getCurrentUser } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
-import { addFavoriteNutritionist } from "@/lib/consultation-service";
 
 interface Author {
   id: string;
@@ -76,6 +87,16 @@ export default function NutritionistForumQuestionPage() {
   const [replyContent, setReplyContent] = useState("");
   const [isSubmittingReply, setIsSubmittingReply] = useState(false);
 
+  // Modal states
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [cleanupModalOpen, setCleanupModalOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<{
+    type: "question" | "answer";
+    id: string;
+    data: any;
+  } | null>(null);
+
   // Load user and question data
   useEffect(() => {
     const loadData = async () => {
@@ -88,22 +109,7 @@ export default function NutritionistForumQuestionPage() {
         // Fetch question from Supabase
         const { data: questionData, error: questionError } = await supabase
           .from('forum_questions')
-          .select(`
-            *,
-            patient_profile:patient_profiles!forum_questions_patient_id_fkey(
-              id,
-              full_name,
-              profile_image_url,
-              user_id
-            ),
-            nutritionist_profile:nutritionist_profiles!forum_questions_nutritionist_id_fkey(
-              id,
-              full_name,
-              profile_image_url,
-              crn,
-              user_id
-            )
-          `)
+          .select('*')
           .eq('id', questionId)
           .single();
 
@@ -112,9 +118,27 @@ export default function NutritionistForumQuestionPage() {
         }
 
         if (questionData) {
-          // Determine author profile and user type
-          const isPatient = questionData.patient_profile !== null;
-          const profile = isPatient ? questionData.patient_profile : questionData.nutritionist_profile;
+          // Buscar perfil do autor separadamente
+          let profile = null;
+          let isPatient = false;
+          
+          if (questionData.patient_id) {
+            const { data: patientProfile } = await supabase
+              .from('patient_profiles')
+              .select('id, full_name, profile_image_url, user_id')
+              .eq('user_id', questionData.patient_id)
+              .single();
+            profile = patientProfile;
+            isPatient = true;
+          } else if (questionData.nutritionist_id) {
+            const { data: nutritionistProfile } = await supabase
+              .from('nutritionist_profiles')
+              .select('id, full_name, profile_image_url, crn, user_id')
+              .eq('user_id', questionData.nutritionist_id)
+              .single();
+            profile = nutritionistProfile;
+            isPatient = false;
+          }
           
           // Check if current user has liked this question
           let hasLikedQuestion = false;
@@ -137,9 +161,9 @@ export default function NutritionistForumQuestionPage() {
             author: {
               id: profile?.user_id || '',
               name: profile?.full_name || 'Usuário',
-              avatar: profile?.profile_image_url,
+              avatar: profile?.profile_image_url || "/placeholder.svg",
               userType: isPatient ? 'paciente' : 'nutricionista',
-              crn: questionData.nutritionist_profile?.crn
+              crn: !isPatient ? profile?.crn : undefined
             },
             timestamp: questionData.created_at,
             likes: questionData.likes_count || 0,
@@ -227,7 +251,7 @@ export default function NutritionistForumQuestionPage() {
             author: {
               id: reply.nutritionist_profile?.user_id || '',
               name: reply.nutritionist_profile?.full_name || 'Nutricionista',
-              avatar: reply.nutritionist_profile?.profile_image_url,
+              avatar: reply.nutritionist_profile?.profile_image_url || "/placeholder.svg",
               userType: 'nutricionista',
               crn: reply.nutritionist_profile?.crn
             },
@@ -592,16 +616,67 @@ export default function NutritionistForumQuestionPage() {
     }
   };
 
-  // Handle favorite nutritionist
-  const handleFavoriteNutritionist = async (nutritionistId: string) => {
-    if (!currentUser || currentUser.user_type !== 'paciente') return;
 
-    try {
-      await addFavoriteNutritionist(currentUser.id, nutritionistId);
-      // TODO: Update UI to show favorited state
-    } catch (error) {
-      console.error("Erro ao favoritar nutricionista:", error);
-    }
+
+  // Handle edit question
+  const handleEditQuestion = () => {
+    if (!question || !currentUser) return;
+    
+    setEditingItem({
+      type: "question",
+      id: question.id,
+      data: {
+        title: question.title,
+        content: question.content,
+        category: question.category,
+        tags: [] // Add tags if available in your data structure
+      }
+    });
+    setEditModalOpen(true);
+  };
+
+  // Handle edit answer
+  const handleEditAnswer = (reply: ForumReply) => {
+    if (!currentUser) return;
+    
+    setEditingItem({
+      type: "answer",
+      id: reply.id,
+      data: {
+        content: reply.content
+      }
+    });
+    setEditModalOpen(true);
+  };
+
+  // Handle delete question
+  const handleDeleteQuestion = () => {
+    if (!question || !currentUser) return;
+    
+    setEditingItem({
+      type: "question",
+      id: question.id,
+      data: { title: question.title }
+    });
+    setDeleteModalOpen(true);
+  };
+
+  // Handle delete answer
+  const handleDeleteAnswer = (reply: ForumReply) => {
+    if (!currentUser) return;
+    
+    setEditingItem({
+      type: "answer",
+      id: reply.id,
+      data: { title: reply.content.substring(0, 100) + "..." }
+    });
+    setDeleteModalOpen(true);
+  };
+
+  // Handle modal success
+  const handleModalSuccess = () => {
+    // Reload data
+    window.location.reload();
   };
 
   // Handle submit reply
@@ -708,6 +783,18 @@ export default function NutritionistForumQuestionPage() {
               </Button>
               <h1 className="text-2xl font-bold text-gray-900">Discussão do Fórum</h1>
             </div>
+            
+            {currentUser?.user_type === 'nutricionista' && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCleanupModalOpen(true)}
+                className="text-orange-600 border-orange-600 hover:bg-orange-50"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Limpar Dados Órfãos
+              </Button>
+            )}
           </div>
 
           {/* Question Card */}
@@ -739,16 +826,32 @@ export default function NutritionistForumQuestionPage() {
                   </div>
                 </div>
                 
-                {currentUser?.user_type === 'paciente' && question.author.userType === 'nutricionista' && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleFavoriteNutritionist(question.author.id)}
-                  >
-                    <Heart className="h-4 w-4 mr-2" />
-                    Favoritar
-                  </Button>
-                )}
+                <div className="flex items-center gap-2">
+
+                  
+                  {currentUser?.id === question.author.id && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={handleEditQuestion}>
+                          <Edit className="h-4 w-4 mr-2" />
+                          Editar Pergunta
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={handleDeleteQuestion}
+                          className="text-red-600"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Excluir Pergunta
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
+                </div>
               </div>
               
               <CardTitle className="text-xl">{question.title}</CardTitle>
@@ -904,16 +1007,41 @@ export default function NutritionistForumQuestionPage() {
                             </div>
                           </div>
                           
-                          {currentUser?.id === question.author.id && !reply.isBestAnswer && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleMarkAsBest(reply.id)}
-                            >
-                              <CheckCircle className="h-4 w-4 mr-2" />
-                              Marcar como melhor
-                            </Button>
-                          )}
+                          <div className="flex items-center gap-2">
+                            {currentUser?.id === question.author.id && !reply.isBestAnswer && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleMarkAsBest(reply.id)}
+                              >
+                                <CheckCircle className="h-4 w-4 mr-2" />
+                                Marcar como melhor
+                              </Button>
+                            )}
+                            
+                            {currentUser?.id === reply.author.id && (
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="sm">
+                                    <MoreVertical className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onClick={() => handleEditAnswer(reply)}>
+                                    <Edit className="h-4 w-4 mr-2" />
+                                    Editar Resposta
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem 
+                                    onClick={() => handleDeleteAnswer(reply)}
+                                    className="text-red-600"
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Excluir Resposta
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            )}
+                          </div>
                         </div>
                         
                         <p className="text-gray-700 whitespace-pre-wrap">{reply.content}</p>
@@ -930,16 +1058,7 @@ export default function NutritionistForumQuestionPage() {
                             {reply.likes}
                           </Button>
                           
-                          {currentUser?.user_type === 'patient' && reply.author.userType === 'nutritionist' && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleFavoriteNutritionist(reply.author.id)}
-                            >
-                              <Heart className="h-4 w-4 mr-2" />
-                              Favoritar
-                            </Button>
-                          )}
+
                         </div>
                       </div>
                     </CardContent>
@@ -950,6 +1069,43 @@ export default function NutritionistForumQuestionPage() {
           </div>
         </div>
       </div>
+
+      {/* Modals */}
+      {editingItem && (
+        <EditForumModal
+          isOpen={editModalOpen}
+          onClose={() => {
+            setEditModalOpen(false);
+            setEditingItem(null);
+          }}
+          onSuccess={handleModalSuccess}
+          type={editingItem.type}
+          itemId={editingItem.id}
+          userId={currentUser?.id || ""}
+          initialData={editingItem.data}
+        />
+      )}
+
+      {editingItem && (
+        <DeleteForumModal
+          isOpen={deleteModalOpen}
+          onClose={() => {
+            setDeleteModalOpen(false);
+            setEditingItem(null);
+          }}
+          onSuccess={handleModalSuccess}
+          type={editingItem.type}
+          itemId={editingItem.id}
+          userId={currentUser?.id || ""}
+          itemTitle={editingItem.data.title}
+        />
+      )}
+
+      <ForumCleanupModal
+        isOpen={cleanupModalOpen}
+        onClose={() => setCleanupModalOpen(false)}
+        onSuccess={handleModalSuccess}
+      />
     </div>
   );
 }

@@ -11,6 +11,39 @@ import { Badge } from "@/components/ui/badge"
 import { Send, Bot, User, Sparkles, Loader2, ThumbsUp, ThumbsDown, Copy } from "lucide-react"
 import { cn } from "@/lib/utils"
 
+// Função para renderizar texto com formatação básica de Markdown
+const renderMarkdownText = (text: string) => {
+  // Primeiro, processa negrito **texto**
+  const boldRegex = /(\*\*[^*]+\*\*)/g
+  const parts = text.split(boldRegex)
+  
+  return parts.map((part, index) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      const boldText = part.slice(2, -2)
+      // Dentro do texto em negrito, também processa itálico *texto*
+      const italicParts = boldText.split(/(\*[^*]+\*)/g)
+      const processedBoldText = italicParts.map((italicPart, italicIndex) => {
+        if (italicPart.startsWith('*') && italicPart.endsWith('*') && !italicPart.startsWith('**')) {
+          const italicText = italicPart.slice(1, -1)
+          return <em key={italicIndex} className="italic">{italicText}</em>
+        }
+        return italicPart
+      })
+      return <strong key={index} className="font-bold">{processedBoldText}</strong>
+    } else {
+      // Para texto normal, também processa itálico *texto*
+      const italicParts = part.split(/(\*[^*]+\*)/g)
+      return italicParts.map((italicPart, italicIndex) => {
+        if (italicPart.startsWith('*') && italicPart.endsWith('*') && !italicPart.startsWith('**')) {
+          const italicText = italicPart.slice(1, -1)
+          return <em key={`${index}-${italicIndex}`} className="italic">{italicText}</em>
+        }
+        return italicPart
+      })
+    }
+  })
+}
+
 interface Message {
   id: string
   content: string
@@ -25,39 +58,39 @@ interface IrisChatProps {
 
 const welcomeMessages = {
   paciente:
-    "Olá! Sou a Iris, sua assistente virtual da Busca Nutri. Posso te ajudar a encontrar o nutricionista ideal, tirar dúvidas gerais sobre alimentação ou te guiar pela plataforma.",
+    "Olá! Sou a IrisBot, sua assistente inteligente da BuscaNutri. Estou aqui para te orientar na plataforma, fornecer informações educativas sobre nutrição e te ajudar a encontrar o nutricionista ideal para suas necessidades. Como posso te ajudar hoje?",
   nutricionista:
-    "Olá! Sou a Iris, sua assistente na Busca Nutri. Posso te ajudar com informações gerais sobre a área, dicas para usar a plataforma e como otimizar seu perfil.",
+    "Olá! Sou a IrisBot, sua assistente inteligente na BuscaNutri. Posso te ajudar a navegar pela plataforma, otimizar seu perfil profissional, acompanhar métricas do seu dashboard e fornecer informações gerais sobre nutrição. Em que posso te auxiliar?",
   empresa:
-    "Olá! Sou a Iris, assistente para empresas na Busca Nutri. Posso te guiar sobre como encontrar nutricionistas para sua equipe e usar as ferramentas de recrutamento.",
+    "Olá! Sou a IrisBot, assistente inteligente para empresas na BuscaNutri. Posso te orientar sobre como encontrar nutricionistas qualificados para sua equipe, usar as ferramentas de recrutamento e implementar programas de bem-estar corporativo. Como posso te ajudar?",
   admin:
-    "Olá! Sou a Iris, assistente administrativa. Posso fornecer informações sobre o funcionamento da plataforma e dados gerais.",
+    "Olá! Sou a IrisBot, assistente administrativa da BuscaNutri. Posso fornecer informações sobre métricas da plataforma, funcionamento do sistema, dados de engajamento e te ajudar com questões operacionais. O que você gostaria de saber?",
 }
 
 const suggestedQuestions = {
   paciente: [
-    "Como encontro um nutricionista na minha cidade?",
-    "Quais são os benefícios de uma alimentação balanceada?",
-    "Como agendar uma consulta?",
-    "Mitos sobre dietas rápidas",
+    "Como encontro um nutricionista especializado na minha região?",
+    "Como agendar uma consulta pela plataforma?",
+    "Quais informações preciso para minha primeira consulta?",
+    "Como funciona o acompanhamento nutricional online?",
   ],
   nutricionista: [
-    "Como posso otimizar meu perfil na Busca Nutri?",
-    "Dicas para atrair mais pacientes",
-    "Como funciona o agendamento de consultas?",
-    "Informações sobre a LGPD na nutrição",
+    "Como otimizar meu perfil profissional na BuscaNutri?",
+    "Como visualizar o progresso dos meus pacientes?",
+    "Como acessar cursos de atualização profissional?",
+    "Como gerenciar minha agenda de consultas?",
   ],
   empresa: [
-    "Como publicar uma vaga para nutricionistas?",
-    "Quais são as vantagens de contratar um nutricionista para minha empresa?",
-    "Como gerenciar candidatos na plataforma?",
-    "Tendências em bem-estar corporativo",
+    "Como encontrar nutricionistas para minha equipe?",
+    "Quais são os benefícios de um programa nutricional corporativo?",
+    "Como implementar bem-estar nutricional na empresa?",
+    "Como gerenciar candidatos nutricionistas?",
   ],
   admin: [
-    "Qual o número de usuários ativos?",
+    "Métricas de usuários ativos na plataforma",
     "Como funciona a verificação de CRN/CNPJ?",
-    "Métricas de agendamento de consultas",
-    "Relatório de engajamento da plataforma",
+    "Relatório de agendamentos realizados",
+    "Dados de engajamento dos profissionais",
   ],
 }
 
@@ -200,10 +233,10 @@ export function IrisChat({ userType = "paciente" }: IrisChatProps) {
       <CardHeader className="border-b bg-gradient-to-r from-purple-50 to-purple-100/50 rounded-t-xl">
         <CardTitle className="flex items-center gap-3">
           <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
-            <Sparkles className="h-5 w-5 text-white" />
+            <Bot className="h-5 w-5 text-white" />
           </div>
           <div>
-            <span className="text-lg font-bold">Iris</span>
+            <span className="text-lg font-bold">IrisBot</span>
             <Badge variant="outline" className="ml-2 bg-green-50 text-green-700 border-green-200">
               <div className="w-2 h-2 bg-green-500 rounded-full mr-1 animate-pulse"></div>
               Online
@@ -221,7 +254,6 @@ export function IrisChat({ userType = "paciente" }: IrisChatProps) {
           >
             {message.sender === "iris" && (
               <Avatar className="h-8 w-8 mt-1">
-                <AvatarImage src="/placeholder.svg?height=32&width=32" />
                 <AvatarFallback className="bg-gradient-to-br from-purple-500 to-purple-600 text-white">
                   <Bot className="h-4 w-4" />
                 </AvatarFallback>
@@ -239,11 +271,13 @@ export function IrisChat({ userType = "paciente" }: IrisChatProps) {
               {message.isTyping ? (
                 <div className="flex items-center gap-1">
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  <span className="text-sm">Iris está digitando...</span>
+                  <span className="text-sm">IrisBot está digitando...</span>
                 </div>
               ) : (
                 <>
-                  <p className="text-sm leading-relaxed">{message.content}</p>
+                  <p className="text-sm leading-relaxed">
+                    {message.sender === "iris" ? renderMarkdownText(message.content) : message.content}
+                  </p>
                   <div className="flex items-center justify-between mt-2">
                     <span className="text-xs opacity-70">
                       {message.timestamp.toLocaleTimeString([], {
@@ -271,7 +305,6 @@ export function IrisChat({ userType = "paciente" }: IrisChatProps) {
 
             {message.sender === "user" && (
               <Avatar className="h-8 w-8 mt-1">
-                <AvatarImage src="/placeholder.svg?height=32&width=32" />
                 <AvatarFallback className="bg-gradient-to-br from-blue-500 to-blue-600 text-white">
                   <User className="h-4 w-4" />
                 </AvatarFallback>
@@ -309,7 +342,7 @@ export function IrisChat({ userType = "paciente" }: IrisChatProps) {
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder="Digite sua pergunta para a Iris..."
+            placeholder="Digite sua pergunta para a IrisBot..."
             className="flex-1 border-gray-200 focus:border-purple-300 focus:ring-purple-200"
             disabled={isLoading}
           />

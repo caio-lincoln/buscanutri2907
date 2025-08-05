@@ -8,144 +8,316 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { MultiSelect, type Option } from "@/components/ui/multi-select"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar" // Import Avatar components
-import { ImageUpload } from "@/components/ui/image-upload" // Import ImageUpload component
-import { User, Clock, CheckCircle, AlertCircle, Loader2, Camera, FileText, BadgeIcon as IdCard } from "lucide-react" // Add Camera, FileText, IdCard icons
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { ImageUpload } from "@/components/ui/image-upload"
+import { User, Clock, CheckCircle, AlertCircle, Loader2, Camera, FileText, BadgeIcon as IdCard, ChevronLeft, ChevronRight } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import type { PatientProfile, NutritionistProfile, CompanyProfile, UserType } from "@/lib/supabase"
+import { supabase } from "@/lib/supabase"
 import { updateUserProfile } from "@/lib/profile-service"
 import { validateCRNFormat, validateCRNWithAPI, formatCRN } from "@/lib/crn-validator"
 import { validateCNPJFormat, validateCNPJWithAPI, formatCNPJ } from "@/lib/cnpj-validator"
+import { validateCPF, formatCPF, validateCPFFormat } from "@/lib/cpf-validator"
+import { validateRG, formatRG, validateRGFormat } from "@/lib/rg-validator"
+import { ScheduleSelector } from "@/components/ui/schedule-selector"
 
-/* ---------- TYPES ---------- */
+// Specialty options for nutritionists
+const SPECIALTY_OPTIONS: Option[] = [
+  { label: "Nutricao Clinica", value: "nutricao_clinica" },
+  { label: "Nutricao Esportiva", value: "nutricao_esportiva" },
+  { label: "Nutricao Materno-Infantil", value: "nutricao_materno_infantil" },
+  { label: "Nutricao Geriatrica", value: "nutricao_geriatrica" },
+  { label: "Nutricao Funcional", value: "nutricao_funcional" },
+  { label: "Nutricao Comportamental", value: "nutricao_comportamental" },
+  { label: "Nutricao Oncologica", value: "nutricao_oncologica" },
+  { label: "Nutricao Vegetariana/Vegana", value: "nutricao_vegetariana" },
+  { label: "Transtornos Alimentares", value: "transtornos_alimentares" },
+  { label: "Emagrecimento", value: "emagrecimento" },
+  { label: "Ganho de Massa Muscular", value: "ganho_massa" },
+  { label: "Diabetes", value: "diabetes" },
+  { label: "Hipertensao", value: "hipertensao" },
+  { label: "Dislipidemia", value: "dislipidemia" },
+]
+
+// Payment method options
+const PAYMENT_METHOD_OPTIONS: Option[] = [
+  { label: "PIX", value: "pix" },
+  { label: "Cartao de Credito", value: "cartao_credito" },
+  { label: "Cartao de Debito", value: "cartao_debito" },
+  { label: "Dinheiro", value: "dinheiro" },
+  { label: "Transferencia Bancaria", value: "transferencia" },
+  { label: "Boleto", value: "boleto" },
+  { label: "Convenio", value: "convenio" },
+]
+
+// Language options
+const LANGUAGE_OPTIONS: Option[] = [
+  { label: "Portugues", value: "portugues" },
+  { label: "Ingles", value: "ingles" },
+  { label: "Espanhol", value: "espanhol" },
+  { label: "Frances", value: "frances" },
+  { label: "Italiano", value: "italiano" },
+  { label: "Alemao", value: "alemao" },
+  { label: "Libras", value: "libras" },
+]
+
+// Available times options
+const AVAILABLE_TIMES_OPTIONS: Option[] = [
+  { label: "Segunda 08:00-12:00", value: "seg_manha" },
+  { label: "Segunda 13:00-18:00", value: "seg_tarde" },
+  { label: "Terca 08:00-12:00", value: "ter_manha" },
+  { label: "Terca 13:00-18:00", value: "ter_tarde" },
+  { label: "Quarta 08:00-12:00", value: "qua_manha" },
+  { label: "Quarta 13:00-18:00", value: "qua_tarde" },
+  { label: "Quinta 08:00-12:00", value: "qui_manha" },
+  { label: "Quinta 13:00-18:00", value: "qui_tarde" },
+  { label: "Sexta 08:00-12:00", value: "sex_manha" },
+  { label: "Sexta 13:00-18:00", value: "sex_tarde" },
+  { label: "Sabado 08:00-12:00", value: "sab_manha" },
+  { label: "Sabado 13:00-17:00", value: "sab_tarde" },
+  { label: "Domingo 08:00-12:00", value: "dom_manha" },
+  { label: "Domingo 13:00-17:00", value: "dom_tarde" },
+]
+
+// Opções para anamnese nutricional
+const GENERO_OPTIONS = [
+  { value: "masculino", label: "Masculino" },
+  { value: "feminino", label: "Feminino" },
+  { value: "outro", label: "Outro" },
+  { value: "prefiro_nao_informar", label: "Prefiro não informar" }
+]
+
+const OBJETIVO_NUTRICIONAL_OPTIONS = [
+  { value: "emagrecimento", label: "Emagrecimento" },
+  { value: "ganho_massa", label: "Ganho de massa muscular" },
+  { value: "saude_intestinal", label: "Saúde intestinal" },
+  { value: "controle_diabetes", label: "Controle de diabetes" },
+  { value: "reducao_colesterol", label: "Redução do colesterol" },
+  { value: "hipertensao", label: "Controle da hipertensão" },
+  { value: "performance_esportiva", label: "Performance esportiva" },
+  { value: "saude_geral", label: "Saúde geral" },
+  { value: "outro", label: "Outro" }
+]
+
+const COMORBIDADES_OPTIONS: Option[] = [
+  { value: "diabetes_tipo1", label: "Diabetes Tipo 1" },
+  { value: "diabetes_tipo2", label: "Diabetes Tipo 2" },
+  { value: "hipertensao", label: "Hipertensão" },
+  { value: "dislipidemia", label: "Dislipidemia" },
+  { value: "obesidade", label: "Obesidade" },
+  { value: "sindrome_metabolica", label: "Síndrome Metabólica" },
+  { value: "doenca_celiaca", label: "Doença Celíaca" },
+  { value: "intolerancia_lactose", label: "Intolerância à Lactose" },
+  { value: "refluxo", label: "Refluxo Gastroesofágico" },
+  { value: "gastrite", label: "Gastrite" },
+  { value: "sindrome_intestino_irritavel", label: "Síndrome do Intestino Irritável" },
+  { value: "hipotireoidismo", label: "Hipotireoidismo" },
+  { value: "hipertireoidismo", label: "Hipertireoidismo" },
+  { value: "ansiedade", label: "Ansiedade" },
+  { value: "depressao", label: "Depressão" },
+  { value: "transtorno_alimentar", label: "Transtorno Alimentar" }
+]
+
+const ALERGIAS_ANAMNESE_OPTIONS: Option[] = [
+  { value: "gluten", label: "Glúten" },
+  { value: "lactose", label: "Lactose" },
+  { value: "amendoim", label: "Amendoim" },
+  { value: "castanhas", label: "Castanhas" },
+  { value: "ovo", label: "Ovo" },
+  { value: "peixe", label: "Peixe" },
+  { value: "frutos_mar", label: "Frutos do mar" },
+  { value: "soja", label: "Soja" },
+  { value: "milho", label: "Milho" },
+  { value: "corantes", label: "Corantes artificiais" },
+  { value: "conservantes", label: "Conservantes" },
+  { value: "sulfitos", label: "Sulfitos" }
+]
+
 interface UserProfileModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   userType: UserType
-  initialProfileData: PatientProfile | NutritionistProfile | CompanyProfile | null
-  onProfileUpdate: () => void
+  initialData: PatientProfile | NutritionistProfile | CompanyProfile
   userId: string
+  onProfileUpdate?: () => void
 }
 
-/* ---------- COMPONENT ---------- */
 export function UserProfileModal({
   open,
   onOpenChange,
   userType,
-  initialProfileData,
-  onProfileUpdate,
+  initialData,
   userId,
+  onProfileUpdate,
 }: UserProfileModalProps) {
-  /* ---- STATE ---- */
+  const [formData, setFormData] = useState<any>(initialData)
   const [loading, setLoading] = useState(false)
-  const [formData, setFormData] = useState<Record<string, any>>({})
   const [error, setError] = useState<string | null>(null)
-
-  /* ---- CRN ---- */
   const [crnValue, setCrnValue] = useState("")
   const [crnValidation, setCrnValidation] = useState<{
     status: "idle" | "validating" | "valid" | "invalid"
     message: string
   }>({ status: "idle", message: "" })
 
-  /* ---- CNPJ ---- */
   const [cnpjValue, setCnpjValue] = useState("")
   const [cnpjValidation, setCnpjValidation] = useState<{
     status: "idle" | "validating" | "valid" | "invalid"
     message: string
-    companyData?: any
   }>({ status: "idle", message: "" })
 
-  /* ---- LOAD INITIAL DATA ---- */
+  const [cpfValue, setCpfValue] = useState("")
+  const [cpfValidation, setCpfValidation] = useState<{
+    status: "idle" | "validating" | "valid" | "invalid"
+    message: string
+  }>({ status: "idle", message: "" })
+
+  const [rgValue, setRgValue] = useState("")
+  const [rgValidation, setRgValidation] = useState<{
+    status: "idle" | "validating" | "valid" | "invalid"
+    message: string
+  }>({ status: "idle", message: "" })
+
+  // Estado para paginação
+  const [currentPage, setCurrentPage] = useState(1)
+  const totalPages = userType === "paciente" ? 3 : userType === "nutricionista" ? 2 : 1
+  
+  // Estado para controlar se está editando (modo de edição)
+  const [isEditing, setIsEditing] = useState(true)
+
+  // Estados para anamnese nutricional (apenas para pacientes)
+  const [anamneseData, setAnamneseData] = useState<any>({
+    patient_id: userId,
+    comorbidades: [],
+    alergias_alimentares: [],
+    suplementacao_atual: [],
+    medicacoes_uso: []
+  })
+
   useEffect(() => {
-    if (!initialProfileData) return
+    if (open && initialData) {
+      // Resetar estados de validação
+      setCrnValidation({ status: "idle", message: "" })
+      setCnpjValidation({ status: "idle", message: "" })
+      setCpfValidation({ status: "idle", message: "" })
+      setRgValidation({ status: "idle", message: "" })
+      setError(null)
+      setCurrentPage(1)
 
-    const initialData: Record<string, any> = { ...initialProfileData }
+      // Garantir que formData sempre tenha as propriedades necessárias
+      const safeFormData = {
+        ...initialData,
+        profile_image_url: initialData?.profile_image_url || "",
+        full_name: initialData?.full_name || ""
+      }
 
-    if (userType === "paciente") {
-      initialData.health_conditions = Array.isArray(initialData.health_conditions)
-        ? initialData.health_conditions.join(", ")
-        : initialData.health_conditions || ""
-      initialData.allergies = Array.isArray(initialData.allergies)
-        ? initialData.allergies.join(", ")
-        : initialData.allergies || ""
-      initialData.dietary_preferences = Array.isArray(initialData.dietary_preferences)
-        ? initialData.dietary_preferences.join(", ")
-        : initialData.dietary_preferences || ""
+      // Adicionar logo_url apenas para empresas
+      if (userType === "empresa") {
+        safeFormData.logo_url = initialData?.logo_url || ""
+        safeFormData.company_name = initialData?.company_name || ""
+      }
+      // Inicialização específica para pacientes foi removida pois os dados
+      // de condições de saúde, alergias e preferências alimentares agora
+      // são coletados através da anamnese nutricional
+
+      if (userType === "nutricionista") {
+        safeFormData.specialties = Array.isArray(initialData?.specialties)
+          ? initialData.specialties.join(", ")
+          : initialData?.specialties || ""
+        // Para horários disponíveis, convertemos array do banco em objeto para o ScheduleSelector
+        safeFormData.available_times = Array.isArray(initialData?.available_times)
+          ? JSON.stringify({
+              monday: initialData.available_times.map((time: string) => ({ start: time, end: time }))
+            })
+          : typeof initialData?.available_times === "string"
+          ? initialData.available_times
+          : typeof initialData?.available_times === "object"
+          ? JSON.stringify(initialData.available_times)
+          : "{}"
+        safeFormData.languages = Array.isArray(initialData?.languages)
+          ? initialData.languages.join(", ")
+          : initialData?.languages || ""
+        safeFormData.certifications = Array.isArray(initialData?.certifications)
+          ? initialData.certifications.join(", ")
+          : initialData?.certifications || ""
+        safeFormData.achievements = Array.isArray(initialData?.achievements)
+          ? initialData.achievements.join(", ")
+          : initialData?.achievements || ""
+
+        safeFormData.services_offered =
+          initialData?.services_offered && typeof initialData.services_offered === "object"
+            ? JSON.stringify(initialData.services_offered)
+            : initialData?.services_offered || ""
+
+        safeFormData.crn_document_url = initialData?.crn_document_url || ""
+        safeFormData.identity_document_url = initialData?.identity_document_url || ""
+
+        safeFormData.consultation_languages = initialData?.consultation_languages || ""
+        safeFormData.payment_methods = initialData?.payment_methods || ""
+        safeFormData.cancellation_policy = initialData?.cancellation_policy || ""
+      }
+
+      // Definir formData apenas uma vez após processar todos os campos
+      setFormData(safeFormData)
+
+      // Inicializar validações apenas se os dados existirem
+      if (userType === "nutricionista" && initialData?.crn) {
+        const formattedCrn = formatCRN(initialData.crn)
+        setCrnValue(formattedCrn)
+        setCrnValidation({ status: "valid", message: "CRN válido" })
+      }
+      if (userType === "empresa" && initialData?.cnpj) {
+        const formattedCnpj = formatCNPJ(initialData.cnpj)
+        setCnpjValue(formattedCnpj)
+        setCnpjValidation({ status: "valid", message: "CNPJ válido" })
+      }
+
+      // Inicializar CPF e RG se existirem
+      if ((userType === "paciente" || userType === "nutricionista") && initialData?.cpf) {
+        const formattedCpf = formatCPF(initialData.cpf)
+        setCpfValue(formattedCpf)
+        setCpfValidation({ status: "valid", message: "CPF válido" })
+      }
+      if ((userType === "paciente" || userType === "nutricionista") && initialData?.rg) {
+        const formattedRg = formatRG(initialData.rg)
+        setRgValue(formattedRg)
+        setRgValidation({ status: "valid", message: "RG válido" })
+      }
+
+      // Carregar dados da anamnese para pacientes
+      if (userType === "paciente") {
+        loadAnamneseData()
+      }
     }
+  }, [open, userType, initialData?.id])
 
-    if (userType === "nutricionista") {
-      initialData.specialties = Array.isArray(initialData.specialties)
-        ? initialData.specialties.join(", ")
-        : initialData.specialties || ""
-      initialData.available_times = Array.isArray(initialData.available_times)
-        ? initialData.available_times.join(", ")
-        : initialData.available_times || ""
-      initialData.languages = Array.isArray(initialData.languages)
-        ? initialData.languages.join(", ")
-        : initialData.languages || ""
-      initialData.certifications = Array.isArray(initialData.certifications)
-        ? initialData.certifications.join(", ")
-        : initialData.certifications || ""
-      initialData.achievements = Array.isArray(initialData.achievements)
-        ? initialData.achievements.join(", ")
-        : initialData.achievements || ""
+  // Função para carregar dados da anamnese
+  const loadAnamneseData = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('anamnese_nutricional')
+        .select('*')
+        .eq('patient_id', userId)
+        .single()
 
-      // Handle JSON fields
-      initialData.services =
-        initialData.services && typeof initialData.services === "object"
-          ? JSON.stringify(initialData.services, null, 2)
-          : initialData.services || ""
-      initialData.testimonials =
-        initialData.testimonials && typeof initialData.testimonials === "object"
-          ? JSON.stringify(initialData.testimonials, null, 2)
-          : initialData.testimonials || ""
-      initialData.working_hours =
-        initialData.working_hours && typeof initialData.working_hours === "object"
-          ? JSON.stringify(initialData.working_hours, null, 2)
-          : initialData.working_hours || ""
-
-      // Handle social media
-      initialData.social_media_instagram = initialData.social_media?.instagram || ""
-      initialData.social_media_linkedin = initialData.social_media?.linkedin || ""
-
-      // Campos de URL de documentos
-      initialData.crn_document_url = initialData.crn_document_url || ""
-      initialData.identity_document_url = initialData.identity_document_url || ""
-
-      // Novos campos de configuração
-      initialData.online_only_consultation = initialData.online_only_consultation || false
-      initialData.default_consultation_duration = initialData.default_consultation_duration || 60
-      initialData.min_time_between_appointments = initialData.min_time_between_appointments || 15
-      initialData.cancellation_policy = initialData.cancellation_policy || ""
+      if (data && !error) {
+        setAnamneseData(data)
+      }
+    } catch (error) {
+      console.log('Nenhuma anamnese encontrada, criando nova')
     }
+  }
 
-    setFormData(initialData)
-
-    if (userType === "nutricionista" && initialData.crn) {
-      setCrnValue(initialData.crn)
-      setCrnValidation({ status: "valid", message: "CRN válido" })
-    }
-    if (userType === "empresa" && initialData.cnpj) {
-      setCnpjValue(initialData.cnpj)
-      setCnpjValidation({ status: "valid", message: "CNPJ válido" })
-    }
-  }, [initialProfileData, userType])
-
-  /* ---- HANDLERS ---- */
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { id, value, type, checked } = e.target as HTMLInputElement
+    const { id, value, type } = e.target
+    const checked = (e.target as HTMLInputElement).checked
     setFormData((prev) => ({ ...prev, [id]: type === "checkbox" ? checked : value }))
   }
 
-  const handleSelectChange = (id: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [id]: value }))
-  }
-
-  const handleImageUploaded = (url: string) => {
+  const handleImageUploaded = (imageUrl: string) => {
     const imageField = userType === "empresa" ? "logo_url" : "profile_image_url"
-    setFormData((prev) => ({ ...prev, [imageField]: url }))
+    setFormData((prev) => ({ ...prev, [imageField]: imageUrl }))
   }
 
   const handleImageRemoved = () => {
@@ -156,9 +328,9 @@ export function UserProfileModal({
   const handleCRNChange = async (value: string) => {
     const formatted = formatCRN(value)
     setCrnValue(formatted)
-    setFormData((prev) => ({ ...prev, crn: formatted }))
+    setFormData((prev) => ({ ...prev, crn: formatted.replace(/\D/g, "") }))
 
-    if (!formatted || formatted.length < 6) {
+    if (!formatted || formatted.replace(/\D/g, "").length < 6) {
       setCrnValidation({ status: "idle", message: "" })
       return
     }
@@ -176,7 +348,7 @@ export function UserProfileModal({
         status: apiValidation.isValid ? "valid" : "invalid",
         message: apiValidation.message,
       })
-    } catch {
+    } catch (error) {
       setCrnValidation({
         status: "invalid",
         message: "Erro ao validar CRN. Tente novamente.",
@@ -187,7 +359,7 @@ export function UserProfileModal({
   const handleCNPJChange = async (value: string) => {
     const formatted = formatCNPJ(value)
     setCnpjValue(formatted)
-    setFormData((prev) => ({ ...prev, cnpj: formatted }))
+    setFormData((prev) => ({ ...prev, cnpj: formatted.replace(/\D/g, "") }))
 
     if (!formatted || formatted.replace(/\D/g, "").length < 14) {
       setCnpjValidation({ status: "idle", message: "" })
@@ -206,9 +378,8 @@ export function UserProfileModal({
       setCnpjValidation({
         status: apiValidation.isValid ? "valid" : "invalid",
         message: apiValidation.message,
-        companyData: apiValidation.companyData,
       })
-    } catch {
+    } catch (error) {
       setCnpjValidation({
         status: "invalid",
         message: "Erro ao validar CNPJ. Tente novamente.",
@@ -216,103 +387,239 @@ export function UserProfileModal({
     }
   }
 
+  const handleCPFChange = (value: string) => {
+    const formatted = formatCPF(value)
+    setCpfValue(formatted)
+    setFormData((prev) => ({ ...prev, cpf: formatted.replace(/\D/g, "") }))
+
+    if (!formatted || formatted.replace(/\D/g, "").length < 11) {
+      setCpfValidation({ status: "idle", message: "" })
+      return
+    }
+
+    if (!validateCPFFormat(formatted)) {
+      setCpfValidation({ status: "invalid", message: "Formato de CPF invalido" })
+      return
+    }
+
+    const isValid = validateCPF(formatted.replace(/\D/g, ""))
+    if (isValid) {
+      setCpfValidation({ status: "valid", message: "CPF valido" })
+    } else {
+      setCpfValidation({ status: "invalid", message: "CPF invalido" })
+    }
+  }
+
+  const handleRGChange = (value: string) => {
+    const formatted = formatRG(value)
+    setRgValue(formatted)
+    setFormData((prev) => ({ ...prev, rg: formatted.replace(/\D/g, "") }))
+
+    if (!formatted || formatted.replace(/\D/g, "").length < 7) {
+      setRgValidation({ status: "idle", message: "" })
+      return
+    }
+
+    if (!validateRGFormat(formatted)) {
+      setRgValidation({ status: "invalid", message: "Formato de RG invalido" })
+      return
+    }
+
+    const isValid = validateRG(formatted.replace(/\D/g, ""))
+    if (isValid) {
+      setRgValidation({ status: "valid", message: "RG valido" })
+    } else {
+      setRgValidation({ status: "invalid", message: "RG invalido" })
+    }
+  }
+
+  const handleSpecialtiesChange = (values: string[]) => {
+    const labels = values.map(value => SPECIALTY_OPTIONS.find(opt => opt.value === value)?.label || value)
+    setFormData((prev) => ({ ...prev, specialties: labels.join(", ") }))
+  }
+
+  const handlePaymentMethodsChange = (values: string[]) => {
+    const labels = values.map(value => PAYMENT_METHOD_OPTIONS.find(opt => opt.value === value)?.label || value)
+    setFormData((prev) => ({ ...prev, payment_methods: labels.join(", ") }))
+  }
+
+  const handleLanguagesChange = (values: string[]) => {
+    const labels = values.map(value => LANGUAGE_OPTIONS.find(opt => opt.value === value)?.label || value)
+    setFormData((prev) => ({ ...prev, consultation_languages: labels.join(", ") }))
+  }
+
+  // Funções para anamnese nutricional
+  const handleAnamneseChange = (field: string, value: any) => {
+    setAnamneseData((prev: any) => ({
+      ...prev,
+      [field]: value
+    }))
+  }
+
+  const calculateIMC = (peso: number, altura: number) => {
+    if (peso && altura) {
+      const imc = peso / (altura * altura)
+      return Math.round(imc * 100) / 100
+    }
+    return 0
+  }
+
+  // Atualizar IMC automaticamente quando peso ou altura mudam
+  useEffect(() => {
+    if (anamneseData.peso_atual && anamneseData.altura) {
+      const imc = calculateIMC(anamneseData.peso_atual, anamneseData.altura)
+      setAnamneseData((prev: any) => ({ ...prev, imc }))
+    }
+  }, [anamneseData.peso_atual, anamneseData.altura])
+
+  const handleComorbilidadesChange = (values: string[]) => {
+    setAnamneseData((prev: any) => ({ ...prev, comorbidades: values }))
+  }
+
+  const handleAlergiasAnamneseChange = (values: string[]) => {
+    setAnamneseData((prev: any) => ({ ...prev, alergias_alimentares: values }))
+  }
+
+
+
+  // Funções de navegação da paginação
+  const nextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1)
+    }
+  }
+
+  const prevPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1)
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError(null)
     setLoading(true)
+    setError(null)
 
     try {
       const dataToSubmit = { ...formData }
 
-      // Handle array fields for patient
-      if (userType === "paciente") {
-        if (typeof dataToSubmit.health_conditions === "string") {
-          dataToSubmit.health_conditions = dataToSubmit.health_conditions
-            .split(",")
-            .map((s: string) => s.trim())
-            .filter(Boolean)
-        }
-        if (typeof dataToSubmit.allergies === "string") {
-          dataToSubmit.allergies = dataToSubmit.allergies
-            .split(",")
-            .map((s: string) => s.trim())
-            .filter(Boolean)
-        }
-        if (typeof dataToSubmit.dietary_preferences === "string") {
-          dataToSubmit.dietary_preferences = dataToSubmit.dietary_preferences
-            .split(",")
-            .map((s: string) => s.trim())
-            .filter(Boolean)
-        }
-      }
+      // Processamento específico para pacientes foi removido pois os dados
+      // de condições de saúde, alergias e preferências alimentares agora
+      // são coletados através da anamnese nutricional
 
-      // Handle array and JSON fields for nutritionist
       if (userType === "nutricionista") {
         if (typeof dataToSubmit.specialties === "string") {
           dataToSubmit.specialties = dataToSubmit.specialties
             .split(",")
-            .map((s: string) => s.trim())
+            .map((item: string) => item.trim())
             .filter(Boolean)
         }
+        
+        // Para horários disponíveis, convertemos o objeto do ScheduleSelector em um array simples de horários:
         if (typeof dataToSubmit.available_times === "string") {
-          dataToSubmit.available_times = dataToSubmit.available_times
+          try {
+            // Tenta fazer parse do JSON do ScheduleSelector
+            const parsed = JSON.parse(dataToSubmit.available_times)
+            // Converte o objeto de dias/horários em array simples de horários
+            const timeSlots: string[] = []
+            Object.values(parsed).forEach((daySlots: any) => {
+              if (Array.isArray(daySlots)) {
+                daySlots.forEach((slot: any) => {
+                  if (slot.start && !timeSlots.includes(slot.start)) {
+                    timeSlots.push(slot.start)
+                  }
+                  if (slot.end && !timeSlots.includes(slot.end)) {
+                    timeSlots.push(slot.end)
+                  }
+                })
+              }
+            })
+            // Ordena os horários e remove duplicatas
+            dataToSubmit.available_times = timeSlots.sort()
+          } catch {
+            // Se falhar, usa array vazio
+            dataToSubmit.available_times = []
+          }
+        }
+        
+        // Função helper para processar campos que podem estar com escape duplo
+        const processStringField = (field: string): string[] => {
+          // Remover escapes duplos se existirem
+          const cleanField = field.replace(/\\"/g, '"')
+          
+          // Tentar fazer parse JSON primeiro
+          try {
+            const parsed = JSON.parse(cleanField)
+            if (Array.isArray(parsed)) {
+              return parsed
+            }
+          } catch {
+            // Se não for JSON válido, tratar como string separada por vírgulas
+          }
+          
+          return cleanField
             .split(",")
-            .map((s: string) => s.trim())
+            .map((item: string) => item.trim())
             .filter(Boolean)
         }
+
         if (typeof dataToSubmit.languages === "string") {
-          dataToSubmit.languages = dataToSubmit.languages
-            .split(",")
-            .map((s: string) => s.trim())
-            .filter(Boolean)
+          dataToSubmit.languages = processStringField(dataToSubmit.languages)
         }
         if (typeof dataToSubmit.certifications === "string") {
-          dataToSubmit.certifications = dataToSubmit.certifications
-            .split(",")
-            .map((s: string) => s.trim())
-            .filter(Boolean)
+          dataToSubmit.certifications = processStringField(dataToSubmit.certifications)
         }
         if (typeof dataToSubmit.achievements === "string") {
-          dataToSubmit.achievements = dataToSubmit.achievements
-            .split(",")
-            .map((s: string) => s.trim())
-            .filter(Boolean)
-        }
-        dataToSubmit.social_media = {
-          instagram: formData.social_media_instagram,
-          linkedin: formData.social_media_linkedin,
-        }
-        delete dataToSubmit.social_media_instagram
-        delete dataToSubmit.social_media_linkedin
-
-        try {
-          if (dataToSubmit.services && typeof dataToSubmit.services === "string") {
-            dataToSubmit.services = JSON.parse(dataToSubmit.services)
-          }
-          if (dataToSubmit.testimonials && typeof dataToSubmit.testimonials === "string") {
-            dataToSubmit.testimonials = JSON.parse(dataToSubmit.testimonials)
-          }
-          if (dataToSubmit.working_hours && typeof dataToSubmit.working_hours === "string") {
-            dataToSubmit.working_hours = JSON.parse(dataToSubmit.working_hours)
-          }
-        } catch (e) {
-          console.error("Erro ao parsear campo JSON:", e)
-          throw new Error("Formato JSON inválido para um dos campos.")
+          dataToSubmit.achievements = processStringField(dataToSubmit.achievements)
         }
       }
 
       await updateUserProfile(userId, userType, dataToSubmit)
 
+      // Salvar anamnese nutricional se for paciente
+      if (userType === "paciente" && anamneseData) {
+        try {
+          const { data: existingAnamnese } = await supabase
+            .from('anamnese_nutricional')
+            .select('id')
+            .eq('patient_id', userId)
+            .single()
+
+          const anamneseToSave = {
+            ...anamneseData,
+            patient_id: userId,
+            parte1_concluida: true,
+            parte2_concluida: true,
+            updated_at: new Date().toISOString()
+          }
+
+          if (existingAnamnese) {
+            await supabase
+              .from('anamnese_nutricional')
+              .update(anamneseToSave)
+              .eq('patient_id', userId)
+          } else {
+            await supabase
+              .from('anamnese_nutricional')
+              .insert(anamneseToSave)
+          }
+        } catch (anamneseError) {
+          console.error('Erro ao salvar anamnese:', anamneseError)
+          // Não bloquear o salvamento do perfil por erro na anamnese
+        }
+      }
+
       toast({
-        title: "✅ Perfil atualizado!",
+        title: "Perfil atualizado!",
         description: "Suas informações foram salvas com sucesso.",
       })
-      onProfileUpdate()
+
+      onProfileUpdate?.()
       onOpenChange(false)
     } catch (err: any) {
       setError(err.message || "Erro ao salvar perfil.")
       toast({
-        title: "❌ Erro ao atualizar perfil",
+        title: "Erro ao atualizar perfil",
         description: err.message || "Ocorreu um erro ao salvar suas informações.",
         variant: "destructive",
       })
@@ -321,7 +628,6 @@ export function UserProfileModal({
     }
   }
 
-  /* ---- ICON HELPERS ---- */
   const renderCRNValidationIcon = () => {
     switch (crnValidation.status) {
       case "validating":
@@ -338,7 +644,7 @@ export function UserProfileModal({
   const renderCNPJValidationIcon = () => {
     switch (cnpjValidation.status) {
       case "validating":
-        return <Clock className="h-4 w-4 text-yellow-500 animate-pulse" />
+        return <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
       case "valid":
         return <CheckCircle className="h-4 w-4 text-green-500" />
       case "invalid":
@@ -348,7 +654,33 @@ export function UserProfileModal({
     }
   }
 
-  /* ---- RENDER ---- */
+  const renderCPFValidationIcon = () => {
+    switch (cpfValidation.status) {
+      case "valid":
+        return <CheckCircle className="h-4 w-4 text-green-500" />
+      case "invalid":
+        return <AlertCircle className="h-4 w-4 text-red-500" />
+      default:
+        return null
+    }
+  }
+
+  const renderRGValidationIcon = () => {
+    switch (rgValidation.status) {
+      case "valid":
+        return <CheckCircle className="h-4 w-4 text-green-500" />
+      case "invalid":
+        return <AlertCircle className="h-4 w-4 text-red-500" />
+      default:
+        return null
+    }
+  }
+
+  // Não renderizar o modal se não houver dados iniciais
+  if (!initialData) {
+    return null
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
@@ -367,37 +699,36 @@ export function UserProfileModal({
           </div>
         )}
 
-        {/* ---------- FORM ---------- */}
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Profile Image Section */}
+        <form id="profile-form" onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-4 mb-6">
             <div className="flex flex-col items-center gap-4">
               <Avatar className="h-24 w-24">
                 <AvatarImage
                   src={
                     userType === "empresa"
-                      ? formData.logo_url || "/placeholder.svg?height=96&width=96&query=company logo"
-                      : formData.profile_image_url || "/placeholder.svg?height=96&width=96&query=user profile"
+                      ? formData?.logo_url || "/placeholder.svg?height=96&width=96&query=company logo"
+                      : formData?.profile_image_url || "/placeholder.svg?height=96&width=96&query=user profile"
                   }
-                  alt={formData.full_name || formData.company_name || "Profile Image"}
-                  key={userType === "empresa" ? formData.logo_url : formData.profile_image_url} // Force re-render when image changes
+                  alt={userType === "empresa" ? (formData?.company_name || "Profile Image") : (formData?.full_name || "Profile Image")}
+                  key={userType === "empresa" ? formData?.logo_url : formData?.profile_image_url}
                 />
                 <AvatarFallback className="bg-gray-200 text-gray-600 text-2xl font-semibold">
-                  {(formData.full_name || formData.company_name)?.charAt(0).toUpperCase() || "U"}
+                  {userType === "empresa" 
+                    ? (formData?.company_name?.charAt(0).toUpperCase() || "E")
+                    : (formData?.full_name?.charAt(0).toUpperCase() || "U")
+                  }
                 </AvatarFallback>
               </Avatar>
               <h3 className="text-lg font-semibold text-gray-900">
                 {userType === "empresa" ? "Logo da Empresa" : "Foto de Perfil"}
               </h3>
-              {/* Mostrar URL da imagem atual para debug */}
-              {(userType === "empresa" ? formData.logo_url : formData.profile_image_url) && (
+              {(userType === "empresa" ? formData?.logo_url : formData?.profile_image_url) && (
                 <p className="text-xs text-gray-500 text-center max-w-xs truncate">
-                  Imagem atual: {userType === "empresa" ? formData.logo_url : formData.profile_image_url}
+                  Imagem atual: {userType === "empresa" ? formData?.logo_url : formData?.profile_image_url}
                 </p>
               )}
             </div>
             
-            {/* Upload de imagem do computador */}
             <div className="max-w-md mx-auto">
               <Label className="text-sm font-medium text-gray-700 mb-2 block">
                 Enviar {userType === "empresa" ? "logo" : "foto"} do computador
@@ -405,13 +736,12 @@ export function UserProfileModal({
               <ImageUpload
                 onImageUploaded={handleImageUploaded}
                 onImageRemoved={handleImageRemoved}
-                currentImageUrl={userType === "empresa" ? formData.logo_url : formData.profile_image_url}
+                currentImageUrl={userType === "empresa" ? formData?.logo_url : formData?.profile_image_url}
                 userId={userId}
                 className="w-full"
               />
             </div>
 
-            {/* Ou inserir URL manualmente */}
             <div className="max-w-md mx-auto">
               <Label htmlFor="profile_image_url" className="text-sm font-medium text-gray-700 mb-2 block">
                 Ou inserir URL da imagem
@@ -419,7 +749,7 @@ export function UserProfileModal({
               <div className="relative">
                 <Input
                   id={userType === "empresa" ? "logo_url" : "profile_image_url"}
-                  value={userType === "empresa" ? formData.logo_url || "" : formData.profile_image_url || ""}
+                  value={userType === "empresa" ? formData?.logo_url || "" : formData?.profile_image_url || ""}
                   onChange={handleChange}
                   placeholder="URL da imagem (ex: https://exemplo.com/foto.jpg)"
                   className="pr-10"
@@ -434,500 +764,600 @@ export function UserProfileModal({
             </div>
           </div>
 
-          {/* Shared Fields */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="full_name">Nome Completo</Label>
-              <Input id="full_name" value={formData.full_name || ""} onChange={handleChange} required />
+              <Input id="full_name" value={formData?.full_name || ""} onChange={handleChange} required />
             </div>
             <div>
               <Label htmlFor="phone">Telefone</Label>
-              <Input id="phone" value={formData.phone || ""} onChange={handleChange} placeholder="(XX) XXXXX-XXXX" />
+              <Input id="phone" value={formData?.phone || ""} onChange={handleChange} placeholder="(XX) XXXXX-XXXX" />
             </div>
           </div>
 
-          {/* Patient & Nutritionist Specific Fields (CPF/RG) */}
           {(userType === "paciente" || userType === "nutricionista") && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="cpf">CPF (mockado)</Label>
-                <Input id="cpf" value={formData.cpf || ""} onChange={handleChange} placeholder="XXX.XXX.XXX-XX" />
+                <Label htmlFor="cpf">CPF</Label>
+                <div className="relative">
+                  <Input
+                    id="cpf"
+                    value={cpfValue}
+                    onChange={(e) => handleCPFChange(e.target.value)}
+                    placeholder="XXX.XXX.XXX-XX"
+                    className={
+                      cpfValidation.status === "invalid"
+                        ? "border-red-500 focus-visible:ring-red-500"
+                        : cpfValidation.status === "valid"
+                          ? "border-green-500 focus-visible:ring-green-500"
+                          : ""
+                    }
+                  />
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">{renderCPFValidationIcon()}</div>
+                </div>
+                {cpfValidation.message && (
+                  <p
+                    className={`text-sm mt-1 ${cpfValidation.status === "invalid" ? "text-red-500" : "text-green-500"}`}
+                  >
+                    {cpfValidation.message}
+                  </p>
+                )}
               </div>
               <div>
-                <Label htmlFor="rg">RG (mockado)</Label>
-                <Input id="rg" value={formData.rg || ""} onChange={handleChange} placeholder="XX.XXX.XXX-X" />
+                <Label htmlFor="rg">RG</Label>
+                <div className="relative">
+                  <Input
+                    id="rg"
+                    value={rgValue}
+                    onChange={(e) => handleRGChange(e.target.value)}
+                    placeholder="XX.XXX.XXX-X"
+                    className={
+                      rgValidation.status === "invalid"
+                        ? "border-red-500 focus-visible:ring-red-500"
+                        : rgValidation.status === "valid"
+                          ? "border-green-500 focus-visible:ring-green-500"
+                          : ""
+                    }
+                  />
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">{renderRGValidationIcon()}</div>
+                </div>
+                {rgValidation.message && (
+                  <p
+                    className={`text-sm mt-1 ${rgValidation.status === "invalid" ? "text-red-500" : "text-green-500"}`}
+                  >
+                    {rgValidation.message}
+                  </p>
+                )}
               </div>
             </div>
           )}
 
-          {/* Patient Specific Fields */}
           {userType === "paciente" && (
             <>
-              <div>
+              {/* Campo Data de Nascimento - sempre visível */}
+              <div className="mb-4">
                 <Label htmlFor="birth_date">Data de Nascimento</Label>
-                <Input id="birth_date" type="date" value={formData.birth_date || ""} onChange={handleChange} />
+                <Input id="birth_date" type="date" value={formData?.birth_date || ""} onChange={handleChange} />
               </div>
-              <div>
-                <Label htmlFor="health_conditions">Condições de Saúde (separar por vírgula)</Label>
-                <Textarea
-                  id="health_conditions"
-                  value={formData.health_conditions || ""}
-                  onChange={handleChange}
-                  placeholder="Diabetes, Hipertensão, Doença Celíaca"
-                />
+
+              {/* Indicador de página */}
+              <div className="flex justify-center items-center gap-2 mb-4">
+                <span className="text-sm text-gray-500">
+                  Página {currentPage} de {totalPages}
+                </span>
               </div>
-              <div>
-                <Label htmlFor="allergies">Alergias (separar por vírgula)</Label>
-                <Textarea
-                  id="allergies"
-                  value={formData.allergies || ""}
-                  onChange={handleChange}
-                  placeholder="Glúten, Lactose, Amendoim"
-                />
-              </div>
-              <div>
-                <Label htmlFor="dietary_preferences">Preferências Alimentares (separar por vírgula)</Label>
-                <Textarea
-                  id="dietary_preferences"
-                  value={formData.dietary_preferences || ""}
-                  onChange={handleChange}
-                  placeholder="Vegetariano, Vegano, Low Carb"
-                />
-              </div>
+
+              {/* Página 1 - Dados Pessoais */}
+              {currentPage === 1 && (
+                <>
+                  <div className="text-center text-gray-600">
+                    <p>Complete as próximas páginas com suas informações nutricionais.</p>
+                  </div>
+                </>
+              )}
+
+              {/* Página 2 - Anamnese Nutricional Parte 1 */}
+              {currentPage === 2 && (
+                <>
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Anamnese Nutricional - Informações Básicas</h3>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="anamnese_genero">Gênero</Label>
+                        <select
+                          id="anamnese_genero"
+                          value={anamneseData?.genero || ""}
+                          onChange={(e) => handleAnamneseChange("genero", e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="">Selecione</option>
+                          {GENERO_OPTIONS.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="anamnese_email">E-mail</Label>
+                        <Input
+                          id="anamnese_email"
+                          type="email"
+                          value={anamneseData?.email || ""}
+                          onChange={(e) => handleAnamneseChange("email", e.target.value)}
+                          placeholder="email@exemplo.com"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="anamnese_instagram">Instagram</Label>
+                        <Input
+                          id="anamnese_instagram"
+                          value={anamneseData?.instagram || ""}
+                          onChange={(e) => handleAnamneseChange("instagram", e.target.value)}
+                          placeholder="@seuinstagram"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="anamnese_cidade">Cidade</Label>
+                        <Input
+                          id="anamnese_cidade"
+                          value={anamneseData?.cidade || ""}
+                          onChange={(e) => handleAnamneseChange("cidade", e.target.value)}
+                          placeholder="Sua cidade"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="anamnese_estado">Estado</Label>
+                        <Input
+                          id="anamnese_estado"
+                          value={anamneseData?.estado || ""}
+                          onChange={(e) => handleAnamneseChange("estado", e.target.value)}
+                          placeholder="Seu estado"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Página 3 - Anamnese Nutricional Parte 2 */}
+              {currentPage === 3 && (
+                <>
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Anamnese Nutricional - Dados Clínicos</h3>
+                    
+                    <div>
+                      <Label htmlFor="anamnese_objetivo">Objetivo Nutricional</Label>
+                      <select
+                        id="anamnese_objetivo"
+                        value={anamneseData?.objetivo_nutricional || ""}
+                        onChange={(e) => handleAnamneseChange("objetivo_nutricional", e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="">Selecione seu objetivo</option>
+                        {OBJETIVO_NUTRICIONAL_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <Label htmlFor="anamnese_peso">Peso Atual (kg)</Label>
+                        <Input
+                          id="anamnese_peso"
+                          type="number"
+                          step="0.1"
+                          value={anamneseData?.peso_atual || ""}
+                          onChange={(e) => handleAnamneseChange("peso_atual", parseFloat(e.target.value) || 0)}
+                          placeholder="Ex: 70.5"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="anamnese_altura">Altura (m)</Label>
+                        <Input
+                          id="anamnese_altura"
+                          type="number"
+                          step="0.01"
+                          value={anamneseData?.altura || ""}
+                          onChange={(e) => handleAnamneseChange("altura", parseFloat(e.target.value) || 0)}
+                          placeholder="Ex: 1.70"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="anamnese_imc">IMC</Label>
+                        <Input
+                          id="anamnese_imc"
+                          type="number"
+                          value={anamneseData?.imc || ""}
+                          readOnly
+                          className="bg-gray-100"
+                          placeholder="Calculado automaticamente"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="anamnese_historico_peso">Histórico de Peso</Label>
+                      <Textarea
+                        id="anamnese_historico_peso"
+                        value={anamneseData?.historico_peso || ""}
+                        onChange={(e) => handleAnamneseChange("historico_peso", e.target.value)}
+                        placeholder="Descreva seu histórico de peso, variações, dietas anteriores..."
+                      />
+                    </div>
+
+                    <div>
+                      <Label>Comorbidades</Label>
+                      <MultiSelect
+                        options={COMORBIDADES_OPTIONS}
+                        selected={anamneseData?.comorbidades || []}
+                        onChange={handleComorbilidadesChange}
+                        placeholder="Selecione as comorbidades"
+                      />
+                    </div>
+
+                    <div>
+                      <Label>Alergias Alimentares</Label>
+                      <MultiSelect
+                        options={ALERGIAS_ANAMNESE_OPTIONS}
+                        selected={anamneseData?.alergias_alimentares || []}
+                        onChange={handleAlergiasAnamneseChange}
+                        placeholder="Selecione as alergias alimentares"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="anamnese_suplementacao">Suplementação Atual</Label>
+                      <Textarea
+                        id="anamnese_suplementacao"
+                        value={anamneseData?.suplementacao_atual || ""}
+                        onChange={(e) => handleAnamneseChange("suplementacao_atual", e.target.value)}
+                        placeholder="Liste os suplementos que você usa atualmente..."
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="anamnese_medicacoes">Medicações em Uso</Label>
+                      <Textarea
+                        id="anamnese_medicacoes"
+                        value={anamneseData?.medicacoes_uso || ""}
+                        onChange={(e) => handleAnamneseChange("medicacoes_uso", e.target.value)}
+                        placeholder="Liste as medicações que você usa atualmente..."
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="anamnese_exames">Exames Laboratoriais Recentes</Label>
+                      <Textarea
+                        id="anamnese_exames"
+                        value={anamneseData?.exames_laboratoriais || ""}
+                        onChange={(e) => handleAnamneseChange("exames_laboratoriais", e.target.value)}
+                        placeholder="Descreva os resultados dos seus exames mais recentes..."
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
             </>
           )}
 
-          {/* Nutritionist Specific Fields */}
           {userType === "nutricionista" && (
             <>
-              <div>
-                <Label htmlFor="crn">CRN</Label>
-                <div className="relative">
-                  <Input
-                    id="crn"
-                    value={crnValue}
-                    onChange={(e) => handleCRNChange(e.target.value)}
-                    required
-                    className={
-                      crnValidation.status === "invalid"
-                        ? "border-red-500 focus-visible:ring-red-500"
-                        : crnValidation.status === "valid"
-                          ? "border-green-500 focus-visible:ring-green-500"
-                          : ""
-                    }
-                  />
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2">{renderCRNValidationIcon()}</div>
-                </div>
-                {crnValidation.message && (
-                  <p
-                    className={`text-sm mt-1 ${crnValidation.status === "invalid" ? "text-red-500" : "text-green-500"}`}
-                  >
-                    {crnValidation.message}
-                  </p>
-                )}
+              {/* Indicador de página */}
+              <div className="flex justify-center items-center gap-2 mb-4">
+                <span className="text-sm text-gray-500">
+                  Página {currentPage} de {totalPages}
+                </span>
               </div>
-              {/* Campos para upload de documentos */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="crn_document_url">URL do Documento CRN</Label>
-                  <div className="relative">
-                    <Input
-                      id="crn_document_url"
-                      value={formData.crn_document_url || ""}
-                      onChange={handleChange}
-                      placeholder="Link para seu documento CRN"
-                      className="pr-10"
-                    />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
-                      <FileText className="h-4 w-4" />
-                    </span>
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Cole a URL do seu documento CRN (ex: Google Drive, Dropbox).
-                  </p>
-                </div>
-                <div>
-                  <Label htmlFor="identity_document_url">URL do Documento de Identidade</Label>
-                  <div className="relative">
-                    <Input
-                      id="identity_document_url"
-                      value={formData.identity_document_url || ""}
-                      onChange={handleChange}
-                      placeholder="Link para seu documento de identidade"
-                      className="pr-10"
-                    />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
-                      <IdCard className="h-4 w-4" />
-                    </span>
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1">Cole a URL do seu documento de identidade (ex: RG, CNH).</p>
-                </div>
-              </div>
-              <div>
-                <Label htmlFor="bio">Biografia</Label>
-                <Textarea
-                  id="bio"
-                  value={formData.bio || ""}
-                  onChange={handleChange}
-                  placeholder="Fale um pouco sobre você e sua abordagem..."
-                  rows={4}
-                />
-              </div>
-              <div>
-                <Label htmlFor="specialties">Especialidades (separar por vírgula)</Label>
-                <Textarea
-                  id="specialties"
-                  value={formData.specialties || ""}
-                  onChange={handleChange}
-                  placeholder="Nutrição Clínica, Esportiva, Materno-Infantil"
-                />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="experience_years">Anos de Experiência</Label>
-                  <Input
-                    id="experience_years"
-                    type="number"
-                    value={formData.experience_years || ""}
-                    onChange={handleChange}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="consultation_price">Preço da Consulta (R$)</Label>
-                  <Input
-                    id="consultation_price"
-                    type="number"
-                    step="0.01"
-                    value={formData.consultation_price || ""}
-                    onChange={handleChange}
-                  />
-                </div>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="online_consultation"
-                  checked={formData.online_consultation || false}
-                  onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, online_consultation: checked }))}
-                />
-                <Label htmlFor="online_consultation">Atendimento Online Disponível</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="online_only_consultation"
-                  checked={formData.online_only_consultation || false}
-                  onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, online_only_consultation: checked }))}
-                />
-                <Label htmlFor="online_only_consultation">Somente Atendimento Online (Teleconsulta)</Label>
-              </div>
-              <div>
-                <Label htmlFor="default_consultation_duration">Duração Padrão das Consultas (minutos)</Label>
-                <Input
-                  id="default_consultation_duration"
-                  type="number"
-                  value={formData.default_consultation_duration || ""}
-                  onChange={handleChange}
-                  min="15"
-                  step="15"
-                />
-              </div>
-              <div>
-                <Label htmlFor="min_time_between_appointments">Tempo Mínimo Entre Agendamentos (minutos)</Label>
-                <Input
-                  id="min_time_between_appointments"
-                  type="number"
-                  value={formData.min_time_between_appointments || ""}
-                  onChange={handleChange}
-                  min="0"
-                  step="5"
-                />
-              </div>
-              <div>
-                <Label htmlFor="address">Endereço do Consultório</Label>
-                <Input
-                  id="address"
-                  value={formData.address || ""}
-                  onChange={handleChange}
-                  placeholder="Rua Exemplo, 123, Cidade - UF"
-                />
-              </div>
-              <div>
-                <Label htmlFor="website">Website</Label>
-                <Input
-                  id="website"
-                  value={formData.website || ""}
-                  onChange={handleChange}
-                  placeholder="https://www.seusite.com"
-                />
-              </div>
-              <div>
-                <Label htmlFor="education">Formação Acadêmica</Label>
-                <Textarea
-                  id="education"
-                  value={formData.education || ""}
-                  onChange={handleChange}
-                  placeholder="Universidade X - Nutrição (2010-2014)"
-                  rows={2}
-                />
-              </div>
-              <div>
-                <Label htmlFor="services">Serviços (JSON Array)</Label>
-                <Textarea
-                  id="services"
-                  value={formData.services || ""}
-                  onChange={handleChange}
-                  placeholder={`[{"name": "Consulta Inicial", "price": 200, "duration": "60min"}]`}
-                  rows={4}
-                />
-              </div>
-              <div>
-                <Label htmlFor="available_times">Horários Disponíveis (separar por vírgula)</Label>
-                <Textarea
-                  id="available_times"
-                  value={formData.available_times || ""}
-                  onChange={handleChange}
-                  placeholder="Seg 09-18, Ter 09-12"
-                  rows={2}
-                />
-              </div>
-              <div>
-                <Label htmlFor="languages">Idiomas (separar por vírgula)</Label>
-                <Input
-                  id="languages"
-                  value={formData.languages || ""}
-                  onChange={handleChange}
-                  placeholder="Português, Inglês"
-                />
-              </div>
-              <div>
-                <Label htmlFor="certifications">Certificações (separar por vírgula)</Label>
-                <Textarea
-                  id="certifications"
-                  value={formData.certifications || ""}
-                  onChange={handleChange}
-                  placeholder="Certificação em Nutrição Esportiva"
-                  rows={2}
-                />
-              </div>
-              <div>
-                <Label htmlFor="achievements">Conquistas (separar por vírgula)</Label>
-                <Textarea
-                  id="achievements"
-                  value={formData.achievements || ""}
-                  onChange={handleChange}
-                  placeholder="Palestrante no Congresso X"
-                  rows={2}
-                />
-              </div>
-              <div>
-                <Label htmlFor="testimonials">Depoimentos (JSON Array)</Label>
-                <Textarea
-                  id="testimonials"
-                  value={formData.testimonials || ""}
-                  onChange={handleChange}
-                  placeholder={`[{"name": "Cliente A", "rating": 5, "comment": "Excelente profissional"}]`}
-                  rows={4}
-                />
-              </div>
-              <div>
-                <Label htmlFor="working_hours">Horário de Trabalho (JSON Object)</Label>
-                <Textarea
-                  id="working_hours"
-                  value={formData.working_hours || ""}
-                  onChange={handleChange}
-                  placeholder={`{"Segunda": "09:00-18:00", "Terça": "09:00-18:00"}`}
-                  rows={4}
-                />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="social_media_instagram">Instagram (apenas username)</Label>
-                  <Input
-                    id="social_media_instagram"
-                    value={formData.social_media_instagram || ""}
-                    onChange={handleChange}
-                    placeholder="seunome.nutri"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="social_media_linkedin">LinkedIn (apenas username)</Label>
-                  <Input
-                    id="social_media_linkedin"
-                    value={formData.social_media_linkedin || ""}
-                    onChange={handleChange}
-                    placeholder="seunome-nutricionista"
-                  />
-                </div>
-              </div>
-              <div>
-                <Label htmlFor="cancellation_policy">Política de Cancelamento</Label>
-                <Textarea
-                  id="cancellation_policy"
-                  value={formData.cancellation_policy || ""}
-                  onChange={handleChange}
-                  placeholder="Descreva sua política de cancelamento de consultas..."
-                  rows={3}
-                />
-              </div>
-            </>
-          )}
 
-          {/* Company Specific Fields */}
-          {userType === "empresa" && (
-            <>
-              <div>
-                <Label htmlFor="company_name">Nome da Empresa</Label>
-                <Input id="company_name" value={formData.company_name || ""} onChange={handleChange} required />
-              </div>
-              <div>
-                <Label htmlFor="cnpj">CNPJ</Label>
-                <div className="relative">
-                  <Input
-                    id="cnpj"
-                    value={cnpjValue}
-                    onChange={(e) => handleCNPJChange(e.target.value)}
-                    required
-                    className={
-                      cnpjValidation.status === "invalid"
-                        ? "border-red-500 focus-visible:ring-red-500"
-                        : cnpjValidation.status === "valid"
-                          ? "border-green-500 focus-visible:ring-green-500"
-                          : ""
-                    }
-                  />
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2">{renderCNPJValidationIcon()}</div>
-                </div>
-                {cnpjValidation.message && (
-                  <p
-                    className={`text-sm mt-1 ${
-                      cnpjValidation.status === "invalid" ? "text-red-500" : "text-green-500"
-                    }`}
-                  >
-                    {cnpjValidation.message}
-                  </p>
-                )}
-                {cnpjValidation.companyData && cnpjValidation.status === "valid" && (
-                  <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-md text-sm text-green-700">
-                    <p>
-                      <strong>Razão Social:</strong> {cnpjValidation.companyData.razao_social}
-                    </p>
-                    <p>
-                      <strong>Nome Fantasia:</strong> {cnpjValidation.companyData.nome_fantasia || "Não informado"}
-                    </p>
-                    <p>
-                      <strong>Endereço:</strong> {cnpjValidation.companyData.logradouro},{" "}
-                      {cnpjValidation.companyData.numero} - {cnpjValidation.companyData.municipio}/
-                      {cnpjValidation.companyData.uf}
-                    </p>
-                  </div>
-                )}
-              </div>
-              <div>
-                <Label htmlFor="description">Descrição da Empresa</Label>
-                <Textarea
-                  id="description"
-                  value={formData.description || ""}
-                  onChange={handleChange}
-                  placeholder="Descreva sua empresa e seus valores..."
-                  rows={4}
-                />
-              </div>
-              <div>
-                <Label htmlFor="industry">Setor</Label>
-                <Input
-                  id="industry"
-                  value={formData.industry || ""}
-                  onChange={handleChange}
-                  placeholder="Saúde, Tecnologia, Educação"
-                />
-              </div>
-              <div>
-                <Label htmlFor="company_size">Tamanho da Empresa</Label>
-                <Select
-                  value={formData.company_size || ""}
-                  onValueChange={(value) => handleSelectChange("company_size", value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o tamanho da empresa" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1-10">1-10 funcionários</SelectItem>
-                    <SelectItem value="11-50">11-50 funcionários</SelectItem>
-                    <SelectItem value="51-200">51-200 funcionários</SelectItem>
-                    <SelectItem value="201-500">201-500 funcionários</SelectItem>
-                    <SelectItem value="500+">500+ funcionários</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="website">Website</Label>
-                <Input
-                  id="website"
-                  value={formData.website || ""}
-                  onChange={handleChange}
-                  placeholder="https://www.suaempresa.com"
-                />
-              </div>
-              <div>
-                <Label htmlFor="address">Endereço da Empresa</Label>
-                <Input
-                  id="address"
-                  value={formData.address || ""}
-                  onChange={handleChange}
-                  placeholder="Rua da Empresa, 456, Cidade - UF"
-                />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="responsible_name">Nome do Responsável</Label>
-                  <Input
-                    id="responsible_name"
-                    value={formData.responsible_name || ""}
-                    onChange={handleChange}
-                    placeholder="Nome do contato principal"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="responsible_position">Cargo do Responsável</Label>
-                  <Input
-                    id="responsible_position"
-                    value={formData.responsible_position || ""}
-                    onChange={handleChange}
-                    placeholder="Gerente de RH, CEO"
-                  />
-                </div>
-              </div>
-              <div>
-                <Label htmlFor="responsible_cpf">CPF do Responsável (mockado)</Label>
-                <Input
-                  id="responsible_cpf"
-                  value={formData.responsible_cpf || ""}
-                  onChange={handleChange}
-                  placeholder="XXX.XXX.XXX-XX"
-                />
-              </div>
-            </>
-          )}
-
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? (
+              {/* Página 1 */}
+              {currentPage === 1 && (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Salvando...
+                  <div>
+                    <Label htmlFor="crn">CRN</Label>
+                    <div className="relative">
+                      <Input
+                        id="crn"
+                        value={crnValue}
+                        onChange={(e) => handleCRNChange(e.target.value)}
+                        required
+                        className={
+                          crnValidation.status === "invalid"
+                            ? "border-red-500 focus-visible:ring-red-500"
+                            : crnValidation.status === "valid"
+                              ? "border-green-500 focus-visible:ring-green-500"
+                              : ""
+                        }
+                      />
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2">{renderCRNValidationIcon()}</div>
+                    </div>
+                    {crnValidation.message && (
+                      <p
+                        className={`text-sm mt-1 ${crnValidation.status === "invalid" ? "text-red-500" : "text-green-500"}`}
+                      >
+                        {crnValidation.message}
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <Label htmlFor="bio">Biografia</Label>
+                    <Textarea
+                      id="bio"
+                      value={formData?.bio || ""}
+                      onChange={handleChange}
+                      placeholder="Fale um pouco sobre voce e sua abordagem..."
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                    <Label htmlFor="experience_years">Anos de Experiência</Label>
+                    <Input
+                      id="experience_years"
+                      type="number"
+                      min="0"
+                      max="50"
+                      value={formData?.experience_years || ""}
+                      onChange={handleChange}
+                      placeholder="Ex: 5"
+                    />
+                  </div>
+                    <div>
+                      <Label htmlFor="consultation_price">Preço da Consulta (R$)</Label>
+                      <Input
+                        id="consultation_price"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={formData?.consultation_price || ""}
+                        onChange={handleChange}
+                        placeholder="Ex: 150.00"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <Label>Modalidades de Atendimento</Label>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="online_consultation_available"
+                        checked={formData?.online_consultation_available || false}
+                        onChange={handleChange}
+                        className="rounded border-gray-300"
+                      />
+                      <Label htmlFor="online_consultation_available" className="text-sm font-normal">
+                        Atendimento Online Disponível
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="online_only_consultation"
+                        checked={formData?.online_only_consultation || false}
+                        onChange={handleChange}
+                        className="rounded border-gray-300"
+                      />
+                      <Label htmlFor="online_only_consultation" className="text-sm font-normal">
+                        Somente Atendimento Online (Teleconsulta)
+                      </Label>
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="academic_background">Formação Acadêmica</Label>
+                    <Textarea
+                      id="academic_background"
+                      value={formData?.academic_background || ""}
+                      onChange={handleChange}
+                      placeholder="Ex: Graduação em Nutrição pela USP, Pós-graduação em Nutrição Clínica..."
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="address">Endereço do Consultório</Label>
+                    <Textarea
+                      id="address"
+                      value={formData?.address || ""}
+                      onChange={handleChange}
+                      placeholder="Rua, número, bairro, cidade, CEP"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="specialties">Especialidades</Label>
+                    <MultiSelect
+                      options={SPECIALTY_OPTIONS}
+                      selected={formData?.specialties && typeof formData.specialties === "string" ? formData.specialties.split(", ").filter(Boolean).map(label => SPECIALTY_OPTIONS.find(opt => opt.label === label)?.value || label) : []}
+                      onChange={handleSpecialtiesChange}
+                      placeholder="Selecione suas especialidades"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="consultation_languages">Idiomas de Atendimento</Label>
+                    <MultiSelect
+                      options={LANGUAGE_OPTIONS}
+                      selected={formData?.consultation_languages && typeof formData.consultation_languages === "string" ? formData.consultation_languages.split(", ").filter(Boolean).map(label => LANGUAGE_OPTIONS.find(opt => opt.label === label)?.value || label) : []}
+                      onChange={handleLanguagesChange}
+                      placeholder="Selecione os idiomas"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="payment_methods">Métodos de Pagamento</Label>
+                    <MultiSelect
+                      options={PAYMENT_METHOD_OPTIONS}
+                      selected={formData?.payment_methods && typeof formData.payment_methods === "string" ? formData.payment_methods.split(", ").filter(Boolean).map(label => PAYMENT_METHOD_OPTIONS.find(opt => opt.label === label)?.value || label) : []}
+                      onChange={handlePaymentMethodsChange}
+                      placeholder="Selecione os métodos"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="available_times">Horários Disponíveis</Label>
+                    <ScheduleSelector
+                      value={formData?.available_times || "{}"}
+                      onChange={(value) => setFormData((prev) => ({ ...prev, available_times: value }))}
+                      placeholder="Configure seus horários de atendimento"
+                    />
+                  </div>
                 </>
-              ) : (
-                "Salvar Alterações"
               )}
-            </Button>
-          </DialogFooter>
+
+              {/* Página 2 */}
+              {currentPage === 2 && (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="default_consultation_duration">Duração Padrão das Consultas (minutos)</Label>
+                      <Input
+                        id="default_consultation_duration"
+                        type="number"
+                        min="15"
+                        max="180"
+                        step="15"
+                        value={formData?.default_consultation_duration || ""}
+                        onChange={handleChange}
+                        placeholder="Ex: 60"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="min_time_between_appointments">Tempo Mínimo Entre Agendamentos (minutos)</Label>
+                      <Input
+                        id="min_time_between_appointments"
+                        type="number"
+                        min="0"
+                        max="60"
+                        step="5"
+                        value={formData?.min_time_between_appointments || ""}
+                        onChange={handleChange}
+                        placeholder="Ex: 15"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="website_url">Website</Label>
+                    <Input
+                      id="website_url"
+                      type="url"
+                      value={formData?.website_url || ""}
+                      onChange={handleChange}
+                      placeholder="https://seusite.com.br"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="certifications">Certificações</Label>
+                    <Textarea
+                      id="certifications"
+                      value={formData?.certifications || ""}
+                      onChange={handleChange}
+                      placeholder="Liste suas certificações, cursos e especializações..."
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="achievements">Conquistas</Label>
+                    <Textarea
+                      id="achievements"
+                      value={formData?.achievements || ""}
+                      onChange={handleChange}
+                      placeholder="Prêmios, reconhecimentos, publicações..."
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="instagram_username">Instagram</Label>
+                      <Input
+                        id="instagram_username"
+                        value={formData?.instagram_username || ""}
+                        onChange={handleChange}
+                        placeholder="@seuinstagram"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="linkedin_username">LinkedIn</Label>
+                      <Input
+                        id="linkedin_username"
+                        value={formData?.linkedin_username || ""}
+                        onChange={handleChange}
+                        placeholder="https://linkedin.com/in/seuperfil"
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
+
+            </>
+          )}
         </form>
+
+        {/* Navegação entre páginas - movida para fora do form */}
+        {isEditing && (
+          <div className="flex justify-between items-center mt-6 px-6">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={prevPage}
+              disabled={currentPage === 1}
+              className="flex items-center gap-2"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Anterior
+            </Button>
+            
+            <div className="flex gap-2">
+              {Array.from({ length: totalPages }, (_, i) => (
+                <Button
+                  key={i + 1}
+                  type="button"
+                  variant={currentPage === i + 1 ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setCurrentPage(i + 1)}
+                  className="w-8 h-8 rounded-full text-sm font-medium"
+                >
+                  {i + 1}
+                </Button>
+              ))}
+            </div>
+
+            <Button
+              type="button"
+              variant="outline"
+              onClick={nextPage}
+              disabled={currentPage === totalPages}
+              className="flex items-center gap-2"
+            >
+              Próxima
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            Cancelar
+          </Button>
+          <Button type="submit" form="profile-form" disabled={loading}>
+            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Salvar
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )
 }
-
-/* ---------- DEFAULT EXPORT (opcional) ---------- */
-export default UserProfileModal

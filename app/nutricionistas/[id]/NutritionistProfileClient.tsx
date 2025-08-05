@@ -106,7 +106,7 @@ export default function NutritionistProfilePageClient({ nutritionist }: Nutritio
   const formattedPatients = 0 // Placeholder, pois não está diretamente na interface
   const formattedPrice = nutritionist.consultation_price || 0
   const formattedImage =
-    nutritionist.profile_image_url || `/placeholder.svg?height=400&width=400&text=${encodeURIComponent(formattedName)}`
+    nutritionist?.profile_image_url || `/placeholder.svg?height=400&width=400&text=${encodeURIComponent(formattedName)}`
   // cover_image_url não existe no DB, então usamos um placeholder direto
   const formattedCoverImage = `/placeholder.svg?height=300&width=800&text=Consultório ${encodeURIComponent(formattedName)}`
   const formattedBio = nutritionist.bio || "Sem biografia disponível."
@@ -116,18 +116,57 @@ export default function NutritionistProfilePageClient({ nutritionist }: Nutritio
   const formattedPhone = nutritionist.phone || "Telefone não informado."
   const formattedEmail = nutritionist.email || "Email não informado." // Assumindo que email pode vir do perfil ou ser um placeholder
   const formattedWebsite = nutritionist.website || ""
-  const formattedOnlineConsultation = nutritionist.online_consultation || false
-  const formattedWorkingHours = nutritionist.working_hours || {}
+  const formattedOnlineConsultation = nutritionist.service_online_available || false
   const formattedAddress = nutritionist.address || formattedLocation
-  const formattedSocialMedia = nutritionist.social_media || { instagram: "", linkedin: "" }
+  
+  // Campos individuais para horários de trabalho
+  const formattedWorkingHours = {
+    monday: nutritionist.monday_hours || "Fechado",
+    tuesday: nutritionist.tuesday_hours || "Fechado", 
+    wednesday: nutritionist.wednesday_hours || "Fechado",
+    thursday: nutritionist.thursday_hours || "Fechado",
+    friday: nutritionist.friday_hours || "Fechado",
+    saturday: nutritionist.saturday_hours || "Fechado",
+    sunday: nutritionist.sunday_hours || "Fechado"
+  }
+
+  // Campos individuais para redes sociais
+  const formattedSocialMedia = {
+    instagram: nutritionist.instagram_username || "",
+    linkedin: nutritionist.linkedin_username || "",
+    facebook: nutritionist.facebook_username || "",
+    youtube: nutritionist.youtube_channel || "",
+    tiktok: nutritionist.tiktok_username || "",
+    website: nutritionist.website_url || ""
+  }
+
+  // Campos individuais para serviços (usando os novos campos)
+  const formattedServices = [
+    ...(nutritionist.service_consultation_price ? [{
+      name: "Consulta Nutricional",
+      price: nutritionist.service_consultation_price,
+      description: "Consulta completa com avaliação nutricional"
+    }] : []),
+    ...(nutritionist.service_followup_price ? [{
+      name: "Consulta de Retorno", 
+      price: nutritionist.service_followup_price,
+      description: "Acompanhamento e ajustes no plano alimentar"
+    }] : []),
+    ...(nutritionist.service_meal_plan_price ? [{
+      name: "Plano Alimentar",
+      price: nutritionist.service_meal_plan_price, 
+      description: "Elaboração de plano alimentar personalizado"
+    }] : [])
+  ]
 
   const formattedSpecializations = toArray(nutritionist.specialties)
-  const formattedServices = toArray(nutritionist.services)
   const formattedAvailableTimes = toArray(nutritionist.available_times)
   const formattedLanguages = toArray(nutritionist.languages)
   const formattedCertifications = toArray(nutritionist.certifications)
   const formattedAchievements = toArray(nutritionist.achievements)
-  const formattedTestimonials = toArray(nutritionist.testimonials) as any // mantém tipagem frouxa
+  
+  // Testimonials removidos - campo JSON não existe mais
+  const formattedTestimonials: any[] = []
 
   // Structured Data para SEO
   const structuredData = {

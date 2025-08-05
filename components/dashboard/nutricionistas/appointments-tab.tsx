@@ -27,14 +27,64 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { toast } from "@/hooks/use-toast"
-import {
-  getNutritionistConsultations as getConsultationsForNutritionist,
-  rescheduleConsultation,
-  cancelConsultation,
-  blockTimeSlot,
-  unblockTimeSlot,
-  type Consultation,
-} from "@/lib/consultation-service"
+// Telemedicina temporariamente desabilitada
+// import {
+//   getConsultationsForNutritionist,
+//   rescheduleConsultation,
+//   cancelConsultation,
+//   blockTimeSlot,
+//   unblockTimeSlot,
+//   type Consultation,
+// } from "@/lib/telemedicine-service"
+
+// Tipos temporários para substituir os tipos de telemedicina
+interface Consultation {
+  id: string
+  start_time: string
+  end_time: string
+  status: "scheduled" | "completed" | "cancelled" | "pending" | "rescheduled"
+  consultation_type: "online" | "presential"
+  patient_name?: string
+  patient_avatar?: string
+  is_blocked_slot?: boolean
+  block_reason?: string
+  nutritionist_profiles?: {
+    address?: string
+  }
+}
+
+// Funções temporárias para substituir as funções de telemedicina
+const getConsultationsForNutritionist = async (
+  userId: string,
+  startDate?: Date,
+  endDate?: Date,
+  filterStatus?: string,
+  filterType?: string,
+  filterPatientName?: string
+): Promise<Consultation[]> => {
+  // Funcionalidade de telemedicina temporariamente desabilitada
+  return []
+}
+
+const rescheduleConsultation = async (consultationId: string, newStart: Date, newEnd: Date): Promise<void> => {
+  // Funcionalidade de telemedicina temporariamente desabilitada
+  throw new Error("Funcionalidade de reagendamento temporariamente indisponível")
+}
+
+const cancelConsultation = async (consultationId: string, reason?: string): Promise<void> => {
+  // Funcionalidade de telemedicina temporariamente desabilitada
+  throw new Error("Funcionalidade de cancelamento temporariamente indisponível")
+}
+
+const blockTimeSlot = async (userId: string, startTime: Date, endTime: Date, reason: string): Promise<void> => {
+  // Funcionalidade de telemedicina temporariamente desabilitada
+  throw new Error("Funcionalidade de bloqueio de horário temporariamente indisponível")
+}
+
+const unblockTimeSlot = async (consultationId: string): Promise<void> => {
+  // Funcionalidade de telemedicina temporariamente desabilitada
+  throw new Error("Funcionalidade de desbloqueio de horário temporariamente indisponível")
+}
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
@@ -75,7 +125,7 @@ export function AppointmentsTab({ userId }: AppointmentsTabProps) {
     if (userId) {
       fetchConsultations()
     }
-  }, [userId, selectedDate, viewMode, filterStatus, filterType, filterPatientName, fetchConsultations])
+  }, [userId, selectedDate, viewMode, filterStatus, filterType, filterPatientName])
 
   const fetchConsultations = useCallback(async () => {
     setLoading(true)

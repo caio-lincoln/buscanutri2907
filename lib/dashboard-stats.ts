@@ -13,17 +13,8 @@ export interface DashboardStats {
  */
 export async function getNutritionistStats(userId: string): Promise<DashboardStats> {
   try {
-    // Consultas agendadas (próximas)
-    const { data: appointments, error: appointmentsError } = await supabase
-      .from("consultations")
-      .select("id")
-      .eq("nutritionist_id", userId)
-      .eq("status", "scheduled")
-      .gte("scheduled_time", new Date().toISOString())
-
-    if (appointmentsError) {
-      console.error("Erro ao buscar consultas:", appointmentsError)
-    }
+    // Consultas agendadas (próximas) - Funcionalidade de telemedicina removida
+    const appointments = null // Telemedicina desabilitada temporariamente
 
     // Vagas disponíveis
     const { data: jobs, error: jobsError } = await supabase
@@ -66,17 +57,8 @@ export async function getNutritionistStats(userId: string): Promise<DashboardSta
  */
 export async function getPatientStats(userId: string): Promise<DashboardStats> {
   try {
-    // Consultas agendadas (próximas)
-    const { data: appointments, error: appointmentsError } = await supabase
-      .from("consultations")
-      .select("id")
-      .eq("patient_id", userId)
-      .eq("status", "scheduled")
-      .gte("scheduled_time", new Date().toISOString())
-
-    if (appointmentsError) {
-      console.error("Erro ao buscar consultas:", appointmentsError)
-    }
+    // Consultas agendadas (próximas) - Funcionalidade de telemedicina removida
+    const appointments = null // Telemedicina desabilitada temporariamente
 
     // Notificações não lidas
     const { data: notifications, error: notificationsError } = await supabase

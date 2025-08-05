@@ -7,11 +7,11 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Search, MapPin, Star, Calendar, Filter, Settings, User, Video, Shield, Heart, Activity, Users, ArrowRight, Bot, Target, Grid3X3, List, BookOpen, CheckCircle, Clock } from 'lucide-react'
+import { Search, MapPin, Star, Calendar, Filter, User, Video, Shield, Heart, Activity, Users, ArrowRight, Bot, Target, Grid3X3, List, BookOpen, CheckCircle, Clock, Scale, Ruler, Utensils, Pill, Dumbbell, Droplets, AlertTriangle, FileText, MessageSquare } from 'lucide-react'
 import { getCurrentUser, getUserProfile, signOut } from "@/lib/auth"
 import type { PatientProfile } from "@/lib/supabase"
 import { NotificationsPanel } from "@/components/notifications-panel"
-import { DashboardSidebar, getMenuItems as getDashboardMenuItems } from "@/components/dashboard-sidebar"
+import { DashboardSidebar, getMenuItems } from "@/components/dashboard-sidebar"
 import { IrisChat } from "@/components/iris-chat"
 import { StatsCard } from "@/components/stats-card"
 // Importar o hook de estatísticas do dashboard
@@ -42,7 +42,8 @@ import { RatingModal } from "@/components/ui/rating-modal"
 import { Checkbox } from "@/components/ui/checkbox"
 import Link from "next/link"
 import { PatientForumTab } from "@/components/patient-forum-tab"
-import { PatientTelemedicineTab } from "@/components/dashboard/paciente/telemedicine-tab" // Importar a nova aba de telemedicina
+
+
 import { format, parseISO } from "date-fns"
 import { ptBR } from "date-fns/locale"
 
@@ -90,7 +91,7 @@ const formatNutritionistData = (nutritionist: NutritionistProfile) => {
     name: nutritionist.full_name,
     bio: nutritionist.bio,
     location: nutritionist.location,
-    image: nutritionist.profile_image_url,
+    image: nutritionist?.profile_image_url || "/placeholder.svg",
     crn: nutritionist.crn,
     rating: nutritionist.rating || 0,
     reviews: nutritionist.total_reviews || 0,
@@ -172,6 +173,7 @@ export default function PatientDashboard() {
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState("overview")
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
+  const [anamneseData, setAnamneseData] = useState<any>(null)
   const router = useRouter()
 
   // Estados para a aba "Buscar Nutricionistas"
@@ -195,6 +197,8 @@ export default function PatientDashboard() {
 
 
 
+
+
   const upcomingConsultations = consultations
     .filter((c) => c.status === "scheduled" && c.start_time && parseISO(c.start_time) > new Date())
     .slice(0, 3)
@@ -206,7 +210,7 @@ export default function PatientDashboard() {
     enabled: !!profile?.user_id
   })
 
-  const menuItems = getDashboardMenuItems("paciente", dashboardStats)
+  const menuItems = getMenuItems("paciente", dashboardStats)
 
   useEffect(() => {
     loadProfile()
@@ -242,8 +246,11 @@ export default function PatientDashboard() {
       const { data: profileData } = await getUserProfile(user.id, "paciente")
       setProfile(profileData)
 
-      // Carregar dados de telemedicina aqui para o overview e para passar para a aba de telemedicina
-      await loadTelemedicineData(user.id)
+      // Carregar dados da anamnese nutricional
+      if (profileData?.user_id) {
+        await loadAnamneseData(profileData.user_id)
+      }
+
     } catch (error) {
       console.error("Error loading profile:", error)
     } finally {
@@ -251,55 +258,23 @@ export default function PatientDashboard() {
     }
   }
 
-  const loadTelemedicineData = async (userId: string) => {
+  const loadAnamneseData = async (userId: string) => {
     try {
-      console.log("Carregando dados reais do paciente:", userId)
-      
-      const [consultationsData, favoritesData, statsData, chatData, forumData, patientForumData] = await Promise.all([
-        getPatientConsultations(userId),
-        getPatientFavoriteNutritionists(userId),
-        getPatientStats(userId),
-        getPatientChatConversations(userId),
-        getForumQuestions(),
-        getPatientForumQuestions(userId),
-      ])
+      const { data, error } = await supabase
+        .from('anamnese_nutricional')
+        .select('*')
+        .eq('patient_id', userId)
+        .single()
 
-      console.log("Dados carregados:", {
-        consultations: consultationsData.length,
-        favorites: favoritesData.length,
-        stats: statsData,
-        chats: chatData.length,
-        forum: forumData.length,
-        patientForum: patientForumData.length
-      })
-
-      setConsultations(consultationsData)
-      setFavoriteNutritionists(favoritesData)
-      // Atualizar o conjunto de nutricionistas favoritados
-      const favoriteIds = new Set(favoritesData.map(fav => fav.nutritionist_id))
-      setFavoritedNutritionists(favoriteIds)
-      setStats({
-        totalConsultations: statsData.totalConsultations || 0,
-        scheduledConsultations: statsData.scheduledConsultations || 0,
-        completedConsultations: statsData.completedConsultations || 0,
-        favoriteNutritionists: statsData.favoriteNutritionists || 0,
-        averageRating: Number(statsData.averageRating) || 0,
-      })
-      setChatConversations(chatData)
-      setForumQuestions(forumData)
-      setPatientForumQuestions(patientForumData)
-    } catch (err) {
-      console.error("Erro ao carregar dados de telemedicina:", err)
-      // Fallback para dados padrão em caso de erro
-      setStats({
-        totalConsultations: 0,
-        scheduledConsultations: 0,
-        completedConsultations: 0,
-        favoriteNutritionists: 0,
-        averageRating: 0,
-      })
+      if (data && !error) {
+        setAnamneseData(data)
+      }
+    } catch (error) {
+      console.log('Nenhuma anamnese encontrada')
     }
   }
+
+
 
   // Funções para a aba "Buscar Nutricionistas"
   const loadNutritionists = async () => {
@@ -532,7 +507,8 @@ export default function PatientDashboard() {
       // Recarregar dados para refletir a nova avaliação
       const user = await getCurrentUser()
       if (user) {
-        await loadTelemedicineData(user.id)
+        // Funcionalidade de telemedicina removida temporariamente
+        console.log("Avaliação salva com sucesso")
       }
     } catch (error) {
       console.error('Erro ao enviar avaliação:', error)
@@ -593,7 +569,7 @@ export default function PatientDashboard() {
     <DashboardSidebar
       userType="paciente"
       userName={profile?.full_name || "Paciente"}
-      userAvatar={profile?.profile_image_url}
+      userAvatar={profile?.profile_image_url || "/placeholder.svg"}
       menuItems={menuItems}
       activeItem={activeTab}
       onItemClick={setActiveTab}
@@ -719,28 +695,14 @@ export default function PatientDashboard() {
                   </CardContent>
                 </Card>
 
-                <Card
-                  className="group hover-lift cursor-pointer transition-all duration-300 border-0 shadow-lg hover:shadow-xl bg-gradient-to-br from-green-50 to-green-100/50 backdrop-blur-sm"
-                  onClick={() => setActiveTab("telemedicina")} // Redireciona para a aba de telemedicina
-                >
-                  <CardContent className="p-6 text-center">
-                    <div className="w-14 h-14 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300">
-                      <Calendar className="h-7 w-7 text-white" />
-                    </div>
-                    <h3 className="font-semibold text-[#1E1D40] mb-2 text-lg">Minhas Consultas</h3>
-                    <p className="text-sm text-gray-600 mb-4">Gerencie seus agendamentos online</p>
-                    <Button size="sm" variant="ghost" className="text-green-600 hover:text-green-700 hover:bg-green-50">
-                      Ver Consultas <ArrowRight className="h-3 w-3 ml-1" />
-                    </Button>
-                  </CardContent>
-                </Card>
+
 
                 <Card className="group hover-lift cursor-pointer transition-all duration-300 border-0 shadow-lg hover:shadow-xl bg-gradient-to-br from-purple-50 to-purple-100/50 backdrop-blur-sm">
                   <CardContent className="p-6 text-center">
                     <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300">
                       <Bot className="h-7 w-7 text-white" />
                     </div>
-                    <h3 className="font-semibold text-[#1E1D40] mb-2 text-lg">Chat com Iris</h3>
+                    <h3 className="font-semibold text-[#1E1D40] mb-2 text-lg">Chat com IrisBot</h3>
                     <p className="text-sm text-gray-600 mb-4">Tire suas dúvidas com IA</p>
                     <Button
                       size="sm"
@@ -835,12 +797,12 @@ export default function PatientDashboard() {
                         <Avatar className="h-12 w-12 ring-2 ring-gray-200 shadow-md group-hover:scale-105 transition-transform duration-300">
                           <AvatarImage
                             src={
-                              nutritionist.nutritionist_profiles.profile_image_url ||
-                              `/placeholder.svg?height=48&width=48&query=${nutritionist.nutritionist_profiles.full_name || "nutritionist profile"}`
+                              nutritionist.nutritionist_profiles?.profile_image_url ||
+                              `/placeholder.svg?height=48&width=48&query=${nutritionist.nutritionist_profiles?.full_name || "nutritionist profile"}`
                             }
                           />
                           <AvatarFallback className="bg-gradient-to-br from-green-500 to-green-600 text-white font-semibold">
-                            {nutritionist.nutritionist_profiles.full_name
+                            {nutritionist.nutritionist_profiles?.full_name
                               ? (nutritionist.nutritionist_profiles.full_name
                                   .split(" ")
                                   .map((n) => n[0])
@@ -849,15 +811,15 @@ export default function PatientDashboard() {
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-[#1E1D40]">{nutritionist.nutritionist_profiles.full_name}</p>
+                          <p className="font-semibold text-[#1E1D40]">{nutritionist.nutritionist_profiles?.full_name}</p>
                           <p className="text-sm text-gray-600">
-                            {nutritionist.nutritionist_profiles.specialties.join(", ")}
+                            {nutritionist.nutritionist_profiles?.specialties?.join(", ")}
                           </p>
                           <div className="flex items-center gap-1 mt-1">
                             <Star className="h-3 w-3 text-yellow-500 fill-current" />
-                            <span className="text-sm font-medium">{nutritionist.nutritionist_profiles.rating}</span>
+                            <span className="text-sm font-medium">{nutritionist.nutritionist_profiles?.rating}</span>
                             <span className="text-sm text-gray-500">
-                              ({nutritionist.nutritionist_profiles.total_reviews} avaliações)
+                              ({nutritionist.nutritionist_profiles?.total_reviews} avaliações)
                             </span>
                           </div>
                         </div>
@@ -1056,8 +1018,8 @@ export default function PatientDashboard() {
                               <Avatar className="h-16 w-16 ring-2 ring-gray-200 shadow-lg group-hover:scale-105 transition-transform duration-300">
                                 <AvatarImage
                                   src={
-                                    nutritionist.profile_image_url ||
-                                    `/placeholder.svg?height=48&width=48&query=${nutritionist.full_name || "nutritionist profile"}`
+                                    nutritionist?.profile_image_url ||
+                                    `/placeholder.svg?height=48&width=48&query=${nutritionist?.full_name || "nutritionist profile"}`
                                   }
                                 />
                                 <AvatarFallback className="bg-gradient-to-br from-blue-500 to-blue-600 text-white text-xl font-bold">
@@ -1098,8 +1060,9 @@ export default function PatientDashboard() {
                                   )}
 
                                   <div className="flex flex-wrap gap-2">
-                                    {((getSpecialtiesText(nutritionist) || "Nutrição Geral")
-                                      .split(", ") || ["Nutrição Geral"])
+                                    {(typeof (getSpecialtiesText(nutritionist) || "Nutrição Geral") === "string" 
+                                      ? (getSpecialtiesText(nutritionist) || "Nutrição Geral").split(", ") 
+                                      : ["Nutrição Geral"])
                                       .slice(0, 2)
                                       .map((specialty, index) => (
                                         <Badge
@@ -1204,175 +1167,7 @@ export default function PatientDashboard() {
           </div>
         )}
 
-        {/* Telemedicina (nova aba dedicada) */}
-        {activeTab === "telemedicina" && (
-          <div className="space-y-8">
-            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
-              <div>
-                <h1 className="text-3xl lg:text-4xl font-bold text-[#1E1D40] mb-2">Minhas Consultas</h1>
-                <p className="text-gray-600">Gerencie suas consultas e avalie seus nutricionistas</p>
-              </div>
-              <Button
-                variant="outline"
-                className="hover-lift bg-white/80 backdrop-blur-sm border-gray-200"
-                onClick={() => setActiveTab("buscar")}
-              >
-                <Calendar className="h-4 w-4 mr-2" />
-                Agendar Nova Consulta
-              </Button>
-            </div>
 
-            {/* Estatísticas das Consultas */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <Card className="border-0 shadow-lg backdrop-blur-sm">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">Total de Consultas</p>
-                      <p className="text-2xl font-bold text-[#1E1D40]">{stats.totalConsultations}</p>
-                    </div>
-                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
-                      <Calendar className="h-6 w-6 text-white" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="border-0 shadow-lg backdrop-blur-sm">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">Agendadas</p>
-                      <p className="text-2xl font-bold text-[#1E1D40]">{stats.scheduledConsultations}</p>
-                    </div>
-                    <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center">
-                      <Clock className="h-6 w-6 text-white" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="border-0 shadow-lg backdrop-blur-sm">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">Concluídas</p>
-                      <p className="text-2xl font-bold text-[#1E1D40]">{stats.completedConsultations}</p>
-                    </div>
-                    <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center">
-                      <CheckCircle className="h-6 w-6 text-white" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Lista de Consultas */}
-            <Card className="border-0 shadow-lg backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
-                    <Video className="h-4 w-4 text-white" />
-                  </div>
-                  <span>Histórico de Consultas</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {consultations.length > 0 ? (
-                  <div className="space-y-4">
-                    {consultations.map((consultation) => (
-                      <div
-                        key={consultation.id}
-                        className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors"
-                      >
-                        <div className="flex items-center gap-4">
-                          <Avatar className="h-12 w-12">
-                            <AvatarImage
-                              src={
-                                consultation.nutritionist_profiles?.profile_image_url ||
-                                `/placeholder.svg?height=48&width=48&query=${consultation.nutritionist_profiles?.full_name || "nutritionist"}`
-                              }
-                            />
-                            <AvatarFallback className="bg-gradient-to-br from-blue-500 to-blue-600 text-white">
-                              {consultation.nutritionist_profiles?.full_name?.charAt(0) || "N"}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <h4 className="font-semibold text-[#1E1D40]">
-                              {consultation.nutritionist_profiles?.full_name || "Nutricionista"}
-                            </h4>
-                            <p className="text-sm text-gray-600">
-                              {formatDate(consultation.start_time)}
-                            </p>
-                            <div className="flex items-center gap-2 mt-1">
-                              <Badge
-                                variant={
-                                  consultation.status === "completed"
-                                    ? "default"
-                                    : consultation.status === "scheduled"
-                                    ? "secondary"
-                                    : "outline"
-                                }
-                                className={
-                                  consultation.status === "completed"
-                                    ? "bg-green-100 text-green-800"
-                                    : consultation.status === "scheduled"
-                                    ? "bg-blue-100 text-blue-800"
-                                    : ""
-                                }
-                              >
-                                {consultation.status === "completed" && "Concluída"}
-                                {consultation.status === "scheduled" && "Agendada"}
-                                {consultation.status === "cancelled" && "Cancelada"}
-                              </Badge>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {consultation.status === "completed" && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="hover-lift bg-white/80 backdrop-blur-sm"
-                              onClick={() => handleOpenRatingModal(consultation)}
-                            >
-                              <Star className="h-4 w-4 mr-2" />
-                              Avaliar
-                            </Button>
-                          )}
-                          {consultation.status === "scheduled" && (
-                            <Button
-                              size="sm"
-                              className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
-                            >
-                              <Video className="h-4 w-4 mr-2" />
-                              Entrar
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-12">
-                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <Calendar className="h-8 w-8 text-gray-400" />
-                    </div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Nenhuma consulta encontrada</h3>
-                    <p className="text-gray-600 mb-4">Você ainda não possui consultas agendadas ou realizadas.</p>
-                    <Button
-                      onClick={() => setActiveTab("buscar")}
-                      className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700"
-                    >
-                      <Calendar className="h-4 w-4 mr-2" />
-                      Agendar Primeira Consulta
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        )}
 
         {/* Iris Chat */}
         {activeTab === "iris" && (
@@ -1382,8 +1177,8 @@ export default function PatientDashboard() {
                 <Bot className="h-10 w-10 text-white" />
               </div>
               <div>
-                <h1 className="text-3xl lg:text-4xl font-bold text-[#1E1D40] mb-2">Chat com Iris</h1>
-                <p className="text-gray-600 text-lg">Sua assistente virtual de nutrição inteligente</p>
+                <h1 className="text-3xl lg:text-4xl font-bold text-[#1E1D40] mb-2">Chat com IrisBot</h1>
+                <p className="text-gray-600 text-lg">Sua assistente virtual para pacientes</p>
               </div>
             </div>
 
@@ -1421,19 +1216,22 @@ export default function PatientDashboard() {
             <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
               <div>
                 <h1 className="text-3xl lg:text-4xl font-bold text-[#1E1D40] mb-2">Meu Perfil</h1>
-                <p className="text-gray-600">Gerencie suas informações pessoais e preferências</p>
+                <p className="text-gray-600">Visualize todas as suas informações pessoais e de saúde</p>
               </div>
-              <Button
-                variant="outline"
-                className="hover-lift bg-white/80 backdrop-blur-sm border-gray-200"
-                onClick={() => setIsProfileModalOpen(true)}
-              >
-                <Settings className="h-4 w-4 mr-2" />
-                Editar Perfil
-              </Button>
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  className="hover-lift bg-white/80 backdrop-blur-sm border-gray-200"
+                  onClick={() => setIsProfileModalOpen(true)}
+                >
+                  <User className="h-4 w-4 mr-2" />
+                  Editar Perfil
+                </Button>
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Informações Pessoais */}
               <Card className="border-0 shadow-lg backdrop-blur-sm">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-3">
@@ -1457,29 +1255,57 @@ export default function PatientDashboard() {
                       </AvatarFallback>
                     </Avatar>
                   </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Nome Completo</label>
-                    <p className="text-[#1E1D40] font-semibold text-lg">{profile?.full_name || "Não informado"}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Data de Nascimento</label>
-                    <p className="text-[#1E1D40] font-semibold">{profile?.birth_date || "Não informado"}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Telefone</label>
-                    <p className="text-[#1E1D40] font-semibold">{profile?.phone || "Não informado"}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">CPF</label>
-                    <p className="text-[#1E1D40] font-semibold">{profile?.cpf || "Não informado"}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">RG</label>
-                    <p className="text-[#1E1D40] font-semibold">{profile?.rg || "Não informado"}</p>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Nome Completo</label>
+                      <p className="text-[#1E1D40] font-semibold">{profile?.full_name || "Não informado"}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Data de Nascimento</label>
+                      <p className="text-[#1E1D40] font-semibold">{profile?.birth_date || "Não informado"}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Telefone</label>
+                      <p className="text-[#1E1D40] font-semibold">{profile?.phone || "Não informado"}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">E-mail</label>
+                      <p className="text-[#1E1D40] font-semibold">{profile?.email || anamneseData?.email || "Não informado"}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">CPF</label>
+                      <p className="text-[#1E1D40] font-semibold">{profile?.cpf || "Não informado"}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">RG</label>
+                      <p className="text-[#1E1D40] font-semibold">{profile?.rg || "Não informado"}</p>
+                    </div>
+                    {anamneseData?.genero && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">Gênero</label>
+                        <p className="text-[#1E1D40] font-semibold">{anamneseData.genero}</p>
+                      </div>
+                    )}
+                    {anamneseData?.instagram && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">Instagram</label>
+                        <p className="text-[#1E1D40] font-semibold">{anamneseData.instagram}</p>
+                      </div>
+                    )}
+                    {(anamneseData?.cidade || anamneseData?.estado) && (
+                      <div className="md:col-span-2">
+                        <label className="text-sm font-medium text-gray-600">Localização</label>
+                        <p className="text-[#1E1D40] font-semibold">
+                          {[anamneseData?.cidade, anamneseData?.estado].filter(Boolean).join(", ") || "Não informado"}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
 
+              {/* Informações de Saúde */}
               <Card className="border-0 shadow-lg backdrop-blur-sm">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-3">
@@ -1518,7 +1344,7 @@ export default function PatientDashboard() {
                           </Badge>
                         ))
                       ) : (
-                        <p className="text-sm text-gray-500">Nenhuma informoada</p>
+                        <p className="text-sm text-gray-500">Nenhuma informada</p>
                       )}
                     </div>
                   </div>
@@ -1536,51 +1362,276 @@ export default function PatientDashboard() {
                       )}
                     </div>
                   </div>
+                  
+                  {/* Configurações de Notificação */}
+                  <div className="pt-4 border-t">
+                    <label className="text-sm font-medium text-gray-600 mb-3 block">Configurações de Notificação</label>
+                    <div className="space-y-3">
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="email-notifications"
+                          checked={profile?.email_notifications_enabled ?? true}
+                          onCheckedChange={(checked) =>
+                            setProfile((prev) => (prev ? { ...prev, email_notifications_enabled: checked } : null))
+                          }
+                        />
+                        <label htmlFor="email-notifications" className="text-sm text-gray-700">
+                          Receber notificações por e-mail
+                        </label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="in-app-notifications"
+                          checked={profile?.in_app_notifications_enabled ?? true}
+                          onCheckedChange={(checked) =>
+                            setProfile((prev) => (prev ? { ...prev, in_app_notifications_enabled: checked } : null))
+                          }
+                        />
+                        <label htmlFor="in-app-notifications" className="text-sm text-gray-700">
+                          Receber notificações no aplicativo
+                        </label>
+                      </div>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
 
-              <Card className="border-0 shadow-lg backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-gradient-to-br from-gray-500 to-gray-600 rounded-lg flex items-center justify-center">
-                      <Settings className="h-4 w-4 text-white" />
+              {/* Seção de Anamnese Nutricional */}
+              {anamneseData && (
+                <Card className="border-0 shadow-lg backdrop-blur-sm">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center">
+                        <Activity className="h-4 w-4 text-white" />
+                      </div>
+                      <span>Anamnese Nutricional Completa</span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-8">
+                    {/* Dados Antropométricos */}
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold text-[#1E1D40] border-b border-gray-200 pb-2">Dados Antropométricos</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <label className="text-sm font-medium text-gray-600 flex items-center gap-2">
+                            <Scale className="h-4 w-4" />
+                            Peso Atual
+                          </label>
+                          <p className="text-[#1E1D40] font-semibold">{anamneseData.peso_atual ? `${anamneseData.peso_atual} kg` : "Não informado"}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-gray-600 flex items-center gap-2">
+                            <Ruler className="h-4 w-4" />
+                            Altura
+                          </label>
+                          <p className="text-[#1E1D40] font-semibold">{anamneseData.altura ? `${anamneseData.altura} cm` : "Não informado"}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-gray-600">IMC</label>
+                          <p className="text-[#1E1D40] font-semibold">{anamneseData.imc || "Não calculado"}</p>
+                        </div>
+                      </div>
+                      {anamneseData.historico_peso && (
+                        <div>
+                          <label className="text-sm font-medium text-gray-600 flex items-center gap-2">
+                            <Scale className="h-4 w-4" />
+                            Histórico de Peso
+                          </label>
+                          <p className="text-[#1E1D40] font-semibold mt-1">{anamneseData.historico_peso}</p>
+                        </div>
+                      )}
                     </div>
-                    <span>Preferências</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Notificações por E-mail</label>
-                    <div className="flex items-center space-x-2 mt-2">
-                      <Checkbox
-                        id="email-notifications"
-                        checked={profile?.email_notifications_enabled ?? true}
-                        onCheckedChange={(checked) =>
-                          setProfile((prev) => (prev ? { ...prev, email_notifications_enabled: checked } : null))
-                        }
-                      />
-                      <label htmlFor="email-notifications" className="text-sm text-gray-700">
-                        Receber notificações por e-mail
-                      </label>
+
+                    {/* Objetivos e Metas */}
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold text-[#1E1D40] border-b border-gray-200 pb-2">Objetivos e Metas</h3>
+                      <div>
+                        <label className="text-sm font-medium text-gray-600 flex items-center gap-2">
+                          <Target className="h-4 w-4" />
+                          Objetivo Nutricional
+                        </label>
+                        <p className="text-[#1E1D40] font-semibold">{anamneseData.objetivo_nutricional || "Não informado"}</p>
+                      </div>
                     </div>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Notificações no Aplicativo</label>
-                    <div className="flex items-center space-x-2 mt-2">
-                      <Checkbox
-                        id="in-app-notifications"
-                        checked={profile?.in_app_notifications_enabled ?? true}
-                        onCheckedChange={(checked) =>
-                          setProfile((prev) => (prev ? { ...prev, in_app_notifications_enabled: checked } : null))
-                        }
-                      />
-                      <label htmlFor="in-app-notifications" className="text-sm text-gray-700">
-                        Receber notificações dentro do aplicativo
-                      </label>
+
+                    {/* Condições de Saúde */}
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold text-[#1E1D40] border-b border-gray-200 pb-2">Condições de Saúde</h3>
+                      
+                      {/* Comorbidades */}
+                      {anamneseData.comorbidades && anamneseData.comorbidades.length > 0 && (
+                        <div>
+                          <label className="text-sm font-medium text-gray-600 flex items-center gap-2">
+                            <AlertTriangle className="h-4 w-4" />
+                            Comorbidades
+                          </label>
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {anamneseData.comorbidades.map((comorbidade: string, i: number) => (
+                              <Badge key={i} variant="outline" className="text-xs bg-red-50 text-red-700 border-red-200">
+                                {comorbidade}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Alergias e Intolerâncias */}
+                      {((anamneseData.alergias_alimentares && anamneseData.alergias_alimentares.length > 0) || 
+                        (anamneseData.alergias_intolerancias && anamneseData.alergias_intolerancias.length > 0)) && (
+                        <div>
+                          <label className="text-sm font-medium text-gray-600 flex items-center gap-2">
+                            <AlertTriangle className="h-4 w-4" />
+                            Alergias e Intolerâncias
+                          </label>
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {anamneseData.alergias_alimentares?.map((alergia: string, i: number) => (
+                              <Badge key={`alimentar-${i}`} variant="outline" className="text-xs bg-orange-50 text-orange-700 border-orange-200">
+                                {alergia}
+                              </Badge>
+                            ))}
+                            {anamneseData.alergias_intolerancias?.map((alergia: string, i: number) => (
+                              <Badge key={`intolerancia-${i}`} variant="outline" className="text-xs bg-orange-50 text-orange-700 border-orange-200">
+                                {alergia}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
+
+                    {/* Medicamentos e Suplementos */}
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold text-[#1E1D40] border-b border-gray-200 pb-2">Medicamentos e Suplementos</h3>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Medicamentos */}
+                        {(anamneseData.medicacoes_uso || anamneseData.medicamentos) && (
+                          <div>
+                            <label className="text-sm font-medium text-gray-600 flex items-center gap-2">
+                              <Pill className="h-4 w-4" />
+                              Medicamentos em Uso
+                            </label>
+                            <p className="text-[#1E1D40] font-semibold mt-1">
+                              {anamneseData.medicacoes_uso || anamneseData.medicamentos}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Suplementos */}
+                        {(anamneseData.suplementacao_atual || anamneseData.suplementos) && (
+                          <div>
+                            <label className="text-sm font-medium text-gray-600 flex items-center gap-2">
+                              <Pill className="h-4 w-4" />
+                              Suplementação
+                            </label>
+                            <p className="text-[#1E1D40] font-semibold mt-1">
+                              {anamneseData.suplementacao_atual || anamneseData.suplementos}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Exames e Avaliações */}
+                    {anamneseData.exames_laboratoriais && (
+                      <div className="space-y-4">
+                        <h3 className="text-lg font-semibold text-[#1E1D40] border-b border-gray-200 pb-2">Exames e Avaliações</h3>
+                        <div>
+                          <label className="text-sm font-medium text-gray-600 flex items-center gap-2">
+                            <FileText className="h-4 w-4" />
+                            Exames Laboratoriais Recentes
+                          </label>
+                          <p className="text-[#1E1D40] font-semibold mt-1">{anamneseData.exames_laboratoriais}</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Estilo de Vida */}
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold text-[#1E1D40] border-b border-gray-200 pb-2">Estilo de Vida</h3>
+                      
+                      {/* Atividade Física */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-sm font-medium text-gray-600 flex items-center gap-2">
+                            <Dumbbell className="h-4 w-4" />
+                            Atividade Física
+                          </label>
+                          <p className="text-[#1E1D40] font-semibold">{anamneseData.atividade_fisica || "Não informado"}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-gray-600">Frequência</label>
+                          <p className="text-[#1E1D40] font-semibold">{anamneseData.frequencia_atividade_fisica || "Não informado"}</p>
+                        </div>
+                      </div>
+
+                      {/* Consumo de Água */}
+                      {anamneseData.consumo_agua && (
+                        <div>
+                          <label className="text-sm font-medium text-gray-600 flex items-center gap-2">
+                            <Droplets className="h-4 w-4" />
+                            Consumo de Água Diário
+                          </label>
+                          <p className="text-[#1E1D40] font-semibold">{anamneseData.consumo_agua}</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Preferências e Restrições Alimentares */}
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold text-[#1E1D40] border-b border-gray-200 pb-2">Preferências e Restrições Alimentares</h3>
+                      
+                      {/* Preferências Alimentares */}
+                      {anamneseData.preferencias_alimentares && anamneseData.preferencias_alimentares.length > 0 && (
+                        <div>
+                          <label className="text-sm font-medium text-gray-600 flex items-center gap-2">
+                            <Utensils className="h-4 w-4" />
+                            Preferências Alimentares
+                          </label>
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {anamneseData.preferencias_alimentares.map((preferencia: string, i: number) => (
+                              <Badge key={i} variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                                {preferencia}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Restrições Alimentares */}
+                      {anamneseData.restricoes_alimentares && anamneseData.restricoes_alimentares.length > 0 && (
+                        <div>
+                          <label className="text-sm font-medium text-gray-600 flex items-center gap-2">
+                            <AlertTriangle className="h-4 w-4" />
+                            Restrições Alimentares
+                          </label>
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {anamneseData.restricoes_alimentares.map((restricao: string, i: number) => (
+                              <Badge key={i} variant="outline" className="text-xs bg-yellow-50 text-yellow-700 border-yellow-200">
+                                {restricao}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Observações Adicionais */}
+                    {anamneseData.observacoes_adicionais && (
+                      <div className="space-y-4">
+                        <h3 className="text-lg font-semibold text-[#1E1D40] border-b border-gray-200 pb-2">Observações Adicionais</h3>
+                        <div>
+                          <label className="text-sm font-medium text-gray-600 flex items-center gap-2">
+                            <MessageSquare className="h-4 w-4" />
+                            Informações Complementares
+                          </label>
+                          <p className="text-[#1E1D40] font-semibold mt-1 bg-gray-50 p-3 rounded-lg">{anamneseData.observacoes_adicionais}</p>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </div>
         )}
@@ -1589,18 +1640,16 @@ export default function PatientDashboard() {
         {![
           "overview",
           "buscar",
-          "telemedicina", // Agora é a aba principal de consultas
           "iris",
           "notificacoes",
           "perfil",
           "chat",
           "duvidas",
-          "configuracoes",
         ].includes(activeTab) && (
           <div className="space-y-8">
             <div className="text-center space-y-6 py-16">
               <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-3xl flex items-center justify-center mx-auto shadow-2xl">
-                <Settings className="h-10 w-10 text-white" />
+                <Bot className="h-10 w-10 text-white" />
               </div>
               <div>
                 <h2 className="text-3xl font-bold text-[#1E1D40] mb-2 capitalize">{activeTab}</h2>
@@ -1623,11 +1672,13 @@ export default function PatientDashboard() {
           open={isProfileModalOpen}
           onOpenChange={setIsProfileModalOpen}
           userType="paciente"
-          initialProfileData={profile}
+          initialData={profile}
           onProfileUpdate={loadProfile}
           userId={profile.user_id}
         />
       )}
+
+
 
       {/* Modal de Avaliação */}
       {selectedConsultationForRating && (

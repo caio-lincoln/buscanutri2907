@@ -329,52 +329,46 @@ export async function getUserProfile(userId: string, userType: UserType) {
   if (userType === "nutricionista") {
     const nutritionistProfile = processedData as any // Cast para any para acessar propriedades dinamicamente
 
-    // Campos que podem vir como string separada por vírgulas e devem ser arrays
-    if (typeof nutritionistProfile.specialties === "string") {
-      nutritionistProfile.specialties = nutritionistProfile.specialties
-        .split(",")
-        .map((s: string) => s.trim())
-        .filter(Boolean)
-    }
-    if (typeof nutritionistProfile.languages === "string") {
-      nutritionistProfile.languages = nutritionistProfile.languages
-        .split(",")
-        .map((s: string) => s.trim())
-        .filter(Boolean)
-    }
-    if (typeof nutritionistProfile.certifications === "string") {
-      nutritionistProfile.certifications = nutritionistProfile.certifications
-        .split(",")
-        .map((s: string) => s.trim())
-        .filter(Boolean)
-    }
-    if (typeof nutritionistProfile.achievements === "string") {
-      nutritionistProfile.achievements = nutritionistProfile.achievements
-        .split(",")
-        .map((s: string) => s.trim())
-        .filter(Boolean)
+    // Função helper para processar campos que podem estar com escape duplo
+    const processField = (field: any): string[] => {
+      if (!field) return []
+      
+      if (Array.isArray(field)) {
+        return field.map(item => typeof item === 'string' ? item.replace(/\\"/g, '"') : item)
+      }
+      
+      if (typeof field === "string") {
+        // Remover escapes duplos se existirem
+        const cleanField = field.replace(/\\"/g, '"')
+        
+        // Tentar fazer parse JSON primeiro
+        try {
+          const parsed = JSON.parse(cleanField)
+          if (Array.isArray(parsed)) {
+            return parsed
+          }
+        } catch {
+          // Se não for JSON válido, tratar como string separada por vírgulas
+        }
+        
+        return cleanField
+          .split(",")
+          .map((s: string) => s.trim())
+          .filter(Boolean)
+      }
+      
+      return []
     }
 
-    // Campos que podem vir como string JSON e devem ser objetos/arrays
-    try {
-      if (typeof nutritionistProfile.services === "string") {
-        nutritionistProfile.services = JSON.parse(nutritionistProfile.services)
-      }
-      if (typeof nutritionistProfile.testimonials === "string") {
-        nutritionistProfile.testimonials = JSON.parse(nutritionistProfile.testimonials)
-      }
-      if (typeof nutritionistProfile.working_hours === "string") {
-        nutritionistProfile.working_hours = JSON.parse(nutritionistProfile.working_hours)
-      }
-      if (typeof nutritionistProfile.social_media === "string") {
-        nutritionistProfile.social_media = JSON.parse(nutritionistProfile.social_media)
-      }
-    } catch (e) {
-      console.error("Erro ao parsear campo JSON ao buscar perfil de nutricionista:", e)
-      // Opcional: definir para um valor padrão ou null se o parsing falhar
-      // nutritionistProfile.services = [];
-      // nutritionistProfile.social_media = {};
-    }
+    // Campos que podem vir como string separada por vírgulas e devem ser arrays
+    nutritionistProfile.specialties = processField(nutritionistProfile.specialties)
+    nutritionistProfile.languages = processField(nutritionistProfile.languages)
+    nutritionistProfile.certifications = processField(nutritionistProfile.certifications)
+    nutritionistProfile.achievements = processField(nutritionistProfile.achievements)
+
+    // Campos JSON removidos - agora usando campos individuais
+    // Os campos services, testimonials, working_hours e social_media foram
+    // convertidos para campos individuais para evitar erros de parsing JSON
     processedData = nutritionistProfile
   }
 

@@ -26,7 +26,7 @@ export async function generateMetadata({ params }: PageProps) {
       description: nutritionist.bio,
       images: [
         {
-          url: nutritionist.profile_image_url || "/placeholder.svg",
+          url: nutritionist?.profile_image_url || "/placeholder.svg",
           width: 400,
           height: 400,
           alt: nutritionist.full_name,
