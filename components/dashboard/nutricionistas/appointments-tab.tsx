@@ -121,12 +121,6 @@ export function AppointmentsTab({ userId }: AppointmentsTabProps) {
   const [filterType, setFilterType] = useState<string>("all")
   const [filterPatientName, setFilterPatientName] = useState<string>("")
 
-  useEffect(() => {
-    if (userId) {
-      fetchConsultations()
-    }
-  }, [userId, selectedDate, viewMode, filterStatus, filterType, filterPatientName])
-
   const fetchConsultations = useCallback(async () => {
     setLoading(true)
     setError(null)
@@ -166,6 +160,12 @@ export function AppointmentsTab({ userId }: AppointmentsTabProps) {
       setLoading(false)
     }
   }, [userId, selectedDate, viewMode, filterStatus, filterType, filterPatientName])
+
+  useEffect(() => {
+    if (userId) {
+      fetchConsultations()
+    }
+  }, [userId, fetchConsultations])
 
   const handleDateChange = (date: Date | undefined) => {
     if (date) {

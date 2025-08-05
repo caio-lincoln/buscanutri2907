@@ -50,7 +50,27 @@ export function useDashboardStats({
   }
 
   useEffect(() => {
-    fetchStats()
+    const loadStats = async () => {
+      if (!enabled || !userId) {
+        setLoading(false)
+        return
+      }
+
+      try {
+        setLoading(true)
+        setError(null)
+        
+        const newStats = await getDashboardStats(userType, userId)
+        setStats(newStats)
+      } catch (err) {
+        console.error("Erro ao buscar estatísticas:", err)
+        setError(err instanceof Error ? err.message : "Erro desconhecido")
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadStats()
   }, [userType, userId, enabled])
 
   return {

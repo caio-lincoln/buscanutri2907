@@ -468,9 +468,12 @@ export function UserProfileModal({
   useEffect(() => {
     if (anamneseData.peso_atual && anamneseData.altura) {
       const imc = calculateIMC(anamneseData.peso_atual, anamneseData.altura)
-      setAnamneseData((prev: any) => ({ ...prev, imc }))
+      // Só atualizar se o IMC realmente mudou para evitar loops infinitos
+      if (anamneseData.imc !== imc) {
+        setAnamneseData((prev: any) => ({ ...prev, imc }))
+      }
     }
-  }, [anamneseData.peso_atual, anamneseData.altura])
+  }, [anamneseData.peso_atual, anamneseData.altura, anamneseData.imc])
 
   const handleComorbilidadesChange = (values: string[]) => {
     setAnamneseData((prev: any) => ({ ...prev, comorbidades: values }))
