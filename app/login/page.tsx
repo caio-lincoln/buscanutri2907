@@ -11,50 +11,39 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Eye, EyeOff, Loader2, AlertCircle } from "lucide-react"
-import { signIn, signInAdmin, getCurrentUser } from "@/lib/auth"
+import { signIn, signInAdmin } from "@/lib/auth"
 import { toast } from "@/components/ui/use-toast"
+import { useAuth } from "@/contexts/auth-context"
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   const router = useRouter()
+  const { user, loading: authLoading, refreshUser } = useAuth()
 
-  // Adicionado para verificar o usuário logado ao carregar a página
+  // Redirecionar se o usuário já estiver logado
   useEffect(() => {
-    const checkUserAndRedirect = async () => {
-      setLoading(true)
-      try {
-        const user = await getCurrentUser()
-        if (user && user.user_type) {
-          console.log("Usuário já logado, redirecionando:", user.user_type)
-          switch (user.user_type) {
-            case "admin":
-              router.push("/dashboard/admin")
-              break
-            case "nutricionista":
-        router.push("/dashboard/nutricionistas")
-              break
-            case "empresa":
-              router.push("/dashboard/empresa")
-              break
-            case "paciente":
-              router.push("/dashboard/paciente")
-              break
-            default:
-              // Se o tipo de usuário for desconhecido, redireciona para o dashboard padrão (paciente)
-              router.push("/dashboard/paciente")
-          }
-        }
-      } catch (err) {
-        console.error("Erro ao verificar usuário logado:", err)
-        // Não faz nada, permite que o usuário continue para a tela de login
-      } finally {
-        setLoading(false)
+    if (!authLoading && user && user.user_type) {
+      console.log("Usuário já logado, redirecionando:", user.user_type)
+      switch (user.user_type) {
+        case "admin":
+          router.push("/dashboard/admin")
+          break
+        case "nutricionista":
+          router.push("/dashboard/nutricionistas")
+          break
+        case "empresa":
+          router.push("/dashboard/empresa")
+          break
+        case "paciente":
+          router.push("/dashboard/paciente")
+          break
+        default:
+          router.push("/dashboard/paciente")
       }
     }
-    checkUserAndRedirect()
-  }, [router])
+  }, [user, authLoading, router])
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -86,46 +75,11 @@ export default function LoginPage() {
 
       console.log("✅ Login realizado com sucesso")
 
-      // Aguardar um pouco para garantir que a sessão seja estabelecida
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      // Atualizar o contexto de autenticação
+      await refreshUser()
 
-      // Obter dados do usuário e redirecionar
-      const user = await getCurrentUser()
-
-      if (!user) {
-        throw new Error("Erro ao obter dados do usuário após login")
-      }
-
-      console.log("✅ Dados do usuário obtidos:", user)
-
-      // Redirecionar baseado no tipo de usuário
-      if (!user.user_type) {
-        console.log("⚠️ Tipo de usuário não definido, redirecionando para dashboard padrão")
-        router.push("/dashboard/paciente")
-        return
-      }
-
-      switch (user.user_type) {
-        case "admin":
-          console.log("🔄 Redirecionando para dashboard admin")
-          router.push("/dashboard/admin")
-          break
-        case "nutricionista":
-          console.log("🔄 Redirecionando para dashboard nutricionista")
-        router.push("/dashboard/nutricionistas")
-          break
-        case "empresa":
-          console.log("🔄 Redirecionando para dashboard empresa")
-          router.push("/dashboard/empresa")
-          break
-        case "paciente": // Adicionado explicitamente para clareza
-          console.log("🔄 Redirecionando para dashboard paciente")
-          router.push("/dashboard/paciente")
-          break
-        default:
-          console.log("🔄 Redirecionando para dashboard paciente (tipo desconhecido)")
-          router.push("/dashboard/paciente")
-      }
+      // Aguardar um pouco para garantir que o contexto seja atualizado
+      await new Promise((resolve) => setTimeout(resolve, 500))
 
       toast({
         title: "✅ Login realizado com sucesso!",
@@ -145,7 +99,7 @@ export default function LoginPage() {
     }
   }
 
-  if (loading) {
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#F2E6D8] to-white flex items-center justify-center p-4">
         <div className="text-center space-y-4">

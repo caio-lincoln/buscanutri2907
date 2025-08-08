@@ -15,7 +15,7 @@ import { Plus, Edit, Trash, Calendar, Clock, User, Search, List, Grid, Award } f
 import Image from "next/image"
 import Link from "next/link"
 import { toast } from "@/components/ui/use-toast"
-import { ImageUpload } from "@/components/ui/image-upload"
+import { AdvancedImageUpload } from "@/components/ui/advanced-image-upload"
 import {
   type BlogPost,
   getBlogPostsByAuthor,
@@ -25,6 +25,7 @@ import {
   blogCategories,
 } from "@/lib/blog-data" // Importar funções e categorias do blog-data
 import { getCurrentUser } from "@/lib/auth" // Para obter o ID do usuário logado
+import { createSupabaseClient } from "@/lib/supabase" // Para cliente autenticado
 
 export function BlogTab() {
   const [myPosts, setMyPosts] = useState<BlogPost[]>([])
@@ -79,14 +80,33 @@ export function BlogTab() {
   }
 
   const handleDeletePost = async (id: string) => {
-    if (window.confirm("Tem certeza que deseja excluir este artigo?")) {
-      const success = await deleteBlogPost(id)
-      if (success) {
-        const posts = await getBlogPostsByAuthor(authorId || "") // Refresh posts
-        setMyPosts(posts)
-        toast({ title: "Artigo excluído", description: "O artigo foi removido com sucesso." })
-      } else {
-        toast({ title: "Erro", description: "Não foi possível excluir o artigo.", variant: "destructive" })
+    if (window.confirm("Tem certeza que deseja excluir este artigo? Esta ação não pode ser desfeita.")) {
+      try {
+        // Criar cliente Supabase autenticado
+        const supabase = createSupabaseClient()
+        const success = await deleteBlogPost(id, supabase)
+        if (success) {
+          // Refresh posts
+          const posts = await getBlogPostsByAuthor(authorId || "")
+          setMyPosts(posts)
+          toast({ 
+            title: "Artigo excluído", 
+            description: "O artigo foi removido com sucesso." 
+          })
+        } else {
+          toast({ 
+            title: "Erro ao excluir", 
+            description: "Não foi possível excluir o artigo. Verifique se você tem permissão para esta ação.", 
+            variant: "destructive" 
+          })
+        }
+      } catch (error) {
+        console.error('Erro ao excluir post:', error)
+        toast({ 
+          title: "Erro inesperado", 
+          description: "Ocorreu um erro inesperado ao tentar excluir o artigo. Tente novamente.", 
+          variant: "destructive" 
+        })
       }
     }
   }
@@ -243,7 +263,7 @@ export function BlogTab() {
               </div>
               <div>
                 <Label htmlFor="image">Imagem de Capa</Label>
-                <ImageUpload
+                <AdvancedImageUpload
                   onImageUploaded={(url) => setCurrentPost({ ...currentPost, image: url })}
                   onImageRemoved={() => setCurrentPost({ ...currentPost, image: "" })}
                   currentImageUrl={currentPost.image}

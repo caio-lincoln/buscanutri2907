@@ -8,8 +8,9 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Search, MapPin, Star, Calendar, Filter, User, Video, Shield, Heart, Activity, Users, ArrowRight, Bot, Target, Grid3X3, List, BookOpen, CheckCircle, Clock, Scale, Ruler, Utensils, Pill, Dumbbell, Droplets, AlertTriangle, FileText, MessageSquare } from 'lucide-react'
-import { getCurrentUser, getUserProfile, signOut } from "@/lib/auth"
+import { getUserProfile } from "@/lib/auth"
 import type { PatientProfile } from "@/lib/supabase"
+import { useAuth } from "@/contexts/auth-context"
 import { NotificationsPanel } from "@/components/notifications-panel"
 import { DashboardSidebar, getMenuItems } from "@/components/dashboard-sidebar"
 import { IrisChat } from "@/components/iris-chat"
@@ -42,7 +43,7 @@ import { RatingModal } from "@/components/ui/rating-modal"
 import { Checkbox } from "@/components/ui/checkbox"
 import Link from "next/link"
 import { PatientForumTab } from "@/components/patient-forum-tab"
-
+import { AnamneseNutricionalModal } from "@/components/anamnese-nutricional-modal"
 
 import { format, parseISO } from "date-fns"
 import { ptBR } from "date-fns/locale"
@@ -173,8 +174,10 @@ export default function PatientDashboard() {
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState("overview")
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
+  const [isAnamneseModalOpen, setIsAnamneseModalOpen] = useState(false)
   const [anamneseData, setAnamneseData] = useState<any>(null)
   const router = useRouter()
+  const { user, loading: authLoading, signOut } = useAuth()
 
   // Estados para a aba "Buscar Nutricionistas"
   const [searchNutritionistTerm, setSearchNutritionistTerm] = useState("")
@@ -213,8 +216,10 @@ export default function PatientDashboard() {
   const menuItems = getMenuItems("paciente", dashboardStats)
 
   useEffect(() => {
-    loadProfile()
-  }, [])
+    if (!authLoading) {
+      loadProfile()
+    }
+  }, [user, authLoading])
 
 
 
@@ -235,9 +240,15 @@ export default function PatientDashboard() {
     sortByNutritionist,
   ])
 
+  // Recarregar dados quando a aba perfil for ativada
+  useEffect(() => {
+    if (activeTab === "perfil" && profile?.user_id) {
+      loadAnamneseData(profile.user_id)
+    }
+  }, [activeTab, profile?.user_id])
+
   const loadProfile = async () => {
     try {
-      const user = await getCurrentUser()
       if (!user) {
         router.push("/login")
         return
@@ -432,8 +443,12 @@ export default function PatientDashboard() {
 
 
   const handleSignOut = async () => {
-    await signOut()
-    router.push("/")
+    try {
+      await signOut()
+      router.push("/")
+    } catch (error) {
+      console.error("Error signing out:", error)
+    }
   }
 
   // Funções para favoritar nutricionistas
@@ -554,7 +569,7 @@ export default function PatientDashboard() {
     })
     .slice(0, 5)
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-red-50/50 via-white to-white flex items-center justify-center">
         <div className="text-center space-y-4">
@@ -679,6 +694,22 @@ export default function PatientDashboard() {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <Card
+                  className="group hover-lift cursor-pointer transition-all duration-300 border-0 shadow-lg hover:shadow-xl bg-gradient-to-br from-green-50 to-green-100/50 backdrop-blur-sm"
+                  onClick={() => setIsAnamneseModalOpen(true)}
+                >
+                  <CardContent className="p-6 text-center">
+                    <div className="w-14 h-14 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                      <FileText className="h-7 w-7 text-white" />
+                    </div>
+                    <h3 className="font-semibold text-[#1E1D40] mb-2 text-lg">Anamnese Nutricional</h3>
+                    <p className="text-sm text-gray-600 mb-4">Complete seu histórico de saúde</p>
+                    <Button size="sm" variant="ghost" className="text-green-600 hover:text-green-700 hover:bg-green-50">
+                      Iniciar <ArrowRight className="h-3 w-3 ml-1" />
+                    </Button>
+                  </CardContent>
+                </Card>
+
                 <Card
                   className="group hover-lift cursor-pointer transition-all duration-300 border-0 shadow-lg hover:shadow-xl bg-gradient-to-br from-blue-50 to-blue-100/50 backdrop-blur-sm"
                   onClick={() => setActiveTab("buscar")}
@@ -1259,19 +1290,19 @@ export default function PatientDashboard() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="text-sm font-medium text-gray-600">Nome Completo</label>
-                      <p className="text-[#1E1D40] font-semibold">{profile?.full_name || "Não informado"}</p>
+                      <p className="text-[#1E1D40] font-semibold">{profile?.full_name || anamneseData?.nome_completo || "Não informado"}</p>
                     </div>
                     <div>
                       <label className="text-sm font-medium text-gray-600">Data de Nascimento</label>
-                      <p className="text-[#1E1D40] font-semibold">{profile?.birth_date || "Não informado"}</p>
+                      <p className="text-[#1E1D40] font-semibold">{profile?.birth_date || anamneseData?.data_nascimento || "Não informado"}</p>
                     </div>
                     <div>
                       <label className="text-sm font-medium text-gray-600">Telefone</label>
-                      <p className="text-[#1E1D40] font-semibold">{profile?.phone || "Não informado"}</p>
+                      <p className="text-[#1E1D40] font-semibold">{profile?.phone || anamneseData?.telefone || "Não informado"}</p>
                     </div>
                     <div>
                       <label className="text-sm font-medium text-gray-600">E-mail</label>
-                      <p className="text-[#1E1D40] font-semibold">{profile?.email || anamneseData?.email || "Não informado"}</p>
+                      <p className="text-[#1E1D40] font-semibold">{user?.email || profile?.email || anamneseData?.email || "Não informado"}</p>
                     </div>
                     <div>
                       <label className="text-sm font-medium text-gray-600">CPF</label>
@@ -1315,53 +1346,368 @@ export default function PatientDashboard() {
                     <span>Informações de Saúde</span>
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Condições de Saúde</label>
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {Array.isArray(profile?.health_conditions) && profile.health_conditions.length > 0 ? (
-                        profile.health_conditions.map((condition, i) => (
-                          <Badge key={i} variant="outline" className="text-xs bg-red-50 text-red-700 border-red-200">
-                            {condition}
-                          </Badge>
-                        ))
-                      ) : (
-                        <p className="text-sm text-gray-500">Nenhuma informada</p>
+                <CardContent className="space-y-8">
+                  {/* Dados Antropométricos */}
+                  {anamneseData && (
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold text-[#1E1D40] border-b border-gray-200 pb-2">Dados Antropométricos</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <label className="text-sm font-medium text-gray-600 flex items-center gap-2">
+                            <Scale className="h-4 w-4" />
+                            Peso Atual
+                          </label>
+                          <p className="text-[#1E1D40] font-semibold">{anamneseData.peso_atual ? `${anamneseData.peso_atual} kg` : "Não informado"}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-gray-600 flex items-center gap-2">
+                            <Ruler className="h-4 w-4" />
+                            Altura
+                          </label>
+                          <p className="text-[#1E1D40] font-semibold">{anamneseData.altura ? `${anamneseData.altura} cm` : "Não informado"}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-gray-600">IMC</label>
+                          <p className="text-[#1E1D40] font-semibold">{anamneseData.imc || "Não calculado"}</p>
+                        </div>
+                      </div>
+                      {anamneseData.historico_peso && (
+                        <div>
+                          <label className="text-sm font-medium text-gray-600 flex items-center gap-2">
+                            <Scale className="h-4 w-4" />
+                            Histórico de Peso
+                          </label>
+                          <p className="text-[#1E1D40] font-semibold mt-1">{anamneseData.historico_peso}</p>
+                        </div>
                       )}
                     </div>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Alergias</label>
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {Array.isArray(profile?.allergies) && profile.allergies.length > 0 ? (
-                        profile.allergies.map((allergy, i) => (
-                          <Badge
-                            key={i}
-                            variant="outline"
-                            className="text-xs bg-orange-50 text-orange-700 border-orange-200"
-                          >
-                            {allergy}
-                          </Badge>
-                        ))
-                      ) : (
-                        <p className="text-sm text-gray-500">Nenhuma informada</p>
-                      )}
+                  )}
+
+                  {/* Objetivos e Metas */}
+                  {anamneseData && (
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold text-[#1E1D40] border-b border-gray-200 pb-2">Objetivos e Metas</h3>
+                      <div>
+                        <label className="text-sm font-medium text-gray-600 flex items-center gap-2">
+                          <Target className="h-4 w-4" />
+                          Objetivos Nutricionais
+                        </label>
+                        {anamneseData.objetivos_nutricionais && anamneseData.objetivos_nutricionais.length > 0 ? (
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {anamneseData.objetivos_nutricionais.map((objetivo: string, i: number) => (
+                              <Badge key={i} variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                                {objetivo === "definicao" ? "Definição" :
+                                 objetivo === "disturbios_saude" ? "Distúrbios na saúde" :
+                                 objetivo === "emagrecimento" ? "Emagrecimento" :
+                                 objetivo === "ganho_massa_muscular" ? "Ganho de massa muscular" :
+                                 objetivo === "intolerancia_alergia" ? "Intolerância/alergia alimentar" :
+                                 objetivo === "performance_esportiva" ? "Performance esportiva" :
+                                 objetivo === "reeducacao_alimentar" ? "Reeducação alimentar" :
+                                 objetivo === "saude_geral" ? "Saúde geral" :
+                                 objetivo === "saude_intestinal" ? "Saúde intestinal" :
+                                 objetivo === "outro" ? "Outro" : objetivo}
+                              </Badge>
+                            ))}
+                          </div>
+                        ) : anamneseData.objetivo_nutricional ? (
+                          <p className="text-[#1E1D40] font-semibold">{anamneseData.objetivo_nutricional}</p>
+                        ) : (
+                          <p className="text-[#1E1D40] font-semibold">Não informado</p>
+                        )}
+                        {anamneseData.objetivo_personalizado && (
+                          <div className="mt-2">
+                            <label className="text-sm font-medium text-gray-600">Objetivo Personalizado:</label>
+                            <p className="text-[#1E1D40] font-semibold bg-gray-50 p-2 rounded-lg mt-1">{anamneseData.objetivo_personalizado}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Condições de Saúde */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-[#1E1D40] border-b border-gray-200 pb-2">Condições de Saúde</h3>
+                    
+                    {/* Comorbidades */}
+                    <div>
+                      <label className="text-sm font-medium text-gray-600 flex items-center gap-2">
+                        <AlertTriangle className="h-4 w-4" />
+                        Comorbidades
+                      </label>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {(() => {
+                          const conditions = [
+                            ...(Array.isArray(profile?.health_conditions) ? profile.health_conditions : []),
+                            ...(Array.isArray(anamneseData?.comorbidades) ? anamneseData.comorbidades : [])
+                          ];
+                          return conditions.length > 0 ? (
+                            conditions.map((condition, i) => {
+                              // Mapear códigos para nomes legíveis
+                              const nomeComorbidade = 
+                                condition === "anemia" ? "Anemia" :
+                                condition === "ansiedade" ? "Ansiedade" :
+                                condition === "artrite_reumatoide" ? "Artrite reumatoide" :
+                                condition === "colite_ulcerativa" ? "Colite ulcerativa" :
+                                condition === "depressao" ? "Depressão" :
+                                condition === "desnutricao" ? "Desnutrição" :
+                                condition === "diabetes_mellitus_1" ? "Diabetes mellitus tipo 1" :
+                                condition === "diabetes_mellitus_2" ? "Diabetes mellitus tipo 2" :
+                                condition === "dislipidemia" ? "Dislipidemia" :
+                                condition === "doenca_cardiaca" ? "Doença cardíaca" :
+                                condition === "doenca_celiaca" ? "Doença celíaca" :
+                                condition === "doenca_crohn" ? "Doença de Crohn" :
+                                condition === "doenca_hashimoto" ? "Doença de Hashimoto" :
+                                condition === "doenca_hepatica_cronica" ? "Doença hepática crônica" :
+                                condition === "doenca_renal_cronica" ? "Doença renal crônica" :
+                                condition === "doencas_neurodegenerativas" ? "Doenças neurodegenerativas" :
+                                condition === "gastrite" ? "Gastrite" :
+                                condition === "hipertensao_arterial" ? "Hipertensão arterial" :
+                                condition === "hipertiroidismo" ? "Hipertiroidismo" :
+                                condition === "hipotiroidismo" ? "Hipotiroidismo" :
+                                condition === "intolerancia_alergia_lactose" ? "Intolerância à lactose" :
+                                condition === "lupus" ? "Lúpus" :
+                                condition === "neoplasia" ? "Neoplasia" :
+                                condition === "obesidade" ? "Obesidade" :
+                                condition === "osteoporose" ? "Osteoporose" :
+                                condition === "refluxo_gastroesofagico" ? "Refluxo gastroesofágico" :
+                                condition === "sindrome_intestino_irritavel" ? "Síndrome do intestino irritável" :
+                                condition === "sindrome_metabolica" ? "Síndrome metabólica" :
+                                condition === "transtorno_alimentar" ? "Transtorno alimentar" :
+                                condition === "ulcera_peptica" ? "Úlcera péptica" :
+                                condition;
+                              
+                              return (
+                                <Badge key={i} variant="outline" className="text-xs bg-red-50 text-red-700 border-red-200">
+                                  {nomeComorbidade}
+                                </Badge>
+                              );
+                            })
+                          ) : (
+                            <p className="text-sm text-gray-500">Nenhuma informada</p>
+                          );
+                        })()}
+                      </div>
+                    </div>
+
+                    {/* Alergias e Intolerâncias */}
+                    <div>
+                      <label className="text-sm font-medium text-gray-600 flex items-center gap-2">
+                        <AlertTriangle className="h-4 w-4" />
+                        Alergias e Intolerâncias
+                      </label>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {(() => {
+                          const allergies = [
+                            ...(Array.isArray(profile?.allergies) ? profile.allergies : []),
+                            ...(Array.isArray(anamneseData?.alergias_alimentares) ? anamneseData.alergias_alimentares : []),
+                            ...(Array.isArray(anamneseData?.alergias_intolerancias) ? anamneseData.alergias_intolerancias : [])
+                          ];
+                          return allergies.length > 0 ? (
+                            allergies.map((allergy, i) => {
+                              // Mapear códigos para nomes legíveis
+                              const nomeAlergia = 
+                                allergy === "amendoim" ? "Amendoim" :
+                                allergy === "castanhas" ? "Castanhas" :
+                                allergy === "corantes" ? "Corantes" :
+                                allergy === "crustaceos" ? "Crustáceos" :
+                                allergy === "frutos_mar" ? "Frutos do mar" :
+                                allergy === "gluten" ? "Glúten" :
+                                allergy === "lactose" ? "Lactose" :
+                                allergy === "ovo" ? "Ovo" :
+                                allergy === "peixes" ? "Peixes" :
+                                allergy === "soja" ? "Soja" :
+                                allergy === "sulfitos" ? "Sulfitos" :
+                                allergy === "trigo" ? "Trigo" :
+                                allergy;
+                              
+                              return (
+                                <Badge
+                                  key={i}
+                                  variant="outline"
+                                  className="text-xs bg-orange-50 text-orange-700 border-orange-200"
+                                >
+                                  {nomeAlergia}
+                                </Badge>
+                              );
+                            })
+                          ) : (
+                            <p className="text-sm text-gray-500">Nenhuma informada</p>
+                          );
+                        })()}
+                      </div>
                     </div>
                   </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Preferências Alimentares</label>
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {Array.isArray(profile?.dietary_preferences) && profile.dietary_preferences.length > 0 ? (
-                        profile.dietary_preferences.map((preference, i) => (
-                          <Badge key={i} variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
-                            {preference}
-                          </Badge>
-                        ))
-                      ) : (
-                        <p className="text-sm text-gray-500">Nenhuma informada</p>
+
+                  {/* Medicamentos e Suplementos */}
+                  {anamneseData && (
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold text-[#1E1D40] border-b border-gray-200 pb-2">Medicamentos e Suplementos</h3>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Medicamentos */}
+                        <div>
+                          <label className="text-sm font-medium text-gray-600 flex items-center gap-2">
+                            <Pill className="h-4 w-4" />
+                            Medicamentos em Uso
+                          </label>
+                          {anamneseData.medicacoes_uso && Array.isArray(anamneseData.medicacoes_uso) && anamneseData.medicacoes_uso.length > 0 ? (
+                            <div className="flex flex-wrap gap-2 mt-2">
+                              {anamneseData.medicacoes_uso.map((medicamento: string, i: number) => (
+                                <Badge key={i} variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                                  {medicamento}
+                                </Badge>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-sm text-gray-500 mt-1">Não informado</p>
+                          )}
+                        </div>
+
+                        {/* Suplementos */}
+                        <div>
+                          <label className="text-sm font-medium text-gray-600 flex items-center gap-2">
+                            <Pill className="h-4 w-4" />
+                            Suplementação
+                          </label>
+                          {anamneseData.suplementacao_atual && Array.isArray(anamneseData.suplementacao_atual) && anamneseData.suplementacao_atual.length > 0 ? (
+                            <div className="flex flex-wrap gap-2 mt-2">
+                              {anamneseData.suplementacao_atual.map((suplemento: string, i: number) => (
+                                <Badge key={i} variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-200">
+                                  {suplemento}
+                                </Badge>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-sm text-gray-500 mt-1">Não informado</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Exames e Avaliações */}
+                  {anamneseData?.exames_laboratoriais && (
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold text-[#1E1D40] border-b border-gray-200 pb-2">Exames e Avaliações</h3>
+                      <div>
+                        <label className="text-sm font-medium text-gray-600 flex items-center gap-2">
+                          <FileText className="h-4 w-4" />
+                          Exames Laboratoriais Recentes
+                        </label>
+                        <p className="text-[#1E1D40] font-semibold mt-1">{anamneseData.exames_laboratoriais}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Estilo de Vida */}
+                  {anamneseData && (
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold text-[#1E1D40] border-b border-gray-200 pb-2">Estilo de Vida</h3>
+                      
+                      {/* Atividade Física */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-sm font-medium text-gray-600 flex items-center gap-2">
+                            <Dumbbell className="h-4 w-4" />
+                            Atividade Física
+                          </label>
+                          <p className="text-[#1E1D40] font-semibold">{anamneseData.atividade_fisica || "Não informado"}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-gray-600">Frequência</label>
+                          <p className="text-[#1E1D40] font-semibold">{anamneseData.frequencia_atividade_fisica || "Não informado"}</p>
+                        </div>
+                      </div>
+
+                      {/* Consumo de Água */}
+                      {anamneseData.consumo_agua && (
+                        <div>
+                          <label className="text-sm font-medium text-gray-600 flex items-center gap-2">
+                            <Droplets className="h-4 w-4" />
+                            Consumo de Água Diário
+                          </label>
+                          <p className="text-[#1E1D40] font-semibold">{anamneseData.consumo_agua}</p>
+                        </div>
                       )}
                     </div>
+                  )}
+
+                  {/* Preferências e Restrições Alimentares */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-[#1E1D40] border-b border-gray-200 pb-2">Preferências e Restrições Alimentares</h3>
+                    
+                    {/* Preferências Alimentares */}
+                    <div>
+                      <label className="text-sm font-medium text-gray-600 flex items-center gap-2">
+                        <Utensils className="h-4 w-4" />
+                        Preferências Alimentares
+                      </label>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {(() => {
+                          const preferences = [
+                            ...(Array.isArray(profile?.dietary_preferences) ? profile.dietary_preferences : []),
+                            ...(Array.isArray(anamneseData?.preferencias_alimentares) ? anamneseData.preferencias_alimentares : [])
+                          ];
+                          return preferences.length > 0 ? (
+                            preferences.map((preference, i) => {
+                              // Mapear códigos para nomes legíveis
+                              const nomePreferencia = 
+                                preference === "cetogenica" ? "Cetogênica" :
+                                preference === "dash" ? "DASH" :
+                                preference === "flexitariana" ? "Flexitariana" :
+                                preference === "low_carb" ? "Low Carb" :
+                                preference === "mediterranea" ? "Mediterrânea" :
+                                preference === "paleo" ? "Paleo" :
+                                preference === "sem_gluten" ? "Sem glúten" :
+                                preference === "sem_lactose" ? "Sem lactose" :
+                                preference === "vegana" ? "Vegana" :
+                                preference === "vegetariana" ? "Vegetariana" :
+                                preference;
+                              
+                              return (
+                                <Badge key={i} variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                                  {nomePreferencia}
+                                </Badge>
+                              );
+                            })
+                          ) : (
+                            <p className="text-sm text-gray-500">Nenhuma informada</p>
+                          );
+                        })()}
+                      </div>
+                    </div>
+
+                    {/* Restrições Alimentares */}
+                    {anamneseData?.restricoes_alimentares && anamneseData.restricoes_alimentares.length > 0 && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-600 flex items-center gap-2">
+                          <AlertTriangle className="h-4 w-4" />
+                          Restrições Alimentares
+                        </label>
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {anamneseData.restricoes_alimentares.map((restricao: string, i: number) => (
+                            <Badge key={i} variant="outline" className="text-xs bg-yellow-50 text-yellow-700 border-yellow-200">
+                              {restricao}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
+
+                  {/* Observações Adicionais */}
+                  {anamneseData?.observacoes_adicionais && (
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold text-[#1E1D40] border-b border-gray-200 pb-2">Observações Adicionais</h3>
+                      <div>
+                        <label className="text-sm font-medium text-gray-600 flex items-center gap-2">
+                          <MessageSquare className="h-4 w-4" />
+                          Informações Complementares
+                        </label>
+                        <p className="text-[#1E1D40] font-semibold mt-1 bg-gray-50 p-3 rounded-lg">{anamneseData.observacoes_adicionais}</p>
+                      </div>
+                    </div>
+                  )}
                   
                   {/* Configurações de Notificação */}
                   <div className="pt-4 border-t">
@@ -1396,242 +1742,7 @@ export default function PatientDashboard() {
                 </CardContent>
               </Card>
 
-              {/* Seção de Anamnese Nutricional */}
-              {anamneseData && (
-                <Card className="border-0 shadow-lg backdrop-blur-sm">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center">
-                        <Activity className="h-4 w-4 text-white" />
-                      </div>
-                      <span>Anamnese Nutricional Completa</span>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-8">
-                    {/* Dados Antropométricos */}
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-semibold text-[#1E1D40] border-b border-gray-200 pb-2">Dados Antropométricos</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                          <label className="text-sm font-medium text-gray-600 flex items-center gap-2">
-                            <Scale className="h-4 w-4" />
-                            Peso Atual
-                          </label>
-                          <p className="text-[#1E1D40] font-semibold">{anamneseData.peso_atual ? `${anamneseData.peso_atual} kg` : "Não informado"}</p>
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium text-gray-600 flex items-center gap-2">
-                            <Ruler className="h-4 w-4" />
-                            Altura
-                          </label>
-                          <p className="text-[#1E1D40] font-semibold">{anamneseData.altura ? `${anamneseData.altura} cm` : "Não informado"}</p>
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium text-gray-600">IMC</label>
-                          <p className="text-[#1E1D40] font-semibold">{anamneseData.imc || "Não calculado"}</p>
-                        </div>
-                      </div>
-                      {anamneseData.historico_peso && (
-                        <div>
-                          <label className="text-sm font-medium text-gray-600 flex items-center gap-2">
-                            <Scale className="h-4 w-4" />
-                            Histórico de Peso
-                          </label>
-                          <p className="text-[#1E1D40] font-semibold mt-1">{anamneseData.historico_peso}</p>
-                        </div>
-                      )}
-                    </div>
 
-                    {/* Objetivos e Metas */}
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-semibold text-[#1E1D40] border-b border-gray-200 pb-2">Objetivos e Metas</h3>
-                      <div>
-                        <label className="text-sm font-medium text-gray-600 flex items-center gap-2">
-                          <Target className="h-4 w-4" />
-                          Objetivo Nutricional
-                        </label>
-                        <p className="text-[#1E1D40] font-semibold">{anamneseData.objetivo_nutricional || "Não informado"}</p>
-                      </div>
-                    </div>
-
-                    {/* Condições de Saúde */}
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-semibold text-[#1E1D40] border-b border-gray-200 pb-2">Condições de Saúde</h3>
-                      
-                      {/* Comorbidades */}
-                      {anamneseData.comorbidades && anamneseData.comorbidades.length > 0 && (
-                        <div>
-                          <label className="text-sm font-medium text-gray-600 flex items-center gap-2">
-                            <AlertTriangle className="h-4 w-4" />
-                            Comorbidades
-                          </label>
-                          <div className="flex flex-wrap gap-2 mt-2">
-                            {anamneseData.comorbidades.map((comorbidade: string, i: number) => (
-                              <Badge key={i} variant="outline" className="text-xs bg-red-50 text-red-700 border-red-200">
-                                {comorbidade}
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Alergias e Intolerâncias */}
-                      {((anamneseData.alergias_alimentares && anamneseData.alergias_alimentares.length > 0) || 
-                        (anamneseData.alergias_intolerancias && anamneseData.alergias_intolerancias.length > 0)) && (
-                        <div>
-                          <label className="text-sm font-medium text-gray-600 flex items-center gap-2">
-                            <AlertTriangle className="h-4 w-4" />
-                            Alergias e Intolerâncias
-                          </label>
-                          <div className="flex flex-wrap gap-2 mt-2">
-                            {anamneseData.alergias_alimentares?.map((alergia: string, i: number) => (
-                              <Badge key={`alimentar-${i}`} variant="outline" className="text-xs bg-orange-50 text-orange-700 border-orange-200">
-                                {alergia}
-                              </Badge>
-                            ))}
-                            {anamneseData.alergias_intolerancias?.map((alergia: string, i: number) => (
-                              <Badge key={`intolerancia-${i}`} variant="outline" className="text-xs bg-orange-50 text-orange-700 border-orange-200">
-                                {alergia}
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Medicamentos e Suplementos */}
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-semibold text-[#1E1D40] border-b border-gray-200 pb-2">Medicamentos e Suplementos</h3>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {/* Medicamentos */}
-                        {(anamneseData.medicacoes_uso || anamneseData.medicamentos) && (
-                          <div>
-                            <label className="text-sm font-medium text-gray-600 flex items-center gap-2">
-                              <Pill className="h-4 w-4" />
-                              Medicamentos em Uso
-                            </label>
-                            <p className="text-[#1E1D40] font-semibold mt-1">
-                              {anamneseData.medicacoes_uso || anamneseData.medicamentos}
-                            </p>
-                          </div>
-                        )}
-
-                        {/* Suplementos */}
-                        {(anamneseData.suplementacao_atual || anamneseData.suplementos) && (
-                          <div>
-                            <label className="text-sm font-medium text-gray-600 flex items-center gap-2">
-                              <Pill className="h-4 w-4" />
-                              Suplementação
-                            </label>
-                            <p className="text-[#1E1D40] font-semibold mt-1">
-                              {anamneseData.suplementacao_atual || anamneseData.suplementos}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Exames e Avaliações */}
-                    {anamneseData.exames_laboratoriais && (
-                      <div className="space-y-4">
-                        <h3 className="text-lg font-semibold text-[#1E1D40] border-b border-gray-200 pb-2">Exames e Avaliações</h3>
-                        <div>
-                          <label className="text-sm font-medium text-gray-600 flex items-center gap-2">
-                            <FileText className="h-4 w-4" />
-                            Exames Laboratoriais Recentes
-                          </label>
-                          <p className="text-[#1E1D40] font-semibold mt-1">{anamneseData.exames_laboratoriais}</p>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Estilo de Vida */}
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-semibold text-[#1E1D40] border-b border-gray-200 pb-2">Estilo de Vida</h3>
-                      
-                      {/* Atividade Física */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="text-sm font-medium text-gray-600 flex items-center gap-2">
-                            <Dumbbell className="h-4 w-4" />
-                            Atividade Física
-                          </label>
-                          <p className="text-[#1E1D40] font-semibold">{anamneseData.atividade_fisica || "Não informado"}</p>
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium text-gray-600">Frequência</label>
-                          <p className="text-[#1E1D40] font-semibold">{anamneseData.frequencia_atividade_fisica || "Não informado"}</p>
-                        </div>
-                      </div>
-
-                      {/* Consumo de Água */}
-                      {anamneseData.consumo_agua && (
-                        <div>
-                          <label className="text-sm font-medium text-gray-600 flex items-center gap-2">
-                            <Droplets className="h-4 w-4" />
-                            Consumo de Água Diário
-                          </label>
-                          <p className="text-[#1E1D40] font-semibold">{anamneseData.consumo_agua}</p>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Preferências e Restrições Alimentares */}
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-semibold text-[#1E1D40] border-b border-gray-200 pb-2">Preferências e Restrições Alimentares</h3>
-                      
-                      {/* Preferências Alimentares */}
-                      {anamneseData.preferencias_alimentares && anamneseData.preferencias_alimentares.length > 0 && (
-                        <div>
-                          <label className="text-sm font-medium text-gray-600 flex items-center gap-2">
-                            <Utensils className="h-4 w-4" />
-                            Preferências Alimentares
-                          </label>
-                          <div className="flex flex-wrap gap-2 mt-2">
-                            {anamneseData.preferencias_alimentares.map((preferencia: string, i: number) => (
-                              <Badge key={i} variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
-                                {preferencia}
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Restrições Alimentares */}
-                      {anamneseData.restricoes_alimentares && anamneseData.restricoes_alimentares.length > 0 && (
-                        <div>
-                          <label className="text-sm font-medium text-gray-600 flex items-center gap-2">
-                            <AlertTriangle className="h-4 w-4" />
-                            Restrições Alimentares
-                          </label>
-                          <div className="flex flex-wrap gap-2 mt-2">
-                            {anamneseData.restricoes_alimentares.map((restricao: string, i: number) => (
-                              <Badge key={i} variant="outline" className="text-xs bg-yellow-50 text-yellow-700 border-yellow-200">
-                                {restricao}
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Observações Adicionais */}
-                    {anamneseData.observacoes_adicionais && (
-                      <div className="space-y-4">
-                        <h3 className="text-lg font-semibold text-[#1E1D40] border-b border-gray-200 pb-2">Observações Adicionais</h3>
-                        <div>
-                          <label className="text-sm font-medium text-gray-600 flex items-center gap-2">
-                            <MessageSquare className="h-4 w-4" />
-                            Informações Complementares
-                          </label>
-                          <p className="text-[#1E1D40] font-semibold mt-1 bg-gray-50 p-3 rounded-lg">{anamneseData.observacoes_adicionais}</p>
-                        </div>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              )}
             </div>
           </div>
         )}
@@ -1678,7 +1789,21 @@ export default function PatientDashboard() {
         />
       )}
 
-
+      {/* Modal de Anamnese Nutricional */}
+      {profile && (
+        <AnamneseNutricionalModal
+          open={isAnamneseModalOpen}
+          onOpenChange={setIsAnamneseModalOpen}
+          patientId={profile.user_id}
+          onComplete={async (data) => {
+            setIsAnamneseModalOpen(false)
+            // Atualizar dados da anamnese imediatamente
+            setAnamneseData(data)
+            // Recarregar perfil para garantir sincronização
+            await loadProfile()
+          }}
+        />
+      )}
 
       {/* Modal de Avaliação */}
       {selectedConsultationForRating && (

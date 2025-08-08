@@ -34,15 +34,14 @@ import {
   LayoutDashboard,
 } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { getCurrentUser, signOut } from "@/lib/auth"
 import type { UserType } from "@/lib/supabase"
 import { getPlatformStats, formatNumber, formatRating, type PlatformStats } from "@/lib/stats"
+import { useAuth } from "@/contexts/auth-context"
 
 export default function Home() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  const [user, setUser] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState<PlatformStats | null>(null)
+  const { user, loading, signOut } = useAuth()
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen)
@@ -52,19 +51,8 @@ export default function Home() {
     setIsMobileMenuOpen(false)
   }
 
-  // Check authentication status and load stats
+  // Load stats
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const currentUser = await getCurrentUser()
-        setUser(currentUser)
-      } catch (error) {
-        console.error("Error checking auth:", error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
     const loadStats = async () => {
       try {
         const platformStats = await getPlatformStats()
@@ -74,7 +62,6 @@ export default function Home() {
       }
     }
 
-    checkAuth()
     loadStats()
   }, [])
 
@@ -82,7 +69,6 @@ export default function Home() {
   const handleLogout = async () => {
     try {
       await signOut()
-      setUser(null)
       closeMobileMenu()
     } catch (error) {
       console.error("Error signing out:", error)

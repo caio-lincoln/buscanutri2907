@@ -90,49 +90,84 @@ const GENERO_OPTIONS = [
 ]
 
 const OBJETIVO_NUTRICIONAL_OPTIONS = [
+  { value: "definicao", label: "Definição (diminuir percentual de gordura e aumentar massa magra)" },
+  { value: "disturbios_saude", label: "Distúrbios na saúde (Anemia, Diabetes mellitus, Doença cardíaca, Esteatose hepática e etc.)" },
   { value: "emagrecimento", label: "Emagrecimento" },
   { value: "ganho_massa", label: "Ganho de massa muscular" },
-  { value: "saude_intestinal", label: "Saúde intestinal" },
-  { value: "controle_diabetes", label: "Controle de diabetes" },
-  { value: "reducao_colesterol", label: "Redução do colesterol" },
-  { value: "hipertensao", label: "Controle da hipertensão" },
+  { value: "intolerancia_alergia", label: "Intolerância/alergia alimentar" },
   { value: "performance_esportiva", label: "Performance esportiva" },
+  { value: "reeducacao_alimentar", label: "Reeducação alimentar" },
   { value: "saude_geral", label: "Saúde geral" },
+  { value: "saude_intestinal", label: "Saúde intestinal" },
   { value: "outro", label: "Outro" }
 ]
 
 const COMORBIDADES_OPTIONS: Option[] = [
-  { value: "diabetes_tipo1", label: "Diabetes Tipo 1" },
-  { value: "diabetes_tipo2", label: "Diabetes Tipo 2" },
-  { value: "hipertensao", label: "Hipertensão" },
-  { value: "dislipidemia", label: "Dislipidemia" },
-  { value: "obesidade", label: "Obesidade" },
-  { value: "sindrome_metabolica", label: "Síndrome Metabólica" },
-  { value: "doenca_celiaca", label: "Doença Celíaca" },
-  { value: "intolerancia_lactose", label: "Intolerância à Lactose" },
-  { value: "refluxo", label: "Refluxo Gastroesofágico" },
-  { value: "gastrite", label: "Gastrite" },
-  { value: "sindrome_intestino_irritavel", label: "Síndrome do Intestino Irritável" },
-  { value: "hipotireoidismo", label: "Hipotireoidismo" },
-  { value: "hipertireoidismo", label: "Hipertireoidismo" },
+  { value: "anemia", label: "Anemia" },
   { value: "ansiedade", label: "Ansiedade" },
+  { value: "artrite_reumatoide", label: "Artrite reumatoide" },
+  { value: "colite_ulcerativa", label: "Colite ulcerativa" },
   { value: "depressao", label: "Depressão" },
-  { value: "transtorno_alimentar", label: "Transtorno Alimentar" }
+  { value: "desnutricao", label: "Desnutrição" },
+  { value: "diabetes_mellitus_1", label: "Diabetes mellitus 1" },
+  { value: "diabetes_mellitus_2", label: "Diabetes mellitus 2" },
+  { value: "dislipidemia", label: "Dislipidemia (colesterol e triglicerídeos altos)" },
+  { value: "doenca_cardiaca", label: "Doença cardíaca" },
+  { value: "doenca_celiaca", label: "Doença celíaca" },
+  { value: "doenca_crohn", label: "Doença de Crohn" },
+  { value: "doenca_hashimoto", label: "Doença de Hashimoto" },
+  { value: "doenca_hepatica_cronica", label: "Doença hepática crônica" },
+  { value: "doenca_renal_cronica", label: "Doença renal crônica" },
+  { value: "doencas_neurodegenerativas", label: "Doenças neurodegenerativas (Alzheimer, Parkinson, etc.)" },
+  { value: "gastrite", label: "Gastrite" },
+  { value: "hipertensao_arterial", label: "Hipertensão arterial" },
+  { value: "hipertiroidismo", label: "Hipertiroidismo" },
+  { value: "hipotiroidismo", label: "Hipotiroidismo" },
+  { value: "intolerancia_alergia_lactose", label: "Intolerância ou alergia a lactose" },
+  { value: "lupus", label: "Lúpus" },
+  { value: "neoplasia", label: "Neoplasia" },
+  { value: "obesidade", label: "Obesidade" },
+  { value: "osteoporose", label: "Osteoporose" },
+  { value: "refluxo_gastroesofagico", label: "Refluxo gastroesofágico" },
+  { value: "sindrome_intestino_irritavel", label: "Síndrome do intestino irritável" },
+  { value: "sindrome_metabolica", label: "Síndrome metabólica" },
+  { value: "transtorno_alimentar", label: "Transtorno alimentar" },
+  { value: "ulcera_peptica", label: "Úlcera péptica" }
 ]
 
 const ALERGIAS_ANAMNESE_OPTIONS: Option[] = [
+  { value: "amendoim", label: "Amendoim" },
+  { value: "castanha", label: "Castanha" },
+  { value: "conservantes", label: "Conservantes" },
+  { value: "corantes_artificiais", label: "Corantes artificiais" },
+  { value: "frutos_mar", label: "Frutos do mar" },
   { value: "gluten", label: "Glúten" },
   { value: "lactose", label: "Lactose" },
-  { value: "amendoim", label: "Amendoim" },
-  { value: "castanhas", label: "Castanhas" },
-  { value: "ovo", label: "Ovo" },
-  { value: "peixe", label: "Peixe" },
-  { value: "frutos_mar", label: "Frutos do mar" },
-  { value: "soja", label: "Soja" },
+  { value: "leite", label: "Leite" },
   { value: "milho", label: "Milho" },
-  { value: "corantes", label: "Corantes artificiais" },
-  { value: "conservantes", label: "Conservantes" },
+  { value: "nozes", label: "Nozes" },
+  { value: "ovo", label: "Ovo" },
+  { value: "peixes", label: "Peixes" },
+  { value: "soja", label: "Soja" },
   { value: "sulfitos", label: "Sulfitos" }
+]
+
+const PREFERENCIAS_ALIMENTARES_OPTIONS: Option[] = [
+  { value: "vegetariano", label: "Vegetariano" },
+  { value: "vegano", label: "Vegano" },
+  { value: "sem_gluten", label: "Sem glúten" },
+  { value: "sem_lactose", label: "Sem lactose" },
+  { value: "low_carb", label: "Low carb" },
+  { value: "cetogenica", label: "Cetogênica" },
+  { value: "mediterranea", label: "Mediterrânea" },
+  { value: "dash", label: "DASH" },
+  { value: "paleolitica", label: "Paleolítica" },
+  { value: "jejum_intermitente", label: "Jejum intermitente" },
+  { value: "sem_acucar", label: "Sem açúcar" },
+  { value: "organicos", label: "Alimentos orgânicos" },
+  { value: "halal", label: "Halal" },
+  { value: "kosher", label: "Kosher" },
+  { value: "sem_restricoes", label: "Sem restrições" }
 ]
 
 interface UserProfileModalProps {
@@ -189,6 +224,8 @@ export function UserProfileModal({
   // Estados para anamnese nutricional (apenas para pacientes)
   const [anamneseData, setAnamneseData] = useState<any>({
     patient_id: userId,
+    objetivos_nutricionais: [],
+    objetivo_personalizado: "",
     comorbidades: [],
     alergias_alimentares: [],
     suplementacao_atual: [],
@@ -303,9 +340,33 @@ export function UserProfileModal({
 
       if (data && !error) {
         setAnamneseData(data)
+        
+        // Sincronizar preferências alimentares da anamnese com o perfil
+        if (data.preferencias_alimentares) {
+          setFormData((prev: any) => ({
+            ...prev,
+            dietary_preferences: data.preferencias_alimentares
+          }))
+        }
+      } else {
+        // Se não há anamnese, mas há preferências no perfil, sincronizar
+        if (initialData?.dietary_preferences) {
+          setAnamneseData((prev: any) => ({
+            ...prev,
+            preferencias_alimentares: initialData.dietary_preferences
+          }))
+        }
       }
     } catch (error) {
       console.log('Nenhuma anamnese encontrada, criando nova')
+      
+      // Se não há anamnese, mas há preferências no perfil, sincronizar
+      if (initialData?.dietary_preferences) {
+        setAnamneseData((prev: any) => ({
+          ...prev,
+          preferencias_alimentares: initialData.dietary_preferences
+        }))
+      }
     }
   }
 
@@ -454,6 +515,82 @@ export function UserProfileModal({
       ...prev,
       [field]: value
     }))
+
+    // Sincronizar preferências alimentares com o perfil do paciente
+    if (field === 'preferencias_alimentares' && userType === 'paciente') {
+      setFormData((prev: any) => ({
+        ...prev,
+        dietary_preferences: value
+      }))
+    }
+  }
+
+  // Função para formatar peso automaticamente
+  const formatPeso = (value: string) => {
+    // Remove caracteres não numéricos
+    const numericValue = value.replace(/[^\d]/g, '')
+    
+    if (numericValue.length === 0) return ''
+    if (numericValue.length === 1) return numericValue
+    if (numericValue.length === 2) return numericValue
+    
+    // Adiciona ponto antes do último dígito para valores com 3+ dígitos
+    const integerPart = numericValue.slice(0, -1)
+    const decimalPart = numericValue.slice(-1)
+    
+    return `${integerPart}.${decimalPart}`
+  }
+
+  // Função para formatar altura automaticamente
+  const formatAltura = (value: string) => {
+    // Remove caracteres não numéricos
+    const numericValue = value.replace(/[^\d]/g, '')
+    
+    if (numericValue.length === 0) return ''
+    if (numericValue.length === 1) return `1.${numericValue}`
+    if (numericValue.length === 2) return `1.${numericValue}`
+    
+    // Para valores com 3 dígitos, formato 1.XX
+    if (numericValue.length === 3) {
+      return `${numericValue[0]}.${numericValue.slice(1)}`
+    }
+    
+    return value
+  }
+
+  // Handlers específicos para peso e altura
+  const handlePesoAnamneseChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawValue = e.target.value
+    
+    // Se o usuário está apagando, permitir
+    if (rawValue === '') {
+      handleAnamneseChange('peso_atual', '')
+      return
+    }
+    
+    // Aplicar formatação apenas se necessário
+    const formattedValue = formatPeso(rawValue)
+    const numericValue = parseFloat(formattedValue) || 0
+    
+    // Atualizar com o valor formatado para exibição
+    handleAnamneseChange('peso_atual', formattedValue)
+  }
+
+  const handleAlturaAnamneseChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawValue = e.target.value
+    
+    // Se o usuário está apagando, permitir
+    if (rawValue === '') {
+      handleAnamneseChange('altura', '')
+      return
+    }
+    
+    // Aplicar formatação apenas se necessário
+    const formattedValue = formatAltura(rawValue)
+    const numericValue = parseFloat(formattedValue) || 0
+    
+    // Atualizar com o valor formatado para exibição
+    handleAnamneseChange('altura', formattedValue)
   }
 
   const calculateIMC = (peso: number, altura: number) => {
@@ -485,8 +622,37 @@ export function UserProfileModal({
 
 
 
+  // Função de validação para página 3 (anamnese nutricional)
+  const validatePage3 = () => {
+    if (userType !== "paciente") return true
+    
+    // Verificar se pelo menos um objetivo foi selecionado
+    const hasObjectives = anamneseData?.objetivos_nutricionais && anamneseData.objetivos_nutricionais.length > 0
+    
+    // Se "outro" foi selecionado, verificar se o campo personalizado foi preenchido
+    const hasOtherObjective = anamneseData?.objetivos_nutricionais?.includes('outro')
+    const hasCustomObjective = hasOtherObjective ? anamneseData?.objetivo_personalizado?.trim() : true
+    
+    // Verificar campos obrigatórios
+    const hasRequiredFields = anamneseData?.peso_atual && anamneseData?.altura
+    
+    return hasObjectives && hasCustomObjective && hasRequiredFields
+  }
+
   // Funções de navegação da paginação
   const nextPage = () => {
+    // Validar página atual antes de avançar
+    if (currentPage === 3 && userType === "paciente") {
+      if (!validatePage3()) {
+        toast({
+          title: "Campos obrigatórios",
+          description: "Por favor, preencha todos os campos obrigatórios da anamnese nutricional.",
+          variant: "destructive",
+        })
+        return
+      }
+    }
+    
     if (currentPage < totalPages) {
       setCurrentPage(currentPage + 1)
     }
@@ -502,6 +668,17 @@ export function UserProfileModal({
     e.preventDefault()
     setLoading(true)
     setError(null)
+
+    // Validar anamnese nutricional para pacientes
+    if (userType === "paciente" && !validatePage3()) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Por favor, preencha todos os campos obrigatórios da anamnese nutricional.",
+        variant: "destructive",
+      })
+      setLoading(false)
+      return
+    }
 
     try {
       const dataToSubmit = { ...formData }
@@ -605,6 +782,14 @@ export function UserProfileModal({
             await supabase
               .from('anamnese_nutricional')
               .insert(anamneseToSave)
+          }
+
+          // Sincronizar preferências alimentares com o perfil do paciente
+          if (anamneseData.preferencias_alimentares) {
+            await supabase
+              .from('patient_profiles')
+              .update({ dietary_preferences: anamneseData.preferencias_alimentares })
+              .eq('user_id', userId)
           }
         } catch (anamneseError) {
           console.error('Erro ao salvar anamnese:', anamneseError)
@@ -937,20 +1122,24 @@ export function UserProfileModal({
                     <h3 className="text-lg font-semibold text-gray-900 mb-4">Anamnese Nutricional - Dados Clínicos</h3>
                     
                     <div>
-                      <Label htmlFor="anamnese_objetivo">Objetivo Nutricional</Label>
-                      <select
-                        id="anamnese_objetivo"
-                        value={anamneseData?.objetivo_nutricional || ""}
-                        onChange={(e) => handleAnamneseChange("objetivo_nutricional", e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      >
-                        <option value="">Selecione seu objetivo</option>
-                        {OBJETIVO_NUTRICIONAL_OPTIONS.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
+                      <Label>Objetivos Nutricionais</Label>
+                      <MultiSelect
+                        options={OBJETIVO_NUTRICIONAL_OPTIONS}
+                        selected={anamneseData?.objetivos_nutricionais || []}
+                        onChange={(selected) => handleAnamneseChange("objetivos_nutricionais", selected)}
+                        placeholder="Selecione seus objetivos nutricionais"
+                      />
+                      {anamneseData?.objetivos_nutricionais?.includes("outro") && (
+                        <div className="mt-2">
+                          <Label htmlFor="objetivo_personalizado">Especifique seu objetivo personalizado</Label>
+                          <Input
+                            id="objetivo_personalizado"
+                            value={anamneseData?.objetivo_personalizado || ""}
+                            onChange={(e) => handleAnamneseChange("objetivo_personalizado", e.target.value)}
+                            placeholder="Descreva seu objetivo específico..."
+                          />
+                        </div>
+                      )}
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -958,10 +1147,9 @@ export function UserProfileModal({
                         <Label htmlFor="anamnese_peso">Peso Atual (kg)</Label>
                         <Input
                           id="anamnese_peso"
-                          type="number"
-                          step="0.1"
+                          type="text"
                           value={anamneseData?.peso_atual || ""}
-                          onChange={(e) => handleAnamneseChange("peso_atual", parseFloat(e.target.value) || 0)}
+                          onChange={handlePesoAnamneseChange}
                           placeholder="Ex: 70.5"
                         />
                       </div>
@@ -969,10 +1157,9 @@ export function UserProfileModal({
                         <Label htmlFor="anamnese_altura">Altura (m)</Label>
                         <Input
                           id="anamnese_altura"
-                          type="number"
-                          step="0.01"
+                          type="text"
                           value={anamneseData?.altura || ""}
-                          onChange={(e) => handleAnamneseChange("altura", parseFloat(e.target.value) || 0)}
+                          onChange={handleAlturaAnamneseChange}
                           placeholder="Ex: 1.70"
                         />
                       </div>
@@ -1016,6 +1203,16 @@ export function UserProfileModal({
                         selected={anamneseData?.alergias_alimentares || []}
                         onChange={handleAlergiasAnamneseChange}
                         placeholder="Selecione as alergias alimentares"
+                      />
+                    </div>
+
+                    <div>
+                      <Label>Preferências Alimentares</Label>
+                      <MultiSelect
+                        options={PREFERENCIAS_ALIMENTARES_OPTIONS}
+                        selected={anamneseData?.preferencias_alimentares || []}
+                        onChange={(selected) => handleAnamneseChange("preferencias_alimentares", selected)}
+                        placeholder="Selecione suas preferências alimentares"
                       />
                     </div>
 

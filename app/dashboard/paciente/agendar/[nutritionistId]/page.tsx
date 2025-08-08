@@ -17,7 +17,7 @@ import {
   AlertCircle,
   Shield,
 } from "lucide-react"
-import { getCurrentUser } from "@/lib/auth"
+import { useAuth } from "@/contexts/auth-context"
 import { supabase } from "@/lib/supabase"
 import { toast } from "@/components/ui/use-toast"
 
@@ -46,13 +46,13 @@ interface NutritionistProfile {
 }
 
 export default function ScheduleConsultationPage() {
+  const { user, loading: authLoading, signOut } = useAuth()
   const router = useRouter()
   const params = useParams()
   const nutritionistId = params.nutritionistId as string
 
   const [nutritionist, setNutritionist] = useState<NutritionistProfile | null>(null)
   const [loading, setLoading] = useState(true)
-  const [user, setUser] = useState<any>(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   
   const { stats, loading: statsLoading } = useDashboardStats({
@@ -62,18 +62,11 @@ export default function ScheduleConsultationPage() {
   })
 
   useEffect(() => {
-    const loadUser = async () => {
-      const currentUser = await getCurrentUser()
-      if (!currentUser) {
-        router.push("/login")
-        return
-      }
-      setUser(currentUser)
+    if (!authLoading && !user) {
+      router.push("/login")
+      return
     }
-    loadUser()
-  }, [])
-
-  useEffect(() => {
+    
     if (nutritionistId && nutritionistId !== "null" && nutritionistId !== "undefined") {
       loadNutritionistData()
     } else {
@@ -85,7 +78,7 @@ export default function ScheduleConsultationPage() {
       })
       router.push("/dashboard/paciente")
     }
-  }, [nutritionistId])
+  }, [nutritionistId, user, authLoading])
 
   const loadNutritionistData = async () => {
     try {
@@ -150,7 +143,7 @@ export default function ScheduleConsultationPage() {
     return specialtiesArray.length > 0 ? specialtiesArray.join(", ") : "Nutrição Geral"
   }
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-red-50/50 via-white to-white flex items-center justify-center">
         <div className="text-center space-y-4">

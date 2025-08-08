@@ -23,16 +23,16 @@ import {
   Heart,
   Scale,
   Pill,
-  TestTube,
   AlertTriangle,
   Target,
   MapPin,
   Mail,
   Instagram,
-  Calendar
+  Calendar,
+  Utensils
 } from "lucide-react"
 import { toast } from "@/components/ui/use-toast"
-import { supabase } from "@/lib/supabase"
+import { createSupabaseClient } from "@/lib/supabase"
 
 // Opções para os campos de seleção
 const GENERO_OPTIONS = [
@@ -43,49 +43,84 @@ const GENERO_OPTIONS = [
 ]
 
 const OBJETIVO_NUTRICIONAL_OPTIONS = [
+  { value: "definicao", label: "Definição (diminuir percentual de gordura e aumentar massa magra)" },
+  { value: "disturbios_saude", label: "Distúrbios na saúde (Anemia, Diabetes mellitus, Doença cardíaca, Esteatose hepática e etc.)" },
   { value: "emagrecimento", label: "Emagrecimento" },
   { value: "ganho_massa", label: "Ganho de massa muscular" },
-  { value: "saude_intestinal", label: "Saúde intestinal" },
-  { value: "controle_diabetes", label: "Controle de diabetes" },
-  { value: "reducao_colesterol", label: "Redução do colesterol" },
-  { value: "hipertensao", label: "Controle da hipertensão" },
+  { value: "intolerancia_alergia", label: "Intolerância/alergia alimentar" },
   { value: "performance_esportiva", label: "Performance esportiva" },
+  { value: "reeducacao_alimentar", label: "Reeducação alimentar" },
   { value: "saude_geral", label: "Saúde geral" },
+  { value: "saude_intestinal", label: "Saúde intestinal" },
   { value: "outro", label: "Outro" }
 ]
 
 const COMORBIDADES_OPTIONS: Option[] = [
-  { value: "diabetes_tipo1", label: "Diabetes Tipo 1" },
-  { value: "diabetes_tipo2", label: "Diabetes Tipo 2" },
-  { value: "hipertensao", label: "Hipertensão" },
-  { value: "dislipidemia", label: "Dislipidemia" },
-  { value: "obesidade", label: "Obesidade" },
-  { value: "sindrome_metabolica", label: "Síndrome Metabólica" },
-  { value: "doenca_celiaca", label: "Doença Celíaca" },
-  { value: "intolerancia_lactose", label: "Intolerância à Lactose" },
-  { value: "refluxo", label: "Refluxo Gastroesofágico" },
-  { value: "gastrite", label: "Gastrite" },
-  { value: "sindrome_intestino_irritavel", label: "Síndrome do Intestino Irritável" },
-  { value: "hipotireoidismo", label: "Hipotireoidismo" },
-  { value: "hipertireoidismo", label: "Hipertireoidismo" },
+  { value: "anemia", label: "Anemia" },
   { value: "ansiedade", label: "Ansiedade" },
+  { value: "artrite_reumatoide", label: "Artrite reumatoide" },
+  { value: "colite_ulcerativa", label: "Colite ulcerativa" },
   { value: "depressao", label: "Depressão" },
-  { value: "transtorno_alimentar", label: "Transtorno Alimentar" }
+  { value: "desnutricao", label: "Desnutrição" },
+  { value: "diabetes_mellitus_1", label: "Diabetes mellitus 1" },
+  { value: "diabetes_mellitus_2", label: "Diabetes mellitus 2" },
+  { value: "dislipidemia", label: "Dislipidemia (colesterol e triglicerídeos altos)" },
+  { value: "doenca_cardiaca", label: "Doença cardíaca" },
+  { value: "doenca_celiaca", label: "Doença celíaca" },
+  { value: "doenca_crohn", label: "Doença de Crohn" },
+  { value: "doenca_hashimoto", label: "Doença de Hashimoto" },
+  { value: "doenca_hepatica_cronica", label: "Doença hepática crônica" },
+  { value: "doenca_renal_cronica", label: "Doença renal crônica" },
+  { value: "doencas_neurodegenerativas", label: "Doenças neurodegenerativas (Alzheimer, Parkinson, etc.)" },
+  { value: "gastrite", label: "Gastrite" },
+  { value: "hipertensao_arterial", label: "Hipertensão arterial" },
+  { value: "hipertiroidismo", label: "Hipertiroidismo" },
+  { value: "hipotiroidismo", label: "Hipotiroidismo" },
+  { value: "intolerancia_alergia_lactose", label: "Intolerância ou alergia a lactose" },
+  { value: "lupus", label: "Lúpus" },
+  { value: "neoplasia", label: "Neoplasia" },
+  { value: "obesidade", label: "Obesidade" },
+  { value: "osteoporose", label: "Osteoporose" },
+  { value: "refluxo_gastroesofagico", label: "Refluxo gastroesofágico" },
+  { value: "sindrome_intestino_irritavel", label: "Síndrome do intestino irritável" },
+  { value: "sindrome_metabolica", label: "Síndrome metabólica" },
+  { value: "transtorno_alimentar", label: "Transtorno alimentar" },
+  { value: "ulcera_peptica", label: "Úlcera péptica" }
 ]
 
 const ALERGIAS_OPTIONS: Option[] = [
+  { value: "amendoim", label: "Amendoim" },
+  { value: "castanha", label: "Castanha" },
+  { value: "conservantes", label: "Conservantes" },
+  { value: "corantes_artificiais", label: "Corantes artificiais" },
+  { value: "frutos_mar", label: "Frutos do mar" },
   { value: "gluten", label: "Glúten" },
   { value: "lactose", label: "Lactose" },
-  { value: "amendoim", label: "Amendoim" },
-  { value: "castanhas", label: "Castanhas" },
-  { value: "ovo", label: "Ovo" },
-  { value: "peixe", label: "Peixe" },
-  { value: "frutos_mar", label: "Frutos do mar" },
-  { value: "soja", label: "Soja" },
+  { value: "leite", label: "Leite" },
   { value: "milho", label: "Milho" },
-  { value: "corantes", label: "Corantes artificiais" },
-  { value: "conservantes", label: "Conservantes" },
+  { value: "nozes", label: "Nozes" },
+  { value: "ovo", label: "Ovo" },
+  { value: "peixes", label: "Peixes" },
+  { value: "soja", label: "Soja" },
   { value: "sulfitos", label: "Sulfitos" }
+]
+
+const PREFERENCIAS_ALIMENTARES_OPTIONS: Option[] = [
+  { value: "vegetariano", label: "Vegetariano" },
+  { value: "vegano", label: "Vegano" },
+  { value: "sem_gluten", label: "Sem glúten" },
+  { value: "sem_lactose", label: "Sem lactose" },
+  { value: "low_carb", label: "Low carb" },
+  { value: "cetogenica", label: "Cetogênica" },
+  { value: "mediterranea", label: "Mediterrânea" },
+  { value: "dash", label: "DASH" },
+  { value: "paleolitica", label: "Paleolítica" },
+  { value: "jejum_intermitente", label: "Jejum intermitente" },
+  { value: "sem_acucar", label: "Sem açúcar" },
+  { value: "organicos", label: "Alimentos orgânicos" },
+  { value: "halal", label: "Halal" },
+  { value: "kosher", label: "Kosher" },
+  { value: "sem_restricoes", label: "Sem restrições" }
 ]
 
 interface AnamneseData {
@@ -101,7 +136,9 @@ interface AnamneseData {
   estado?: string
   
   // Parte 2: Dados Clínicos
-  objetivo_nutricional?: string
+  objetivo_nutricional?: string // Manter para compatibilidade
+  objetivos_nutricionais?: string[] // Nova estrutura para múltiplos objetivos
+  objetivo_personalizado?: string // Para quando "Outro" é selecionado
   peso_atual?: number
   altura?: number
   imc?: number
@@ -112,9 +149,13 @@ interface AnamneseData {
   medicacoes_uso?: string[]
   exames_laboratoriais?: any
   
+  // Parte 3: Preferências Alimentares
+  preferencias_alimentares?: string[]
+  
   // Status
   parte_1_completa?: boolean
   parte_2_completa?: boolean
+  parte_3_completa?: boolean
 }
 
 interface AnamneseNutricionalModalProps {
@@ -130,15 +171,20 @@ export function AnamneseNutricionalModal({
   patientId,
   onComplete
 }: AnamneseNutricionalModalProps) {
-  const [currentPart, setCurrentPart] = useState(1)
+  const [currentPart, setCurrentPart] = useState(2)
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState<AnamneseData>({
     patient_id: patientId,
+    objetivos_nutricionais: [],
+    objetivo_personalizado: "",
     comorbidades: [],
     alergias_alimentares: [],
     suplementacao_atual: [],
-    medicacoes_uso: []
+    medicacoes_uso: [],
+    preferencias_alimentares: []
   })
+  
+  const supabase = createSupabaseClient()
 
   // Carregar dados existentes se houver
   useEffect(() => {
@@ -157,9 +203,13 @@ export function AnamneseNutricionalModal({
 
       if (data && !error) {
         setFormData(data)
-        // Se parte 1 está completa, ir para parte 2
-        if (data.parte_1_completa && !data.parte_2_completa) {
+        // Determinar qual página mostrar baseado no progresso
+        if (data.parte_2_completa && !data.parte_3_completa) {
+          setCurrentPart(3)
+        } else if (!data.parte_2_completa) {
           setCurrentPart(2)
+        } else {
+          setCurrentPart(2) // Se tudo estiver completo, começar da parte 2
         }
       }
     } catch (error) {
@@ -172,6 +222,74 @@ export function AnamneseNutricionalModal({
       ...prev,
       [field]: value
     }))
+  }
+
+  // Função para formatar peso automaticamente
+  const formatPeso = (value: string) => {
+    // Remove caracteres não numéricos
+    const numericValue = value.replace(/[^\d]/g, '')
+    
+    if (numericValue.length === 0) return ''
+    if (numericValue.length === 1) return numericValue
+    if (numericValue.length === 2) return numericValue
+    
+    // Adiciona ponto antes do último dígito para valores com 3+ dígitos
+    const integerPart = numericValue.slice(0, -1)
+    const decimalPart = numericValue.slice(-1)
+    
+    return `${integerPart}.${decimalPart}`
+  }
+
+  // Função para formatar altura automaticamente
+  const formatAltura = (value: string) => {
+    // Remove caracteres não numéricos
+    const numericValue = value.replace(/[^\d]/g, '')
+    
+    if (numericValue.length === 0) return ''
+    if (numericValue.length === 1) return `1.${numericValue}`
+    if (numericValue.length === 2) return `1.${numericValue}`
+    
+    // Para valores com 3 dígitos, formato 1.XX
+    if (numericValue.length === 3) {
+      return `${numericValue[0]}.${numericValue.slice(1)}`
+    }
+    
+    return value
+  }
+
+  // Handlers específicos para peso e altura
+  const handlePesoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawValue = e.target.value
+    
+    // Se o usuário está apagando, permitir
+    if (rawValue === '') {
+      handleInputChange('peso_atual', '')
+      return
+    }
+    
+    // Aplicar formatação apenas se necessário
+    const formattedValue = formatPeso(rawValue)
+    const numericValue = parseFloat(formattedValue) || 0
+    
+    // Atualizar com o valor formatado para exibição
+    handleInputChange('peso_atual', formattedValue)
+  }
+
+  const handleAlturaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawValue = e.target.value
+    
+    // Se o usuário está apagando, permitir
+    if (rawValue === '') {
+      handleInputChange('altura', '')
+      return
+    }
+    
+    // Aplicar formatação apenas se necessário
+    const formattedValue = formatAltura(rawValue)
+    const numericValue = parseFloat(formattedValue) || 0
+    
+    // Atualizar com o valor formatado para exibição
+    handleInputChange('altura', formattedValue)
   }
 
   const calculateIMC = (peso: number, altura: number) => {
@@ -190,14 +308,24 @@ export function AnamneseNutricionalModal({
     }
   }, [formData.peso_atual, formData.altura])
 
-  const validatePart1 = () => {
-    const required = ['nome_completo', 'genero', 'email']
-    return required.every(field => formData[field as keyof AnamneseData])
+  const validatePart2 = () => {
+    // Verificar se pelo menos um objetivo foi selecionado
+    const hasObjectives = formData.objetivos_nutricionais && formData.objetivos_nutricionais.length > 0
+    
+    // Se "outro" foi selecionado, verificar se o campo personalizado foi preenchido
+    const hasOtherObjective = formData.objetivos_nutricionais?.includes('outro')
+    const hasCustomObjective = hasOtherObjective ? formData.objetivo_personalizado?.trim() : true
+    
+    // Verificar campos obrigatórios
+    const hasRequiredFields = formData.peso_atual && formData.altura
+    
+    return hasObjectives && hasCustomObjective && hasRequiredFields
   }
 
-  const validatePart2 = () => {
-    const required = ['objetivo_nutricional', 'peso_atual', 'altura']
-    return required.every(field => formData[field as keyof AnamneseData])
+  const validatePart3 = () => {
+    // Para a parte 3, as preferências alimentares são opcionais
+    // Sempre retorna true para permitir finalizar mesmo sem preferências
+    return true
   }
 
   const savePart = async (partNumber: number) => {
@@ -237,8 +365,8 @@ export function AnamneseNutricionalModal({
   }
 
   const handleNext = async () => {
-    if (currentPart === 1) {
-      if (!validatePart1()) {
+    if (currentPart === 2) {
+      if (!validatePart2()) {
         toast({
           title: "Campos obrigatórios",
           description: "Preencha todos os campos obrigatórios antes de continuar.",
@@ -247,30 +375,30 @@ export function AnamneseNutricionalModal({
         return
       }
       
-      const saved = await savePart(1)
+      const saved = await savePart(2)
       if (saved) {
-        setCurrentPart(2)
+        setCurrentPart(3)
       }
     }
   }
 
   const handlePrevious = () => {
-    if (currentPart === 2) {
-      setCurrentPart(1)
+    if (currentPart === 3) {
+      setCurrentPart(2)
     }
   }
 
   const handleFinish = async () => {
-    if (!validatePart2()) {
+    if (!validatePart3()) {
       toast({
-        title: "Campos obrigatórios",
-        description: "Preencha todos os campos obrigatórios antes de finalizar.",
+        title: "Erro de validação",
+        description: "Verifique os dados antes de finalizar.",
         variant: "destructive"
       })
       return
     }
 
-    const saved = await savePart(2)
+    const saved = await savePart(3)
     if (saved) {
       toast({
         title: "Anamnese concluída!",
@@ -281,7 +409,7 @@ export function AnamneseNutricionalModal({
     }
   }
 
-  const progress = currentPart === 1 ? 50 : 100
+  const progress = currentPart === 2 ? 50 : 100
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -294,139 +422,51 @@ export function AnamneseNutricionalModal({
           <div className="space-y-2">
             <Progress value={progress} className="w-full" />
             <p className="text-sm text-muted-foreground">
-              Parte {currentPart} de 2 - {currentPart === 1 ? "Informações Básicas" : "Dados Clínicos Relevantes"}
+              Parte {currentPart - 1} de 2 - {
+                currentPart === 2 ? "Dados Clínicos Relevantes" : 
+                "Preferências Alimentares"
+              }
             </p>
           </div>
         </DialogHeader>
 
         <div className="space-y-6">
-          {currentPart === 1 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <User className="h-5 w-5" />
-                  Informações Básicas
-                </CardTitle>
-                <CardDescription>
-                  Dados pessoais e de contato
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="nome_completo">Nome Completo *</Label>
-                    <Input
-                      id="nome_completo"
-                      value={formData.nome_completo || ""}
-                      onChange={(e) => handleInputChange('nome_completo', e.target.value)}
-                      placeholder="Seu nome completo"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="genero">Gênero *</Label>
-                    <Select
-                      value={formData.genero || ""}
-                      onValueChange={(value) => handleInputChange('genero', value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione seu gênero" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {GENERO_OPTIONS.map(option => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="email" className="flex items-center gap-2">
-                      <Mail className="h-4 w-4" />
-                      E-mail *
-                    </Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={formData.email || ""}
-                      onChange={(e) => handleInputChange('email', e.target.value)}
-                      placeholder="seu@email.com"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="instagram" className="flex items-center gap-2">
-                      <Instagram className="h-4 w-4" />
-                      Instagram
-                    </Label>
-                    <Input
-                      id="instagram"
-                      value={formData.instagram || ""}
-                      onChange={(e) => handleInputChange('instagram', e.target.value)}
-                      placeholder="@seuinstagram"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="cidade" className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4" />
-                      Cidade
-                    </Label>
-                    <Input
-                      id="cidade"
-                      value={formData.cidade || ""}
-                      onChange={(e) => handleInputChange('cidade', e.target.value)}
-                      placeholder="Sua cidade"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="estado">Estado</Label>
-                    <Input
-                      id="estado"
-                      value={formData.estado || ""}
-                      onChange={(e) => handleInputChange('estado', e.target.value)}
-                      placeholder="Seu estado"
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
           {currentPart === 2 && (
             <div className="space-y-6">
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Target className="h-5 w-5" />
-                    Objetivo Nutricional
+                    Objetivos Nutricionais
                   </CardTitle>
+                  <CardDescription>
+                    Selecione um ou mais objetivos que você deseja alcançar
+                  </CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-4">
                   <div>
-                    <Label htmlFor="objetivo_nutricional">Objetivo Principal *</Label>
-                    <Select
-                      value={formData.objetivo_nutricional || ""}
-                      onValueChange={(value) => handleInputChange('objetivo_nutricional', value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione seu objetivo" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {OBJETIVO_NUTRICIONAL_OPTIONS.map(option => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Label>Objetivos Nutricionais *</Label>
+                    <MultiSelect
+                      options={OBJETIVO_NUTRICIONAL_OPTIONS}
+                      selected={formData.objetivos_nutricionais || []}
+                      onChange={(selected) => handleInputChange('objetivos_nutricionais', selected)}
+                      placeholder="Selecione seus objetivos nutricionais"
+                    />
                   </div>
+
+                  {/* Campo personalizado quando "Outro" é selecionado */}
+                  {formData.objetivos_nutricionais?.includes('outro') && (
+                    <div>
+                      <Label htmlFor="objetivo_personalizado">Especifique seu objetivo personalizado *</Label>
+                      <Input
+                        id="objetivo_personalizado"
+                        value={formData.objetivo_personalizado || ""}
+                        onChange={(e) => handleInputChange('objetivo_personalizado', e.target.value)}
+                        placeholder="Descreva seu objetivo específico"
+                        required
+                      />
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 
@@ -443,11 +483,10 @@ export function AnamneseNutricionalModal({
                       <Label htmlFor="peso_atual">Peso Atual (kg) *</Label>
                       <Input
                         id="peso_atual"
-                        type="number"
-                        step="0.1"
+                        type="text"
                         value={formData.peso_atual || ""}
-                        onChange={(e) => handleInputChange('peso_atual', parseFloat(e.target.value))}
-                        placeholder="70.5"
+                        onChange={handlePesoChange}
+                        placeholder="Ex: 70.5"
                         required
                       />
                     </div>
@@ -455,11 +494,10 @@ export function AnamneseNutricionalModal({
                       <Label htmlFor="altura">Altura (m) *</Label>
                       <Input
                         id="altura"
-                        type="number"
-                        step="0.01"
+                        type="text"
                         value={formData.altura || ""}
-                        onChange={(e) => handleInputChange('altura', parseFloat(e.target.value))}
-                        placeholder="1.70"
+                        onChange={handleAlturaChange}
+                        placeholder="Ex: 1.70"
                         required
                       />
                     </div>
@@ -499,8 +537,8 @@ export function AnamneseNutricionalModal({
                     <Label>Comorbidades / Condições de Saúde</Label>
                     <MultiSelect
                       options={COMORBIDADES_OPTIONS}
-                      value={formData.comorbidades || []}
-                      onValueChange={(value) => handleInputChange('comorbidades', value)}
+                      selected={formData.comorbidades || []}
+                      onChange={(selected) => handleInputChange('comorbidades', selected)}
                       placeholder="Selecione suas condições de saúde"
                     />
                   </div>
@@ -509,8 +547,8 @@ export function AnamneseNutricionalModal({
                     <Label>Alergias Alimentares</Label>
                     <MultiSelect
                       options={ALERGIAS_OPTIONS}
-                      value={formData.alergias_alimentares || []}
-                      onValueChange={(value) => handleInputChange('alergias_alimentares', value)}
+                      selected={formData.alergias_alimentares || []}
+                      onChange={(selected) => handleInputChange('alergias_alimentares', selected)}
                       placeholder="Selecione suas alergias alimentares"
                     />
                   </div>
@@ -549,46 +587,45 @@ export function AnamneseNutricionalModal({
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <TestTube className="h-5 w-5" />
-                    Exames Laboratoriais
-                  </CardTitle>
-                  <CardDescription>
-                    Você pode anexar seus exames mais recentes ou descrever os resultados
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div>
-                    <Label htmlFor="exames_laboratoriais">Exames Recentes</Label>
-                    <Textarea
-                      id="exames_laboratoriais"
-                      value={typeof formData.exames_laboratoriais === 'string' ? formData.exames_laboratoriais : JSON.stringify(formData.exames_laboratoriais || {})}
-                      onChange={(e) => handleInputChange('exames_laboratoriais', e.target.value)}
-                      placeholder="Descreva seus exames laboratoriais recentes (hemograma, glicemia, colesterol, etc.)"
-                      rows={4}
-                    />
-                  </div>
-                  
-                  <div className="mt-4">
-                    <Button variant="outline" className="w-full">
-                      <Upload className="h-4 w-4 mr-2" />
-                      Anexar Exames (Em breve)
-                    </Button>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Funcionalidade de upload será implementada em breve
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
+
             </div>
+          )}
+
+          {currentPart === 3 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Utensils className="h-5 w-5" />
+                  Preferências Alimentares
+                </CardTitle>
+                <CardDescription>
+                  Selecione suas preferências alimentares para personalizar seu plano nutricional
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label>Preferências Alimentares</Label>
+                  <MultiSelect
+                    options={PREFERENCIAS_ALIMENTARES_OPTIONS}
+                    selected={formData.preferencias_alimentares || []}
+                    onChange={(selected) => handleInputChange('preferencias_alimentares', selected)}
+                    placeholder="Selecione suas preferências alimentares"
+                  />
+                </div>
+                
+                <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+                  <p className="text-sm text-blue-700">
+                    <strong>Dica:</strong> Suas preferências alimentares ajudam o nutricionista a criar um plano personalizado que respeita suas escolhas e restrições.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
           )}
         </div>
 
         <DialogFooter className="flex justify-between">
           <div className="flex gap-2">
-            {currentPart === 2 && (
+            {currentPart === 3 && (
               <Button variant="outline" onClick={handlePrevious}>
                 <ChevronLeft className="h-4 w-4 mr-2" />
                 Anterior
@@ -597,7 +634,7 @@ export function AnamneseNutricionalModal({
           </div>
           
           <div className="flex gap-2">
-            {currentPart === 1 && (
+            {currentPart === 2 && (
               <Button onClick={handleNext} disabled={loading}>
                 {loading ? (
                   <>
@@ -612,8 +649,8 @@ export function AnamneseNutricionalModal({
                 )}
               </Button>
             )}
-            
-            {currentPart === 2 && (
+
+            {currentPart === 3 && (
               <Button onClick={handleFinish} disabled={loading}>
                 {loading ? (
                   <>

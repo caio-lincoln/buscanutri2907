@@ -139,7 +139,7 @@ export async function validateCNPJWithAPI(cnpj: string): Promise<CNPJValidationR
     if (formatValidation.isValid) {
       return {
         isValid: true,
-        message: "CNPJ válido (não foi possível verificar na Receita Federal)",
+        message: "CNPJ válido",
       }
     }
 

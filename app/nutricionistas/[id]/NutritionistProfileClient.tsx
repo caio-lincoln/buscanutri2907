@@ -35,7 +35,7 @@ import {
 } from "lucide-react"
 import { useState, useEffect } from "react"
 import type { NutritionistProfile } from "@/lib/supabase" // Importa a interface real
-import { profileViewsService } from "@/lib/profile-views-service"
+import { useRealtimeProfileViews } from "@/hooks/use-realtime-profile-views"
 
 // Garante que o valor retornado seja sempre um array
 function toArray(value: unknown): string[] {
@@ -63,10 +63,10 @@ interface NutritionistProfileClientProps {
 
 export default function NutritionistProfilePageClient({ nutritionist }: NutritionistProfileClientProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [viewStats, setViewStats] = useState({
-    totalViews: nutritionist.totalViews || 0,
-    uniqueViews: nutritionist.uniqueViews || 0,
-    lastViewAt: nutritionist.lastViewAt || null
+  const { viewStats, recordView } = useRealtimeProfileViews(nutritionist.id, {
+    totalViews: nutritionist.total_views || 0,
+    uniqueViews: nutritionist.unique_views || 0,
+    lastViewAt: nutritionist.last_view_at || null
   })
 
   if (!nutritionist) {
@@ -75,26 +75,8 @@ export default function NutritionistProfilePageClient({ nutritionist }: Nutritio
 
   // Registra a visualização quando o componente é montado
   useEffect(() => {
-    const recordView = async () => {
-      try {
-        await profileViewsService.recordView(nutritionist.id)
-        // Atualiza as estatísticas após registrar a visualização
-        const stats = await profileViewsService.getViewStats(nutritionist.id)
-        if (stats) {
-          setViewStats({
-            totalViews: stats.total_views,
-            uniqueViews: stats.unique_views,
-            lastViewAt: stats.last_view_at
-          })
-        }
-      } catch (error) {
-        console.error('Erro ao registrar visualização:', error)
-        // Em caso de erro, manter os valores iniciais
-      }
-    }
-
     recordView()
-  }, [nutritionist.id])
+  }, [recordView])
 
   // Formatações para exibição, usando dados reais ou placeholders
   const formattedName = nutritionist.full_name || "Nutricionista Desconhecido"

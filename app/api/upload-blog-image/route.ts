@@ -48,20 +48,20 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Validar tipo de arquivo
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+    // Validar tipo de arquivo (incluindo mais formatos WebP)
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif', 'image/avif']
     if (!allowedTypes.includes(file.type)) {
       return NextResponse.json(
-        { success: false, error: 'Tipo de arquivo não permitido. Use JPEG, PNG, WebP ou GIF.' },
+        { success: false, error: 'Tipo de arquivo não permitido. Use JPEG, PNG, WebP, AVIF ou GIF.' },
         { status: 400 }
       )
     }
 
-    // Validar tamanho do arquivo (5MB máximo)
-    const maxSize = 5 * 1024 * 1024 // 5MB
+    // Validar tamanho do arquivo (10MB máximo para melhor qualidade)
+    const maxSize = 10 * 1024 * 1024 // 10MB
     if (file.size > maxSize) {
       return NextResponse.json(
-        { success: false, error: 'Arquivo muito grande. Tamanho máximo: 5MB.' },
+        { success: false, error: 'Arquivo muito grande. Tamanho máximo: 10MB.' },
         { status: 400 }
       )
     }

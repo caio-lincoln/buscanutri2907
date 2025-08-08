@@ -9,7 +9,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, Send, Paperclip, ImageIcon, Phone, Video, MoreVertical } from "lucide-react"
-import { getCurrentUser, getUserProfile, signOut } from "@/lib/auth"
+import { getUserProfile } from "@/lib/auth"
+import { useAuth } from "@/contexts/auth-context"
 import { getChatMessages, sendChatMessage, type ChatMessage, type ChatConversation } from "@/lib/chat-forum-service"
 import { supabase } from "@/lib/supabase"
 import { toast } from "@/components/ui/use-toast"
@@ -20,7 +21,7 @@ import { DashboardSidebar, getMenuItems } from "@/components/dashboard-sidebar"
 import { useDashboardStats } from "@/hooks/use-dashboard-stats"
 
 export default function PatientChatPage() {
-  const [user, setUser] = useState<any>(null)
+  const { user, loading: authLoading, signOut } = useAuth()
   const [userProfile, setUserProfile] = useState<any>(null)
   const [conversation, setConversation] = useState<ChatConversation | null>(null)
   const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -42,13 +43,19 @@ export default function PatientChatPage() {
   const menuItems = getMenuItems("paciente", stats)
 
   const handleSignOut = async () => {
-    await signOut()
-    router.push("/")
+    try {
+      await signOut()
+      router.push("/")
+    } catch (error) {
+      console.error("Error signing out:", error)
+    }
   }
 
   useEffect(() => {
-    loadChatData()
-  }, [conversationId])
+    if (!authLoading && user) {
+      loadChatData()
+    }
+  }, [conversationId, user, authLoading])
 
   useEffect(() => {
     scrollToBottom()
@@ -63,14 +70,12 @@ export default function PatientChatPage() {
   const loadChatData = async () => {
     try {
       setLoading(true)
-      const currentUser = await getCurrentUser()
-      if (!currentUser) {
+      if (!user) {
         router.push('/login')
         return
       }
 
-      const profile = await getUserProfile(currentUser.id)
-      setUser(currentUser)
+      const profile = await getUserProfile(user.id)
       setUserProfile(profile)
 
       // Get conversation details
@@ -78,7 +83,7 @@ export default function PatientChatPage() {
         .from('chat_conversations')
         .select('*')
         .eq('id', conversationId)
-        .eq('patient_id', currentUser.id)
+        .eq('patient_id', user.id)
         .single()
 
       if (conversationError) {
@@ -108,7 +113,7 @@ export default function PatientChatPage() {
       setConversation(enrichedConversation)
 
       // Load messages
-      const chatMessages = await getChatMessages(conversationId, currentUser.id, 'patient')
+      const chatMessages = await getChatMessages(conversationId, user.id, 'patient')
       setMessages(chatMessages)
     } catch (error) {
       console.error('Error loading chat data:', error)
@@ -176,7 +181,7 @@ export default function PatientChatPage() {
     }
   }
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center">
         <div className="text-center">

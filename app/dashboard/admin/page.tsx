@@ -20,8 +20,8 @@ import {
   Clock,
   Award,
 } from "lucide-react"
-import { getCurrentUser, signOut } from "@/lib/auth"
 import { DashboardSidebar, getMenuItems } from "@/components/dashboard-sidebar"
+import { useAuth } from "@/contexts/auth-context"
 import { StatsCard } from "@/components/stats-card"
 // Importar o hook de estatísticas do dashboard
 import { useDashboardStats } from "@/hooks/use-dashboard-stats"
@@ -38,9 +38,9 @@ import { SettingsTab } from "@/components/dashboard/admin/settings-tab"
 import { BadgesTab } from "@/components/dashboard/admin/badges-tab" // Importar a nova aba de insígnias
 
 export default function AdminDashboard() {
-  const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState("overview") // Default to overview
   const router = useRouter()
+  const { user, loading, signOut } = useAuth()
 
   // Hook para estatísticas dinâmicas do dashboard
   const { stats: dashboardStats, loading: statsLoading } = useDashboardStats({
@@ -63,27 +63,18 @@ export default function AdminDashboard() {
   )
 
   useEffect(() => {
-    checkAuth()
-  }, [])
-
-  const checkAuth = async () => {
-    try {
-      const user = await getCurrentUser()
-      if (!user || user.user_type !== "admin") {
-        router.push("/login")
-        return
-      }
-    } catch (error) {
-      console.error("Error checking auth:", error)
+    if (!loading && (!user || user.user_type !== "admin")) {
       router.push("/login")
-    } finally {
-      setLoading(false)
     }
-  }
+  }, [user, loading, router])
 
   const handleSignOut = async () => {
-    await signOut()
-    router.push("/")
+    try {
+      await signOut()
+      router.push("/")
+    } catch (error) {
+      console.error("Error signing out:", error)
+    }
   }
 
   if (loading) {

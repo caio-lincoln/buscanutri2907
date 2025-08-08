@@ -23,8 +23,9 @@ import {
   Bot,
   Activity,
 } from "lucide-react"
-import { getCurrentUser, getUserProfile, signOut } from "@/lib/auth"
+import { getUserProfile } from "@/lib/auth"
 import type { NutritionistProfile } from "@/lib/supabase"
+import { useAuth } from "@/contexts/auth-context"
 import { NotificationsPanel } from "@/components/notifications-panel"
 import { DashboardSidebar, getMenuItems } from "@/components/dashboard-sidebar"
 import { IrisChat } from "@/components/iris-chat"
@@ -54,6 +55,8 @@ import {
 } from "@/lib/nutritionist-data-service"
 // Importar o hook de estatísticas do dashboard
 import { useDashboardStats } from "@/hooks/use-dashboard-stats"
+import { useRealtimeProfileViews } from "@/hooks/use-realtime-profile-views"
+import { RealtimeViewsTest } from "@/components/realtime-views-test"
 
 export default function NutritionistDashboard() {
   const [profile, setProfile] = useState<NutritionistProfile | null>(null)
@@ -70,6 +73,7 @@ export default function NutritionistDashboard() {
   const [upcomingAppointments, setUpcomingAppointments] = useState<ScheduledAppointment[]>([])
   const [unreadMessages, setUnreadMessages] = useState<UnreadMessage[]>([])
   const router = useRouter()
+  const { user, loading: authLoading, signOut } = useAuth()
 
   // Hook para estatísticas dinâmicas do dashboard
   const { stats: dashboardStats, loading: statsLoading } = useDashboardStats({
@@ -78,11 +82,20 @@ export default function NutritionistDashboard() {
     enabled: !!profile?.user_id
   })
 
+  // Hook para visualizações em tempo real
+  const { viewStats } = useRealtimeProfileViews(profile?.id || "", {
+    totalViews: profile?.total_views || 0,
+    uniqueViews: profile?.unique_views || 0,
+    lastViewAt: profile?.last_view_at || null
+  })
+
   const menuItems = getMenuItems("nutricionista", dashboardStats)
 
   useEffect(() => {
-    loadProfile()
-  }, [])
+    if (!authLoading) {
+      loadProfile()
+    }
+  }, [user, authLoading])
 
   useEffect(() => {
     if (profile?.user_id) {
@@ -92,7 +105,6 @@ export default function NutritionistDashboard() {
 
   const loadProfile = async () => {
     try {
-      const user = await getCurrentUser()
       if (!user) {
         router.push("/login")
         return
@@ -134,11 +146,15 @@ export default function NutritionistDashboard() {
 
 
   const handleSignOut = async () => {
-    await signOut()
-    router.push("/")
+    try {
+      await signOut()
+      router.push("/")
+    } catch (error) {
+      console.error("Error signing out:", error)
+    }
   }
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50/50 via-white to-white flex items-center justify-center">
         <div className="text-center space-y-4">
@@ -1183,16 +1199,16 @@ export default function NutritionistDashboard() {
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-600">Visualizações do Perfil</label>
-                    <p className="text-[#1E1D40] font-semibold">{profile?.total_views || 0} visualizações</p>
+                    <p className="text-[#1E1D40] font-semibold">{viewStats.totalViews} visualizações</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-600">Visualizações Únicas</label>
-                    <p className="text-[#1E1D40] font-semibold">{profile?.unique_views || 0} visitantes únicos</p>
+                    <p className="text-[#1E1D40] font-semibold">{viewStats.uniqueViews} visitantes únicos</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-600">Última Visualização</label>
                     <p className="text-[#1E1D40] font-semibold text-sm">
-                      {profile?.last_view_at ? new Date(profile.last_view_at).toLocaleDateString('pt-BR') : "Nunca"}
+                      {viewStats.lastViewAt ? new Date(viewStats.lastViewAt).toLocaleDateString('pt-BR') : "Nunca"}
                     </p>
                   </div>
                   <div>
@@ -1210,6 +1226,22 @@ export default function NutritionistDashboard() {
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Teste de Visualizações em Tempo Real */}
+              {profile?.id && (
+                <div className="lg:col-span-3">
+                  <div className="flex justify-center">
+                    <RealtimeViewsTest 
+                      nutritionistId={profile.id}
+                      initialStats={{
+                        totalViews: viewStats.totalViews,
+                        uniqueViews: viewStats.uniqueViews,
+                        lastViewAt: viewStats.lastViewAt
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}

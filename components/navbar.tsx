@@ -8,14 +8,13 @@ import { ChevronDown, User, LogOut, Settings } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { useUser } from "@/hooks/use-user"
-import { signOut } from "@/lib/auth"
+import { useAuth } from "@/contexts/auth-context"
 
 export function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const pathname = usePathname()
   const router = useRouter()
-  const { user, loading } = useUser()
+  const { user, loading, signOut } = useAuth()
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen)
@@ -26,9 +25,13 @@ export function Navbar() {
   }
 
   const handleSignOut = async () => {
-    await signOut()
-    router.push("/")
-    closeMobileMenu()
+    try {
+      await signOut()
+      router.push("/")
+      closeMobileMenu()
+    } catch (error) {
+      console.error("Erro ao fazer logout:", error)
+    }
   }
 
   const getDashboardLink = () => {

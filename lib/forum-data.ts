@@ -127,10 +127,16 @@ const addBadgesToAuthor = async (author: ForumAuthor): Promise<ForumAuthor> => {
 // Função para buscar todas as perguntas do fórum (apenas de pacientes)
 export async function getAllForumQuestions(): Promise<ForumQuestion[]> {
   try {
-    // Buscar apenas perguntas de pacientes
+    // Buscar perguntas de pacientes com JOIN para pegar os dados do perfil
     const { data: questionsData, error: questionsError } = await supabase
       .from('forum_questions')
-      .select('*')
+      .select(`
+        *,
+        patient_profiles!forum_questions_patient_id_fkey(
+          full_name,
+          profile_image_url
+        )
+      `)
       .not('patient_id', 'is', null)
       .order('created_at', { ascending: false })
 
@@ -143,27 +149,12 @@ export async function getAllForumQuestions(): Promise<ForumQuestion[]> {
       return []
     }
 
-    // Buscar perfis dos pacientes separadamente
-    const patientIds = [...new Set(questionsData.map(q => q.patient_id).filter(Boolean))]
-    let patientProfiles: any[] = []
-    
-    if (patientIds.length > 0) {
-      const { data: profiles } = await supabase
-        .from('patient_profiles')
-        .select('user_id, full_name, profile_image_url')
-        .in('user_id', patientIds)
-      
-      patientProfiles = profiles || []
-    }
-
     const questions: ForumQuestion[] = questionsData.map((data: any) => {
-      const patientProfile = patientProfiles.find(pp => pp.user_id === data.patient_id)
-      
       const author: ForumAuthor = {
         id: data.patient_id,
-        name: patientProfile?.full_name || "Usuário Anônimo",
+        name: data.patient_profiles?.full_name || "Usuário Anônimo",
         userType: "paciente",
-        avatar: patientProfile?.profile_image_url || "/placeholder.svg?height=40&width=40",
+        avatar: data.patient_profiles?.profile_image_url || "/placeholder.svg?height=40&width=40",
         credentials: undefined,
         isVerified: false,
       }
@@ -221,10 +212,18 @@ export async function getAllForumQuestionsWithNutritionists(): Promise<ForumQues
 // Função para buscar perguntas feitas por nutricionistas
 export async function getNutritionistForumQuestions(): Promise<ForumQuestion[]> {
   try {
-    // Buscar perguntas de nutricionistas
+    // Buscar perguntas de nutricionistas com JOIN
     const { data: questionsData, error: questionsError } = await supabase
       .from('forum_questions')
-      .select('*')
+      .select(`
+        *,
+        nutritionist_profiles!forum_questions_nutritionist_id_fkey(
+          full_name,
+          profile_image_url,
+          crn,
+          specialties
+        )
+      `)
       .not('nutritionist_id', 'is', null)
       .order('created_at', { ascending: false })
 
@@ -237,21 +236,8 @@ export async function getNutritionistForumQuestions(): Promise<ForumQuestion[]> 
       return []
     }
 
-    // Buscar perfis dos nutricionistas separadamente
-    const nutritionistIds = [...new Set(questionsData.map(q => q.nutritionist_id).filter(Boolean))]
-    let nutritionistProfiles: any[] = []
-    
-    if (nutritionistIds.length > 0) {
-      const { data: profiles } = await supabase
-        .from('nutritionist_profiles')
-        .select('user_id, full_name, profile_image_url, crn, specialties')
-        .in('user_id', nutritionistIds)
-      
-      nutritionistProfiles = profiles || []
-    }
-
     const questions: ForumQuestion[] = questionsData.map((data: any) => {
-      const nutritionistProfile = nutritionistProfiles.find(np => np.user_id === data.nutritionist_id)
+      const nutritionistProfile = data.nutritionist_profiles
       
       const author: ForumAuthor = {
         id: data.nutritionist_id,
@@ -297,10 +283,22 @@ export async function getNutritionistForumQuestions(): Promise<ForumQuestion[]> 
 // Função para buscar uma pergunta por ID
 export async function getForumQuestionById(id: string): Promise<ForumQuestion | null> {
   try {
-    // Buscar a pergunta
+    // Buscar a pergunta com JOINs
     const { data: questionData, error: questionError } = await supabase
       .from('forum_questions')
-      .select('*')
+      .select(`
+        *,
+        patient_profiles!forum_questions_patient_id_fkey(
+          full_name,
+          profile_image_url
+        ),
+        nutritionist_profiles!forum_questions_nutritionist_id_fkey(
+          full_name,
+          profile_image_url,
+          crn,
+          specialties
+        )
+      `)
       .eq('id', id)
       .single()
 
@@ -309,48 +307,44 @@ export async function getForumQuestionById(id: string): Promise<ForumQuestion | 
       return null
     }
 
-    // Buscar perfil do autor separadamente
+    // Determinar o autor baseado nos dados retornados
     let author: ForumAuthor
-    if (questionData.patient_id) {
-      const { data: patientProfile } = await supabase
-        .from('patient_profiles')
-        .select('user_id, full_name, profile_image_url')
-        .eq('user_id', questionData.patient_id)
-        .single()
-
+    if (questionData.patient_id && questionData.patient_profiles) {
       author = {
         id: questionData.patient_id,
-        name: patientProfile?.full_name || "Paciente Anônimo",
+        name: questionData.patient_profiles.full_name || "Paciente Anônimo",
         userType: "paciente",
-        avatar: patientProfile?.profile_image_url || "/placeholder.svg?height=40&width=40",
+        avatar: questionData.patient_profiles.profile_image_url || "/placeholder.svg?height=40&width=40",
         credentials: undefined,
         isVerified: false,
       }
-    } else if (questionData.nutritionist_id) {
-      const { data: nutritionistProfile } = await supabase
-        .from('nutritionist_profiles')
-        .select('user_id, full_name, profile_image_url, crn, specialties')
-        .eq('user_id', questionData.nutritionist_id)
-        .single()
-
+    } else if (questionData.nutritionist_id && questionData.nutritionist_profiles) {
       author = {
         id: questionData.nutritionist_id,
-        name: nutritionistProfile?.full_name || "Nutricionista Anônimo",
+        name: questionData.nutritionist_profiles.full_name || "Nutricionista Anônimo",
         userType: "nutricionista",
-        avatar: nutritionistProfile?.profile_image_url || "/placeholder.svg?height=40&width=40",
-        credentials: nutritionistProfile?.crn || undefined,
+        avatar: questionData.nutritionist_profiles.profile_image_url || "/placeholder.svg?height=40&width=40",
+        credentials: questionData.nutritionist_profiles.crn || undefined,
         isVerified: true,
-        specialties: nutritionistProfile?.specialties || []
+        specialties: questionData.nutritionist_profiles.specialties || []
       }
     } else {
       console.error('Pergunta sem autor válido')
       return null
     }
 
-    // Buscar as respostas
+    // Buscar as respostas com JOIN
     const { data: answersData, error: answersError } = await supabase
       .from('forum_answers')
-      .select('*')
+      .select(`
+        *,
+        nutritionist_profiles!forum_answers_nutritionist_id_fkey(
+          full_name,
+          profile_image_url,
+          crn,
+          specialties
+        )
+      `)
       .eq('question_id', id)
       .order('created_at', { ascending: true })
 
@@ -358,21 +352,8 @@ export async function getForumQuestionById(id: string): Promise<ForumQuestion | 
       console.error('Error fetching forum answers:', answersError)
     }
 
-    // Buscar perfis dos nutricionistas das respostas separadamente
-    const nutritionistIds = [...new Set((answersData || []).map(a => a.nutritionist_id).filter(Boolean))]
-    let nutritionistProfiles: any[] = []
-    
-    if (nutritionistIds.length > 0) {
-      const { data: profiles } = await supabase
-        .from('nutritionist_profiles')
-        .select('user_id, full_name, profile_image_url, crn, specialties')
-        .in('user_id', nutritionistIds)
-      
-      nutritionistProfiles = profiles || []
-    }
-
     const replies: ForumReply[] = (answersData || []).map((answer: any) => {
-      const nutritionistProfile = nutritionistProfiles.find(np => np.user_id === answer.nutritionist_id)
+      const nutritionistProfile = answer.nutritionist_profiles
       
       return {
         id: answer.id,

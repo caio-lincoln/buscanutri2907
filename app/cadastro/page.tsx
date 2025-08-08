@@ -12,12 +12,28 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Checkbox } from "@/components/ui/checkbox"
-import { ArrowLeft, Eye, EyeOff, Loader2, AlertCircle, CheckCircle, Clock, Building } from "lucide-react"
+import { ArrowLeft, Eye, EyeOff, Loader2, AlertCircle, CheckCircle, Clock, Building, Shield, ShieldCheck, ShieldAlert } from "lucide-react"
 import { signUp } from "@/lib/auth"
 import { toast } from "@/components/ui/use-toast"
 
 import { validateCRNFormat, validateCRNWithAPI, formatCRN } from "@/lib/crn-validator"
 import { validateCNPJFormat, validateCNPJWithAPI, formatCNPJ } from "@/lib/cnpj-validator"
+
+// Tipos para validação de senha
+type PasswordStrength = "weak" | "medium" | "strong"
+
+interface PasswordValidation {
+  strength: PasswordStrength
+  score: number
+  message: string
+  requirements: {
+    length: boolean
+    uppercase: boolean
+    lowercase: boolean
+    number: boolean
+    special: boolean
+  }
+}
 
 export default function CadastroPage() {
   const [showPassword, setShowPassword] = useState(false)
@@ -25,6 +41,21 @@ export default function CadastroPage() {
   const [acceptTerms, setAcceptTerms] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
+  
+  // Estados para validação de senha
+  const [password, setPassword] = useState("")
+  const [passwordValidation, setPasswordValidation] = useState<PasswordValidation>({
+    strength: "weak",
+    score: 0,
+    message: "",
+    requirements: {
+      length: false,
+      uppercase: false,
+      lowercase: false,
+      number: false,
+      special: false
+    }
+  })
 
 
   // Estados para validação de CRN
@@ -32,7 +63,50 @@ export default function CadastroPage() {
   const [crnValidation, setCrnValidation] = useState<{
     status: "idle" | "validating" | "valid" | "invalid"
     message: string
-  }>({ status: "idle", message: "" })
+  }>({
+    status: "idle",
+    message: ""
+  })
+
+  // Função para validar força da senha
+  const validatePasswordStrength = (password: string): PasswordValidation => {
+    const requirements = {
+      length: password.length >= 8,
+      uppercase: /[A-Z]/.test(password),
+      lowercase: /[a-z]/.test(password),
+      number: /\d/.test(password),
+      special: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)
+    }
+
+    const score = Object.values(requirements).filter(Boolean).length
+    
+    let strength: PasswordStrength = "weak"
+    let message = ""
+
+    if (score < 3) {
+      strength = "weak"
+      message = "Senha fraca - Adicione mais caracteres"
+    } else if (score < 5) {
+      strength = "medium"
+      message = "Senha média - Quase lá!"
+    } else {
+      strength = "strong"
+      message = "Senha forte - Excelente!"
+    }
+
+    return {
+      strength,
+      score,
+      message,
+      requirements
+    }
+  }
+
+  // Função para lidar com mudanças na senha
+  const handlePasswordChange = (value: string) => {
+    setPassword(value)
+    setPasswordValidation(validatePasswordStrength(value))
+  }
 
   // Estados para validação de CNPJ
   const [cnpjValue, setCnpjValue] = useState("")
@@ -158,8 +232,10 @@ export default function CadastroPage() {
         throw new Error("Email e senha são obrigatórios")
       }
 
-      if (password.length < 6) {
-        throw new Error("A senha deve ter pelo menos 6 caracteres")
+      const passwordValidation = validatePasswordStrength(password)
+      
+      if (passwordValidation.strength === "weak" || !passwordValidation.requirements.length) {
+        throw new Error("A senha deve ter pelo menos 8 caracteres, incluindo letras maiúsculas, minúsculas, números e caracteres especiais.")
       }
 
       let additionalData: any = {}
@@ -272,6 +348,22 @@ export default function CadastroPage() {
         return <CheckCircle className="h-4 w-4 text-green-500" />
       case "invalid":
         return <AlertCircle className="h-4 w-4 text-red-500" />
+      default:
+        return null
+    }
+  }
+
+  // Função para renderizar ícone de força da senha
+  const renderPasswordStrengthIcon = () => {
+    if (!password) return null
+    
+    switch (passwordValidation.strength) {
+      case "weak":
+        return <ShieldAlert className="h-4 w-4 text-red-500" />
+      case "medium":
+        return <Shield className="h-4 w-4 text-yellow-500" />
+      case "strong":
+        return <ShieldCheck className="h-4 w-4 text-green-500" />
       default:
         return null
     }
@@ -533,11 +625,16 @@ export default function CadastroPage() {
                       id="password"
                       name="password"
                       type={showPassword ? "text" : "password"}
-                      placeholder="Mínimo 6 caracteres"
-                      className="h-11 pr-10"
+                      placeholder="Mínimo 8 caracteres"
+                      className="h-11 pr-20"
                       required
-                      minLength={6}
+                      minLength={8}
+                      value={password}
+                      onChange={(e) => handlePasswordChange(e.target.value)}
                     />
+                    <div className="absolute right-12 top-1/2 transform -translate-y-1/2">
+                      {renderPasswordStrengthIcon()}
+                    </div>
                     <Button
                       type="button"
                       variant="ghost"
@@ -552,6 +649,60 @@ export default function CadastroPage() {
                       )}
                     </Button>
                   </div>
+                  
+                  {/* Indicador de força da senha */}
+                  {password && (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 bg-gray-200 rounded-full h-2">
+                          <div
+                            className={`h-2 rounded-full transition-all duration-300 ${
+                              passwordValidation.strength === "weak"
+                                ? "w-1/3 bg-red-500"
+                                : passwordValidation.strength === "medium"
+                                  ? "w-2/3 bg-yellow-500"
+                                  : "w-full bg-green-500"
+                            }`}
+                          />
+                        </div>
+                        <span
+                          className={`text-xs font-medium ${
+                            passwordValidation.strength === "weak"
+                              ? "text-red-600"
+                              : passwordValidation.strength === "medium"
+                                ? "text-yellow-600"
+                                : "text-green-600"
+                          }`}
+                        >
+                          {passwordValidation.message}
+                        </span>
+                      </div>
+                      
+                      {/* Lista de requisitos */}
+                      <div className="grid grid-cols-2 gap-1 text-xs">
+                        <div className={`flex items-center gap-1 ${passwordValidation.requirements.length ? "text-green-600" : "text-gray-500"}`}>
+                          <div className={`w-1 h-1 rounded-full ${passwordValidation.requirements.length ? "bg-green-500" : "bg-gray-300"}`} />
+                          8+ caracteres
+                        </div>
+                        <div className={`flex items-center gap-1 ${passwordValidation.requirements.uppercase ? "text-green-600" : "text-gray-500"}`}>
+                          <div className={`w-1 h-1 rounded-full ${passwordValidation.requirements.uppercase ? "bg-green-500" : "bg-gray-300"}`} />
+                          Letra maiúscula
+                        </div>
+                        <div className={`flex items-center gap-1 ${passwordValidation.requirements.lowercase ? "text-green-600" : "text-gray-500"}`}>
+                          <div className={`w-1 h-1 rounded-full ${passwordValidation.requirements.lowercase ? "bg-green-500" : "bg-gray-300"}`} />
+                          Letra minúscula
+                        </div>
+                        <div className={`flex items-center gap-1 ${passwordValidation.requirements.number ? "text-green-600" : "text-gray-500"}`}>
+                          <div className={`w-1 h-1 rounded-full ${passwordValidation.requirements.number ? "bg-green-500" : "bg-gray-300"}`} />
+                          Número
+                        </div>
+                        <div className={`flex items-center gap-1 ${passwordValidation.requirements.special ? "text-green-600" : "text-gray-500"}`}>
+                          <div className={`w-1 h-1 rounded-full ${passwordValidation.requirements.special ? "bg-green-500" : "bg-gray-300"}`} />
+                          Caractere especial
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex items-center space-x-2">
@@ -581,7 +732,9 @@ export default function CadastroPage() {
                     !acceptTerms ||
                     loading ||
                     (userType === "nutricionista" && crnValidation.status !== "valid") ||
-                    (userType === "empresa" && cnpjValidation.status !== "valid")
+                    (userType === "empresa" && cnpjValidation.status !== "valid") ||
+                    passwordValidation.strength === "weak" ||
+                    !password
                   }
                 >
                   {loading ? (

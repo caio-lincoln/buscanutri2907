@@ -3,10 +3,8 @@
 import { useState, useEffect, useMemo } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabase"
-import { signOut } from "@/lib/auth"
-import { DashboardSidebar } from "@/components/dashboard-sidebar"
-import { getMenuItems } from "@/components/dashboard-sidebar"
-import { useDashboardStats } from "@/hooks/use-dashboard-stats"
+
+
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
@@ -37,11 +35,7 @@ export default function PatientForumQuestionPage() {
   const router = useRouter()
   const questionId = params.id as string
 
-  const { stats, loading: statsLoading } = useDashboardStats({
-    userType: "paciente",
-    userId: "",
-    enabled: false
-  })
+
 
   const [question, setQuestion] = useState<ForumQuestion | null>(null)
   const [loading, setLoading] = useState(true)
@@ -50,7 +44,7 @@ export default function PatientForumQuestionPage() {
   const [currentUser, setCurrentUser] = useState<any>(null)
   const [searchTerm, setSearchTerm] = useState("")
   const [sortOrder, setSortOrder] = useState("recent")
-  const [sidebarOpen, setSidebarOpen] = useState(false)
+
 
   // Função para filtrar e ordenar respostas
   const applyFiltersAndSort = (replies: any[], searchTerm: string, sortOrder: string) => {
@@ -206,31 +200,9 @@ export default function PatientForumQuestionPage() {
     )
   }
 
-  const menuItems = getMenuItems(currentUser?.user_type || 'patient')
-
-  const handleSignOut = async () => {
-    try {
-      await signOut()
-      router.push('/login')
-    } catch (error) {
-      console.error('Error signing out:', error)
-    }
-  }
-
   return (
-    <div className="flex h-screen bg-gray-50">
-      <DashboardSidebar
-        user={currentUser}
-        menuItems={menuItems}
-        stats={stats}
-        onSignOut={handleSignOut}
-        isOpen={sidebarOpen}
-        onToggle={() => setSidebarOpen(!sidebarOpen)}
-      />
-      
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <main className="flex-1 overflow-y-auto">
-          <div className="container mx-auto px-4 py-8">
+    <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto px-4 py-8">
             <div className="mb-6">
               <Button
                 variant="ghost"
@@ -440,8 +412,6 @@ export default function PatientForumQuestionPage() {
         )}
             </div>
           </div>
-        </main>
-      </div>
-    </div>
+        </div>
   )
 }

@@ -40,7 +40,14 @@ export async function getAllBlogPosts(): Promise<BlogPost[]> {
   try {
     const { data: posts, error } = await supabase
       .from('blog_posts')
-      .select('*')
+      .select(`
+        *,
+        nutritionist_profiles!inner(
+          full_name,
+          bio,
+          profile_image_url
+        )
+      `)
       .eq('published', true)
       .order('created_at', { ascending: false })
 
@@ -85,7 +92,14 @@ export async function getBlogPostById(id: string): Promise<BlogPost | null> {
   try {
     const { data: post, error } = await supabase
       .from('blog_posts')
-      .select('*')
+      .select(`
+        *,
+        nutritionist_profiles!inner(
+          full_name,
+          bio,
+          profile_image_url
+        )
+      `)
       .eq('id', id)
       .eq('published', true)
       .single()
@@ -132,7 +146,14 @@ export async function getBlogPostsByAuthor(authorId: string): Promise<BlogPost[]
   try {
     const { data: posts, error } = await supabase
       .from('blog_posts')
-      .select('*')
+      .select(`
+        *,
+        nutritionist_profiles!inner(
+          full_name,
+          bio,
+          profile_image_url
+        )
+      `)
       .eq('author_id', authorId)
       .order('created_at', { ascending: false })
 
@@ -273,21 +294,72 @@ export async function updateBlogPost(updatedPost: BlogPost): Promise<BlogPost | 
 }
 
 // Função para deletar um post
-export async function deleteBlogPost(id: string): Promise<boolean> {
+export async function deleteBlogPost(id: string, authenticatedSupabase?: any): Promise<boolean> {
+  console.log('🗑️ Iniciando deleteBlogPost para ID:', id)
+  
   try {
-    const { error } = await supabase
+    // Usar o cliente autenticado se fornecido, senão usar o padrão
+    const clientToUse = authenticatedSupabase || supabase
+    
+    // Verificar se o usuário está autenticado
+    console.log('🔐 Verificando autenticação...')
+    const { data: { user }, error: authError } = await clientToUse.auth.getUser()
+    
+    if (authError || !user) {
+      console.error('❌ Usuário não autenticado:', authError)
+      return false
+    }
+    
+    console.log('✅ Usuário autenticado:', user.id)
+
+    // Primeiro, verificar se o post existe e se o usuário é o autor
+    console.log('🔍 Buscando post para verificar autorização...')
+    const { data: post, error: fetchError } = await clientToUse
+      .from('blog_posts')
+      .select('author_id, title')
+      .eq('id', id)
+      .single()
+
+    if (fetchError || !post) {
+      console.error('❌ Post não encontrado:', fetchError)
+      return false
+    }
+    
+    console.log('📄 Post encontrado:', { id, title: post.title, author_id: post.author_id })
+
+    // Verificar se o usuário autenticado é o autor do post
+    if (post.author_id !== user.id) {
+      console.error('❌ Usuário não autorizado a deletar este post. Author:', post.author_id, 'User:', user.id)
+      return false
+    }
+    
+    console.log('✅ Autorização confirmada. Procedendo com a exclusão...')
+
+    // Deletar o post
+    console.log('🗑️ Executando DELETE no Supabase...')
+    const { data: deletedData, error } = await clientToUse
       .from('blog_posts')
       .delete()
       .eq('id', id)
+      .eq('author_id', user.id) // Dupla verificação de segurança
+      .select() // Retorna os dados deletados
 
     if (error) {
-      console.error('Erro ao deletar post:', error)
+      console.error('❌ Erro ao deletar post:', error)
       return false
     }
 
+    console.log('✅ Resposta do DELETE:', deletedData)
+    
+    if (!deletedData || deletedData.length === 0) {
+      console.error('⚠️ Nenhum registro foi deletado. Possível problema com RLS ou condições.')
+      return false
+    }
+
+    console.log('🎉 Post deletado com sucesso:', id)
     return true
   } catch (error) {
-    console.error('Erro ao deletar post:', error)
+    console.error('💥 Erro inesperado ao deletar post:', error)
     return false
   }
 }

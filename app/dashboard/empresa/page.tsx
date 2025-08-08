@@ -22,8 +22,9 @@ import {
   TrendingUp,
   FileText,
 } from "lucide-react"
-import { getCurrentUser, getUserProfile, signOut } from "@/lib/auth"
+import { getUserProfile } from "@/lib/auth"
 import type { CompanyProfile } from "@/lib/supabase"
+import { useAuth } from "@/contexts/auth-context"
 import { NotificationsPanel } from "@/components/notifications-panel"
 import { DashboardSidebar, getMenuItems } from "@/components/dashboard-sidebar"
 import { IrisChat } from "@/components/iris-chat"
@@ -45,6 +46,7 @@ export default function CompanyDashboard() {
   const [overviewData, setOverviewData] = useState<CompanyOverviewStats | null>(null)
   const [overviewLoading, setOverviewLoading] = useState(false)
   const router = useRouter()
+  const { user, loading: authLoading, signOut } = useAuth()
 
   // Hook para estatísticas dinâmicas do dashboard
   const { stats: dashboardStats, loading: statsLoading } = useDashboardStats({
@@ -56,8 +58,10 @@ export default function CompanyDashboard() {
   const menuItems = getMenuItems("empresa", dashboardStats)
 
   useEffect(() => {
-    loadProfile()
-  }, [])
+    if (!authLoading) {
+      loadProfile()
+    }
+  }, [user, authLoading])
 
   useEffect(() => {
     if (profile?.id && activeTab === "overview") {
@@ -67,7 +71,6 @@ export default function CompanyDashboard() {
 
   const loadProfile = async () => {
     try {
-      const user = await getCurrentUser()
       if (!user) {
         router.push("/login")
         return
@@ -99,11 +102,15 @@ export default function CompanyDashboard() {
 
 
   const handleSignOut = async () => {
-    await signOut()
-    router.push("/")
+    try {
+      await signOut()
+      router.push("/")
+    } catch (error) {
+      console.error("Error signing out:", error)
+    }
   }
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50/50 via-white to-white flex items-center justify-center">
         <div className="text-center space-y-4">

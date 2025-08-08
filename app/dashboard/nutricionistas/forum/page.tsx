@@ -22,7 +22,7 @@ import {
   User,
   ArrowLeft
 } from "lucide-react"
-import { getCurrentUser, signOut } from "@/lib/auth"
+import { useAuth } from "@/contexts/auth-context"
 import { QuestionModal } from "@/components/question-modal"
 import { 
   getNutritionistForumQuestions,
@@ -32,10 +32,8 @@ import {
 } from "@/lib/forum-data"
 
 export default function NutritionistForumPage() {
+  const { user: currentUser, loading: authLoading } = useAuth()
   const router = useRouter()
-
-  // User and auth states
-  const [currentUser, setCurrentUser] = useState<any>(null)
 
   // Filter states
   const [searchTerm, setSearchTerm] = useState("")
@@ -58,13 +56,11 @@ export default function NutritionistForumPage() {
       try {
         setLoading(true)
         
-        const [user, allQuestions, nutritionistQuestionsData] = await Promise.all([
-          getCurrentUser(),
+        const [allQuestions, nutritionistQuestionsData] = await Promise.all([
           getAllForumQuestions(),
           getNutritionistForumQuestions()
         ])
         
-        setCurrentUser(user)
         setPatientQuestions(allQuestions.filter(q => q.author.userType === 'paciente'))
         setNutritionistQuestions(nutritionistQuestionsData)
       } catch (err) {
@@ -75,8 +71,10 @@ export default function NutritionistForumPage() {
       }
     }
 
-    loadData()
-  }, [])
+    if (!authLoading && currentUser) {
+      loadData()
+    }
+  }, [currentUser, authLoading])
 
   // Categories
   const categories = [
@@ -160,7 +158,7 @@ export default function NutritionistForumPage() {
     setIsQuestionModalOpen(false)
   }
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-gray-50">
         <div className="flex items-center justify-center min-h-screen">

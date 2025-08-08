@@ -387,19 +387,55 @@ export async function createForumQuestion(
   tags: string[]
 ): Promise<ForumQuestion> {
   try {
+    // First determine user type and get appropriate profile ID
+    const { data: user } = await supabase
+      .from('users')
+      .select('user_type')
+      .eq('id', userId)
+      .single()
+
+    if (!user) {
+      throw new Error('User not found')
+    }
+
+    let insertData: any = {
+      author_id: userId,
+      title: title.trim(),
+      content: content.trim(),
+      tags,
+      views: 0,
+      answers_count: 0,
+      likes_count: 0,
+      is_answered: false,
+      last_activity_at: new Date().toISOString()
+    }
+
+    // Get profile ID based on user type
+    if (user.user_type === 'paciente') {
+      const { data: patientProfile } = await supabase
+        .from('patient_profiles')
+        .select('id')
+        .eq('user_id', userId)
+        .single()
+      
+      if (patientProfile) {
+        insertData.patient_id = patientProfile.id
+      }
+    } else if (user.user_type === 'nutricionista') {
+      const { data: nutritionistProfile } = await supabase
+        .from('nutritionist_profiles')
+        .select('id')
+        .eq('user_id', userId)
+        .single()
+      
+      if (nutritionistProfile) {
+        insertData.nutritionist_id = nutritionistProfile.id
+      }
+    }
+
     const { data, error } = await supabase
       .from('forum_questions')
-      .insert({
-        author_id: userId,
-        title: title.trim(),
-        content: content.trim(),
-        tags,
-        views: 0,
-        answers_count: 0,
-        likes_count: 0,
-        is_answered: false,
-        last_activity_at: new Date().toISOString()
-      })
+      .insert(insertData)
       .select('*')
       .single()
 
@@ -408,7 +444,7 @@ export async function createForumQuestion(
       throw error
     }
 
-    // Get the author profile separately
+    // Get the author profile separately (still needed for return data)
     const { data: authorProfile } = await supabase
       .from('user_profiles')
       .select('full_name, profile_image_url, user_type, crn, is_verified')
@@ -655,15 +691,45 @@ export async function createForumAnswer(
   userId: string
 ): Promise<ForumAnswer | null> {
   try {
+    // First determine user type and get appropriate profile ID
+    const { data: user } = await supabase
+      .from('users')
+      .select('user_type')
+      .eq('id', userId)
+      .single()
+
+    if (!user) {
+      console.error('User not found')
+      return null
+    }
+
+    let insertData: any = {
+      question_id: questionId,
+      author_id: userId,
+      content: content.trim(),
+      is_accepted: false,
+      likes_count: 0
+    }
+
+    // Get profile ID based on user type (only nutritionists can answer)
+    if (user.user_type === 'nutricionista') {
+      const { data: nutritionistProfile } = await supabase
+        .from('nutritionist_profiles')
+        .select('id')
+        .eq('user_id', userId)
+        .single()
+      
+      if (nutritionistProfile) {
+        insertData.nutritionist_id = nutritionistProfile.id
+      }
+    } else {
+      console.error('Only nutritionists can create forum answers')
+      return null
+    }
+
     const { data, error } = await supabase
       .from('forum_answers')
-      .insert({
-        question_id: questionId,
-        author_id: userId,
-        content: content.trim(),
-        is_accepted: false,
-        likes_count: 0
-      })
+      .insert(insertData)
       .select('*')
       .single()
 
@@ -672,7 +738,7 @@ export async function createForumAnswer(
       return null
     }
 
-    // Get the author profile separately
+    // Get the author profile separately (still needed for return data)
     const { data: authorProfile } = await supabase
       .from('user_profiles')
       .select('full_name, profile_image_url, user_type, crn, is_verified')

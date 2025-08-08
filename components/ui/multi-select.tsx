@@ -16,11 +16,10 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
-import { Badge } from "@/components/ui/badge"
 
-export interface Option {
-  label: string
+interface Option {
   value: string
+  label: string
 }
 
 interface MultiSelectProps {
@@ -64,19 +63,18 @@ export function MultiSelect({
             className
           )}
         >
-          <div className="flex gap-1 flex-wrap">
+          <div className="flex flex-wrap gap-1">
             {selected.length > 0 ? (
               selected.map((item) => {
                 const option = options.find((opt) => opt.value === item)
                 return (
-                  <Badge
-                    variant="secondary"
+                  <span
                     key={item}
-                    className="mr-1 mb-1 cursor-pointer"
+                    className="inline-flex items-center gap-1 bg-secondary text-secondary-foreground px-2 py-1 rounded-sm text-xs"
                   >
-                    {option?.label}
+                    {option?.label || item}
                     <span
-                      className="ml-1 ring-offset-background rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 cursor-pointer inline-flex items-center justify-center"
+                      className="ml-1 ring-offset-background rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                       onKeyDown={(e) => {
                         if (e.key === "Enter") {
                           handleUnselect(item)
@@ -86,17 +84,13 @@ export function MultiSelect({
                         e.preventDefault()
                         e.stopPropagation()
                       }}
-                      onClick={(e) => {
-                        e.preventDefault()
-                        e.stopPropagation()
-                        handleUnselect(item)
-                      }}
+                      onClick={() => handleUnselect(item)}
                       role="button"
                       tabIndex={0}
                     >
                       <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
                     </span>
-                  </Badge>
+                  </span>
                 )
               })
             ) : (
@@ -110,18 +104,18 @@ export function MultiSelect({
         <Command>
           <CommandInput placeholder="Buscar..." />
           <CommandEmpty>Nenhuma opção encontrada.</CommandEmpty>
-          <CommandGroup className="max-h-64 overflow-auto">
+          <CommandGroup className="max-h-64 overflow-y-auto">
             {options.map((option) => (
               <CommandItem
                 key={option.value}
+                value={option.value}
                 onSelect={() => handleSelect(option.value)}
+                className="cursor-pointer"
               >
                 <Check
                   className={cn(
                     "mr-2 h-4 w-4",
-                    selected.includes(option.value)
-                      ? "opacity-100"
-                      : "opacity-0"
+                    selected.includes(option.value) ? "opacity-100" : "opacity-0"
                   )}
                 />
                 {option.label}
