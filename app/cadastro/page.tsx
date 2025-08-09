@@ -40,6 +40,7 @@ export default function CadastroPage() {
   const [userType, setUserType] = useState("paciente")
   const [acceptTerms, setAcceptTerms] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [acceptsCorporatePlans, setAcceptsCorporatePlans] = useState<boolean | null>(null)
   const [error, setError] = useState("")
   
   // Estados para validação de senha
@@ -248,10 +249,15 @@ export default function CadastroPage() {
           throw new Error("Nome completo e CRN são obrigatórios")
         }
 
+        if (acceptsCorporatePlans === null) {
+          throw new Error("Por favor, responda se aceita atender em planos corporativos")
+        }
+
         additionalData = {
           full_name,
           crn: crnValue, // Usa o valor formatado e validado
           phone,
+          accepts_corporate_plans: acceptsCorporatePlans,
         }
       } else if (userType === "paciente") {
         const full_name = formData.get("full_name") as string
@@ -509,6 +515,44 @@ export default function CadastroPage() {
                     <div className="space-y-2">
                       <Label htmlFor="phone">Telefone</Label>
                       <Input id="phone" name="phone" placeholder="(11) 99999-9999" className="h-11" />
+                    </div>
+                  </div>
+
+                  {/* Pergunta sobre planos corporativos */}
+                  <div className="space-y-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="space-y-2">
+                      <Label className="text-base font-medium text-gray-900">
+                        Aceita atender no modo corporativo?
+                      </Label>
+                      <p className="text-sm text-gray-600 leading-relaxed">
+                        O plano corporativo é uma opção de atendimento nutricional para empresas, onde os funcionários podem receber orientação nutricional, consultas individuais, palestras e relatórios básicos. O valor do plano é determinado pela quantidade de funcionários da empresa. Ao aceitar atender no modo corporativo, você concorda em fornecer serviços de nutrição para empresas que desejam promover a saúde e o bem-estar de seus funcionários.
+                      </p>
+                    </div>
+                    <div className="flex gap-4">
+                      <Button
+                        type="button"
+                        variant={acceptsCorporatePlans === true ? "default" : "outline"}
+                        className={`flex-1 h-11 ${
+                          acceptsCorporatePlans === true 
+                            ? "bg-[#4AB0D9] hover:bg-[#4AB0D9]/90 text-white" 
+                            : "border-[#4AB0D9] text-[#4AB0D9] hover:bg-[#4AB0D9]/10"
+                        }`}
+                        onClick={() => setAcceptsCorporatePlans(true)}
+                      >
+                        Sim
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={acceptsCorporatePlans === false ? "default" : "outline"}
+                        className={`flex-1 h-11 ${
+                          acceptsCorporatePlans === false 
+                            ? "bg-gray-600 hover:bg-gray-700 text-white" 
+                            : "border-gray-400 text-gray-600 hover:bg-gray-50"
+                        }`}
+                        onClick={() => setAcceptsCorporatePlans(false)}
+                      >
+                        Não
+                      </Button>
                     </div>
                   </div>
                 </TabsContent>
@@ -773,3 +817,4 @@ export default function CadastroPage() {
     </div>
   )
 }
+

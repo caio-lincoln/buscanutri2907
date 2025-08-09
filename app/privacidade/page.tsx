@@ -77,8 +77,8 @@ export default function PrivacidadePage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <Phone className="h-4 w-4 text-[#4AB0D9]" />
-                    <a href="tel:+5579999158274" className="text-[#4AB0D9] hover:underline">
-                      (79) 99915-8274
+                    <a href="tel:+557999134938" className="text-[#4AB0D9] hover:underline">
+                      (79) 9 9813-4938
                     </a>
                   </div>
                   <div className="flex items-center gap-2">
@@ -394,8 +394,8 @@ export default function PrivacidadePage() {
                   <div className="space-y-3">
                     <div className="flex items-center gap-2">
                       <Phone className="h-4 w-4 text-[#4AB0D9]" />
-                      <a href="tel:+5579999158274" className="text-[#4AB0D9] hover:underline">
-                        (79) 99915-8274
+                      <a href="tel:+557999134938" className="text-[#4AB0D9] hover:underline">
+                        (79) 9 9813-4938
                       </a>
                     </div>
                     <div className="flex items-center gap-2">
@@ -438,3 +438,4 @@ export default function PrivacidadePage() {
     </div>
   )
 }
+

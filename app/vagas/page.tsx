@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useState, useEffect, useCallback } from "react"
 import Link from "next/link"
@@ -193,7 +193,7 @@ export default function VagasPage() {
     return text.substring(0, maxLength) + "..."
   }
 
-  if (authLoading || loading) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-[#F2E6D8]/30 flex items-center justify-center">
         <div className="text-center">
@@ -234,34 +234,14 @@ export default function VagasPage() {
           </nav>
 
           <div className="flex items-center gap-3">
-            {user ? (
-              <>
-                {user.user_type === "empresa" && (
-                  <Link href="/dashboard/empresa/vagas/criar">
-                    <Button className="bg-[#1E1D40] hover:bg-[#1E1D40]/90 text-white">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Criar Vaga
-                    </Button>
-                  </Link>
-                )}
-                <Link href={`/dashboard/${user.user_type === 'nutricionista' ? 'nutricionistas' : user.user_type}`}>
-                  <Button variant="ghost" className="text-[#1E1D40] hover:text-[#4AB0D9]">
-                    Dashboard
-                  </Button>
-                </Link>
-              </>
-            ) : (
-              <>
-                <Link href="/login">
-                  <Button variant="ghost" className="hidden md:flex text-[#1E1D40] hover:text-[#4AB0D9]">
-                    Entrar
-                  </Button>
-                </Link>
-                <Link href="/cadastro">
-                  <Button className="bg-[#4AB0D9] hover:bg-[#4AB0D9]/90 text-white">Cadastrar</Button>
-                </Link>
-              </>
-            )}
+            <Link href="/login">
+              <Button variant="ghost" className="hidden md:flex text-[#1E1D40] hover:text-[#4AB0D9]">
+                Entrar
+              </Button>
+            </Link>
+            <Link href="/cadastro">
+              <Button className="bg-[#4AB0D9] hover:bg-[#4AB0D9]/90 text-white">Cadastrar</Button>
+            </Link>
           </div>
         </div>
       </header>
@@ -278,18 +258,10 @@ export default function VagasPage() {
           </Link>
           <h1 className="text-3xl md:text-4xl font-bold text-[#1E1D40] mb-2">Oportunidades de Emprego</h1>
           <p className="text-lg text-[#1E1D40]/70 mb-2">Encontre a vaga ideal para sua carreira em nutrição</p>
-          {!user && (
-            <div className="flex items-center gap-2 text-sm text-orange-600">
-              <span>⚠️</span>
-              <span>Faça login para ver salários e nomes das empresas</span>
-            </div>
-          )}
-          {user && user.user_type === "paciente" && (
-            <div className="flex items-center gap-2 text-sm text-orange-600">
-              <span>⚠️</span>
-              <span>Você não pode se candidatar às vagas</span>
-            </div>
-          )}
+          <div className="flex items-center gap-2 text-sm text-orange-600">
+            <span>!</span>
+                <span>Faça login para ver salários e nomes das empresas</span>
+          </div>
         </div>
 
         {/* Search and Filters */}
@@ -387,7 +359,7 @@ export default function VagasPage() {
                       <span className="line-clamp-2">{job.title}</span>
                     </CardTitle>
                     <p className="text-sm text-orange-600 font-medium truncate">
-                      🏢 {user ? (job.company_profiles?.company_name ?? "Empresa não informada") : "Empresa confidencial"}
+                      {job.company_profiles?.company_name ?? "Empresa confidencial"}
                     </p>
                   </div>
                 </CardHeader>
@@ -403,15 +375,7 @@ export default function VagasPage() {
                       </div>
                       <div className="flex items-center gap-2">
                         <DollarSign className="h-4 w-4 text-[#1E1D40]/70 flex-shrink-0" />
-                        {user ? (
-                          <span className="text-[#1E1D40]/70 text-xs">
-                            {job.salary_min && job.salary_max
-                              ? `R$ ${job.salary_min.toLocaleString()} - R$ ${job.salary_max.toLocaleString()}`
-                              : "Salário a combinar"}
-                          </span>
-                        ) : (
-                          <span className="text-orange-600 font-medium text-xs">Faça login para ver</span>
-                        )}
+                        <span className="text-orange-600 font-medium text-xs">Faça login para ver</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Briefcase className="h-4 w-4 text-[#1E1D40]/70 flex-shrink-0" />
@@ -462,45 +426,12 @@ export default function VagasPage() {
                     >
                       Ver Detalhes
                     </Button>
-                    
-                    {/* Botões condicionais baseados no tipo de usuário */}
-                    {!user && (
-                      <Button
-                        className="w-full bg-[#1E1D40] hover:bg-[#1E1D40]/90 text-white text-sm h-9"
-                        onClick={() => window.location.href = '/login'}
-                      >
-                        Entrar para Candidatar
-                      </Button>
-                    )}
-                    
-                    {user && user.user_type === "nutricionista" && (
-                      <Button
-                        className="w-full bg-[#1E1D40] hover:bg-[#1E1D40]/90 text-white text-sm h-9"
-                        onClick={() => handleApply(job.id)}
-                      >
-                        Candidatar-se
-                      </Button>
-                    )}
-                    
-                    {user && user.user_type === "paciente" && (
-                      <Button
-                        variant="outline"
-                        className="w-full text-sm h-9 bg-gray-100 border-gray-300 text-gray-500 cursor-not-allowed"
-                        disabled
-                      >
-                        Não pode se candidatar
-                      </Button>
-                    )}
-                    
-                    {user && user.user_type === "empresa" && (
-                      <Button
-                        variant="outline"
-                        className="w-full text-sm h-9 bg-gray-100 border-gray-300 text-gray-500 cursor-not-allowed"
-                        disabled
-                      >
-                        Empresas não podem se candidatar
-                      </Button>
-                    )}
+                    <Button
+                      className="w-full bg-[#1E1D40] hover:bg-[#1E1D40]/90 text-white text-sm h-9"
+                      onClick={() => handleApply(job.id)}
+                    >
+                      Entrar para Candidatar
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
@@ -536,3 +467,4 @@ export default function VagasPage() {
     </div>
   )
 }
+

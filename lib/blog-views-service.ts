@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { supabase } from "./supabase";
 
 export interface BlogPostViewStats {
   totalViews: number;
@@ -17,7 +17,7 @@ export class BlogViewsService {
     userAgent?: string
   ): Promise<BlogPostViewStats> {
     try {
-      const { data, error } = await supabase.rpc('increment_blog_post_views', {
+      const { data, error } = await supabase.rpc("increment_blog_post_views", {
         post_id: blogPostId,
         viewer_user_id: viewerId || null,
         viewer_ip_address: viewerIp || null,
@@ -25,7 +25,7 @@ export class BlogViewsService {
       });
 
       if (error) {
-        console.error('Erro ao registrar visualização do blog post:', error);
+        console.error("Erro ao registrar visualização do blog post:", error);
         throw error;
       }
 
@@ -35,7 +35,7 @@ export class BlogViewsService {
         lastViewAt: data.last_view_at || null
       };
     } catch (error) {
-      console.error('Erro ao registrar visualização do blog post:', error);
+      console.error("Erro ao registrar visualização do blog post:", error);
       throw error;
     }
   }
@@ -46,12 +46,12 @@ export class BlogViewsService {
   static async getViewStats(blogPostId: string): Promise<BlogPostViewStats> {
     try {
       const { data, error } = await supabase
-        .from('blog_post_views')
-        .select('*')
-        .eq('blog_post_id', blogPostId);
+        .from("blog_post_views")
+        .select("*")
+        .eq("blog_post_id", blogPostId);
 
       if (error) {
-        console.error('Erro ao obter estatísticas de visualização:', error);
+        console.error("Erro ao obter estatísticas de visualização:", error);
         throw error;
       }
 
@@ -67,7 +67,7 @@ export class BlogViewsService {
         lastViewAt
       };
     } catch (error) {
-      console.error('Erro ao obter estatísticas de visualização:', error);
+      console.error("Erro ao obter estatísticas de visualização:", error);
       return {
         totalViews: 0,
         uniqueViews: 0,
@@ -82,12 +82,12 @@ export class BlogViewsService {
   static async getBulkViewStats(blogPostIds: string[]): Promise<Record<string, BlogPostViewStats>> {
     try {
       const { data, error } = await supabase
-        .from('blog_post_views')
-        .select('blog_post_id, viewer_id, created_at')
-        .in('blog_post_id', blogPostIds);
+        .from("blog_post_views")
+        .select("blog_post_id, viewer_id, created_at")
+        .in("blog_post_id", blogPostIds);
 
       if (error) {
-        console.error('Erro ao obter estatísticas em lote:', error);
+        console.error("Erro ao obter estatísticas em lote:", error);
         throw error;
       }
 
@@ -129,7 +129,7 @@ export class BlogViewsService {
 
       return stats;
     } catch (error) {
-      console.error('Erro ao obter estatísticas em lote:', error);
+      console.error("Erro ao obter estatísticas em lote:", error);
       return {};
     }
   }

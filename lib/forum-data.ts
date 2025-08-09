@@ -89,7 +89,7 @@ function convertSupabaseToForumQuestion(data: any): ForumQuestion {
       isVerified: true,
       specialties: answer.author_profile?.specialties || []
     },
-    timestamp: new Date(answer.created_at).toLocaleString('pt-BR'),
+    timestamp: new Date(answer.created_at).toLocaleString("pt-BR"),
     likes: answer.likes_count || 0,
     isBestAnswer: answer.is_best_answer || false
   }))
@@ -99,7 +99,7 @@ function convertSupabaseToForumQuestion(data: any): ForumQuestion {
     title: data.title,
     content: data.content,
     author,
-    timestamp: new Date(data.created_at).toLocaleString('pt-BR'),
+    timestamp: new Date(data.created_at).toLocaleString("pt-BR"),
     likes: data.likes_count || 0,
     repliesCount: data.answers_count || 0,
     views: data.views_count || 0,
@@ -129,7 +129,7 @@ export async function getAllForumQuestions(): Promise<ForumQuestion[]> {
   try {
     // Buscar perguntas de pacientes com JOIN para pegar os dados do perfil
     const { data: questionsData, error: questionsError } = await supabase
-      .from('forum_questions')
+      .from("forum_questions")
       .select(`
         *,
         patient_profiles!forum_questions_patient_id_fkey(
@@ -137,11 +137,11 @@ export async function getAllForumQuestions(): Promise<ForumQuestion[]> {
           profile_image_url
         )
       `)
-      .not('patient_id', 'is', null)
-      .order('created_at', { ascending: false })
+      .not("patient_id", "is", null)
+      .order("created_at", { ascending: false })
 
     if (questionsError) {
-      console.error('❌ Erro ao buscar perguntas do fórum:', questionsError)
+      console.error("❌ Erro ao buscar perguntas do fórum:", questionsError)
       return []
     }
 
@@ -164,7 +164,7 @@ export async function getAllForumQuestions(): Promise<ForumQuestion[]> {
         title: data.title,
         content: data.content,
         author,
-        timestamp: new Date(data.created_at).toLocaleString('pt-BR'),
+        timestamp: new Date(data.created_at).toLocaleString("pt-BR"),
         likes: data.likes_count || 0,
         repliesCount: data.answers_count || 0,
         views: data.views_count || 0,
@@ -185,7 +185,7 @@ export async function getAllForumQuestions(): Promise<ForumQuestion[]> {
 
     return questionsWithBadges
   } catch (error) {
-    console.error('❌ Erro em getAllForumQuestions:', error)
+    console.error("❌ Erro em getAllForumQuestions:", error)
     return []
   }
 }
@@ -204,7 +204,7 @@ export async function getAllForumQuestionsWithNutritionists(): Promise<ForumQues
 
     return allQuestions
   } catch (error) {
-    console.error('❌ Erro em getAllForumQuestionsWithNutritionists:', error)
+    console.error("❌ Erro em getAllForumQuestionsWithNutritionists:", error)
     return []
   }
 }
@@ -214,7 +214,7 @@ export async function getNutritionistForumQuestions(): Promise<ForumQuestion[]> 
   try {
     // Buscar perguntas de nutricionistas com JOIN
     const { data: questionsData, error: questionsError } = await supabase
-      .from('forum_questions')
+      .from("forum_questions")
       .select(`
         *,
         nutritionist_profiles!forum_questions_nutritionist_id_fkey(
@@ -224,11 +224,11 @@ export async function getNutritionistForumQuestions(): Promise<ForumQuestion[]> 
           specialties
         )
       `)
-      .not('nutritionist_id', 'is', null)
-      .order('created_at', { ascending: false })
+      .not("nutritionist_id", "is", null)
+      .order("created_at", { ascending: false })
 
     if (questionsError) {
-      console.error('❌ Erro ao buscar perguntas de nutricionistas:', questionsError)
+      console.error("❌ Erro ao buscar perguntas de nutricionistas:", questionsError)
       return []
     }
 
@@ -254,7 +254,7 @@ export async function getNutritionistForumQuestions(): Promise<ForumQuestion[]> 
         title: data.title,
         content: data.content,
         author,
-        timestamp: new Date(data.created_at).toLocaleString('pt-BR'),
+        timestamp: new Date(data.created_at).toLocaleString("pt-BR"),
         likes: data.likes_count || 0,
         repliesCount: data.answers_count || 0,
         views: data.views_count || 0,
@@ -275,7 +275,7 @@ export async function getNutritionistForumQuestions(): Promise<ForumQuestion[]> 
 
     return questionsWithBadges
   } catch (error) {
-    console.error('❌ Erro em getNutritionistForumQuestions:', error)
+    console.error("❌ Erro em getNutritionistForumQuestions:", error)
     return []
   }
 }
@@ -285,7 +285,7 @@ export async function getForumQuestionById(id: string): Promise<ForumQuestion | 
   try {
     // Buscar a pergunta com JOINs
     const { data: questionData, error: questionError } = await supabase
-      .from('forum_questions')
+      .from("forum_questions")
       .select(`
         *,
         patient_profiles!forum_questions_patient_id_fkey(
@@ -299,11 +299,11 @@ export async function getForumQuestionById(id: string): Promise<ForumQuestion | 
           specialties
         )
       `)
-      .eq('id', id)
+      .eq("id", id)
       .single()
 
     if (questionError || !questionData) {
-      console.error('Error fetching forum question:', questionError)
+      console.error("Error fetching forum question:", questionError)
       return null
     }
 
@@ -329,13 +329,13 @@ export async function getForumQuestionById(id: string): Promise<ForumQuestion | 
         specialties: questionData.nutritionist_profiles.specialties || []
       }
     } else {
-      console.error('Pergunta sem autor válido')
+      console.error("Pergunta sem autor válido")
       return null
     }
 
     // Buscar as respostas com JOIN
     const { data: answersData, error: answersError } = await supabase
-      .from('forum_answers')
+      .from("forum_answers")
       .select(`
         *,
         nutritionist_profiles!forum_answers_nutritionist_id_fkey(
@@ -345,11 +345,11 @@ export async function getForumQuestionById(id: string): Promise<ForumQuestion | 
           specialties
         )
       `)
-      .eq('question_id', id)
-      .order('created_at', { ascending: true })
+      .eq("question_id", id)
+      .order("created_at", { ascending: true })
 
     if (answersError) {
-      console.error('Error fetching forum answers:', answersError)
+      console.error("Error fetching forum answers:", answersError)
     }
 
     const replies: ForumReply[] = (answersData || []).map((answer: any) => {
@@ -367,7 +367,7 @@ export async function getForumQuestionById(id: string): Promise<ForumQuestion | 
           isVerified: true,
           specialties: nutritionistProfile?.specialties || []
         },
-        timestamp: new Date(answer.created_at).toLocaleString('pt-BR'),
+        timestamp: new Date(answer.created_at).toLocaleString("pt-BR"),
         likes: answer.likes_count || 0,
         isBestAnswer: answer.is_best_answer || false
       }
@@ -378,7 +378,7 @@ export async function getForumQuestionById(id: string): Promise<ForumQuestion | 
       title: questionData.title,
       content: questionData.content,
       author,
-      timestamp: new Date(questionData.created_at).toLocaleString('pt-BR'),
+      timestamp: new Date(questionData.created_at).toLocaleString("pt-BR"),
       likes: questionData.likes_count || 0,
       repliesCount: questionData.answers_count || 0,
       views: questionData.views_count || 0,
@@ -399,7 +399,7 @@ export async function getForumQuestionById(id: string): Promise<ForumQuestion | 
 
     return { ...question, author: authorWithBadges, replies: repliesWithBadges }
   } catch (error) {
-    console.error('Error in getForumQuestionById:', error)
+    console.error("Error in getForumQuestionById:", error)
     return null
   }
 }
@@ -415,28 +415,28 @@ export async function createForumQuestion(
   try {
     // Primeiro, verificar o tipo de usuário
     const { data: userData, error: userError } = await supabase
-      .from('users')
-      .select('user_type')
-      .eq('id', authorId)
+      .from("users")
+      .select("user_type")
+      .eq("id", authorId)
       .single()
 
     if (userError || !userData) {
-      console.error('Erro ao buscar tipo de usuário:', userError)
+      console.error("Erro ao buscar tipo de usuário:", userError)
       return null
     }
 
     const userType = userData.user_type
 
-    if (userType === 'paciente') {
+    if (userType === "paciente") {
       // Pacientes podem fazer perguntas (para nutricionistas responderem)
       const { data: patientProfile, error: profileError } = await supabase
-        .from('patient_profiles')
-        .select('id, full_name, profile_image_url')
-        .eq('user_id', authorId)
+        .from("patient_profiles")
+        .select("id, full_name, profile_image_url")
+        .eq("user_id", authorId)
         .single()
 
       if (profileError || !patientProfile) {
-        console.error('Erro ao buscar perfil do paciente:', profileError)
+        console.error("Erro ao buscar perfil do paciente:", profileError)
         return null
       }
 
@@ -446,18 +446,18 @@ export async function createForumQuestion(
         content,
         tags,
         author_id: authorId,
-        category: category || tags[0] || 'geral',
+        category: category || tags[0] || "geral",
         patient_id: patientProfile.id
       }
 
       const { data, error } = await supabase
-        .from('forum_questions')
+        .from("forum_questions")
         .insert(insertData)
-        .select('*')
+        .select("*")
         .single()
 
       if (error) {
-        console.error('Erro ao criar pergunta:', error?.message || error)
+        console.error("Erro ao criar pergunta:", error?.message || error)
         return null
       }
 
@@ -474,7 +474,7 @@ export async function createForumQuestion(
           credentials: undefined,
           isVerified: false,
         },
-        timestamp: new Date(data.created_at).toLocaleString('pt-BR'),
+        timestamp: new Date(data.created_at).toLocaleString("pt-BR"),
         likes: data.likes_count || 0,
         repliesCount: data.answers_count || 0,
         views: data.views_count || 0,
@@ -487,17 +487,17 @@ export async function createForumQuestion(
       const authorWithBadges = await addBadgesToAuthor(question.author)
       return { ...question, author: authorWithBadges }
 
-    } else if (userType === 'nutricionista') {
+    } else if (userType === "nutricionista") {
       // Nutricionistas fazem perguntas APENAS para outros nutricionistas
       const { data: nutritionistProfile, error: profileError } = await supabase
-        .from('nutritionist_profiles')
-        .select('id, full_name, profile_image_url, crn, is_verified, specialties')
-        .eq('user_id', authorId)
+        .from("nutritionist_profiles")
+        .select("id, full_name, profile_image_url, crn, is_verified, specialties")
+        .eq("user_id", authorId)
         .single()
 
       if (profileError || !nutritionistProfile) {
-        console.error('Erro ao buscar perfil do nutricionista:', profileError)
-        console.error('Detalhes do erro:', profileError)
+        console.error("Erro ao buscar perfil do nutricionista:", profileError)
+        console.error("Detalhes do erro:", profileError)
         return null
       }
 
@@ -507,18 +507,18 @@ export async function createForumQuestion(
         content,
         tags,
         author_id: authorId,
-        category: category || tags[0] || 'geral',
+        category: category || tags[0] || "geral",
         nutritionist_id: nutritionistProfile.id
       }
 
       const { data, error } = await supabase
-        .from('forum_questions')
+        .from("forum_questions")
         .insert(insertData)
-        .select('*')
+        .select("*")
         .single()
 
       if (error) {
-        console.error('Erro ao criar pergunta:', error?.message || error)
+        console.error("Erro ao criar pergunta:", error?.message || error)
         return null
       }
 
@@ -536,7 +536,7 @@ export async function createForumQuestion(
           isVerified: nutritionistProfile.is_verified || true,
           specialties: nutritionistProfile.specialties || []
         },
-        timestamp: new Date(data.created_at).toLocaleString('pt-BR'),
+        timestamp: new Date(data.created_at).toLocaleString("pt-BR"),
         likes: data.likes_count || 0,
         repliesCount: data.answers_count || 0,
         views: data.views_count || 0,
@@ -550,11 +550,11 @@ export async function createForumQuestion(
       return { ...question, author: authorWithBadges }
 
     } else {
-      console.error('Tipo de usuário não permitido para criar perguntas:', userType)
+      console.error("Tipo de usuário não permitido para criar perguntas:", userType)
       return null
     }
   } catch (error) {
-    console.error('Erro em createForumQuestion:', error instanceof Error ? error.message : error)
+    console.error("Erro em createForumQuestion:", error instanceof Error ? error.message : error)
     return null
   }
 }
@@ -568,33 +568,33 @@ export async function createForumAnswer(
   try {
     // Primeiro, verificar o tipo de usuário
     const { data: userData, error: userError } = await supabase
-      .from('users')
-      .select('user_type')
-      .eq('id', authorId)
+      .from("users")
+      .select("user_type")
+      .eq("id", authorId)
       .single()
 
     if (userError || !userData) {
-      console.error('Erro ao buscar tipo de usuário:', userError)
+      console.error("Erro ao buscar tipo de usuário:", userError)
       return null
     }
 
     const userType = userData.user_type
 
     // RESTRIÇÃO: Apenas nutricionistas podem responder
-    if (userType !== 'nutricionista') {
-      console.error('Apenas nutricionistas podem responder no fórum')
-      throw new Error('Apenas nutricionistas podem responder no fórum')
+    if (userType !== "nutricionista") {
+      console.error("Apenas nutricionistas podem responder no fórum")
+      throw new Error("Apenas nutricionistas podem responder no fórum")
     }
 
     // Buscar o perfil do nutricionista para obter o ID correto
     const { data: nutritionistProfile, error: profileError } = await supabase
-      .from('nutritionist_profiles')
-      .select('id, full_name, profile_image_url, crn, is_verified')
-      .eq('user_id', authorId)
+      .from("nutritionist_profiles")
+      .select("id, full_name, profile_image_url, crn, is_verified")
+      .eq("user_id", authorId)
       .single()
 
     if (profileError || !nutritionistProfile) {
-      console.error('Erro ao buscar perfil do nutricionista:', profileError)
+      console.error("Erro ao buscar perfil do nutricionista:", profileError)
       return null
     }
 
@@ -606,13 +606,13 @@ export async function createForumAnswer(
     }
 
     const { data, error } = await supabase
-      .from('forum_answers')
+      .from("forum_answers")
       .insert(insertData)
-      .select('*')
+      .select("*")
       .single()
 
     if (error) {
-      console.error('Erro ao criar resposta:', error?.message || error)
+      console.error("Erro ao criar resposta:", error?.message || error)
       return null
     }
 
@@ -635,7 +635,7 @@ export async function createForumAnswer(
     const authorWithBadges = await addBadgesToAuthor(reply.author)
     return { ...reply, author: authorWithBadges }
   } catch (error) {
-    console.error('Erro em createForumAnswer:', error instanceof Error ? error.message : error)
+    console.error("Erro em createForumAnswer:", error instanceof Error ? error.message : error)
     return null
   }
 }
@@ -653,9 +653,9 @@ export async function likeForumItem(
     // Verificar se já curtiu
     const { data: existingLike } = await supabase
       .from(tableName)
-      .select('id')
+      .select("id")
       .eq(columnName, itemId)
-      .eq('user_id', userId)
+      .eq("user_id", userId)
       .single()
 
     if (existingLike) {
@@ -664,7 +664,7 @@ export async function likeForumItem(
         .from(tableName)
         .delete()
         .eq(columnName, itemId)
-        .eq('user_id', userId)
+        .eq("user_id", userId)
 
       return !error
     } else {
@@ -679,7 +679,7 @@ export async function likeForumItem(
       return !error
     }
   } catch (error) {
-    console.error('Erro em likeForumItem:', error)
+    console.error("Erro em likeForumItem:", error)
     return false
   }
 }
@@ -687,18 +687,18 @@ export async function likeForumItem(
 // Função para incrementar visualizações
 export async function incrementQuestionViews(questionId: string): Promise<boolean> {
   try {
-    const { error } = await supabase.rpc('increment_question_views', {
+    const { error } = await supabase.rpc("increment_question_views", {
       question_id: questionId
     })
 
     if (error) {
-      console.error('Erro ao incrementar visualizações:', error)
+      console.error("Erro ao incrementar visualizações:", error)
       return false
     }
 
     return true
   } catch (error) {
-    console.error('Erro em incrementQuestionViews:', error)
+    console.error("Erro em incrementQuestionViews:", error)
     return false
   }
 }
@@ -708,38 +708,38 @@ export async function markBestAnswer(questionId: string, answerId: string): Prom
   try {
     // Primeiro, remover qualquer melhor resposta existente
     await supabase
-      .from('forum_answers')
+      .from("forum_answers")
       .update({ is_best_answer: false })
-      .eq('question_id', questionId)
+      .eq("question_id", questionId)
 
     // Marcar a nova melhor resposta
     const { error: answerError } = await supabase
-      .from('forum_answers')
+      .from("forum_answers")
       .update({ is_best_answer: true })
-      .eq('id', answerId)
+      .eq("id", answerId)
 
     if (answerError) {
-      console.error('Erro ao marcar melhor resposta:', answerError)
+      console.error("Erro ao marcar melhor resposta:", answerError)
       return false
     }
 
     // Atualizar a pergunta
     const { error: questionError } = await supabase
-      .from('forum_questions')
+      .from("forum_questions")
       .update({ 
         best_answer_id: answerId,
         is_resolved: true 
       })
-      .eq('id', questionId)
+      .eq("id", questionId)
 
     if (questionError) {
-      console.error('Erro ao atualizar pergunta:', questionError)
+      console.error("Erro ao atualizar pergunta:", questionError)
       return false
     }
 
     return true
   } catch (error) {
-    console.error('Erro em markBestAnswer:', error)
+    console.error("Erro em markBestAnswer:", error)
     return false
   }
 }
@@ -756,41 +756,41 @@ export async function updateForumQuestion(
   try {
     // Verificar se o usuário é o autor da pergunta
     const { data: question, error: checkError } = await supabase
-      .from('forum_questions')
-      .select('author_id')
-      .eq('id', questionId)
+      .from("forum_questions")
+      .select("author_id")
+      .eq("id", questionId)
       .single()
 
     if (checkError || !question) {
-      console.error('Erro ao verificar autoria da pergunta:', checkError)
+      console.error("Erro ao verificar autoria da pergunta:", checkError)
       return false
     }
 
     if (question.author_id !== userId) {
-      console.error('Usuário não autorizado a editar esta pergunta')
+      console.error("Usuário não autorizado a editar esta pergunta")
       return false
     }
 
     // Atualizar a pergunta
     const { error } = await supabase
-      .from('forum_questions')
+      .from("forum_questions")
       .update({
         title: title.trim(),
         content: content.trim(),
         tags,
-        category: category || tags[0] || 'geral',
+        category: category || tags[0] || "geral",
         updated_at: new Date().toISOString()
       })
-      .eq('id', questionId)
+      .eq("id", questionId)
 
     if (error) {
-      console.error('Erro ao atualizar pergunta:', error)
+      console.error("Erro ao atualizar pergunta:", error)
       return false
     }
 
     return true
   } catch (error) {
-    console.error('Erro em updateForumQuestion:', error)
+    console.error("Erro em updateForumQuestion:", error)
     return false
   }
 }
@@ -800,35 +800,35 @@ export async function deleteForumQuestion(questionId: string, userId: string): P
   try {
     // Verificar se o usuário é o autor da pergunta
     const { data: question, error: checkError } = await supabase
-      .from('forum_questions')
-      .select('author_id')
-      .eq('id', questionId)
+      .from("forum_questions")
+      .select("author_id")
+      .eq("id", questionId)
       .single()
 
     if (checkError || !question) {
-      console.error('Erro ao verificar autoria da pergunta:', checkError)
+      console.error("Erro ao verificar autoria da pergunta:", checkError)
       return false
     }
 
     if (question.author_id !== userId) {
-      console.error('Usuário não autorizado a deletar esta pergunta')
+      console.error("Usuário não autorizado a deletar esta pergunta")
       return false
     }
 
     // Deletar a pergunta (as respostas serão deletadas automaticamente por CASCADE)
     const { error } = await supabase
-      .from('forum_questions')
+      .from("forum_questions")
       .delete()
-      .eq('id', questionId)
+      .eq("id", questionId)
 
     if (error) {
-      console.error('Erro ao deletar pergunta:', error)
+      console.error("Erro ao deletar pergunta:", error)
       return false
     }
 
     return true
   } catch (error) {
-    console.error('Erro em deleteForumQuestion:', error)
+    console.error("Erro em deleteForumQuestion:", error)
     return false
   }
 }
@@ -842,38 +842,38 @@ export async function updateForumAnswer(
   try {
     // Verificar se o usuário é o autor da resposta
     const { data: answer, error: checkError } = await supabase
-      .from('forum_answers')
-      .select('author_id')
-      .eq('id', answerId)
+      .from("forum_answers")
+      .select("author_id")
+      .eq("id", answerId)
       .single()
 
     if (checkError || !answer) {
-      console.error('Erro ao verificar autoria da resposta:', checkError)
+      console.error("Erro ao verificar autoria da resposta:", checkError)
       return false
     }
 
     if (answer.author_id !== userId) {
-      console.error('Usuário não autorizado a editar esta resposta')
+      console.error("Usuário não autorizado a editar esta resposta")
       return false
     }
 
     // Atualizar a resposta
     const { error } = await supabase
-      .from('forum_answers')
+      .from("forum_answers")
       .update({
         content: content.trim(),
         updated_at: new Date().toISOString()
       })
-      .eq('id', answerId)
+      .eq("id", answerId)
 
     if (error) {
-      console.error('Erro ao atualizar resposta:', error)
+      console.error("Erro ao atualizar resposta:", error)
       return false
     }
 
     return true
   } catch (error) {
-    console.error('Erro em updateForumAnswer:', error)
+    console.error("Erro em updateForumAnswer:", error)
     return false
   }
 }
@@ -883,35 +883,35 @@ export async function deleteForumAnswer(answerId: string, userId: string): Promi
   try {
     // Verificar se o usuário é o autor da resposta
     const { data: answer, error: checkError } = await supabase
-      .from('forum_answers')
-      .select('author_id')
-      .eq('id', answerId)
+      .from("forum_answers")
+      .select("author_id")
+      .eq("id", answerId)
       .single()
 
     if (checkError || !answer) {
-      console.error('Erro ao verificar autoria da resposta:', checkError)
+      console.error("Erro ao verificar autoria da resposta:", checkError)
       return false
     }
 
     if (answer.author_id !== userId) {
-      console.error('Usuário não autorizado a deletar esta resposta')
+      console.error("Usuário não autorizado a deletar esta resposta")
       return false
     }
 
     // Deletar a resposta
     const { error } = await supabase
-      .from('forum_answers')
+      .from("forum_answers")
       .delete()
-      .eq('id', answerId)
+      .eq("id", answerId)
 
     if (error) {
-      console.error('Erro ao deletar resposta:', error)
+      console.error("Erro ao deletar resposta:", error)
       return false
     }
 
     return true
   } catch (error) {
-    console.error('Erro em deleteForumAnswer:', error)
+    console.error("Erro em deleteForumAnswer:", error)
     return false
   }
 }
@@ -923,7 +923,7 @@ export async function cleanupForumData(): Promise<{
   deletedLikes: number;
 }> {
   try {
-    console.log('🧹 Iniciando limpeza de dados não persistidos do fórum...')
+    console.log("🧹 Iniciando limpeza de dados não persistidos do fórum...")
 
     let deletedQuestions = 0
     let deletedAnswers = 0
@@ -931,24 +931,24 @@ export async function cleanupForumData(): Promise<{
 
     // 1. Remover perguntas órfãs (sem autor válido)
     const { data: orphanQuestions } = await supabase
-      .from('forum_questions')
-      .select('id, author_id')
-      .not('author_id', 'is', null)
+      .from("forum_questions")
+      .select("id, author_id")
+      .not("author_id", "is", null)
 
     if (orphanQuestions) {
       for (const question of orphanQuestions) {
         // Verificar se o usuário ainda existe
         const { data: user } = await supabase
-          .from('users')
-          .select('id')
-          .eq('id', question.author_id)
+          .from("users")
+          .select("id")
+          .eq("id", question.author_id)
           .single()
 
         if (!user) {
           const { error } = await supabase
-            .from('forum_questions')
+            .from("forum_questions")
             .delete()
-            .eq('id', question.id)
+            .eq("id", question.id)
 
           if (!error) {
             deletedQuestions++
@@ -960,9 +960,9 @@ export async function cleanupForumData(): Promise<{
 
     // 2. Remover respostas órfãs (sem autor válido ou pergunta válida)
     const { data: orphanAnswers } = await supabase
-      .from('forum_answers')
-      .select('id, author_id, question_id')
-      .not('author_id', 'is', null)
+      .from("forum_answers")
+      .select("id, author_id, question_id")
+      .not("author_id", "is", null)
 
     if (orphanAnswers) {
       for (const answer of orphanAnswers) {
@@ -970,9 +970,9 @@ export async function cleanupForumData(): Promise<{
 
         // Verificar se o usuário ainda existe
         const { data: user } = await supabase
-          .from('users')
-          .select('id')
-          .eq('id', answer.author_id)
+          .from("users")
+          .select("id")
+          .eq("id", answer.author_id)
           .single()
 
         if (!user) {
@@ -980,9 +980,9 @@ export async function cleanupForumData(): Promise<{
         } else {
           // Verificar se a pergunta ainda existe
           const { data: question } = await supabase
-            .from('forum_questions')
-            .select('id')
-            .eq('id', answer.question_id)
+            .from("forum_questions")
+            .select("id")
+            .eq("id", answer.question_id)
             .single()
 
           if (!question) {
@@ -992,9 +992,9 @@ export async function cleanupForumData(): Promise<{
 
         if (shouldDelete) {
           const { error } = await supabase
-            .from('forum_answers')
+            .from("forum_answers")
             .delete()
-            .eq('id', answer.id)
+            .eq("id", answer.id)
 
           if (!error) {
             deletedAnswers++
@@ -1006,8 +1006,8 @@ export async function cleanupForumData(): Promise<{
 
     // 3. Remover likes órfãos (de perguntas ou respostas que não existem mais)
     const { data: orphanQuestionLikes } = await supabase
-      .from('forum_question_likes')
-      .select('id, question_id, user_id')
+      .from("forum_question_likes")
+      .select("id, question_id, user_id")
 
     if (orphanQuestionLikes) {
       for (const like of orphanQuestionLikes) {
@@ -1015,9 +1015,9 @@ export async function cleanupForumData(): Promise<{
 
         // Verificar se a pergunta ainda existe
         const { data: question } = await supabase
-          .from('forum_questions')
-          .select('id')
-          .eq('id', like.question_id)
+          .from("forum_questions")
+          .select("id")
+          .eq("id", like.question_id)
           .single()
 
         if (!question) {
@@ -1025,9 +1025,9 @@ export async function cleanupForumData(): Promise<{
         } else {
           // Verificar se o usuário ainda existe
           const { data: user } = await supabase
-            .from('users')
-            .select('id')
-            .eq('id', like.user_id)
+            .from("users")
+            .select("id")
+            .eq("id", like.user_id)
             .single()
 
           if (!user) {
@@ -1037,9 +1037,9 @@ export async function cleanupForumData(): Promise<{
 
         if (shouldDelete) {
           const { error } = await supabase
-            .from('forum_question_likes')
+            .from("forum_question_likes")
             .delete()
-            .eq('id', like.id)
+            .eq("id", like.id)
 
           if (!error) {
             deletedLikes++
@@ -1050,8 +1050,8 @@ export async function cleanupForumData(): Promise<{
     }
 
     const { data: orphanAnswerLikes } = await supabase
-      .from('forum_answer_likes')
-      .select('id, answer_id, user_id')
+      .from("forum_answer_likes")
+      .select("id, answer_id, user_id")
 
     if (orphanAnswerLikes) {
       for (const like of orphanAnswerLikes) {
@@ -1059,9 +1059,9 @@ export async function cleanupForumData(): Promise<{
 
         // Verificar se a resposta ainda existe
         const { data: answer } = await supabase
-          .from('forum_answers')
-          .select('id')
-          .eq('id', like.answer_id)
+          .from("forum_answers")
+          .select("id")
+          .eq("id", like.answer_id)
           .single()
 
         if (!answer) {
@@ -1069,9 +1069,9 @@ export async function cleanupForumData(): Promise<{
         } else {
           // Verificar se o usuário ainda existe
           const { data: user } = await supabase
-            .from('users')
-            .select('id')
-            .eq('id', like.user_id)
+            .from("users")
+            .select("id")
+            .eq("id", like.user_id)
             .single()
 
           if (!user) {
@@ -1081,9 +1081,9 @@ export async function cleanupForumData(): Promise<{
 
         if (shouldDelete) {
           const { error } = await supabase
-            .from('forum_answer_likes')
+            .from("forum_answer_likes")
             .delete()
-            .eq('id', like.id)
+            .eq("id", like.id)
 
           if (!error) {
             deletedLikes++
@@ -1101,7 +1101,7 @@ export async function cleanupForumData(): Promise<{
       deletedLikes
     }
   } catch (error) {
-    console.error('❌ Erro na limpeza de dados do fórum:', error)
+    console.error("❌ Erro na limpeza de dados do fórum:", error)
     throw error
   }
 }

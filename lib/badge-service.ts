@@ -93,7 +93,7 @@ export async function getNutritionistBadges(nutritionistId: string): Promise<Nut
     
     if (error) {
       // Se o erro for relacionado a tabelas não encontradas, retornar array vazio silenciosamente
-      if (error.code === 'PGRST200' || error.message.includes('relationship') || error.message.includes('not found')) {
+      if (error.code === "PGRST200" || error.message.includes("relationship") || error.message.includes("not found")) {
         console.warn("⚠️ Tabelas de badges não configuradas ainda. Execute o setup das tabelas.");
         return [];
       }

@@ -1,5 +1,5 @@
-import { createSupabaseClient } from './supabase'
-import { createClient } from '@supabase/supabase-js'
+import { createSupabaseClient } from "./supabase"
+import { createClient } from "@supabase/supabase-js"
 
 export interface UploadResult {
   success: boolean
@@ -22,61 +22,61 @@ export async function uploadBlogImage(file: File, userId: string): Promise<Uploa
     const { data: { session }, error: sessionError } = await supabase.auth.getSession()
     
     if (sessionError) {
-      console.error('Erro ao obter sessão:', sessionError)
+      console.error("Erro ao obter sessão:", sessionError)
       return {
         success: false,
-        error: 'Erro de autenticação. Faça login novamente.'
+        error: "Erro de autenticação. Faça login novamente."
       }
     }
     
     if (!session || !session.access_token) {
-      console.error('Usuário não autenticado ou token ausente')
+      console.error("Usuário não autenticado ou token ausente")
       return {
         success: false,
-        error: 'Usuário não autenticado. Faça login para fazer upload de imagens.'
+        error: "Usuário não autenticado. Faça login para fazer upload de imagens."
       }
     }
 
     // Verificar se o userId passado corresponde ao usuário autenticado
     if (session.user.id !== userId) {
-      console.error('UserId não corresponde ao usuário autenticado:', {
+      console.error("UserId não corresponde ao usuário autenticado:", {
         sessionUserId: session.user.id,
         providedUserId: userId
       })
       return {
         success: false,
-        error: 'Erro de autorização. O usuário não pode fazer upload para esta pasta.'
+        error: "Erro de autorização. O usuário não pode fazer upload para esta pasta."
       }
     }
 
-    console.log('Usuário autenticado:', userId)
-    console.log('Sessão encontrada, access_token length:', session.access_token?.length || 0)
+    console.log("Usuário autenticado:", userId)
+    console.log("Sessão encontrada, access_token length:", session.access_token?.length || 0)
 
     // Criar FormData para enviar para a API
     const formData = new FormData()
-    formData.append('file', file)
-    formData.append('userId', userId)
-    formData.append('accessToken', session.access_token)
+    formData.append("file", file)
+    formData.append("userId", userId)
+    formData.append("accessToken", session.access_token)
 
-    console.log('Enviando arquivo para API de upload:', file.name)
+    console.log("Enviando arquivo para API de upload:", file.name)
 
     // Fazer upload através da API route
-    const response = await fetch('/api/upload-blog-image', {
-      method: 'POST',
+    const response = await fetch("/api/upload-blog-image", {
+      method: "POST",
       body: formData
     })
 
     const result = await response.json()
 
     if (!response.ok || !result.success) {
-      console.error('Erro na API de upload:', result.error)
+      console.error("Erro na API de upload:", result.error)
       return {
         success: false,
-        error: result.error || 'Erro no upload da imagem'
+        error: result.error || "Erro no upload da imagem"
       }
     }
 
-    console.log('Upload realizado com sucesso:', result.url)
+    console.log("Upload realizado com sucesso:", result.url)
 
     return {
       success: true,
@@ -84,10 +84,10 @@ export async function uploadBlogImage(file: File, userId: string): Promise<Uploa
     }
 
   } catch (error) {
-    console.error('Erro no upload:', error)
+    console.error("Erro no upload:", error)
     return {
       success: false,
-      error: 'Erro inesperado ao fazer upload da imagem.'
+      error: "Erro inesperado ao fazer upload da imagem."
     }
   }
 }
@@ -107,30 +107,30 @@ export async function deleteBlogImage(imageUrl: string, userId: string): Promise
     const { data: { session }, error: sessionError } = await supabase.auth.getSession()
     
     if (sessionError) {
-      console.error('Erro ao obter sessão:', sessionError)
+      console.error("Erro ao obter sessão:", sessionError)
       return {
         success: false,
-        error: 'Erro de autenticação. Faça login novamente.'
+        error: "Erro de autenticação. Faça login novamente."
       }
     }
     
     if (!session || !session.access_token) {
-      console.error('Usuário não autenticado ou token ausente')
+      console.error("Usuário não autenticado ou token ausente")
       return {
         success: false,
-        error: 'Usuário não autenticado. Faça login para excluir imagens.'
+        error: "Usuário não autenticado. Faça login para excluir imagens."
       }
     }
 
     // Verificar se o userId passado corresponde ao usuário autenticado
     if (session.user.id !== userId) {
-      console.error('UserId não corresponde ao usuário autenticado:', {
+      console.error("UserId não corresponde ao usuário autenticado:", {
         sessionUserId: session.user.id,
         providedUserId: userId
       })
       return {
         success: false,
-        error: 'Erro de autorização. O usuário não pode excluir esta imagem.'
+        error: "Erro de autorização. O usuário não pode excluir esta imagem."
       }
     }
 
@@ -147,20 +147,20 @@ export async function deleteBlogImage(imageUrl: string, userId: string): Promise
     )
     
     // Extrair o nome do arquivo da URL
-    const urlParts = imageUrl.split('/')
+    const urlParts = imageUrl.split("/")
     const fileName = urlParts[urlParts.length - 1]
     const filePath = `${userId}/${fileName}`
 
     // Excluir o arquivo do Supabase Storage usando service role
     const { error } = await serviceSupabase.storage
-      .from('blog-images')
+      .from("blog-images")
       .remove([filePath])
 
     if (error) {
-      console.error('Erro ao deletar imagem:', error)
+      console.error("Erro ao deletar imagem:", error)
       return {
         success: false,
-        error: 'Erro ao deletar a imagem.'
+        error: "Erro ao deletar a imagem."
       }
     }
 
@@ -169,10 +169,10 @@ export async function deleteBlogImage(imageUrl: string, userId: string): Promise
     }
 
   } catch (error) {
-    console.error('Erro ao deletar imagem:', error)
+    console.error("Erro ao deletar imagem:", error)
     return {
       success: false,
-      error: 'Erro inesperado ao deletar a imagem.'
+      error: "Erro inesperado ao deletar a imagem."
     }
   }
 }
@@ -191,30 +191,30 @@ export async function listUserBlogImages(userId: string): Promise<{ success: boo
     const { data: { session }, error: sessionError } = await supabase.auth.getSession()
     
     if (sessionError) {
-      console.error('Erro ao obter sessão:', sessionError)
+      console.error("Erro ao obter sessão:", sessionError)
       return {
         success: false,
-        error: 'Erro de autenticação. Faça login novamente.'
+        error: "Erro de autenticação. Faça login novamente."
       }
     }
     
     if (!session || !session.access_token) {
-      console.error('Usuário não autenticado ou token ausente')
+      console.error("Usuário não autenticado ou token ausente")
       return {
         success: false,
-        error: 'Usuário não autenticado. Faça login para listar imagens.'
+        error: "Usuário não autenticado. Faça login para listar imagens."
       }
     }
 
     // Verificar se o userId passado corresponde ao usuário autenticado
     if (session.user.id !== userId) {
-      console.error('UserId não corresponde ao usuário autenticado:', {
+      console.error("UserId não corresponde ao usuário autenticado:", {
         sessionUserId: session.user.id,
         providedUserId: userId
       })
       return {
         success: false,
-        error: 'Erro de autorização. O usuário não pode listar estas imagens.'
+        error: "Erro de autorização. O usuário não pode listar estas imagens."
       }
     }
 
@@ -232,24 +232,24 @@ export async function listUserBlogImages(userId: string): Promise<{ success: boo
 
     // Listar arquivos do usuário usando service role
     const { data, error } = await serviceSupabase.storage
-      .from('blog-images')
+      .from("blog-images")
       .list(userId, {
         limit: 100,
-        sortBy: { column: 'created_at', order: 'desc' }
+        sortBy: { column: "created_at", order: "desc" }
       })
 
     if (error) {
-      console.error('Erro ao listar imagens:', error)
+      console.error("Erro ao listar imagens:", error)
       return {
         success: false,
-        error: 'Erro ao listar imagens.'
+        error: "Erro ao listar imagens."
       }
     }
 
     // Converter para URLs públicas
     const imageUrls = data.map(file => {
       const { data: urlData } = serviceSupabase.storage
-        .from('blog-images')
+        .from("blog-images")
         .getPublicUrl(`${userId}/${file.name}`)
       return urlData.publicUrl
     })
@@ -260,10 +260,10 @@ export async function listUserBlogImages(userId: string): Promise<{ success: boo
     }
 
   } catch (error) {
-    console.error('Erro ao listar imagens:', error)
+    console.error("Erro ao listar imagens:", error)
     return {
       success: false,
-      error: 'Erro inesperado ao listar imagens.'
+      error: "Erro inesperado ao listar imagens."
     }
   }
 }

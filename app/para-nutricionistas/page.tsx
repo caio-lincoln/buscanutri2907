@@ -4,7 +4,7 @@ import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Users, Calendar, TrendingUp, Shield, Zap, Award, ArrowRight, CheckCircle } from "lucide-react"
+import { Users, Calendar, TrendingUp, Shield, Zap, Award, ArrowRight, CheckCircle, Briefcase } from "lucide-react"
 
 export const metadata: Metadata = {
   title: "Para Nutricionistas - Busca Nutri",
@@ -49,6 +49,12 @@ const benefits = [
     description: "Sistema de avaliações e badges que destacam sua expertise e qualidade de atendimento.",
     stats: "Top rated",
   },
+  {
+    icon: Briefcase,
+    title: "Oportunidades em UAN",
+    description: "Desenvolva sua carreira em UAN e encontre oportunidades de consultoria, treinamento e assessoria em nutrição para empresas e organizações.",
+    stats: "Empresas parceiras",
+  },
 ]
 
 const plans = [
@@ -67,15 +73,24 @@ const plans = [
   },
   {
     name: "Profissional",
-    price: "R$ 49/mês",
+    price: "R$ 24,90/mês",
+    priceOptions: "R$ 137,90/semestre • R$ 264,90/ano",
     description: "Para nutricionistas ativos",
     features: [
+      "Perfil profissional",
       "Pacientes ilimitados",
       "Consultas por vídeo",
       "Relatórios avançados",
       "Prontuário digital",
       "Suporte prioritário",
       "Selo de verificação",
+      "Gerenciamento de agenda",
+      "Visibilidade e marketing",
+      "Acesso a vagas de emprego",
+      "Compartilhamento de conhecimento",
+      "Oportunidades de consultoria",
+      "Comunidade de nutricionistas",
+      "Gerenciamento de consultas",
     ],
     popular: true,
   },
@@ -167,8 +182,7 @@ export default function ParaNutricionistasPage() {
                     Expanda sua prática e <span className="text-[#4AB0D9]">transforme vidas</span>
                   </h1>
                   <p className="text-xl text-[#1E1D40]/70 leading-relaxed">
-                    Conecte-se com mais pacientes, gerencie sua agenda de forma inteligente e cresça profissionalmente
-                    na maior rede de nutricionistas do Brasil.
+                    Conecte-se com mais clientes, gerencie sua agenda de forma inteligente e cresça profissionalmente na maior rede de nutricionistas do Brasil. Seja você um nutricionista clínico, consultor de UAN ou profissional em busca de novas oportunidades, nossa plataforma é o lugar certo para você se conectar e compartilhar sua expertise.
                   </p>
                 </div>
 
@@ -272,7 +286,13 @@ export default function ParaNutricionistasPage() {
                   <CardHeader className="text-center">
                     <CardTitle className="text-2xl text-[#1E1D40]">{plan.name}</CardTitle>
                     <div className="text-3xl font-bold text-[#4AB0D9] mb-2">{plan.price}</div>
+                    {plan.priceOptions && (
+                      <div className="text-sm text-[#1E1D40]/60 mb-2">{plan.priceOptions}</div>
+                    )}
                     <p className="text-[#1E1D40]/70">{plan.description}</p>
+                    {plan.name === "Profissional" && (
+                      <p className="text-xs text-[#1E1D40]/50 mt-2">*Os valores podem sofrer alteração</p>
+                    )}
                   </CardHeader>
                   <CardContent>
                     <ul className="space-y-3 mb-8">
@@ -333,3 +353,4 @@ export default function ParaNutricionistasPage() {
     </div>
   )
 }
+

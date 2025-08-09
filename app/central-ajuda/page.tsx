@@ -51,7 +51,7 @@ export default function CentralAjudaPage() {
     },
     {
       pergunta: "Como posso entrar em contato com o suporte?",
-      resposta: "Você pode nos contatar pelo email buscanutri@gmail.com ou pelo telefone (79) 99813 4938.",
+      resposta: "Você pode nos contatar pelo email buscanutri@gmail.com ou pelo telefone (79) 9 9813-4938.",
     },
   ]
 
@@ -139,3 +139,4 @@ export default function CentralAjudaPage() {
     </div>
   )
 }
+

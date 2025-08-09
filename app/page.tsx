@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -186,6 +186,11 @@ export default function Home() {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
+                  <Link href="/nutricionistas?tipo=consultoria" className="w-full">
+                    Encontrar Consultoria
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
                   <Link href="/vagas" className="w-full">
                     Publicar Vagas
                   </Link>
@@ -359,6 +364,13 @@ export default function Home() {
                   Soluções Corporativas
                 </Link>
                 <Link
+                  href="/nutricionistas?tipo=consultoria"
+                  onClick={closeMobileMenu}
+                  className="flex items-center px-3 py-2.5 text-[#1E1D40]/70 hover:text-[#4AB0D9] hover:bg-[#4AB0D9]/5 rounded-lg transition-all duration-200 text-sm"
+                >
+                  Encontrar Consultoria
+                </Link>
+                <Link
                   href="/vagas"
                   onClick={closeMobileMenu}
                   className="flex items-center px-3 py-2.5 text-[#1E1D40]/70 hover:text-[#4AB0D9] hover:bg-[#4AB0D9]/5 rounded-lg transition-all duration-200 text-sm"
@@ -471,7 +483,7 @@ export default function Home() {
                     Conectando <span className="text-[#4AB0D9]">Nutricionistas</span>, Transformando Vidas
                   </h1>
                   <p className="text-lg md:text-xl text-[#1E1D40]/70 leading-relaxed">
-                    Uma plataforma feita por e para nutricionistas. Alcance mais pacientes, compartilhe conhecimento e
+                    Uma plataforma feita por e para nutricionistas. Alcance mais clientes, compartilhe conhecimento e
                     cresça com quem entende suas necessidades.
                   </p>
                 </div>
@@ -504,7 +516,7 @@ export default function Home() {
                     <div className="text-xl md:text-2xl font-bold text-[#1E1D40]">
                       {stats ? formatNumber(stats.totalPacientes) : '2.5k+'}
                     </div>
-                    <div className="text-xs md:text-sm text-[#1E1D40]/60">Pacientes</div>
+                    <div className="text-xs md:text-sm text-[#1E1D40]/60">Clientes</div>
                   </div>
                   <div className="text-center">
                     <div className="text-xl md:text-2xl font-bold text-[#1E1D40]">
@@ -556,7 +568,7 @@ export default function Home() {
                     </div>
                     <h3 className="text-xl font-semibold text-[#1E1D40] mb-2">Comunidade Ativa</h3>
                     <p className="text-[#1E1D40]/70">
-                      Conecte-se com profissionais e pacientes em uma rede colaborativa
+                      Conecte-se com profissionais e clientes em uma rede colaborativa
                     </p>
                   </CardContent>
                 </Card>
@@ -897,7 +909,7 @@ export default function Home() {
                   </div>
                   <div className="flex items-center gap-3 text-white/70">
                     <Phone className="h-4 w-4 text-[#4AB0D9]" />
-                    <span>(79) 99915-8274</span>
+                    <span>(79) 9 9813-4938</span>
                   </div>
                   <div className="flex items-center gap-3 text-white/70">
                     <Globe className="h-4 w-4 text-[#4AB0D9]" />
@@ -919,8 +931,11 @@ export default function Home() {
           {/* Bottom Footer */}
           <div className="border-t border-white/20 py-6 md:py-8">
             <div className="flex flex-col md:flex-row justify-between items-center gap-3 md:gap-4">
-              <div className="text-white/70 text-xs md:text-sm text-center md:text-left">
-                © 2024 Busca Nutri. Todos os direitos reservados.
+              <div className="text-center md:text-left">
+                <div className="text-white/70 text-xs md:text-sm">
+                  © 2024 Busca Nutri. Todos os direitos reservados.
+                </div>
+                <div className="text-white/50 text-xs mt-1">CNPJ: 57.370.073/0001-92</div>
               </div>
               <div className="flex flex-wrap justify-center gap-4 md:gap-6 text-xs md:text-sm">
                 <Link href="/termos" className="text-white/70 hover:text-[#4AB0D9] transition-colors">
@@ -940,3 +955,4 @@ export default function Home() {
     </div>
   )
 }
+

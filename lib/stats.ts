@@ -1,4 +1,4 @@
-import { createSupabaseClient } from '@/lib/supabase'
+import { createSupabaseClient } from "@/lib/supabase"
 
 export interface PlatformStats {
   totalNutricionistas: number
@@ -13,19 +13,19 @@ export async function getPlatformStats(): Promise<PlatformStats> {
   try {
     // Buscar total de nutricionistas
     const { count: nutritionistsCount } = await supabase
-      .from('nutritionist_profiles')
-      .select('*', { count: 'exact', head: true })
+      .from("nutritionist_profiles")
+      .select("*", { count: "exact", head: true })
 
     // Buscar total de pacientes
     const { count: totalPatients, error: patientsError } = await supabase
-      .from('users')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_type', 'paciente')
+      .from("users")
+      .select("*", { count: "exact", head: true })
+      .eq("user_type", "paciente")
 
     // Buscar todas as avaliações para calcular média e total
     const { data: reviews } = await supabase
-      .from('reviews')
-      .select('rating')
+      .from("reviews")
+      .select("rating")
 
     const totalReviews = reviews?.length || 0
     const averageRating = totalReviews > 0 
@@ -39,7 +39,7 @@ export async function getPlatformStats(): Promise<PlatformStats> {
       totalAvaliacoes: totalReviews
     }
   } catch (error) {
-    console.error('Erro ao buscar estatísticas:', error)
+    console.error("Erro ao buscar estatísticas:", error)
     
     // Retornar valores padrão em caso de erro
     return {
@@ -59,5 +59,5 @@ export function formatNumber(num: number): string {
 }
 
 export function formatRating(rating: number): string {
-  return rating > 0 ? rating.toFixed(1) : '0.0'
+  return rating > 0 ? rating.toFixed(1) : "0.0"
 }

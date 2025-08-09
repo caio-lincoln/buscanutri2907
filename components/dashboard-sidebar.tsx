@@ -340,6 +340,7 @@ export const getMenuItems = (
           icon: Briefcase, 
           badge: availableJobs > 0 ? { count: availableJobs, variant: "outline" } : undefined,
         },
+        { id: "candidaturas", label: "Candidaturas", icon: FileText },
         { id: "cursos", label: "Cursos", icon: Users },
         { id: "relatorios", label: "Relatórios", icon: BarChart3 },
         { id: "iris", label: "IrisBot", icon: Bot },

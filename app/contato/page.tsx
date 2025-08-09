@@ -11,7 +11,7 @@ import { Mail, Phone, MapPin, Clock, MessageCircle } from "lucide-react"
 export const metadata: Metadata = {
   title: "Contato | Busca Nutri",
   description:
-    "Entre em contato com a equipe Busca Nutri. Estamos aqui para ajudar você com dúvidas, suporte técnico e parcerias.",
+    "Entre em contato com a equipe Busca Nutri. Estamos aqui para ajudar voce com duvidas, suporte tecnico e parcerias.",
 }
 
 export default function ContatoPage() {
@@ -24,16 +24,16 @@ export default function ContatoPage() {
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">Entre em Contato</h1>
           <p className="text-xl text-gray-600">
-            Estamos aqui para ajudar você. Escolha a melhor forma de nos contatar.
+            Estamos aqui para ajudar voce. Escolha a melhor forma de nos contatar.
           </p>
         </div>
 
         <div className="grid lg:grid-cols-2 gap-12">
-          {/* Formulário de Contato */}
+          {/* Formulario de Contato */}
           <Card>
             <CardHeader>
               <CardTitle className="text-2xl">Envie sua Mensagem</CardTitle>
-              <CardDescription>Preencha o formulário abaixo e retornaremos em até 24 horas</CardDescription>
+              <CardDescription>Preencha o formulario abaixo e retornaremos em ate 24 horas</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid md:grid-cols-2 gap-4">
@@ -67,8 +67,8 @@ export default function ContatoPage() {
                       <SelectValue placeholder="Selecione o assunto" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="suporte">Suporte Técnico</SelectItem>
-                      <SelectItem value="duvidas">Dúvidas Gerais</SelectItem>
+                      <SelectItem value="suporte">Suporte Tecnico</SelectItem>
+                      <SelectItem value="duvidas">Duvidas Gerais</SelectItem>
                       <SelectItem value="parceria">Parcerias</SelectItem>
                       <SelectItem value="feedback">Feedback</SelectItem>
                       <SelectItem value="outro">Outro</SelectItem>
@@ -81,7 +81,7 @@ export default function ContatoPage() {
                 <label htmlFor="mensagem" className="block text-sm font-medium text-gray-700 mb-2">
                   Mensagem
                 </label>
-                <Textarea id="mensagem" placeholder="Descreva sua dúvida ou solicitação..." rows={6} />
+                <Textarea id="mensagem" placeholder="Descreva sua duvida ou solicitacao..." rows={6} />
               </div>
 
               <Button className="w-full bg-[#4AB0D9] hover:bg-[#4AB0D9]/90">
@@ -91,11 +91,11 @@ export default function ContatoPage() {
             </CardContent>
           </Card>
 
-          {/* Informações de Contato */}
+          {/* Informacoes de Contato */}
           <div className="space-y-8">
             <Card>
               <CardHeader>
-                <CardTitle className="text-2xl">Informações de Contato</CardTitle>
+                <CardTitle className="text-2xl">Informacoes de Contato</CardTitle>
                 <CardDescription>Outras formas de entrar em contato conosco</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -115,7 +115,7 @@ export default function ContatoPage() {
                   </div>
                   <div>
                     <h3 className="font-semibold">Telefone</h3>
-                    <p className="text-gray-600">(79) 99813 4938</p>
+                    <p className="text-gray-600">(79) 9 9813-4938</p>
                   </div>
                 </div>
 
@@ -124,7 +124,7 @@ export default function ContatoPage() {
                     <MapPin className="h-6 w-6 text-[#4AB0D9]" />
                   </div>
                   <div>
-                    <h3 className="font-semibold">Localização</h3>
+                    <h3 className="font-semibold">Localizacao</h3>
                     <p className="text-gray-600">Aracaju, SE - Brasil</p>
                   </div>
                 </div>
@@ -134,9 +134,16 @@ export default function ContatoPage() {
                     <Clock className="h-6 w-6 text-[#4AB0D9]" />
                   </div>
                   <div>
-                    <h3 className="font-semibold">Horário de Atendimento</h3>
-                    <p className="text-gray-600">Segunda a Sexta: 8h às 18h</p>
-                    <p className="text-gray-600">Sábado: 8h às 12h</p>
+                    <h3 className="font-semibold">Horario de Atendimento</h3>
+                    <p className="text-gray-600">Segunda a Sexta: 8h as 18h</p>
+                    <p className="text-gray-600">Sabado: 8h as 12h</p>
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-gray-200">
+                  <div className="text-center">
+                    <h3 className="font-semibold text-gray-900 mb-2">Informacoes da Empresa</h3>
+                    <p className="text-gray-600">CNPJ: 57.370.073/0001-92</p>
                   </div>
                 </div>
               </CardContent>
@@ -144,8 +151,8 @@ export default function ContatoPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Suporte Rápido</CardTitle>
-                <CardDescription>Para questões urgentes, use nossos canais de suporte rápido</CardDescription>
+                <CardTitle>Suporte Rapido</CardTitle>
+                <CardDescription>Para questoes urgentes, use nossos canais de suporte rapido</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <Button variant="outline" className="w-full justify-start bg-transparent">
@@ -166,3 +173,4 @@ export default function ContatoPage() {
     </div>
   )
 }
+

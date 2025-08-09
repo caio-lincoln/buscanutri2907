@@ -75,7 +75,7 @@ export function Footer() {
               </li>
               <li className="flex items-center gap-3 text-white/70">
                 <Phone className="h-4 w-4 text-[#4AB0D9]" />
-                <span>(79) 99813 4938 (Busca Nutri)</span>
+                <span>(79) 9 9813-4938 (Busca Nutri)</span>
               </li>
               <li className="flex items-center gap-3 text-white/70">
                 <Globe className="h-4 w-4 text-[#4AB0D9]" />
@@ -96,7 +96,10 @@ export function Footer() {
         {/* Bottom Footer */}
         <div className="border-t border-white/10 py-8">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <div className="text-white/50 text-sm">© 2025 Busca Nutri. Todos os direitos reservados.</div>
+            <div className="text-center md:text-left">
+              <div className="text-white/50 text-sm">© 2025 Busca Nutri. Todos os direitos reservados.</div>
+              <div className="text-white/40 text-xs mt-1">CNPJ: 57.370.073/0001-92</div>
+            </div>
             <div className="flex gap-6 text-sm">
               <Link href="/termos" className="text-white/50 hover:text-[#4AB0D9] transition-colors">
                 Termos de Uso

@@ -7,7 +7,9 @@ import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Separator } from "@/components/ui/separator"
 import { MapPin, DollarSign, Briefcase, Clock, Users, Building, CheckCircle, Heart, Share2 } from "lucide-react"
-import { supabase } from "@/lib/supabase"
+import { createSupabaseClient } from "@/lib/supabase"
+import { useAuth } from "@/contexts/auth-context"
+import { toast } from "sonner"
 
 interface JobPosting {
   id: string
@@ -38,6 +40,8 @@ interface JobDetailsModalProps {
 
 export function JobDetailsModal({ job, isOpen, onClose }: JobDetailsModalProps) {
   const [isApplying, setIsApplying] = useState(false)
+  const { user } = useAuth()
+  const supabase = createSupabaseClient()
 
   const formatSalaryRange = (job: JobPosting) => {
     if (job.salary_min && job.salary_max) {
@@ -51,45 +55,83 @@ export function JobDetailsModal({ job, isOpen, onClose }: JobDetailsModalProps) 
   }
 
   const handleApply = async () => {
+    console.log("🔄 Iniciando candidatura...")
+    console.log("👤 Usuário atual:", user)
+    
     setIsApplying(true)
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-
       if (!user) {
-        alert("Para se candidatar, você precisa estar logado.")
+        console.log("❌ Usuário não autenticado")
+        toast.error("Para se candidatar, você precisa estar logado.")
         return
       }
 
+      // Verificar se o usuário é nutricionista
+      if (user.user_type !== "nutricionista") {
+        console.log("❌ Usuário não é nutricionista:", user.user_type)
+        toast.error("Apenas nutricionistas podem se candidatar às vagas.")
+        return
+      }
+
+      console.log("✅ Usuário autenticado como nutricionista")
+      console.log("🔍 Buscando perfil do nutricionista...")
+
+      // Buscar o perfil do nutricionista para obter o ID correto
+      const { data: nutritionistProfile, error: profileError } = await supabase
+        .from("nutritionist_profiles")
+        .select("id")
+        .eq("user_id", user.id)
+        .single()
+
+      if (profileError || !nutritionistProfile) {
+        console.error("❌ Erro ao buscar perfil do nutricionista:", profileError)
+        toast.error("Perfil de nutricionista não encontrado. Complete seu cadastro primeiro.")
+        return
+      }
+
+      console.log("✅ Perfil do nutricionista encontrado:", nutritionistProfile.id)
+      console.log("🔍 Verificando candidatura existente...")
+
       // Verificar se já se candidatou
-      const { data: existingApplication } = await supabase
+      const { data: existingApplication, error: checkError } = await supabase
         .from("job_applications")
         .select("id")
         .eq("job_id", job.id)
-        .eq("candidate_id", user.id)
+        .eq("candidate_id", nutritionistProfile.id)
         .single()
 
+      if (checkError && checkError.code !== 'PGRST116') {
+        console.error("❌ Erro ao verificar candidatura existente:", checkError)
+        throw checkError
+      }
+
       if (existingApplication) {
-        alert("Você já se candidatou a esta vaga!")
+        console.log("⚠️ Candidatura já existe")
+        toast.warning("Você já se candidatou a esta vaga!")
         return
       }
+
+      console.log("✅ Criando nova candidatura...")
 
       // Criar candidatura
       const { error } = await supabase.from("job_applications").insert({
         job_id: job.id,
-        candidate_id: user.id,
+        candidate_id: nutritionistProfile.id,
         status: "pendente",
         applied_at: new Date().toISOString(),
       })
 
-      if (error) throw error
+      if (error) {
+        console.error("❌ Erro ao criar candidatura:", error)
+        throw error
+      }
 
-      alert("Candidatura enviada com sucesso!")
+      console.log("✅ Candidatura criada com sucesso!")
+      toast.success("Candidatura enviada com sucesso!")
       onClose()
     } catch (error) {
-      console.error("Error applying to job:", error)
-      alert("Erro ao enviar candidatura. Tente novamente.")
+      console.error("💥 Erro geral na candidatura:", error)
+      toast.error("Erro ao enviar candidatura. Tente novamente.")
     } finally {
       setIsApplying(false)
     }

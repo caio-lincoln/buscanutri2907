@@ -14,7 +14,7 @@ const finalUrl = supabaseUrl || defaultUrl
 const finalKey = supabaseAnonKey || defaultKey
 
 // Só lance erro em runtime se as variáveis não estiverem definidas
-if (typeof window !== 'undefined' && (!supabaseUrl || !supabaseAnonKey)) {
+if (typeof window !== "undefined" && (!supabaseUrl || !supabaseAnonKey)) {
   console.error(
     "As variáveis de ambiente NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY devem ser definidas.",
   )
@@ -257,64 +257,64 @@ export interface Database {
     Tables: {
       user_profiles: {
         Row: UserProfile
-        Insert: Omit<UserProfile, 'id' | 'created_at' | 'updated_at'>
-        Update: Partial<Omit<UserProfile, 'id' | 'created_at' | 'updated_at'>>
+        Insert: Omit<UserProfile, "id" | "created_at" | "updated_at">
+        Update: Partial<Omit<UserProfile, "id" | "created_at" | "updated_at">>
       }
       patient_profiles: {
         Row: PatientProfile
-        Insert: Omit<PatientProfile, 'id' | 'created_at' | 'updated_at'>
-        Update: Partial<Omit<PatientProfile, 'id' | 'created_at' | 'updated_at'>>
+        Insert: Omit<PatientProfile, "id" | "created_at" | "updated_at">
+        Update: Partial<Omit<PatientProfile, "id" | "created_at" | "updated_at">>
       }
       nutritionist_profiles: {
         Row: NutritionistProfile
-        Insert: Omit<NutritionistProfile, 'id' | 'created_at' | 'updated_at'>
-        Update: Partial<Omit<NutritionistProfile, 'id' | 'created_at' | 'updated_at'>>
+        Insert: Omit<NutritionistProfile, "id" | "created_at" | "updated_at">
+        Update: Partial<Omit<NutritionistProfile, "id" | "created_at" | "updated_at">>
       }
       company_profiles: {
         Row: CompanyProfile
-        Insert: Omit<CompanyProfile, 'id' | 'created_at' | 'updated_at'>
-        Update: Partial<Omit<CompanyProfile, 'id' | 'created_at' | 'updated_at'>>
+        Insert: Omit<CompanyProfile, "id" | "created_at" | "updated_at">
+        Update: Partial<Omit<CompanyProfile, "id" | "created_at" | "updated_at">>
       }
       // consultations: Tabela removida - funcionalidade de telemedicina desabilitada
       job_postings: {
         Row: JobPosting
-        Insert: Omit<JobPosting, 'id' | 'created_at' | 'updated_at'>
-        Update: Partial<Omit<JobPosting, 'id' | 'created_at' | 'updated_at'>>
+        Insert: Omit<JobPosting, "id" | "created_at" | "updated_at">
+        Update: Partial<Omit<JobPosting, "id" | "created_at" | "updated_at">>
       }
       forum_questions: {
         Row: ForumQuestion
-        Insert: Omit<ForumQuestion, 'id' | 'created_at' | 'updated_at'>
-        Update: Partial<Omit<ForumQuestion, 'id' | 'created_at' | 'updated_at'>>
+        Insert: Omit<ForumQuestion, "id" | "created_at" | "updated_at">
+        Update: Partial<Omit<ForumQuestion, "id" | "created_at" | "updated_at">>
       }
       forum_answers: {
         Row: ForumAnswer
-        Insert: Omit<ForumAnswer, 'id' | 'created_at' | 'updated_at'>
-        Update: Partial<Omit<ForumAnswer, 'id' | 'created_at' | 'updated_at'>>
+        Insert: Omit<ForumAnswer, "id" | "created_at" | "updated_at">
+        Update: Partial<Omit<ForumAnswer, "id" | "created_at" | "updated_at">>
       }
       blog_posts: {
         Row: BlogPost
-        Insert: Omit<BlogPost, 'id' | 'updated_at'>
-        Update: Partial<Omit<BlogPost, 'id' | 'updated_at'>>
+        Insert: Omit<BlogPost, "id" | "updated_at">
+        Update: Partial<Omit<BlogPost, "id" | "updated_at">>
       }
       badges: {
         Row: Badge
-        Insert: Omit<Badge, 'id' | 'created_at'>
-        Update: Partial<Omit<Badge, 'id' | 'created_at'>>
+        Insert: Omit<Badge, "id" | "created_at">
+        Update: Partial<Omit<Badge, "id" | "created_at">>
       }
       user_badges: {
         Row: UserBadge
-        Insert: Omit<UserBadge, 'id'>
-        Update: Partial<Omit<UserBadge, 'id'>>
+        Insert: Omit<UserBadge, "id">
+        Update: Partial<Omit<UserBadge, "id">>
       }
       specialties: {
         Row: Specialty
-        Insert: Omit<Specialty, 'id'>
-        Update: Partial<Omit<Specialty, 'id'>>
+        Insert: Omit<Specialty, "id">
+        Update: Partial<Omit<Specialty, "id">>
       }
       nutritionist_services: {
         Row: NutritionistService
-        Insert: Omit<NutritionistService, 'id'>
-        Update: Partial<Omit<NutritionistService, 'id'>>
+        Insert: Omit<NutritionistService, "id">
+        Update: Partial<Omit<NutritionistService, "id">>
       }
     }
     Views: {

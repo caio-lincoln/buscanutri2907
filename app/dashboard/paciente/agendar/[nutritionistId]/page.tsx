@@ -72,7 +72,7 @@ export default function ScheduleConsultationPage() {
     } else {
       console.error("Invalid nutritionist ID:", nutritionistId)
       toast({
-        title: "❌ Erro",
+        title: "Erro",
         description: "ID do nutricionista inválido",
         variant: "destructive",
       })
@@ -125,7 +125,7 @@ export default function ScheduleConsultationPage() {
     } catch (error) {
       console.error("Error loading nutritionist data:", error)
       toast({
-        title: "❌ Erro",
+        title: "Erro",
         description: "Não foi possível carregar os dados do nutricionista",
         variant: "destructive",
       })
@@ -179,7 +179,7 @@ export default function ScheduleConsultationPage() {
     } catch (error) {
       console.error("Error signing out:", error)
       toast({
-        title: "❌ Erro",
+        title: "Erro",
         description: "Erro ao fazer logout",
         variant: "destructive",
       })

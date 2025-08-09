@@ -69,7 +69,7 @@ export async function createCompanyJob(companyId: string, jobData: {
 }): Promise<{ success: boolean; error?: string; jobId?: string }> {
   try {
     const { data, error } = await supabase
-      .from('job_postings')
+      .from("job_postings")
       .insert({
         company_id: companyId,
         title: jobData.title,
@@ -81,20 +81,20 @@ export async function createCompanyJob(companyId: string, jobData: {
         salary_max: jobData.salaryMax,
         requirements: jobData.requirements,
         benefits: jobData.benefits,
-        status: 'ativa'
+        status: "ativa"
       })
-      .select('id')
+      .select("id")
       .single()
 
     if (error) {
-      console.error('Error creating job:', error)
+      console.error("Error creating job:", error)
       return { success: false, error: error.message }
     }
 
     return { success: true, jobId: data.id }
   } catch (error) {
-    console.error('Error in createCompanyJob:', error)
-    return { success: false, error: 'Erro interno do servidor' }
+    console.error("Error in createCompanyJob:", error)
+    return { success: false, error: "Erro interno do servidor" }
   }
 }
 
@@ -104,37 +104,37 @@ export async function createCompanyJob(companyId: string, jobData: {
 export async function getCompanyJobs(companyId: string): Promise<JobData[]> {
   try {
     const { data: jobs, error } = await supabase
-      .from('job_postings')
-      .select('id, title, location, job_type, salary_min, salary_max, description, requirements, benefits, status, created_at, applications_count, company_id')
-      .eq('company_id', companyId)
-      .order('created_at', { ascending: false })
+      .from("job_postings")
+      .select("id, title, location, job_type, salary_min, salary_max, description, requirements, benefits, status, created_at, applications_count, company_id")
+      .eq("company_id", companyId)
+      .order("created_at", { ascending: false })
 
     if (error) {
-      console.error('Error fetching company jobs:', error)
+      console.error("Error fetching company jobs:", error)
       return []
     }
 
     return jobs.map(job => ({
       id: job.id,
       title: job.title,
-      company: job.company_profiles?.company_name || 'Empresa',
-      location: job.location || 'Remoto',
+      company: job.company_profiles?.company_name || "Empresa",
+      location: job.location || "Remoto",
       type: job.job_type as "CLT" | "PJ" | "Estágio" | "Freelance",
       salary: job.salary_min && job.salary_max 
         ? `R$ ${job.salary_min.toLocaleString()} - R$ ${job.salary_max.toLocaleString()}`
         : job.salary_min 
           ? `A partir de R$ ${job.salary_min.toLocaleString()}`
-          : 'A combinar',
-      description: job.description || '',
+          : "A combinar",
+      description: job.description || "",
       requirements: Array.isArray(job.requirements) ? job.requirements : [],
       benefits: Array.isArray(job.benefits) ? job.benefits : [],
-      status: job.status === 'ativa' ? 'ativo' : job.status === 'pausada' ? 'pausado' : 'finalizado',
+      status: job.status === "ativa" ? "ativo" : job.status === "pausada" ? "pausado" : "finalizado",
       applicationsCount: job.applications_count || 0,
       createdAt: job.created_at,
       expiresAt: job.created_at // Como não temos expires_at, usamos created_at como fallback
     }))
   } catch (error) {
-    console.error('Error in getCompanyJobs:', error)
+    console.error("Error in getCompanyJobs:", error)
     return []
   }
 }
@@ -146,10 +146,10 @@ export async function getCompanyCandidates(companyId: string): Promise<Candidate
   try {
     // Usar função SQL que evita problemas de RLS
     const { data: candidates, error } = await supabase
-      .rpc('get_company_candidates', { company_id_param: companyId })
+      .rpc("get_company_candidates", { company_id_param: companyId })
 
     if (error) {
-      console.error('Error fetching company candidates:', error)
+      console.error("Error fetching company candidates:", error)
       return []
     }
 
@@ -167,11 +167,11 @@ export async function getCompanyCandidates(companyId: string): Promise<Candidate
       status: candidate.application_status as "novo" | "em_analise" | "aprovado" | "rejeitado",
       appliedAt: candidate.applied_at,
       resumeUrl: undefined, // Campo não existe na tabela job_applications
-      skills: candidate.specialties && typeof candidate.specialties === "string" ? candidate.specialties.split(', ') : [],
+      skills: candidate.specialties && typeof candidate.specialties === "string" ? candidate.specialties.split(", ") : [],
       location: candidate.location
     }))
   } catch (error) {
-    console.error('Error in getCompanyCandidates:', error)
+    console.error("Error in getCompanyCandidates:", error)
     return []
   }
 }
@@ -183,12 +183,12 @@ export async function getCompanyCandidates(companyId: string): Promise<Candidate
 export async function getCompanyProcesses(companyId: string): Promise<ProcessData[]> {
   try {
     // Usar a função do banco de dados que bypassa problemas de RLS
-    const { data, error } = await supabase.rpc('get_company_processes', {
+    const { data, error } = await supabase.rpc("get_company_processes", {
       company_uuid: companyId
     })
 
     if (error) {
-      console.error('Error fetching company processes from function:', error)
+      console.error("Error fetching company processes from function:", error)
       // Fallback para método tradicional se a função falhar
       return await getCompanyProcessesFallback(companyId)
     }
@@ -200,8 +200,8 @@ export async function getCompanyProcesses(companyId: string): Promise<ProcessDat
     // Processar os dados retornados pela função
     return data.map((process: any) => ({
       id: process.id,
-      jobTitle: process.job_title || 'Vaga',
-      candidate: process.candidate_name || 'Candidato',
+      jobTitle: process.job_title || "Vaga",
+      candidate: process.candidate_name || "Candidato",
       stage: mapStageToEnum(process.current_stage),
       nextStep: process.next_step || getNextStep(process.current_stage),
       scheduledDate: process.deadline,
@@ -209,7 +209,7 @@ export async function getCompanyProcesses(companyId: string): Promise<ProcessDat
       createdAt: process.created_at
     }))
   } catch (error) {
-    console.error('Error in getCompanyProcesses:', error)
+    console.error("Error in getCompanyProcesses:", error)
     // Fallback para método tradicional se houver erro
     return await getCompanyProcessesFallback(companyId)
   }
@@ -222,12 +222,12 @@ async function getCompanyProcessesFallback(companyId: string): Promise<ProcessDa
   try {
     // Primeiro buscar vagas da empresa
     const { data: jobs, error: jobsError } = await supabase
-      .from('job_postings')
-      .select('id, title')
-      .eq('company_id', companyId)
+      .from("job_postings")
+      .select("id, title")
+      .eq("company_id", companyId)
 
     if (jobsError || !jobs || jobs.length === 0) {
-      console.error('Error fetching jobs in processes fallback:', jobsError)
+      console.error("Error fetching jobs in processes fallback:", jobsError)
       return []
     }
 
@@ -235,12 +235,12 @@ async function getCompanyProcessesFallback(companyId: string): Promise<ProcessDa
 
     // Buscar candidaturas para essas vagas
     const { data: applications, error: appsError } = await supabase
-      .from('job_applications')
-      .select('id, job_id')
-      .in('job_id', jobIds)
+      .from("job_applications")
+      .select("id, job_id")
+      .in("job_id", jobIds)
 
     if (appsError || !applications || applications.length === 0) {
-      console.error('Error fetching applications in processes fallback:', appsError)
+      console.error("Error fetching applications in processes fallback:", appsError)
       return []
     }
 
@@ -248,7 +248,7 @@ async function getCompanyProcessesFallback(companyId: string): Promise<ProcessDa
 
     // Buscar processos seletivos para essas candidaturas
     const { data: processes, error: processesError } = await supabase
-      .from('selection_processes')
+      .from("selection_processes")
       .select(`
         id,
         current_stage,
@@ -260,11 +260,11 @@ async function getCompanyProcessesFallback(companyId: string): Promise<ProcessDa
         updated_at,
         application_id
       `)
-      .in('application_id', applicationIds)
-      .order('created_at', { ascending: false })
+      .in("application_id", applicationIds)
+      .order("created_at", { ascending: false })
 
     if (processesError) {
-      console.error('Error fetching processes in fallback:', processesError)
+      console.error("Error fetching processes in fallback:", processesError)
       return []
     }
 
@@ -279,8 +279,8 @@ async function getCompanyProcessesFallback(companyId: string): Promise<ProcessDa
 
       return {
         id: process.id,
-        jobTitle: job?.title || 'Vaga',
-        candidate: 'Candidato', // Nome genérico para evitar problemas de RLS
+        jobTitle: job?.title || "Vaga",
+        candidate: "Candidato", // Nome genérico para evitar problemas de RLS
         stage: mapStageToEnum(process.current_stage),
         nextStep: process.next_step || getNextStep(process.current_stage),
         scheduledDate: process.deadline,
@@ -289,7 +289,7 @@ async function getCompanyProcessesFallback(companyId: string): Promise<ProcessDa
       }
     })
   } catch (error) {
-    console.error('Error in processes fallback method:', error)
+    console.error("Error in processes fallback method:", error)
     return []
   }
 }
@@ -303,7 +303,7 @@ export async function getCompanyTransactions(companyId: string): Promise<Company
     // Quando implementar, buscar da tabela de transações da empresa
     return []
   } catch (error) {
-    console.error('Error in getCompanyTransactions:', error)
+    console.error("Error in getCompanyTransactions:", error)
     return []
   }
 }
@@ -313,19 +313,19 @@ export async function getCompanyTransactions(companyId: string): Promise<Company
  */
 function mapStageToEnum(stage: string): "triagem" | "entrevista" | "teste_tecnico" | "aprovado" | "rejeitado" {
   const stageMap: { [key: string]: "triagem" | "entrevista" | "teste_tecnico" | "aprovado" | "rejeitado" } = {
-    'Triagem': 'triagem',
-    'Análise de Currículo': 'triagem',
-    'Entrevista Inicial': 'entrevista',
-    'Entrevista': 'entrevista',
-    'Teste Técnico': 'teste_tecnico',
-    'Teste Prático': 'teste_tecnico',
-    'Aprovado': 'aprovado',
-    'Proposta Enviada': 'aprovado',
-    'Rejeitado': 'rejeitado',
-    'Cancelado': 'rejeitado'
+    "Triagem": "triagem",
+    "Análise de Currículo": "triagem",
+    "Entrevista Inicial": "entrevista",
+    "Entrevista": "entrevista",
+    "Teste Técnico": "teste_tecnico",
+    "Teste Prático": "teste_tecnico",
+    "Aprovado": "aprovado",
+    "Proposta Enviada": "aprovado",
+    "Rejeitado": "rejeitado",
+    "Cancelado": "rejeitado"
   }
   
-  return stageMap[stage] || 'triagem'
+  return stageMap[stage] || "triagem"
 }
 
 /**
@@ -333,24 +333,24 @@ function mapStageToEnum(stage: string): "triagem" | "entrevista" | "teste_tecnic
  */
 function getNextStep(stage: string): string {
   switch (stage.toLowerCase()) {
-    case 'triagem':
-    case 'análise de currículo':
-      return 'Agendar entrevista'
-    case 'entrevista':
-    case 'entrevista inicial':
-      return 'Aplicar teste técnico'
-    case 'teste_tecnico':
-    case 'teste técnico':
-    case 'teste prático':
-      return 'Decisão final'
-    case 'aprovado':
-    case 'proposta enviada':
-      return 'Contratação'
-    case 'rejeitado':
-    case 'cancelado':
-      return 'Processo finalizado'
+    case "triagem":
+    case "análise de currículo":
+      return "Agendar entrevista"
+    case "entrevista":
+    case "entrevista inicial":
+      return "Aplicar teste técnico"
+    case "teste_tecnico":
+    case "teste técnico":
+    case "teste prático":
+      return "Decisão final"
+    case "aprovado":
+    case "proposta enviada":
+      return "Contratação"
+    case "rejeitado":
+    case "cancelado":
+      return "Processo finalizado"
     default:
-      return 'Definir próximo passo'
+      return "Definir próximo passo"
   }
 }
 
@@ -366,11 +366,11 @@ export interface CompanyOverviewStats {
     id: string
     title: string
     applications: number
-    status: 'ativa' | 'pausada' | 'finalizada'
+    status: "ativa" | "pausada" | "finalizada"
     posted: string
   }>
   recentActivity: Array<{
-    type: 'application' | 'interview' | 'job_posted' | 'message'
+    type: "application" | "interview" | "job_posted" | "message"
     title: string
     description: string
     time: string
@@ -385,12 +385,12 @@ export interface CompanyOverviewStats {
 export async function getCompanyOverviewData(companyId: string): Promise<CompanyOverviewStats> {
   try {
     // Usar a função do banco de dados que bypassa problemas de RLS
-    const { data, error } = await supabase.rpc('get_company_overview_data', {
+    const { data, error } = await supabase.rpc("get_company_overview_data", {
       company_uuid: companyId
     })
 
     if (error) {
-      console.error('Error fetching company overview data from function:', error)
+      console.error("Error fetching company overview data from function:", error)
       // Fallback para método tradicional se a função falhar
       return await getCompanyOverviewDataFallback(companyId)
     }
@@ -405,17 +405,17 @@ export async function getCompanyOverviewData(companyId: string): Promise<Company
     // Processar vagas recentes para adicionar formatação de tempo
     const recentJobs = (overviewData.recentJobs || []).map((job: any) => ({
       ...job,
-      posted: job.posted || 'Recente'
+      posted: job.posted || "Recente"
     }))
 
     // Processar atividade recente
     const recentActivity = overviewData.recentActivity || [
       {
-        type: 'application',
-        title: 'Bem-vindo!',
-        description: 'Comece publicando sua primeira vaga',
-        time: 'agora',
-        icon: 'Users'
+        type: "application",
+        title: "Bem-vindo!",
+        description: "Comece publicando sua primeira vaga",
+        time: "agora",
+        icon: "Users"
       }
     ]
 
@@ -430,7 +430,7 @@ export async function getCompanyOverviewData(companyId: string): Promise<Company
       recentActivity
     }
   } catch (error) {
-    console.error('Error in getCompanyOverviewData:', error)
+    console.error("Error in getCompanyOverviewData:", error)
     // Fallback para método tradicional se houver erro
     return await getCompanyOverviewDataFallback(companyId)
   }
@@ -443,13 +443,13 @@ async function getCompanyOverviewDataFallback(companyId: string): Promise<Compan
   try {
     // Buscar apenas vagas da empresa (query mais simples)
     const { data: jobs, error: jobsError } = await supabase
-      .from('job_postings')
-      .select('id, title, status, created_at, applications_count')
-      .eq('company_id', companyId)
-      .order('created_at', { ascending: false })
+      .from("job_postings")
+      .select("id, title, status, created_at, applications_count")
+      .eq("company_id", companyId)
+      .order("created_at", { ascending: false })
 
     if (jobsError) {
-      console.error('Error fetching jobs in fallback:', jobsError)
+      console.error("Error fetching jobs in fallback:", jobsError)
       return getDefaultOverviewStats()
     }
 
@@ -459,7 +459,7 @@ async function getCompanyOverviewDataFallback(companyId: string): Promise<Compan
 
     // Calcular estatísticas básicas apenas com dados das vagas
     const totalJobs = jobs.length
-    const activeJobs = jobs.filter(job => job.status === 'ativa').length
+    const activeJobs = jobs.filter(job => job.status === "ativa").length
     
     // Para o fallback, usar dados simulados para evitar problemas de RLS
     const totalApplications = jobs.reduce((sum, job) => sum + (job.applications_count || 0), 0)
@@ -472,27 +472,27 @@ async function getCompanyOverviewDataFallback(companyId: string): Promise<Compan
       id: job.id,
       title: job.title,
       applications: job.applications_count || 0,
-      status: job.status as 'ativa' | 'pausada' | 'finalizada',
+      status: job.status as "ativa" | "pausada" | "finalizada",
       posted: formatTimeAgo(job.created_at)
     }))
 
     // Atividade recente baseada nas vagas
     const recentActivity = jobs.slice(0, 3).map(job => ({
-      type: 'job_posted' as const,
-      title: 'Vaga publicada',
+      type: "job_posted" as const,
+      title: "Vaga publicada",
       description: `${job.title} foi publicada`,
       time: formatTimeAgo(job.created_at),
-      icon: 'Briefcase'
+      icon: "Briefcase"
     }))
 
     // Se não há atividade, mostrar mensagem de boas-vindas
     if (recentActivity.length === 0) {
       recentActivity.push({
-        type: 'application' as const,
-        title: 'Bem-vindo!',
-        description: 'Comece publicando sua primeira vaga',
-        time: 'agora',
-        icon: 'Users'
+        type: "application" as const,
+        title: "Bem-vindo!",
+        description: "Comece publicando sua primeira vaga",
+        time: "agora",
+        icon: "Users"
       })
     }
 
@@ -507,7 +507,7 @@ async function getCompanyOverviewDataFallback(companyId: string): Promise<Compan
       recentActivity: recentActivity.slice(0, 4)
     }
   } catch (error) {
-    console.error('Error in fallback method:', error)
+    console.error("Error in fallback method:", error)
     return getDefaultOverviewStats()
   }
 }
@@ -526,11 +526,11 @@ function getDefaultOverviewStats(): CompanyOverviewStats {
     recentJobs: [],
     recentActivity: [
       {
-        type: 'application',
-        title: 'Bem-vindo!',
-        description: 'Comece publicando sua primeira vaga',
-        time: 'agora',
-        icon: 'Users'
+        type: "application",
+        title: "Bem-vindo!",
+        description: "Comece publicando sua primeira vaga",
+        time: "agora",
+        icon: "Users"
       }
     ]
   }
@@ -546,16 +546,16 @@ function formatTimeAgo(dateString: string): string {
   const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24))
 
   if (diffInDays === 0) {
-    return 'Hoje'
+    return "Hoje"
   } else if (diffInDays === 1) {
-    return '1 dia'
+    return "1 dia"
   } else if (diffInDays < 7) {
     return `${diffInDays} dias`
   } else if (diffInDays < 30) {
     const weeks = Math.floor(diffInDays / 7)
-    return weeks === 1 ? '1 semana' : `${weeks} semanas`
+    return weeks === 1 ? "1 semana" : `${weeks} semanas`
   } else {
     const months = Math.floor(diffInDays / 30)
-    return months === 1 ? '1 mês' : `${months} meses`
+    return months === 1 ? "1 mês" : `${months} meses`
   }
 }

@@ -48,13 +48,13 @@ export default function TestUploadDebug() {
       console.log('Resultado do upload:', uploadResult)
       
       if (uploadResult.success) {
-        setResult(`✅ Upload realizado com sucesso! URL: ${uploadResult.url}`)
+        setResult(`Upload realizado com sucesso! URL: ${uploadResult.url}`)
       } else {
-        setResult(`❌ Erro no upload: ${uploadResult.error}`)
+        setResult(`Erro no upload: ${uploadResult.error}`)
       }
     } catch (error) {
       console.error('Erro no upload:', error)
-      setResult(`❌ Erro inesperado: ${error}`)
+      setResult(`Erro inesperado: ${error}`)
     } finally {
       setUploading(false)
     }
@@ -77,7 +77,7 @@ export default function TestUploadDebug() {
         <h2 className="font-semibold mb-2">Informações da Sessão:</h2>
         <p><strong>User ID:</strong> {session.user.id}</p>
         <p><strong>Email:</strong> {session.user.email}</p>
-        <p><strong>Token presente:</strong> {session.access_token ? '✅ Sim' : '❌ Não'}</p>
+        <p><strong>Token presente:</strong> {session.access_token ? 'Sim' : 'Não'}</p>
       </div>
 
       <div className="mb-4">
@@ -95,7 +95,7 @@ export default function TestUploadDebug() {
 
       {uploading && (
         <div className="mb-4 p-4 bg-blue-100 rounded">
-          <p>🔄 Fazendo upload...</p>
+          <p>Fazendo upload...</p>
         </div>
       )}
 

@@ -77,8 +77,8 @@ export default function CookiesPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <Phone className="h-4 w-4 text-[#4AB0D9]" />
-                    <a href="tel:+5579999158274" className="text-[#4AB0D9] hover:underline">
-                      (79) 99915-8274
+                    <a href="tel:+557999134938" className="text-[#4AB0D9] hover:underline">
+                      (79) 9 9813-4938
                     </a>
                   </div>
                   <div className="flex items-center gap-2">
@@ -339,8 +339,8 @@ export default function CookiesPage() {
                     </div>
                     <div className="flex items-center gap-2">
                       <Phone className="h-4 w-4 text-[#4AB0D9]" />
-                      <a href="tel:+5579999158274" className="text-[#4AB0D9] hover:underline">
-                        (79) 99915-8274
+                      <a href="tel:+557999134938" className="text-[#4AB0D9] hover:underline">
+                        (79) 9 9813-4938
                       </a>
                     </div>
                   </div>
@@ -348,7 +348,7 @@ export default function CookiesPage() {
                     <div className="flex items-center gap-2">
                       <MessageCircle className="h-4 w-4 text-[#4AB0D9]" />
                       <a
-                        href="https://wa.me/5579999158274?text=Olá! Tenho dúvidas sobre a Política de Cookies da Busca Nutri."
+                        href="https://wa.me/557999134938?text=Olá! Tenho dúvidas sobre a Política de Cookies da Busca Nutri."
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-[#4AB0D9] hover:underline"
@@ -390,3 +390,4 @@ export default function CookiesPage() {
     </div>
   )
 }
+

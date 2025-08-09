@@ -38,6 +38,7 @@ import { CoursesTab } from "@/components/dashboard/nutricionistas/courses-tab"
 import { JobsTab } from "@/components/dashboard/nutricionistas/jobs-tab"
 import { ForumTab } from "@/components/dashboard/nutricionistas/forum-tab"
 import { BlogTab } from "@/components/dashboard/nutricionistas/blog-tab"
+import { ApplicationsTab } from "@/components/dashboard/nutricionistas/applications-tab"
 
 import { AppointmentsTab } from "@/components/dashboard/nutricionistas/appointments-tab" // Importar a nova aba de agenda
 import NutritionistRecentChatsList from "@/components/nutritionist-recent-chats-list"
@@ -563,6 +564,9 @@ export default function NutritionistDashboard() {
 
         {/* Vagas */}
         {activeTab === "vagas" && <JobsTab />}
+
+        {/* Candidaturas */}
+        {activeTab === "candidaturas" && <ApplicationsTab />}
 
         {/* Blog */}
         {activeTab === "blog" && <BlogTab />}
@@ -1289,3 +1293,4 @@ export default function NutritionistDashboard() {
     </DashboardSidebar>
   )
 }
+

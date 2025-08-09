@@ -333,9 +333,9 @@ export function UserProfileModal({
   const loadAnamneseData = async () => {
     try {
       const { data, error } = await supabase
-        .from('anamnese_nutricional')
-        .select('*')
-        .eq('patient_id', userId)
+        .from("anamnese_nutricional")
+        .select("*")
+        .eq("patient_id", userId)
         .single()
 
       if (data && !error) {
@@ -358,7 +358,7 @@ export function UserProfileModal({
         }
       }
     } catch (error) {
-      console.log('Nenhuma anamnese encontrada, criando nova')
+      console.log("Nenhuma anamnese encontrada, criando nova")
       
       // Se não há anamnese, mas há preferências no perfil, sincronizar
       if (initialData?.dietary_preferences) {
@@ -517,7 +517,7 @@ export function UserProfileModal({
     }))
 
     // Sincronizar preferências alimentares com o perfil do paciente
-    if (field === 'preferencias_alimentares' && userType === 'paciente') {
+    if (field === "preferencias_alimentares" && userType === "paciente") {
       setFormData((prev: any) => ({
         ...prev,
         dietary_preferences: value
@@ -528,9 +528,9 @@ export function UserProfileModal({
   // Função para formatar peso automaticamente
   const formatPeso = (value: string) => {
     // Remove caracteres não numéricos
-    const numericValue = value.replace(/[^\d]/g, '')
+    const numericValue = value.replace(/[^\d]/g, "")
     
-    if (numericValue.length === 0) return ''
+    if (numericValue.length === 0) return ""
     if (numericValue.length === 1) return numericValue
     if (numericValue.length === 2) return numericValue
     
@@ -544,9 +544,9 @@ export function UserProfileModal({
   // Função para formatar altura automaticamente
   const formatAltura = (value: string) => {
     // Remove caracteres não numéricos
-    const numericValue = value.replace(/[^\d]/g, '')
+    const numericValue = value.replace(/[^\d]/g, "")
     
-    if (numericValue.length === 0) return ''
+    if (numericValue.length === 0) return ""
     if (numericValue.length === 1) return `1.${numericValue}`
     if (numericValue.length === 2) return `1.${numericValue}`
     
@@ -563,8 +563,8 @@ export function UserProfileModal({
     const rawValue = e.target.value
     
     // Se o usuário está apagando, permitir
-    if (rawValue === '') {
-      handleAnamneseChange('peso_atual', '')
+    if (rawValue === "") {
+      handleAnamneseChange("peso_atual", "")
       return
     }
     
@@ -573,15 +573,15 @@ export function UserProfileModal({
     const numericValue = parseFloat(formattedValue) || 0
     
     // Atualizar com o valor formatado para exibição
-    handleAnamneseChange('peso_atual', formattedValue)
+    handleAnamneseChange("peso_atual", formattedValue)
   }
 
   const handleAlturaAnamneseChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const rawValue = e.target.value
     
     // Se o usuário está apagando, permitir
-    if (rawValue === '') {
-      handleAnamneseChange('altura', '')
+    if (rawValue === "") {
+      handleAnamneseChange("altura", "")
       return
     }
     
@@ -590,7 +590,7 @@ export function UserProfileModal({
     const numericValue = parseFloat(formattedValue) || 0
     
     // Atualizar com o valor formatado para exibição
-    handleAnamneseChange('altura', formattedValue)
+    handleAnamneseChange("altura", formattedValue)
   }
 
   const calculateIMC = (peso: number, altura: number) => {
@@ -630,7 +630,7 @@ export function UserProfileModal({
     const hasObjectives = anamneseData?.objetivos_nutricionais && anamneseData.objetivos_nutricionais.length > 0
     
     // Se "outro" foi selecionado, verificar se o campo personalizado foi preenchido
-    const hasOtherObjective = anamneseData?.objetivos_nutricionais?.includes('outro')
+    const hasOtherObjective = anamneseData?.objetivos_nutricionais?.includes("outro")
     const hasCustomObjective = hasOtherObjective ? anamneseData?.objetivo_personalizado?.trim() : true
     
     // Verificar campos obrigatórios
@@ -725,7 +725,7 @@ export function UserProfileModal({
         // Função helper para processar campos que podem estar com escape duplo
         const processStringField = (field: string): string[] => {
           // Remover escapes duplos se existirem
-          const cleanField = field.replace(/\\"/g, '"')
+          const cleanField = field.replace(/\\"/g, """)
           
           // Tentar fazer parse JSON primeiro
           try {
@@ -760,9 +760,9 @@ export function UserProfileModal({
       if (userType === "paciente" && anamneseData) {
         try {
           const { data: existingAnamnese } = await supabase
-            .from('anamnese_nutricional')
-            .select('id')
-            .eq('patient_id', userId)
+            .from("anamnese_nutricional")
+            .select("id")
+            .eq("patient_id", userId)
             .single()
 
           const anamneseToSave = {
@@ -775,24 +775,24 @@ export function UserProfileModal({
 
           if (existingAnamnese) {
             await supabase
-              .from('anamnese_nutricional')
+              .from("anamnese_nutricional")
               .update(anamneseToSave)
-              .eq('patient_id', userId)
+              .eq("patient_id", userId)
           } else {
             await supabase
-              .from('anamnese_nutricional')
+              .from("anamnese_nutricional")
               .insert(anamneseToSave)
           }
 
           // Sincronizar preferências alimentares com o perfil do paciente
           if (anamneseData.preferencias_alimentares) {
             await supabase
-              .from('patient_profiles')
+              .from("patient_profiles")
               .update({ dietary_preferences: anamneseData.preferencias_alimentares })
-              .eq('user_id', userId)
+              .eq("user_id", userId)
           }
         } catch (anamneseError) {
-          console.error('Erro ao salvar anamnese:', anamneseError)
+          console.error("Erro ao salvar anamnese:", anamneseError)
           // Não bloquear o salvamento do perfil por erro na anamnese
         }
       }

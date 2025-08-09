@@ -61,18 +61,18 @@ export interface CompanyReportsData {
  */
 export async function getCompanyKPIs(companyId: string): Promise<CompanyKPIs> {
   try {
-    const { data, error } = await supabase.rpc('get_company_kpis', {
+    const { data, error } = await supabase.rpc("get_company_kpis", {
       company_uuid: companyId
     })
 
     if (error) {
-      console.error('Error fetching company KPIs:', error)
+      console.error("Error fetching company KPIs:", error)
       return getDefaultKPIs()
     }
 
     return data || getDefaultKPIs()
   } catch (error) {
-    console.error('Error in getCompanyKPIs:', error)
+    console.error("Error in getCompanyKPIs:", error)
     return getDefaultKPIs()
   }
 }
@@ -82,18 +82,18 @@ export async function getCompanyKPIs(companyId: string): Promise<CompanyKPIs> {
  */
 export async function getCompanyReportsData(companyId: string): Promise<CompanyReportsData> {
   try {
-    const { data, error } = await supabase.rpc('get_company_reports_data', {
+    const { data, error } = await supabase.rpc("get_company_reports_data", {
       company_uuid: companyId
     })
 
     if (error) {
-      console.error('Error fetching company reports data:', error)
+      console.error("Error fetching company reports data:", error)
       return getDefaultReportsData()
     }
 
     return data || getDefaultReportsData()
   } catch (error) {
-    console.error('Error in getCompanyReportsData:', error)
+    console.error("Error in getCompanyReportsData:", error)
     return getDefaultReportsData()
   }
 }
@@ -103,12 +103,12 @@ export async function getCompanyReportsData(companyId: string): Promise<CompanyR
  */
 export async function getJobPerformanceDetails(companyId: string): Promise<JobPerformanceDetail[]> {
   try {
-    const { data, error } = await supabase.rpc('get_job_performance_details', {
+    const { data, error } = await supabase.rpc("get_job_performance_details", {
       company_uuid: companyId
     });
 
     if (error) {
-      console.error('Error fetching job performance details:', error);
+      console.error("Error fetching job performance details:", error);
       throw error;
     }
 
@@ -119,11 +119,11 @@ export async function getJobPerformanceDetails(companyId: string): Promise<JobPe
       interviews: item.interviews || 0,
       hires: item.hires || 0,
       conversionRate: item.conversion_rate || 0,
-      status: item.status || 'ativa',
+      status: item.status || "ativa",
       createdAt: item.created_at
     })) || [];
   } catch (error) {
-    console.error('Error fetching job performance details:', error);
+    console.error("Error fetching job performance details:", error);
     return [];
   }
 }
@@ -137,12 +137,12 @@ export async function getMonthlyApplicationsData(companyId: string): Promise<Mon
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
 
     const { data, error } = await supabase
-      .from('job_applications')
-      .select('applied_at, status, job_id')
-      .gte('applied_at', sixMonthsAgo.toISOString())
+      .from("job_applications")
+      .select("applied_at, status, job_id")
+      .gte("applied_at", sixMonthsAgo.toISOString())
 
     if (error) {
-      console.error('Error fetching monthly applications data:', error)
+      console.error("Error fetching monthly applications data:", error)
       return getDefaultMonthlyData()
     }
 
@@ -151,7 +151,7 @@ export async function getMonthlyApplicationsData(companyId: string): Promise<Mon
     
     data?.forEach(application => {
       const date = new Date(application.applied_at)
-      const monthKey = date.toLocaleDateString('pt-BR', { month: 'short' })
+      const monthKey = date.toLocaleDateString("pt-BR", { month: "short" })
       
       if (!monthlyMap.has(monthKey)) {
         monthlyMap.set(monthKey, { applications: 0, hires: 0, interviews: 0 })
@@ -160,9 +160,9 @@ export async function getMonthlyApplicationsData(companyId: string): Promise<Mon
       const monthData = monthlyMap.get(monthKey)!
       monthData.applications++
       
-      if (application.status === 'contratado') {
+      if (application.status === "contratado") {
         monthData.hires++
-      } else if (application.status === 'entrevista') {
+      } else if (application.status === "entrevista") {
         monthData.interviews++
       }
     })
@@ -172,7 +172,7 @@ export async function getMonthlyApplicationsData(companyId: string): Promise<Mon
       ...data
     }))
   } catch (error) {
-    console.error('Error in getMonthlyApplicationsData:', error)
+    console.error("Error in getMonthlyApplicationsData:", error)
     return getDefaultMonthlyData()
   }
 }

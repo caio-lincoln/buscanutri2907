@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { supabase } from "./supabase";
 
 export interface ProfileView {
   id: string;
@@ -23,10 +23,10 @@ class ProfileViewsService {
   async recordView(nutritionistId: string, referrer?: string): Promise<void> {
     try {
       // Gerar um session_id único para esta sessão do navegador
-      let sessionId = sessionStorage.getItem('profile_view_session');
+      let sessionId = sessionStorage.getItem("profile_view_session");
       if (!sessionId) {
         sessionId = `sess_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        sessionStorage.setItem('profile_view_session', sessionId);
+        sessionStorage.setItem("profile_view_session", sessionId);
       }
 
       // Verificar se já registrou uma visualização para este nutricionista nesta sessão
@@ -38,23 +38,23 @@ class ProfileViewsService {
       }
 
       const { error } = await supabase
-        .from('profile_views')
+        .from("profile_views")
         .insert({
           nutritionist_id: nutritionistId,
           viewer_user_agent: navigator.userAgent,
           session_id: sessionId,
-          referrer: referrer || document.referrer || 'direct'
+          referrer: referrer || document.referrer || "direct"
         });
 
       if (error) {
-        console.error('Erro ao registrar visualização:', error);
+        console.error("Erro ao registrar visualização:", error);
         return;
       }
 
       // Marcar como visualizado nesta sessão
-      sessionStorage.setItem(viewedKey, 'true');
+      sessionStorage.setItem(viewedKey, "true");
     } catch (error) {
-      console.error('Erro ao registrar visualização:', error);
+      console.error("Erro ao registrar visualização:", error);
     }
   }
 
@@ -62,13 +62,13 @@ class ProfileViewsService {
   async getViewStats(nutritionistId: string): Promise<ProfileViewStats> {
     try {
       const { data, error } = await supabase
-        .from('nutritionist_profiles')
-        .select('total_views, unique_views, last_view_at')
-        .eq('id', nutritionistId)
+        .from("nutritionist_profiles")
+        .select("total_views, unique_views, last_view_at")
+        .eq("id", nutritionistId)
         .single();
 
       if (error) {
-        console.error('Erro ao obter estatísticas de visualizações:', error);
+        console.error("Erro ao obter estatísticas de visualizações:", error);
         // Retorna valores padrão em caso de erro
         return {
           total_views: 0,
@@ -83,7 +83,7 @@ class ProfileViewsService {
         last_view_at: data.last_view_at
       };
     } catch (error) {
-      console.error('Erro ao obter estatísticas de visualizações:', error);
+      console.error("Erro ao obter estatísticas de visualizações:", error);
       // Retorna valores padrão em caso de erro
       return {
         total_views: 0,
@@ -98,21 +98,21 @@ class ProfileViewsService {
     try {
       // Usar query direta em vez de RPC para evitar problemas de sessão
       const { data, error } = await supabase
-        .from('profile_views')
-        .select('viewed_at')
-        .eq('nutritionist_id', nutritionistId)
-        .gte('viewed_at', new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000).toISOString())
-        .order('viewed_at', { ascending: false });
+        .from("profile_views")
+        .select("viewed_at")
+        .eq("nutritionist_id", nutritionistId)
+        .gte("viewed_at", new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000).toISOString())
+        .order("viewed_at", { ascending: false });
 
       if (error) {
-        console.error('Erro ao obter visualizações diárias:', error);
+        console.error("Erro ao obter visualizações diárias:", error);
         return [];
       }
 
       // Processar dados para agrupar por dia
       const dailyViews: { [key: string]: Set<string> } = {};
       data?.forEach(view => {
-        const date = new Date(view.viewed_at).toISOString().split('T')[0];
+        const date = new Date(view.viewed_at).toISOString().split("T")[0];
         if (!dailyViews[date]) {
           dailyViews[date] = new Set();
         }
@@ -124,7 +124,7 @@ class ProfileViewsService {
         unique_views: views.size
       })).sort((a, b) => a.date.localeCompare(b.date));
     } catch (error) {
-      console.error('Erro ao obter visualizações diárias:', error);
+      console.error("Erro ao obter visualizações diárias:", error);
       return [];
     }
   }
@@ -133,18 +133,18 @@ class ProfileViewsService {
   async getTotalViews(nutritionistId: string): Promise<number> {
     try {
       const { count, error } = await supabase
-        .from('profile_views')
-        .select('*', { count: 'exact', head: true })
-        .eq('nutritionist_id', nutritionistId);
+        .from("profile_views")
+        .select("*", { count: "exact", head: true })
+        .eq("nutritionist_id", nutritionistId);
 
       if (error) {
-        console.error('Erro ao obter total de visualizações:', error);
+        console.error("Erro ao obter total de visualizações:", error);
         return 0;
       }
 
       return count || 0;
     } catch (error) {
-      console.error('Erro ao obter total de visualizações:', error);
+      console.error("Erro ao obter total de visualizações:", error);
       return 0;
     }
   }
@@ -153,12 +153,12 @@ class ProfileViewsService {
   async getUniqueViews(nutritionistId: string): Promise<number> {
     try {
       const { data, error } = await supabase
-        .from('profile_views')
-        .select('session_id')
-        .eq('nutritionist_id', nutritionistId);
+        .from("profile_views")
+        .select("session_id")
+        .eq("nutritionist_id", nutritionistId);
 
       if (error) {
-        console.error('Erro ao obter visualizações únicas:', error);
+        console.error("Erro ao obter visualizações únicas:", error);
         return 0;
       }
 
@@ -166,7 +166,7 @@ class ProfileViewsService {
       const uniqueSessions = new Set(data?.map(view => view.session_id).filter(Boolean));
       return uniqueSessions.size;
     } catch (error) {
-      console.error('Erro ao obter visualizações únicas:', error);
+      console.error("Erro ao obter visualizações únicas:", error);
       return 0;
     }
   }
@@ -175,20 +175,20 @@ class ProfileViewsService {
   async getRecentViews(nutritionistId: string, limit: number = 10): Promise<ProfileView[]> {
     try {
       const { data, error } = await supabase
-        .from('profile_views')
-        .select('*')
-        .eq('nutritionist_id', nutritionistId)
-        .order('viewed_at', { ascending: false })
+        .from("profile_views")
+        .select("*")
+        .eq("nutritionist_id", nutritionistId)
+        .order("viewed_at", { ascending: false })
         .limit(limit);
 
       if (error) {
-        console.error('Erro ao obter visualizações recentes:', error);
+        console.error("Erro ao obter visualizações recentes:", error);
         return [];
       }
 
       return data || [];
     } catch (error) {
-      console.error('Erro ao obter visualizações recentes:', error);
+      console.error("Erro ao obter visualizações recentes:", error);
       return [];
     }
   }

@@ -132,7 +132,7 @@ export async function addFavoriteNutritionist(patientId: string, nutritionistId:
       .eq("nutritionist_id", nutritionistId)
       .single()
 
-    if (checkError && checkError.code !== 'PGRST116') {
+    if (checkError && checkError.code !== "PGRST116") {
       console.error("Erro ao verificar favorito existente:", checkError)
       return false
     }

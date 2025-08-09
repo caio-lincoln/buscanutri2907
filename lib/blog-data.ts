@@ -39,7 +39,7 @@ export const blogCategories = [
 export async function getAllBlogPosts(): Promise<BlogPost[]> {
   try {
     const { data: posts, error } = await supabase
-      .from('blog_posts')
+      .from("blog_posts")
       .select(`
         *,
         nutritionist_profiles!inner(
@@ -48,11 +48,11 @@ export async function getAllBlogPosts(): Promise<BlogPost[]> {
           profile_image_url
         )
       `)
-      .eq('published', true)
-      .order('created_at', { ascending: false })
+      .eq("published", true)
+      .order("created_at", { ascending: false })
 
     if (error) {
-      console.error('Erro ao buscar posts do blog:', error)
+      console.error("Erro ao buscar posts do blog:", error)
       return []
     }
 
@@ -62,17 +62,17 @@ export async function getAllBlogPosts(): Promise<BlogPost[]> {
         return {
           id: post.id,
           title: post.title,
-          excerpt: post.excerpt || '',
+          excerpt: post.excerpt || "",
           content: post.content,
-          image: post.image_url || '/placeholder.svg?height=400&width=800',
-          author: post.nutritionist_profiles?.full_name || 'Autor Desconhecido',
+          image: post.image_url || "/placeholder.svg?height=400&width=800",
+          author: post.nutritionist_profiles?.full_name || "Autor Desconhecido",
           authorId: post.author_id,
-          authorBio: post.nutritionist_profiles?.bio || '',
-          authorImage: post.nutritionist_profiles?.profile_image_url || '/placeholder.svg?height=100&width=100',
-          date: new Date(post.created_at).toISOString().split('T')[0],
+          authorBio: post.nutritionist_profiles?.bio || "",
+          authorImage: post.nutritionist_profiles?.profile_image_url || "/placeholder.svg?height=100&width=100",
+          date: new Date(post.created_at).toISOString().split("T")[0],
           category: post.category,
           tags: post.tags || [],
-          readTime: post.read_time || '5 min de leitura',
+          readTime: post.read_time || "5 min de leitura",
           views: post.views || 0,
           featured: post.featured || false,
           badges: badges.map((nb) => nb.badge)
@@ -82,7 +82,7 @@ export async function getAllBlogPosts(): Promise<BlogPost[]> {
 
     return postsWithBadges
   } catch (error) {
-    console.error('Erro ao buscar posts do blog:', error)
+    console.error("Erro ao buscar posts do blog:", error)
     return []
   }
 }
@@ -91,7 +91,7 @@ export async function getAllBlogPosts(): Promise<BlogPost[]> {
 export async function getBlogPostById(id: string): Promise<BlogPost | null> {
   try {
     const { data: post, error } = await supabase
-      .from('blog_posts')
+      .from("blog_posts")
       .select(`
         *,
         nutritionist_profiles!inner(
@@ -100,12 +100,12 @@ export async function getBlogPostById(id: string): Promise<BlogPost | null> {
           profile_image_url
         )
       `)
-      .eq('id', id)
-      .eq('published', true)
+      .eq("id", id)
+      .eq("published", true)
       .single()
 
     if (error || !post) {
-      console.error('Erro ao buscar post do blog:', error)
+      console.error("Erro ao buscar post do blog:", error)
       return null
     }
 
@@ -113,30 +113,30 @@ export async function getBlogPostById(id: string): Promise<BlogPost | null> {
     
     // Incrementar visualizações
     await supabase
-      .from('blog_posts')
+      .from("blog_posts")
       .update({ views: (post.views || 0) + 1 })
-      .eq('id', id)
+      .eq("id", id)
 
     return {
       id: post.id,
       title: post.title,
-      excerpt: post.excerpt || '',
+      excerpt: post.excerpt || "",
       content: post.content,
-      image: post.image_url || '/placeholder.svg?height=400&width=800',
-      author: post.nutritionist_profiles?.full_name || 'Autor Desconhecido',
+      image: post.image_url || "/placeholder.svg?height=400&width=800",
+      author: post.nutritionist_profiles?.full_name || "Autor Desconhecido",
       authorId: post.author_id,
-      authorBio: post.nutritionist_profiles?.bio || '',
-      authorImage: post.nutritionist_profiles?.profile_image_url || '/placeholder.svg?height=100&width=100',
-      date: new Date(post.created_at).toISOString().split('T')[0],
+      authorBio: post.nutritionist_profiles?.bio || "",
+      authorImage: post.nutritionist_profiles?.profile_image_url || "/placeholder.svg?height=100&width=100",
+      date: new Date(post.created_at).toISOString().split("T")[0],
       category: post.category,
       tags: post.tags || [],
-      readTime: post.read_time || '5 min de leitura',
+      readTime: post.read_time || "5 min de leitura",
       views: (post.views || 0) + 1,
       featured: post.featured || false,
       badges: badges.map((nb) => nb.badge)
     } as BlogPost
   } catch (error) {
-    console.error('Erro ao buscar post do blog:', error)
+    console.error("Erro ao buscar post do blog:", error)
     return null
   }
 }
@@ -145,7 +145,7 @@ export async function getBlogPostById(id: string): Promise<BlogPost | null> {
 export async function getBlogPostsByAuthor(authorId: string): Promise<BlogPost[]> {
   try {
     const { data: posts, error } = await supabase
-      .from('blog_posts')
+      .from("blog_posts")
       .select(`
         *,
         nutritionist_profiles!inner(
@@ -154,11 +154,11 @@ export async function getBlogPostsByAuthor(authorId: string): Promise<BlogPost[]
           profile_image_url
         )
       `)
-      .eq('author_id', authorId)
-      .order('created_at', { ascending: false })
+      .eq("author_id", authorId)
+      .order("created_at", { ascending: false })
 
     if (error) {
-      console.error('Erro ao buscar posts do autor:', error)
+      console.error("Erro ao buscar posts do autor:", error)
       return []
     }
 
@@ -168,17 +168,17 @@ export async function getBlogPostsByAuthor(authorId: string): Promise<BlogPost[]
         return {
           id: post.id,
           title: post.title,
-          excerpt: post.excerpt || '',
+          excerpt: post.excerpt || "",
           content: post.content,
-          image: post.image_url || '/placeholder.svg?height=400&width=800',
-          author: post.nutritionist_profiles?.full_name || 'Autor Desconhecido',
+          image: post.image_url || "/placeholder.svg?height=400&width=800",
+          author: post.nutritionist_profiles?.full_name || "Autor Desconhecido",
           authorId: post.author_id,
-          authorBio: post.nutritionist_profiles?.bio || '',
-          authorImage: post.nutritionist_profiles?.profile_image_url || '/placeholder.svg?height=100&width=100',
-          date: new Date(post.created_at).toISOString().split('T')[0],
+          authorBio: post.nutritionist_profiles?.bio || "",
+          authorImage: post.nutritionist_profiles?.profile_image_url || "/placeholder.svg?height=100&width=100",
+          date: new Date(post.created_at).toISOString().split("T")[0],
           category: post.category,
           tags: post.tags || [],
-          readTime: post.read_time || '5 min de leitura',
+          readTime: post.read_time || "5 min de leitura",
           views: post.views || 0,
           featured: post.featured || false,
           badges: badges.map((nb) => nb.badge)
@@ -188,7 +188,7 @@ export async function getBlogPostsByAuthor(authorId: string): Promise<BlogPost[]
 
     return postsWithBadges
   } catch (error) {
-    console.error('Erro ao buscar posts do autor:', error)
+    console.error("Erro ao buscar posts do autor:", error)
     return []
   }
 }
@@ -200,20 +200,20 @@ export async function addBlogPost(newPostData: Omit<BlogPost, "id" | "date" | "v
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     
     if (authError || !user) {
-      console.error('Usuário não autenticado:', authError)
-      throw new Error('Usuário não autenticado')
+      console.error("Usuário não autenticado:", authError)
+      throw new Error("Usuário não autenticado")
     }
 
-    console.log('Usuário autenticado:', user.id, 'Tentando criar post para author_id:', newPostData.authorId)
+    console.log("Usuário autenticado:", user.id, "Tentando criar post para author_id:", newPostData.authorId)
 
     // Verificar se o usuário autenticado é o mesmo que está tentando criar o post
     if (user.id !== newPostData.authorId) {
-      console.error('Usuário não autorizado a criar post para outro autor')
-      throw new Error('Não autorizado')
+      console.error("Usuário não autorizado a criar post para outro autor")
+      throw new Error("Não autorizado")
     }
 
     const { data: post, error } = await supabase
-      .from('blog_posts')
+      .from("blog_posts")
       .insert({
         title: newPostData.title,
         excerpt: newPostData.excerpt,
@@ -230,30 +230,30 @@ export async function addBlogPost(newPostData: Omit<BlogPost, "id" | "date" | "v
       .single()
 
     if (error || !post) {
-      console.error('Erro ao adicionar post:', error)
+      console.error("Erro ao adicionar post:", error)
       return null
     }
 
     return {
       id: post.id,
       title: post.title,
-      excerpt: post.excerpt || '',
+      excerpt: post.excerpt || "",
       content: post.content,
-      image: post.image_url || '/placeholder.svg?height=400&width=800',
+      image: post.image_url || "/placeholder.svg?height=400&width=800",
       author: newPostData.author,
       authorId: post.author_id,
       authorBio: newPostData.authorBio,
       authorImage: newPostData.authorImage,
-      date: new Date(post.created_at).toISOString().split('T')[0],
+      date: new Date(post.created_at).toISOString().split("T")[0],
       category: post.category,
       tags: post.tags || [],
-      readTime: post.read_time || '5 min de leitura',
+      readTime: post.read_time || "5 min de leitura",
       views: 0,
       featured: post.featured || false,
       badges: []
     } as BlogPost
   } catch (error) {
-    console.error('Erro ao adicionar post:', error)
+    console.error("Erro ao adicionar post:", error)
     return null
   }
 }
@@ -262,7 +262,7 @@ export async function addBlogPost(newPostData: Omit<BlogPost, "id" | "date" | "v
 export async function updateBlogPost(updatedPost: BlogPost): Promise<BlogPost | null> {
   try {
     const { data: post, error } = await supabase
-      .from('blog_posts')
+      .from("blog_posts")
       .update({
         title: updatedPost.title,
         excerpt: updatedPost.excerpt,
@@ -274,92 +274,92 @@ export async function updateBlogPost(updatedPost: BlogPost): Promise<BlogPost | 
         featured: updatedPost.featured,
         updated_at: new Date().toISOString()
       })
-      .eq('id', updatedPost.id)
+      .eq("id", updatedPost.id)
       .select()
       .single()
 
     if (error || !post) {
-      console.error('Erro ao atualizar post:', error)
+      console.error("Erro ao atualizar post:", error)
       return null
     }
 
     return {
       ...updatedPost,
-      date: new Date(post.updated_at || post.created_at).toISOString().split('T')[0]
+      date: new Date(post.updated_at || post.created_at).toISOString().split("T")[0]
     }
   } catch (error) {
-    console.error('Erro ao atualizar post:', error)
+    console.error("Erro ao atualizar post:", error)
     return null
   }
 }
 
 // Função para deletar um post
 export async function deleteBlogPost(id: string, authenticatedSupabase?: any): Promise<boolean> {
-  console.log('🗑️ Iniciando deleteBlogPost para ID:', id)
+  console.log("🗑️ Iniciando deleteBlogPost para ID:", id)
   
   try {
     // Usar o cliente autenticado se fornecido, senão usar o padrão
     const clientToUse = authenticatedSupabase || supabase
     
     // Verificar se o usuário está autenticado
-    console.log('🔐 Verificando autenticação...')
+    console.log("🔐 Verificando autenticação...")
     const { data: { user }, error: authError } = await clientToUse.auth.getUser()
     
     if (authError || !user) {
-      console.error('❌ Usuário não autenticado:', authError)
+      console.error("❌ Usuário não autenticado:", authError)
       return false
     }
     
-    console.log('✅ Usuário autenticado:', user.id)
+    console.log("✅ Usuário autenticado:", user.id)
 
     // Primeiro, verificar se o post existe e se o usuário é o autor
-    console.log('🔍 Buscando post para verificar autorização...')
+    console.log("🔍 Buscando post para verificar autorização...")
     const { data: post, error: fetchError } = await clientToUse
-      .from('blog_posts')
-      .select('author_id, title')
-      .eq('id', id)
+      .from("blog_posts")
+      .select("author_id, title")
+      .eq("id", id)
       .single()
 
     if (fetchError || !post) {
-      console.error('❌ Post não encontrado:', fetchError)
+      console.error("❌ Post não encontrado:", fetchError)
       return false
     }
     
-    console.log('📄 Post encontrado:', { id, title: post.title, author_id: post.author_id })
+    console.log("📄 Post encontrado:", { id, title: post.title, author_id: post.author_id })
 
     // Verificar se o usuário autenticado é o autor do post
     if (post.author_id !== user.id) {
-      console.error('❌ Usuário não autorizado a deletar este post. Author:', post.author_id, 'User:', user.id)
+      console.error("❌ Usuário não autorizado a deletar este post. Author:", post.author_id, "User:", user.id)
       return false
     }
     
-    console.log('✅ Autorização confirmada. Procedendo com a exclusão...')
+    console.log("✅ Autorização confirmada. Procedendo com a exclusão...")
 
     // Deletar o post
-    console.log('🗑️ Executando DELETE no Supabase...')
+    console.log("🗑️ Executando DELETE no Supabase...")
     const { data: deletedData, error } = await clientToUse
-      .from('blog_posts')
+      .from("blog_posts")
       .delete()
-      .eq('id', id)
-      .eq('author_id', user.id) // Dupla verificação de segurança
+      .eq("id", id)
+      .eq("author_id", user.id) // Dupla verificação de segurança
       .select() // Retorna os dados deletados
 
     if (error) {
-      console.error('❌ Erro ao deletar post:', error)
+      console.error("❌ Erro ao deletar post:", error)
       return false
     }
 
-    console.log('✅ Resposta do DELETE:', deletedData)
+    console.log("✅ Resposta do DELETE:", deletedData)
     
     if (!deletedData || deletedData.length === 0) {
-      console.error('⚠️ Nenhum registro foi deletado. Possível problema com RLS ou condições.')
+      console.error("⚠️ Nenhum registro foi deletado. Possível problema com RLS ou condições.")
       return false
     }
 
-    console.log('🎉 Post deletado com sucesso:', id)
+    console.log("🎉 Post deletado com sucesso:", id)
     return true
   } catch (error) {
-    console.error('💥 Erro inesperado ao deletar post:', error)
+    console.error("💥 Erro inesperado ao deletar post:", error)
     return false
   }
 }

@@ -38,24 +38,24 @@ export async function getContentEngagementStats(nutritionistId: string): Promise
   try {
     // Buscar posts do blog do nutricionista
     const { data: blogPosts, error: blogError } = await supabase
-      .from('blog_posts')
-      .select('id, title, views, created_at, tags')
-      .eq('author_id', nutritionistId)
-      .order('views', { ascending: false })
+      .from("blog_posts")
+      .select("id, title, views, created_at, tags")
+      .eq("author_id", nutritionistId)
+      .order("views", { ascending: false })
 
     if (blogError) {
-      console.error('Erro ao buscar posts do blog:', blogError)
+      console.error("Erro ao buscar posts do blog:", blogError)
       throw blogError
     }
 
     // Buscar respostas do fórum do nutricionista
     const { data: forumAnswers, error: forumAnswersError } = await supabase
-      .from('forum_answers')
-      .select('id, question_id, likes_count, created_at')
-      .eq('author_id', nutritionistId)
+      .from("forum_answers")
+      .select("id, question_id, likes_count, created_at")
+      .eq("author_id", nutritionistId)
 
     if (forumAnswersError) {
-      console.error('Erro ao buscar respostas do fórum:', forumAnswersError)
+      console.error("Erro ao buscar respostas do fórum:", forumAnswersError)
     }
 
     // Buscar perguntas respondidas pelo nutricionista (para estatísticas)
@@ -64,13 +64,13 @@ export async function getContentEngagementStats(nutritionistId: string): Promise
     
     if (questionIds.length > 0) {
       const { data: questions, error: questionsError } = await supabase
-        .from('forum_questions')
-        .select('id, title, views, answers_count, likes_count, created_at, is_answered')
-        .in('id', questionIds)
-        .order('views', { ascending: false })
+        .from("forum_questions")
+        .select("id, title, views, answers_count, likes_count, created_at, is_answered")
+        .in("id", questionIds)
+        .order("views", { ascending: false })
 
       if (questionsError) {
-        console.error('Erro ao buscar perguntas do fórum:', questionsError)
+        console.error("Erro ao buscar perguntas do fórum:", questionsError)
       } else {
         forumQuestions = questions || []
       }
@@ -124,7 +124,7 @@ export async function getContentEngagementStats(nutritionistId: string): Promise
     }
 
   } catch (error) {
-    console.error('Erro ao buscar estatísticas de engajamento:', error)
+    console.error("Erro ao buscar estatísticas de engajamento:", error)
     return {
       totalBlogPosts: 0,
       totalBlogViews: 0,
@@ -144,13 +144,13 @@ export async function getContentEngagementStats(nutritionistId: string): Promise
 export async function getBlogPostDetails(postId: string): Promise<BlogEngagement | null> {
   try {
     const { data: post, error } = await supabase
-      .from('blog_posts')
-      .select('id, title, views, created_at, tags')
-      .eq('id', postId)
+      .from("blog_posts")
+      .select("id, title, views, created_at, tags")
+      .eq("id", postId)
       .single()
 
     if (error) {
-      console.error('Erro ao buscar detalhes do post:', error)
+      console.error("Erro ao buscar detalhes do post:", error)
       return null
     }
 
@@ -162,7 +162,7 @@ export async function getBlogPostDetails(postId: string): Promise<BlogEngagement
       tags: post.tags || []
     }
   } catch (error) {
-    console.error('Erro ao buscar detalhes do post:', error)
+    console.error("Erro ao buscar detalhes do post:", error)
     return null
   }
 }
@@ -173,13 +173,13 @@ export async function getBlogPostDetails(postId: string): Promise<BlogEngagement
 export async function getForumQuestionDetails(questionId: string): Promise<ForumEngagement | null> {
   try {
     const { data: question, error } = await supabase
-      .from('forum_questions')
-      .select('id, title, views, answers_count, likes_count, created_at, is_answered')
-      .eq('id', questionId)
+      .from("forum_questions")
+      .select("id, title, views, answers_count, likes_count, created_at, is_answered")
+      .eq("id", questionId)
       .single()
 
     if (error) {
-      console.error('Erro ao buscar detalhes da pergunta:', error)
+      console.error("Erro ao buscar detalhes da pergunta:", error)
       return null
     }
 
@@ -193,7 +193,7 @@ export async function getForumQuestionDetails(questionId: string): Promise<Forum
       is_answered: question.is_answered || false
     }
   } catch (error) {
-    console.error('Erro ao buscar detalhes da pergunta:', error)
+    console.error("Erro ao buscar detalhes da pergunta:", error)
     return null
   }
 }

@@ -61,21 +61,31 @@ const consultationTypes = [
     icon: Users,
     title: "Consulta Presencial",
     description: "Atendimento no consultório do nutricionista",
-    price: "A partir de R$ 80",
-    features: ["Avaliação física completa", "Bioimpedância", "Plano alimentar personalizado"],
+    features: [
+      "Avaliação nutricional personalizada",
+      "Plano alimentar individualizado", 
+      "Avaliação física com diagnóstico nutricional",
+      "Orientações nutricionais",
+      "Acompanhamento e monitoramento"
+    ],
   },
   {
     icon: Video,
     title: "Consulta Online",
-    description: "Atendimento por videochamada",
-    price: "A partir de R$ 60",
-    features: ["Flexibilidade de horários", "Sem deslocamento", "Acompanhamento digital"],
+    description: "Atendimento por vídeo chamada",
+    features: [
+      "Flexibilidade de horários",
+      "Sem deslocamento", 
+      "Avaliação nutricional personalizada",
+      "Plano alimentar individualizado",
+      "Orientações nutricionais",
+      "Acompanhamento e monitoramento"
+    ],
   },
   {
     icon: MessageSquare,
     title: "Acompanhamento",
     description: "Suporte contínuo via chat",
-    price: "A partir de R$ 40",
     features: ["Dúvidas rápidas", "Ajustes no plano", "Motivação diária"],
   },
 ]
@@ -233,7 +243,6 @@ export default function ParaPacientesPage() {
                     </div>
                     <CardTitle className="text-xl text-[#1E1D40]">{type.title}</CardTitle>
                     <p className="text-[#1E1D40]/70">{type.description}</p>
-                    <div className="text-2xl font-bold text-[#D90D32]">{type.price}</div>
                   </CardHeader>
                   <CardContent>
                     <ul className="space-y-3">
@@ -286,3 +295,4 @@ export default function ParaPacientesPage() {
     </div>
   )
 }
+

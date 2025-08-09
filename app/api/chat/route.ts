@@ -69,7 +69,7 @@ IMPORTANTE: Você pode usar formatação de texto para melhorar a legibilidade d
 🔵 **IrisBot**: "Casos de Síndrome dos Ovários Policísticos exigem acompanhamento nutricional personalizado. Um(a) nutricionista especializado(a) em **Nutrição Funcional** ou **Nutrição Hormonal** pode ajudar. Deseja que eu mostre os profissionais com esse foco?"
 
 🟢 **Usuário (Profissional)**: "Como acesso os relatórios de evolução dos meus pacientes?"
-🔵 **IrisBot**: "No seu dashboard, vá até a aba **'Pacientes'** e selecione o nome desejado. Depois clique em **'Evolução'**. Lá você encontrará os registros alimentares, gráficos e histórico. Posso abrir essa seção para você agora?"
+🔵 **IrisBot**: "No seu dashboard, vá até a aba **"Pacientes"** e selecione o nome desejado. Depois clique em **"Evolução"**. Lá você encontrará os registros alimentares, gráficos e histórico. Posso abrir essa seção para você agora?"
 
 💬 **MENSAGEM PADRÃO PARA LIMITES ÉTICOS**:
 "Essa questão envolve avaliação individualizada. Por isso, é importante que você agende uma consulta com um(a) nutricionista qualificado(a). Posso te ajudar a encontrar um agora mesmo aqui na plataforma BuscaNutri!"
@@ -93,8 +93,8 @@ IMPORTANTE: Você pode usar formatação de texto para melhorar a legibilidade d
     // Converter mensagens para o formato do Gemini
     const lastMessage = messages[messages.length - 1]
     const conversationHistory = messages.slice(0, -1).map((msg: any) => 
-      `${msg.role === 'user' ? 'Usuário' : 'Iris'}: ${msg.content}`
-    ).join('\n')
+      `${msg.role === "user" ? "Usuário" : "Iris"}: ${msg.content}`
+    ).join("\n")
 
     const fullPrompt = `${systemPrompt}
 
@@ -119,10 +119,10 @@ Iris:`
               controller.enqueue(encoder.encode(`data: ${JSON.stringify({ content: chunkText })}\n\n`))
             }
           }
-          controller.enqueue(encoder.encode('data: [DONE]\n\n'))
+          controller.enqueue(encoder.encode("data: [DONE]\n\n"))
           controller.close()
         } catch (error) {
-          console.error('Erro no streaming:', error)
+          console.error("Erro no streaming:", error)
           controller.error(error)
         }
       }
@@ -130,9 +130,9 @@ Iris:`
 
     return new Response(stream, {
       headers: {
-        'Content-Type': 'text/plain; charset=utf-8',
-        'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive',
+        "Content-Type": "text/plain; charset=utf-8",
+        "Cache-Control": "no-cache",
+        "Connection": "keep-alive",
       },
     })
 
@@ -149,3 +149,4 @@ Iris:`
     )
   }
 }
+

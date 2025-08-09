@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Search, MapPin, Star, Calendar, Filter, User, Video, Shield, Heart, Activity, Users, ArrowRight, Bot, Target, Grid3X3, List, BookOpen, CheckCircle, Clock, Scale, Ruler, Utensils, Pill, Dumbbell, Droplets, AlertTriangle, FileText, MessageSquare } from 'lucide-react'
-import { getUserProfile } from "@/lib/auth"
+import { getUserProfile, getCurrentUser } from "@/lib/auth"
 import type { PatientProfile } from "@/lib/supabase"
 import { useAuth } from "@/contexts/auth-context"
 import { NotificationsPanel } from "@/components/notifications-panel"
@@ -44,6 +44,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import Link from "next/link"
 import { PatientForumTab } from "@/components/patient-forum-tab"
 import { AnamneseNutricionalModal } from "@/components/anamnese-nutricional-modal"
+import { useRealtimeNutritionists } from "@/hooks/use-realtime-nutritionists"
 
 import { format, parseISO } from "date-fns"
 import { ptBR } from "date-fns/locale"
@@ -188,11 +189,25 @@ export default function PatientDashboard() {
   const [showVerifiedOnlyNutritionist, setShowVerifiedOnlyNutritionist] = useState(false)
   const [sortByNutritionist, setSortByNutritionist] = useState("rating")
   const [viewModeNutritionist, setViewModeNutritionist] = useState<"grid" | "list">("grid")
-  const [nutritionists, setNutritionists] = useState<NutritionistProfile[]>([])
-  const [loadingNutritionists, setLoadingNutritionists] = useState(false)
   const [availableSpecialties, setAvailableSpecialties] = useState<Specialty[]>([])
   const [availableLocations, setAvailableLocations] = useState<string[]>([])
   const [favoritedNutritionists, setFavoritedNutritionists] = useState<Set<string>>(new Set())
+
+  // Hook de realtime para nutricionistas
+  const { 
+    nutritionists, 
+    loading: loadingNutritionists, 
+    error: nutritionistsError,
+    refreshNutritionists 
+  } = useRealtimeNutritionists({
+    searchTerm: searchNutritionistTerm,
+    specialty: selectedNutritionistSpecialty,
+    state: selectedNutritionistState,
+    priceRange: selectedNutritionistPriceRange,
+    onlineOnly: onlineOnlyNutritionist,
+    verifiedOnly: showVerifiedOnlyNutritionist,
+    sortBy: sortByNutritionist
+  })
 
   // Estados para o modal de avaliação
   const [isRatingModalOpen, setIsRatingModalOpen] = useState(false)
@@ -225,20 +240,10 @@ export default function PatientDashboard() {
 
   useEffect(() => {
     if (activeTab === "buscar") {
-      loadNutritionists()
       loadAvailableSpecialties()
       loadAvailableLocations()
     }
-  }, [
-    activeTab,
-    searchNutritionistTerm,
-    selectedNutritionistSpecialty,
-    selectedNutritionistState,
-    selectedNutritionistPriceRange,
-    onlineOnlyNutritionist,
-    showVerifiedOnlyNutritionist,
-    sortByNutritionist,
-  ])
+  }, [activeTab])
 
   // Recarregar dados quando a aba perfil for ativada
   useEffect(() => {
@@ -288,109 +293,6 @@ export default function PatientDashboard() {
 
 
   // Funções para a aba "Buscar Nutricionistas"
-  const loadNutritionists = async () => {
-    try {
-      setLoadingNutritionists(true)
-
-      let query = supabase.from("nutritionist_profiles").select(`
-        id,
-        user_id,
-        full_name,
-        bio,
-        location,
-        profile_image_url,
-        crn,
-        rating,
-        total_reviews,
-        experience_years,
-        is_verified,
-        nutritionist_services (*),
-        nutritionist_specialties (
-          specialties (
-            id,
-            name
-          )
-        )
-      `)
-
-      if (searchNutritionistTerm) {
-        query = query.or(`full_name.ilike.%${searchNutritionistTerm}%,bio.ilike.%${searchNutritionistTerm}%`)
-      }
-
-      if (selectedNutritionistState !== "Todas") {
-        query = query.ilike("location", `%${selectedNutritionistState}%`)
-      }
-
-      if (onlineOnlyNutritionist) {
-        // Assumindo que nutritionist_services tem online_available
-        query = query.in(
-          "id",
-          supabase.from("nutritionist_services").select("nutritionist_id").eq("online_available", true),
-        )
-      }
-
-      if (showVerifiedOnlyNutritionist) {
-        query = query.eq("is_verified", true)
-      }
-
-      const { data, error } = await query
-
-      if (error) {
-        console.error("Error loading nutritionists:", error)
-        throw error
-      }
-
-      let filteredData: NutritionistProfile[] = data || []
-
-      // Filtrar nutricionistas com IDs válidos
-      filteredData = filteredData.filter((nutritionist) => {
-        if (!nutritionist.id || nutritionist.id === 'null' || nutritionist.id === 'undefined') {
-          console.warn('Nutricionista com ID inválido encontrado:', nutritionist)
-          return false
-        }
-        return true
-      })
-
-      if (selectedNutritionistSpecialty !== "Todas") {
-        filteredData = filteredData.filter((nutritionist) =>
-          nutritionist.nutritionist_specialties?.some(
-            (spec) => spec.specialties?.name === selectedNutritionistSpecialty,
-          ),
-        )
-      }
-
-      // Filtrar por preço
-      filteredData = filteredData.filter((nutritionist) => {
-        const minPrice = getMinPrice(nutritionist.nutritionist_services)
-        if (minPrice === null) return false // Se não tiver serviços, não mostra
-        return minPrice >= selectedNutritionistPriceRange.min && minPrice <= selectedNutritionistPriceRange.max
-      })
-
-      // Ordenar
-      filteredData.sort((a, b) => {
-        switch (sortByNutritionist) {
-          case "rating":
-            return (b.rating || 0) - (a.rating || 0)
-          case "price-low":
-            return (getMinPrice(a.nutritionist_services) || 0) - (getMinPrice(b.nutritionist_services) || 0)
-          case "price-high":
-            return (getMinPrice(b.nutritionist_services) || 0) - (getMinPrice(a.nutritionist_services) || 0)
-          case "name":
-            return a.full_name.localeCompare(b.full_name)
-          case "experience":
-            return (b.experience_years || 0) - (a.experience_years || 0)
-          default:
-            return 0
-        }
-      })
-
-      setNutritionists(filteredData)
-    } catch (error) {
-      console.error("Error loading nutritionists:", error)
-    } finally {
-      setLoadingNutritionists(false)
-    }
-  }
 
   const loadAvailableSpecialties = async () => {
     try {
@@ -605,7 +507,7 @@ export default function PatientDashboard() {
                     </div>
                     <div>
                       <h1 className="text-3xl lg:text-4xl font-bold">
-                        Olá, {profile?.full_name ? (profile.full_name.split(" ")[0] || "Paciente") : "Paciente"}! 👋
+                        Olá, {profile?.full_name ? (profile.full_name.split(" ")[0] || "Paciente") : "Paciente"}!
                       </h1>
                       <p className="text-red-100 text-lg mt-1">Como está sua jornada de saúde hoje?</p>
                     </div>
@@ -1027,8 +929,23 @@ export default function PatientDashboard() {
               </div>
             )}
 
+            {/* Error State */}
+            {nutritionistsError && (
+              <div className="text-center py-12">
+                <div className="text-6xl mb-4">!</div>
+                <h3 className="text-xl font-semibold text-red-600 mb-2">Erro ao carregar nutricionistas</h3>
+                <p className="text-gray-600 mb-6">Ocorreu um problema ao buscar os nutricionistas. Tente novamente.</p>
+                <Button
+                  onClick={() => refreshNutritionists()}
+                  className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700"
+                >
+                  Tentar novamente
+                </Button>
+              </div>
+            )}
+
             {/* Results */}
-            {!loadingNutritionists && (
+            {!loadingNutritionists && !nutritionistsError && (
               <>
                 {nutritionists.length > 0 ? (
                   <div
@@ -1174,7 +1091,7 @@ export default function PatientDashboard() {
                   </div>
                 ) : (
                   <div className="text-center py-12">
-                    <div className="text-6xl mb-4">🔍</div>
+                    <div className="text-6xl mb-4">?</div>
                     <h3 className="text-xl font-semibold text-[#1E1D40] mb-2">Nenhum nutricionista encontrado</h3>
                     <p className="text-gray-600 mb-6">Tente ajustar os filtros ou fazer uma nova busca</p>
                     <Button
@@ -1818,3 +1735,4 @@ export default function PatientDashboard() {
     </DashboardSidebar>
   )
 }
+

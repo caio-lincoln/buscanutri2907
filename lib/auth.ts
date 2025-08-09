@@ -290,7 +290,7 @@ export async function getCurrentUser() {
     // Garantir que user_type sempre tenha um valor
     if (!userData.user_type) {
       userData.user_type = "paciente"
-      console.log("⚠️ user_type estava undefined, definindo como 'paciente'")
+      console.log("⚠️ user_type estava undefined, definindo como paciente")
     }
     return userData
   } catch (error: any) {
@@ -324,7 +324,7 @@ export async function getUserProfile(userId: string, userType: UserType) {
   }
 
   // Processar dados para garantir tipos corretos, especialmente para nutricionistas
-  let processedData: any = data // Usar 'any' temporariamente para flexibilidade no processamento
+  let processedData: any = data // Usar "any" temporariamente para flexibilidade no processamento
 
   if (userType === "nutricionista") {
     const nutritionistProfile = processedData as any // Cast para any para acessar propriedades dinamicamente
@@ -334,7 +334,7 @@ export async function getUserProfile(userId: string, userType: UserType) {
       if (!field) return []
       
       if (Array.isArray(field)) {
-        return field.map(item => typeof item === 'string' ? item.replace(/\\"/g, '"') : item)
+        return field.map(item => typeof item === "string" ? item.replace(/\\"/g, '"') : item)
       }
       
       if (typeof field === "string") {
@@ -374,3 +374,4 @@ export async function getUserProfile(userId: string, userType: UserType) {
 
   return { data: processedData, error: null }
 }
+

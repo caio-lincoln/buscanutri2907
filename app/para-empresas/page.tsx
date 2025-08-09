@@ -85,28 +85,107 @@ const benefits = [
 const plans = [
   {
     name: "Startup",
-    price: "R$ 299/mês",
+    price: "A partir de R$ 2.200/mês",
+    priceDetails: "R$ 44 por funcionário",
     description: "Para empresas até 50 funcionários",
-    features: [
-      "Até 50 colaboradores",
-      "Consultas mensais",
-      "Palestras trimestrais",
-      "Relatórios básicos",
-      "Suporte por email",
+    subPlans: [
+      {
+        type: "Plano Básico Mensal",
+        price: "R$ 2.200/mês",
+        features: [
+          "Até 50 colaboradores",
+          "Orientações nutricionais mensais",
+          "Palestras mensais",
+          "Relatórios básicos",
+          "Suporte por email",
+        ],
+      },
+      {
+        type: "Plano Básico Avulso",
+        price: "R$ 2.500",
+        features: [
+          "Até 50 colaboradores",
+          "Orientações nutricionais",
+          "1 palestra",
+          "Relatórios básicos",
+          "Suporte por email",
+        ],
+      },
+      {
+        type: "Plano Premium Mensal",
+        price: "R$ 4.400/mês",
+        features: [
+          "Até 50 colaboradores",
+          "Consultas mensais",
+          "Palestras bimestrais",
+          "Relatórios básicos",
+          "Suporte por email",
+        ],
+      },
+      {
+        type: "Plano Premium Avulso",
+        price: "R$ 5.000",
+        features: [
+          "Até 50 colaboradores",
+          "Consulta nutricional",
+          "1 Palestra",
+          "Relatórios básicos",
+          "Suporte por email",
+        ],
+      },
     ],
     popular: false,
   },
   {
     name: "Corporativo",
-    price: "R$ 599/mês",
+    price: "A partir de R$ 7.800/mês",
+    priceDetails: "R$ 39-90 por funcionário",
     description: "Para empresas de médio porte",
-    features: [
-      "Até 200 colaboradores",
-      "Consultas quinzenais",
-      "Palestras mensais",
-      "Dashboard executivo",
-      "Suporte prioritário",
-      "Nutricionista dedicado",
+    subPlans: [
+      {
+        type: "Plano Básico Mensal",
+        price: "R$ 7.800/mês",
+        features: [
+          "Até 200 colaboradores",
+          "Orientações nutricionais",
+          "1 palestra",
+          "Relatórios básicos",
+          "Suporte por email",
+        ],
+      },
+      {
+        type: "Plano Básico Avulso",
+        price: "R$ 9.000",
+        features: [
+          "Até 200 colaboradores",
+          "Orientações nutricionais",
+          "1 palestra",
+          "Relatórios básicos",
+          "Suporte por email",
+        ],
+      },
+      {
+        type: "Plano Premium Mensal",
+        price: "R$ 80 por funcionário",
+        features: [
+          "Até 200 colaboradores",
+          "Consultas mensais",
+          "Palestras bimestrais",
+          "Relatórios básicos",
+          "Suporte por email",
+        ],
+      },
+      {
+        type: "Plano Premium Avulso",
+        price: "R$ 90 por funcionário",
+        features: [
+          "Até 200 colaboradores",
+          "Consultas mensais",
+          "1 palestra",
+          "Relatórios básicos",
+          "Suporte por email",
+        ],
+      },
     ],
     popular: true,
   },
@@ -323,9 +402,10 @@ export default function ParaEmpresasPage() {
             <div className="text-center mb-16">
               <h2 className="text-3xl md:text-4xl font-bold text-[#1E1D40] mb-6">Planos Corporativos</h2>
               <p className="text-lg text-[#1E1D40]/70">Soluções flexíveis que se adaptam ao tamanho da sua empresa</p>
+              <p className="text-sm text-[#1E1D40]/60 mt-4 italic">* Os valores podem sofrer alterações</p>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            <div className="grid md:grid-cols-3 gap-8 max-w-7xl mx-auto">
               {plans.map((plan, index) => (
                 <Card
                   key={index}
@@ -340,20 +420,42 @@ export default function ParaEmpresasPage() {
                   )}
                   <CardHeader className="text-center">
                     <CardTitle className="text-2xl text-[#1E1D40]">{plan.name}</CardTitle>
-                    <div className="text-3xl font-bold text-[#4AB0D9] mb-2">{plan.price}</div>
+                    <div className="text-2xl font-bold text-[#4AB0D9] mb-1">{plan.price}</div>
+                    {plan.priceDetails && (
+                      <div className="text-sm text-[#1E1D40]/60 mb-2">{plan.priceDetails}</div>
+                    )}
                     <p className="text-[#1E1D40]/70">{plan.description}</p>
                   </CardHeader>
                   <CardContent>
-                    <ul className="space-y-3 mb-8">
-                      {plan.features.map((feature, featureIndex) => (
-                        <li key={featureIndex} className="flex items-center gap-3">
-                          <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
-                          <span className="text-sm text-[#1E1D40]/80">{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
+                    {plan.subPlans ? (
+                      <div className="space-y-6">
+                        {plan.subPlans.map((subPlan, subIndex) => (
+                          <div key={subIndex} className="border-l-4 border-[#4AB0D9] pl-4">
+                            <h4 className="font-semibold text-[#1E1D40] mb-2">{subPlan.type}</h4>
+                            <div className="text-lg font-bold text-[#4AB0D9] mb-3">{subPlan.price}</div>
+                            <ul className="space-y-2">
+                              {subPlan.features.map((feature, featureIndex) => (
+                                <li key={featureIndex} className="flex items-center gap-2">
+                                  <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
+                                  <span className="text-xs text-[#1E1D40]/80">{feature}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <ul className="space-y-3 mb-8">
+                        {plan.features.map((feature, featureIndex) => (
+                          <li key={featureIndex} className="flex items-center gap-3">
+                            <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
+                            <span className="text-sm text-[#1E1D40]/80">{feature}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                     <Button
-                      className={`w-full ${
+                      className={`w-full mt-6 ${
                         plan.popular
                           ? "bg-[#1E1D40] hover:bg-[#1E1D40]/90 text-white"
                           : "bg-gray-100 hover:bg-gray-200 text-[#1E1D40]"
@@ -468,7 +570,7 @@ export default function ParaEmpresasPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Phone className="h-4 w-4" />
-                  <span>(79) 99813-4938-3838</span>
+                  <span>(79) 9 9813-4938</span>
                 </div>
               </div>
             </div>

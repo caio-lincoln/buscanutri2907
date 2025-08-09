@@ -377,7 +377,7 @@ export default function PatientForumQuestionPage() {
                 placeholder={
                   currentUser.user_type === 'nutritionist'
                     ? "Digite sua resposta aqui..."
-                    : "🔒 Apenas nutricionistas podem responder no fórum. Esta funcionalidade está bloqueada para pacientes."
+                    : "Apenas nutricionistas podem responder no fórum. Esta funcionalidade está bloqueada para pacientes."
                 }
                 value={replyContent}
                 onChange={(e) => setReplyContent(e.target.value)}
@@ -387,7 +387,7 @@ export default function PatientForumQuestionPage() {
               {currentUser.user_type !== 'nutritionist' && (
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <p className="text-sm text-blue-800">
-                    <strong>ℹ️ Informação:</strong> Apenas nutricionistas verificados podem responder às perguntas do fórum. 
+                    <strong>Informação:</strong> Apenas nutricionistas verificados podem responder às perguntas do fórum. 
                     Esta medida garante que as respostas sejam fornecidas por profissionais qualificados.
                   </p>
                 </div>

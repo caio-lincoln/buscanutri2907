@@ -39,22 +39,22 @@ function mapNotificationType(dbType: string): "info" | "success" | "warning" | "
 export async function getUserNotifications(userId: string, limit = 50): Promise<NotificationData[]> {
   try {
     const { data: notifications, error } = await supabase
-      .from('realtime_notifications')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
+      .from("realtime_notifications")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
       .limit(limit)
 
     if (error) {
-      console.error('Error fetching notifications:', error)
+      console.error("Error fetching notifications:", error)
       return []
     }
 
     return notifications.map(notification => ({
       id: notification.id,
-      title: notification.title || 'Notificação',
-      message: notification.message || '',
-      type: mapNotificationType(notification.notification_type || 'info'),
+      title: notification.title || "Notificação",
+      message: notification.message || "",
+      type: mapNotificationType(notification.notification_type || "info"),
       originalType: notification.notification_type as "message" | "appointment" | "forum" | "reminder" | "system",
       read: notification.read || false,
       createdAt: notification.created_at,
@@ -63,7 +63,7 @@ export async function getUserNotifications(userId: string, limit = 50): Promise<
       metadata: notification.data
     }))
   } catch (error) {
-    console.error('Error in getUserNotifications:', error)
+    console.error("Error in getUserNotifications:", error)
     return []
   }
 }
@@ -74,18 +74,18 @@ export async function getUserNotifications(userId: string, limit = 50): Promise<
 export async function markNotificationAsRead(notificationId: string): Promise<boolean> {
   try {
     const { error } = await supabase
-      .from('realtime_notifications')
+      .from("realtime_notifications")
       .update({ read: true })
-      .eq('id', notificationId)
+      .eq("id", notificationId)
 
     if (error) {
-      console.error('Error marking notification as read:', error)
+      console.error("Error marking notification as read:", error)
       return false
     }
 
     return true
   } catch (error) {
-    console.error('Error in markNotificationAsRead:', error)
+    console.error("Error in markNotificationAsRead:", error)
     return false
   }
 }
@@ -96,19 +96,19 @@ export async function markNotificationAsRead(notificationId: string): Promise<bo
 export async function markAllNotificationsAsRead(userId: string): Promise<boolean> {
   try {
     const { error } = await supabase
-      .from('realtime_notifications')
+      .from("realtime_notifications")
       .update({ read: true })
-      .eq('user_id', userId)
-      .eq('read', false)
+      .eq("user_id", userId)
+      .eq("read", false)
 
     if (error) {
-      console.error('Error marking all notifications as read:', error)
+      console.error("Error marking all notifications as read:", error)
       return false
     }
 
     return true
   } catch (error) {
-    console.error('Error in markAllNotificationsAsRead:', error)
+    console.error("Error in markAllNotificationsAsRead:", error)
     return false
   }
 }
@@ -116,10 +116,10 @@ export async function markAllNotificationsAsRead(userId: string): Promise<boolea
 /**
  * Criar nova notificação
  */
-export async function createNotification(notification: Omit<NotificationData, 'id' | 'createdAt' | 'read'>): Promise<boolean> {
+export async function createNotification(notification: Omit<NotificationData, "id" | "createdAt" | "read">): Promise<boolean> {
   try {
     const { error } = await supabase
-      .from('realtime_notifications')
+      .from("realtime_notifications")
       .insert({
         title: notification.title,
         message: notification.message,
@@ -132,13 +132,13 @@ export async function createNotification(notification: Omit<NotificationData, 'i
       })
 
     if (error) {
-      console.error('Error creating notification:', error)
+      console.error("Error creating notification:", error)
       return false
     }
 
     return true
   } catch (error) {
-    console.error('Error in createNotification:', error)
+    console.error("Error in createNotification:", error)
     return false
   }
 }
@@ -149,19 +149,19 @@ export async function createNotification(notification: Omit<NotificationData, 'i
 export async function getUnreadNotificationsCount(userId: string): Promise<number> {
   try {
     const { count, error } = await supabase
-      .from('realtime_notifications')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', userId)
-      .eq('read', false)
+      .from("realtime_notifications")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .eq("read", false)
 
     if (error) {
-      console.error('Error fetching unread notifications count:', error)
+      console.error("Error fetching unread notifications count:", error)
       return 0
     }
 
     return count || 0
   } catch (error) {
-    console.error('Error in getUnreadNotificationsCount:', error)
+    console.error("Error in getUnreadNotificationsCount:", error)
     return 0
   }
 }
@@ -172,18 +172,18 @@ export async function getUnreadNotificationsCount(userId: string): Promise<numbe
 export async function deleteNotification(notificationId: string): Promise<boolean> {
   try {
     const { error } = await supabase
-      .from('realtime_notifications')
+      .from("realtime_notifications")
       .delete()
-      .eq('id', notificationId)
+      .eq("id", notificationId)
 
     if (error) {
-      console.error('Error deleting notification:', error)
+      console.error("Error deleting notification:", error)
       return false
     }
 
     return true
   } catch (error) {
-    console.error('Error in deleteNotification:', error)
+    console.error("Error in deleteNotification:", error)
     return false
   }
 }
@@ -194,18 +194,18 @@ export async function deleteNotification(notificationId: string): Promise<boolea
 export async function deleteAllNotifications(userId: string): Promise<boolean> {
   try {
     const { error } = await supabase
-      .from('realtime_notifications')
+      .from("realtime_notifications")
       .delete()
-      .eq('user_id', userId)
+      .eq("user_id", userId)
 
     if (error) {
-      console.error('Error deleting all notifications:', error)
+      console.error("Error deleting all notifications:", error)
       return false
     }
 
     return true
   } catch (error) {
-    console.error('Error in deleteAllNotifications:', error)
+    console.error("Error in deleteAllNotifications:", error)
     return false
   }
 }
