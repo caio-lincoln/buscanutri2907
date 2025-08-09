@@ -23,11 +23,11 @@ export function formatNutritionistData(
   // Garante que os valores são arrays, mesmo que venham como string ou null
   const toArray = (value: unknown): string[] => {
     if (Array.isArray(value)) {
-      return value.map(item => typeof item === "string" ? item.replace(/\\"/g, """) : item)
+      return value.map(item => typeof item === "string" ? item.replace(/\\"/g, '"') : item)
     }
     if (typeof value === "string" && value.trim() !== "") {
       // Remover escapes duplos se existirem
-      const cleanValue = value.replace(/\\"/g, """)
+      const cleanValue = value.replace(/\\"/g, '"')
       
       try {
         const parsed = JSON.parse(cleanValue)
@@ -268,3 +268,4 @@ export async function getTopRatedNutritionists(
     return []
   }
 }
+

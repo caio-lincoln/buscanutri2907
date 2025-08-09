@@ -725,7 +725,7 @@ export function UserProfileModal({
         // Função helper para processar campos que podem estar com escape duplo
         const processStringField = (field: string): string[] => {
           // Remover escapes duplos se existirem
-          const cleanField = field.replace(/\\"/g, """)
+          const cleanField = field.replace(/\\"/g, '"')
           
           // Tentar fazer parse JSON primeiro
           try {
@@ -1561,3 +1561,4 @@ export function UserProfileModal({
     </Dialog>
   )
 }
+
