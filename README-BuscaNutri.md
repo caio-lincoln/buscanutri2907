@@ -5,6 +5,7 @@
 Este projeto está conectado ao projeto **BuscaNutri** no Supabase Cloud.
 
 ### Informações do Projeto
+
 - **Nome**: BuscaNutri
 - **Project ID**: lutokoucdfhfbwtppzwe
 - **Região**: us-east-1
@@ -14,6 +15,7 @@ Este projeto está conectado ao projeto **BuscaNutri** no Supabase Cloud.
 ### Configuração Local
 
 O projeto foi configurado com:
+
 1. ✅ Login no Supabase CLI realizado
 2. ✅ Projeto linkado ao BuscaNutri remoto
 3. ✅ Arquivo `.env` criado com as credenciais
@@ -22,6 +24,7 @@ O projeto foi configurado com:
 ### Variáveis de Ambiente
 
 As seguintes variáveis estão configuradas no arquivo `.env`:
+
 - `SUPABASE_URL`: URL da API do projeto
 - `SUPABASE_ANON_KEY`: Chave anônima para acesso público
 - `SUPABASE_PROJECT_ID`: ID do projeto
@@ -45,6 +48,7 @@ npx supabase gen types typescript --project-id lutokoucdfhfbwtppzwe > types/supa
 ### Estrutura do Banco de Dados
 
 O projeto BuscaNutri possui as seguintes tabelas principais:
+
 - `users` - Usuários do sistema
 - `nutritionist_profiles` - Perfis de nutricionistas
 - `patient_profiles` - Perfis de pacientes
@@ -59,4 +63,5 @@ O projeto BuscaNutri possui as seguintes tabelas principais:
 2. Usar as migrações existentes para manter sincronização
 3. Testar funcionalidades conectado ao banco de produção
 
-**Importante**: Este projeto está conectado ao ambiente de produção. Tenha cuidado ao fazer alterações no banco de dados.
+**Importante**: Este projeto está conectado ao ambiente de produção. Tenha cuidado ao fazer
+alterações no banco de dados.

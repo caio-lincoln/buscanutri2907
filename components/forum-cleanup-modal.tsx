@@ -1,16 +1,16 @@
-"use client"
+'use client'
 
-import { useState } from "react"
+import { useState } from 'react'
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Trash2, Loader2, AlertTriangle, CheckCircle } from "lucide-react"
-import { cleanupForumData } from "@/lib/forum-data"
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Trash2, Loader2, AlertTriangle, CheckCircle } from 'lucide-react'
+import { cleanupForumData } from '@/lib/forum-data'
 
 interface ForumCleanupModalProps {
   isOpen: boolean
@@ -27,7 +27,7 @@ interface CleanupResult {
 export function ForumCleanupModal({
   isOpen,
   onClose,
-  onSuccess
+  onSuccess,
 }: ForumCleanupModalProps) {
   const [isRunning, setIsRunning] = useState(false)
   const [result, setResult] = useState<CleanupResult | null>(null)
@@ -40,16 +40,16 @@ export function ForumCleanupModal({
 
     try {
       const cleanupResult = await cleanupForumData()
-      
+
       if (cleanupResult) {
         setResult(cleanupResult)
         onSuccess()
       } else {
-        setError("Erro ao executar a limpeza. Tente novamente.")
+        setError('Erro ao executar a limpeza. Tente novamente.')
       }
     } catch (error) {
-      console.error("Erro na limpeza:", error)
-      setError("Erro inesperado durante a limpeza. Tente novamente.")
+      // Silent error handling - cleanup error
+      setError('Erro inesperado durante a limpeza. Tente novamente.')
     } finally {
       setIsRunning(false)
     }
@@ -77,7 +77,7 @@ export function ForumCleanupModal({
               <p className="text-gray-700 mb-4">
                 Esta operação irá remover todos os dados órfãos do fórum:
               </p>
-              
+
               <ul className="space-y-2 text-sm text-gray-600 mb-4">
                 <li>• Perguntas sem autor válido</li>
                 <li>• Respostas sem pergunta ou autor válido</li>
@@ -86,7 +86,7 @@ export function ForumCleanupModal({
 
               <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg">
                 <p className="text-sm text-orange-700">
-                  <strong>Atenção:</strong> Esta ação não pode ser desfeita. 
+                  <strong>Atenção:</strong> Esta ação não pode ser desfeita.
                   Apenas dados órfãos serão removidos.
                 </p>
               </div>
@@ -97,9 +97,11 @@ export function ForumCleanupModal({
             <div className="space-y-4">
               <div className="flex items-center gap-2 text-green-600">
                 <CheckCircle className="h-5 w-5" />
-                <span className="font-medium">Limpeza concluída com sucesso!</span>
+                <span className="font-medium">
+                  Limpeza concluída com sucesso!
+                </span>
               </div>
-              
+
               <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                 <h4 className="font-medium text-green-800 mb-2">Resultados:</h4>
                 <ul className="space-y-1 text-sm text-green-700">
@@ -129,9 +131,9 @@ export function ForumCleanupModal({
             onClick={handleClose}
             disabled={isRunning}
           >
-            {result ? "Fechar" : "Cancelar"}
+            {result ? 'Fechar' : 'Cancelar'}
           </Button>
-          
+
           {!result && (
             <Button
               type="button"

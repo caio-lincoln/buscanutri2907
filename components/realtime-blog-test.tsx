@@ -1,4 +1,4 @@
-"use client"
+'use client'
 
 import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -14,28 +14,29 @@ interface RealtimeBlogTestProps {
   postTitle?: string
 }
 
-export function RealtimeBlogTest({ 
-  blogPostId, 
+export function RealtimeBlogTest({
+  blogPostId,
   initialViews = 0,
-  postTitle = "Post de Teste"
+  postTitle = 'Post de Teste',
 }: RealtimeBlogTestProps) {
   const [isRecording, setIsRecording] = useState(false)
-  
-  const { stats, isLoading, error, recordView, refreshStats } = useRealtimeBlogViews({
-    blogPostId,
-    initialStats: {
-      totalViews: initialViews,
-      uniqueViews: 0,
-      lastViewAt: null
-    }
-  })
+
+  const { stats, isLoading, error, recordView, refreshStats } =
+    useRealtimeBlogViews({
+      blogPostId,
+      initialStats: {
+        totalViews: initialViews,
+        uniqueViews: 0,
+        lastViewAt: null,
+      },
+    })
 
   const handleRecordView = async () => {
     setIsRecording(true)
     try {
       await recordView()
     } catch (err) {
-      console.error('Erro ao registrar visualização:', err)
+      // Silent error handling - view recording error
     } finally {
       setIsRecording(false)
     }
@@ -45,7 +46,7 @@ export function RealtimeBlogTest({
     try {
       await BlogViewsService.recordView(blogPostId)
     } catch (err) {
-      console.error('Erro ao incrementar visualização diretamente:', err)
+      // Silent error handling - direct view increment error
     }
   }
 
@@ -87,17 +88,13 @@ export function RealtimeBlogTest({
 
         {/* Status */}
         <div className="flex gap-2">
-          {isLoading && (
-            <Badge variant="secondary">Carregando...</Badge>
-          )}
-          {error && (
-            <Badge variant="destructive">Erro</Badge>
-          )}
+          {isLoading && <Badge variant="secondary">Carregando...</Badge>}
+          {error && <Badge variant="destructive">Erro</Badge>}
         </div>
 
         {/* Botões de teste */}
         <div className="space-y-2">
-          <Button 
+          <Button
             onClick={handleRecordView}
             disabled={isRecording || isLoading}
             className="w-full"
@@ -105,8 +102,8 @@ export function RealtimeBlogTest({
           >
             {isRecording ? 'Registrando...' : 'Simular Nova Visualização'}
           </Button>
-          
-          <Button 
+
+          <Button
             onClick={handleDirectIncrement}
             variant="outline"
             className="w-full"
@@ -114,8 +111,8 @@ export function RealtimeBlogTest({
           >
             Incrementar Diretamente
           </Button>
-          
-          <Button 
+
+          <Button
             onClick={refreshStats}
             variant="ghost"
             className="w-full"

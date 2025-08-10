@@ -10,25 +10,25 @@ interface CRNValidationResult {
 
 // Regiões válidas do CRN
 const CRN_REGIONS = {
-  "1": "Rio de Janeiro e Espírito Santo",
-  "2": "Rio Grande do Sul",
-  "3": "São Paulo e Mato Grosso do Sul",
-  "4": "Minas Gerais",
-  "5": "Bahia e Sergipe",
-  "6": "Paraná",
-  "7": "Ceará",
-  "8": "Distrito Federal, Goiás, Tocantins e Mato Grosso",
-  "9": "Paraíba, Rio Grande do Norte, Alagoas e Pernambuco",
-  "10": "Pará, Amapá, Maranhão e Piauí",
-  "11": "Santa Catarina",
-  "12": "Acre, Amazonas, Rondônia e Roraima",
+  '1': 'Rio de Janeiro e Espírito Santo',
+  '2': 'Rio Grande do Sul',
+  '3': 'São Paulo e Mato Grosso do Sul',
+  '4': 'Minas Gerais',
+  '5': 'Bahia e Sergipe',
+  '6': 'Paraná',
+  '7': 'Ceará',
+  '8': 'Distrito Federal, Goiás, Tocantins e Mato Grosso',
+  '9': 'Paraíba, Rio Grande do Norte, Alagoas e Pernambuco',
+  '10': 'Pará, Amapá, Maranhão e Piauí',
+  '11': 'Santa Catarina',
+  '12': 'Acre, Amazonas, Rondônia e Roraima',
 }
 
 export function validateCRNFormat(crn: string): CRNValidationResult {
-  if (!crn || typeof crn !== "string") {
+  if (!crn || typeof crn !== 'string') {
     return {
       isValid: false,
-      message: "CRN é obrigatório",
+      message: 'CRN é obrigatório',
     }
   }
 
@@ -42,7 +42,7 @@ export function validateCRNFormat(crn: string): CRNValidationResult {
   if (!match) {
     return {
       isValid: false,
-      message: "Formato inválido. Use: CRN3 12345 ou CRN-3-12345",
+      message: 'Formato inválido. Use: CRN3 12345 ou CRN-3-12345',
     }
   }
 
@@ -61,7 +61,7 @@ export function validateCRNFormat(crn: string): CRNValidationResult {
   if (number.length < 4 || number.length > 6) {
     return {
       isValid: false,
-      message: "Número do registro deve ter entre 4 e 6 dígitos",
+      message: 'Número do registro deve ter entre 4 e 6 dígitos',
     }
   }
 
@@ -74,7 +74,9 @@ export function validateCRNFormat(crn: string): CRNValidationResult {
 }
 
 // Função para validar CRN via API (preparada para integração futura)
-export async function validateCRNWithAPI(crn: string): Promise<CRNValidationResult> {
+export async function validateCRNWithAPI(
+  crn: string
+): Promise<CRNValidationResult> {
   // Primeiro valida o formato
   const formatValidation = validateCRNFormat(crn)
   if (!formatValidation.isValid) {
@@ -86,33 +88,33 @@ export async function validateCRNWithAPI(crn: string): Promise<CRNValidationResu
     // Por enquanto, simula uma validação mais rigorosa
 
     // Simula delay de API
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    await new Promise(resolve => setTimeout(resolve, 1000))
 
     // Lista de CRNs inválidos para teste (simulação)
-    const invalidCRNs = ["CRN3 00000", "CRN1 11111", "CRN2 99999"]
+    const invalidCRNs = ['CRN3 00000', 'CRN1 11111', 'CRN2 99999']
     const cleanCRN = crn.trim().toUpperCase()
 
     if (invalidCRNs.includes(cleanCRN)) {
       return {
         isValid: false,
-        message: "CRN não encontrado na base de dados do CFN",
+        message: 'CRN não encontrado na base de dados do CFN',
       }
     }
 
     // Se chegou até aqui, considera válido
     return {
       isValid: true,
-      message: "CRN validado com sucesso",
+      message: 'CRN validado com sucesso',
       region: formatValidation.region,
       number: formatValidation.number,
     }
   } catch (error) {
-    console.error("Erro ao validar CRN:", error)
+    // Silent error handling: Error validating CRN
 
     // Em caso de erro na API, retorna validação de formato
     return {
       isValid: true,
-      message: "CRN com formato válido (validação online indisponível)",
+      message: 'CRN com formato válido (validação online indisponível)',
       region: formatValidation.region,
       number: formatValidation.number,
     }
@@ -121,13 +123,13 @@ export async function validateCRNWithAPI(crn: string): Promise<CRNValidationResu
 
 // Função para formatar CRN automaticamente
 export function formatCRN(value: string): string {
-  if (!value) return ""
+  if (!value) return ''
 
   // Remove tudo que não é letra ou número
-  const clean = value.replace(/[^a-zA-Z0-9]/g, "").toUpperCase()
+  const clean = value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase()
 
   // Se não começa com CRN, adiciona
-  let formatted = clean.startsWith("CRN") ? clean : "CRN" + clean
+  let formatted = clean.startsWith('CRN') ? clean : 'CRN' + clean
 
   // Aplica formatação: CRN + região + espaço + número
   const match = formatted.match(/^CRN(\d{1,2})(\d{4,6})$/)

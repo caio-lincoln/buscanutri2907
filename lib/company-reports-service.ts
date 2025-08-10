@@ -1,4 +1,4 @@
-import { createSupabaseClient } from "./supabase"
+import { createSupabaseClient } from './supabase'
 
 const supabase = createSupabaseClient()
 
@@ -18,14 +18,14 @@ export interface JobPerformanceData {
 }
 
 export interface JobPerformanceDetail {
-  id: string;
-  title: string;
-  applications: number;
-  interviews: number;
-  hires: number;
-  conversionRate: number;
-  status: string;
-  createdAt: string;
+  id: string
+  title: string
+  applications: number
+  interviews: number
+  hires: number
+  conversionRate: number
+  status: string
+  createdAt: string
 }
 
 export interface SourceData {
@@ -61,18 +61,18 @@ export interface CompanyReportsData {
  */
 export async function getCompanyKPIs(companyId: string): Promise<CompanyKPIs> {
   try {
-    const { data, error } = await supabase.rpc("get_company_kpis", {
-      company_uuid: companyId
+    const { data, error } = await supabase.rpc('get_company_kpis', {
+      company_uuid: companyId,
     })
 
     if (error) {
-      console.error("Error fetching company KPIs:", error)
+      // Silent error handling - error when fetching company KPIs
       return getDefaultKPIs()
     }
 
     return data || getDefaultKPIs()
   } catch (error) {
-    console.error("Error in getCompanyKPIs:", error)
+    // Silent error handling - error in getCompanyKPIs
     return getDefaultKPIs()
   }
 }
@@ -80,20 +80,22 @@ export async function getCompanyKPIs(companyId: string): Promise<CompanyKPIs> {
 /**
  * Buscar dados de relatórios da empresa
  */
-export async function getCompanyReportsData(companyId: string): Promise<CompanyReportsData> {
+export async function getCompanyReportsData(
+  companyId: string
+): Promise<CompanyReportsData> {
   try {
-    const { data, error } = await supabase.rpc("get_company_reports_data", {
-      company_uuid: companyId
+    const { data, error } = await supabase.rpc('get_company_reports_data', {
+      company_uuid: companyId,
     })
 
     if (error) {
-      console.error("Error fetching company reports data:", error)
+      // Silent error handling - error when fetching company reports data
       return getDefaultReportsData()
     }
 
     return data || getDefaultReportsData()
   } catch (error) {
-    console.error("Error in getCompanyReportsData:", error)
+    // Silent error handling - error in getCompanyReportsData
     return getDefaultReportsData()
   }
 }
@@ -101,78 +103,87 @@ export async function getCompanyReportsData(companyId: string): Promise<CompanyR
 /**
  * Buscar dados detalhados de performance por vaga
  */
-export async function getJobPerformanceDetails(companyId: string): Promise<JobPerformanceDetail[]> {
+export async function getJobPerformanceDetails(
+  companyId: string
+): Promise<JobPerformanceDetail[]> {
   try {
-    const { data, error } = await supabase.rpc("get_job_performance_details", {
-      company_uuid: companyId
-    });
+    const { data, error } = await supabase.rpc('get_job_performance_details', {
+      company_uuid: companyId,
+    })
 
     if (error) {
-      console.error("Error fetching job performance details:", error);
-      throw error;
+      // Silent error handling - error when fetching job performance details
+      throw error
     }
 
-    return data?.map((item: any) => ({
-      id: item.id,
-      title: item.title,
-      applications: item.applications || 0,
-      interviews: item.interviews || 0,
-      hires: item.hires || 0,
-      conversionRate: item.conversion_rate || 0,
-      status: item.status || "ativa",
-      createdAt: item.created_at
-    })) || [];
+    return (
+      data?.map((item: any) => ({
+        id: item.id,
+        title: item.title,
+        applications: item.applications || 0,
+        interviews: item.interviews || 0,
+        hires: item.hires || 0,
+        conversionRate: item.conversion_rate || 0,
+        status: item.status || 'ativa',
+        createdAt: item.created_at,
+      })) || []
+    )
   } catch (error) {
-    console.error("Error fetching job performance details:", error);
-    return [];
+    // Silent error handling - error when fetching job performance details
+    return []
   }
 }
 
 /**
  * Buscar dados mensais de candidaturas
  */
-export async function getMonthlyApplicationsData(companyId: string): Promise<MonthlyData[]> {
+export async function getMonthlyApplicationsData(
+  companyId: string
+): Promise<MonthlyData[]> {
   try {
     const sixMonthsAgo = new Date()
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
 
     const { data, error } = await supabase
-      .from("job_applications")
-      .select("applied_at, status, job_id")
-      .gte("applied_at", sixMonthsAgo.toISOString())
+      .from('job_applications')
+      .select('applied_at, status, job_id')
+      .gte('applied_at', sixMonthsAgo.toISOString())
 
     if (error) {
-      console.error("Error fetching monthly applications data:", error)
+      // Silent error handling - error when fetching monthly applications data
       return getDefaultMonthlyData()
     }
 
     // Agrupar por mês
-    const monthlyMap = new Map<string, { applications: number, hires: number, interviews: number }>()
-    
+    const monthlyMap = new Map<
+      string,
+      { applications: number; hires: number; interviews: number }
+    >()
+
     data?.forEach(application => {
       const date = new Date(application.applied_at)
-      const monthKey = date.toLocaleDateString("pt-BR", { month: "short" })
-      
+      const monthKey = date.toLocaleDateString('pt-BR', { month: 'short' })
+
       if (!monthlyMap.has(monthKey)) {
         monthlyMap.set(monthKey, { applications: 0, hires: 0, interviews: 0 })
       }
-      
+
       const monthData = monthlyMap.get(monthKey)!
       monthData.applications++
-      
-      if (application.status === "contratado") {
+
+      if (application.status === 'contratado') {
         monthData.hires++
-      } else if (application.status === "entrevista") {
+      } else if (application.status === 'entrevista') {
         monthData.interviews++
       }
     })
 
     return Array.from(monthlyMap.entries()).map(([month, data]) => ({
       month,
-      ...data
+      ...data,
     }))
   } catch (error) {
-    console.error("Error in getMonthlyApplicationsData:", error)
+    // Silent error handling - error in getMonthlyApplicationsData
     return getDefaultMonthlyData()
   }
 }
@@ -188,7 +199,7 @@ function getDefaultKPIs(): CompanyKPIs {
     conversionRate: 0,
     avgHiringTime: 18,
     applicationsTrend: 0,
-    hiresTrend: 0
+    hiresTrend: 0,
   }
 }
 
@@ -200,7 +211,7 @@ function getDefaultReportsData(): CompanyReportsData {
     monthlyData: getDefaultMonthlyData(),
     jobPerformance: [],
     sourceData: getDefaultSourceData(),
-    timeToHireData: getDefaultTimeToHireData()
+    timeToHireData: getDefaultTimeToHireData(),
   }
 }
 
@@ -209,12 +220,12 @@ function getDefaultReportsData(): CompanyReportsData {
  */
 function getDefaultMonthlyData(): MonthlyData[] {
   return [
-    { month: "Jan", applications: 0, hires: 0, interviews: 0 },
-    { month: "Fev", applications: 0, hires: 0, interviews: 0 },
-    { month: "Mar", applications: 0, hires: 0, interviews: 0 },
-    { month: "Abr", applications: 0, hires: 0, interviews: 0 },
-    { month: "Mai", applications: 0, hires: 0, interviews: 0 },
-    { month: "Jun", applications: 0, hires: 0, interviews: 0 },
+    { month: 'Jan', applications: 0, hires: 0, interviews: 0 },
+    { month: 'Fev', applications: 0, hires: 0, interviews: 0 },
+    { month: 'Mar', applications: 0, hires: 0, interviews: 0 },
+    { month: 'Abr', applications: 0, hires: 0, interviews: 0 },
+    { month: 'Mai', applications: 0, hires: 0, interviews: 0 },
+    { month: 'Jun', applications: 0, hires: 0, interviews: 0 },
   ]
 }
 
@@ -223,11 +234,11 @@ function getDefaultMonthlyData(): MonthlyData[] {
  */
 function getDefaultSourceData(): SourceData[] {
   return [
-    { name: "Busca Nutri", value: 45, color: "#3B82F6" },
-    { name: "LinkedIn", value: 25, color: "#10B981" },
-    { name: "Indeed", value: 15, color: "#F59E0B" },
-    { name: "Indicação", value: 10, color: "#8B5CF6" },
-    { name: "Outros", value: 5, color: "#6B7280" },
+    { name: 'Busca Nutri', value: 45, color: '#3B82F6' },
+    { name: 'LinkedIn', value: 25, color: '#10B981' },
+    { name: 'Indeed', value: 15, color: '#F59E0B' },
+    { name: 'Indicação', value: 10, color: '#8B5CF6' },
+    { name: 'Outros', value: 5, color: '#6B7280' },
   ]
 }
 
@@ -236,10 +247,10 @@ function getDefaultSourceData(): SourceData[] {
  */
 function getDefaultTimeToHireData(): TimeToHireData[] {
   return [
-    { stage: "Candidatura", days: 1 },
-    { stage: "Triagem", days: 3 },
-    { stage: "Entrevista", days: 7 },
-    { stage: "Decisão", days: 5 },
-    { stage: "Proposta", days: 2 },
+    { stage: 'Candidatura', days: 1 },
+    { stage: 'Triagem', days: 3 },
+    { stage: 'Entrevista', days: 7 },
+    { stage: 'Decisão', days: 5 },
+    { stage: 'Proposta', days: 2 },
   ]
 }

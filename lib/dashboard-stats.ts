@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabase"
+import { supabase } from '@/lib/supabase'
 
 export interface DashboardStats {
   upcomingAppointments: number
@@ -11,30 +11,32 @@ export interface DashboardStats {
 /**
  * Busca estatísticas do dashboard para nutricionistas
  */
-export async function getNutritionistStats(userId: string): Promise<DashboardStats> {
+export async function getNutritionistStats(
+  userId: string
+): Promise<DashboardStats> {
   try {
     // Consultas agendadas (próximas) - Funcionalidade de telemedicina removida
     const appointments = null // Telemedicina desabilitada temporariamente
 
     // Vagas disponíveis
     const { data: jobs, error: jobsError } = await supabase
-      .from("job_postings")
-      .select("id")
-      .eq("status", "active")
+      .from('job_postings')
+      .select('id')
+      .eq('status', 'active')
 
     if (jobsError) {
-      console.error("Erro ao buscar vagas:", jobsError)
+      // Silent error handling: Error fetching jobs
     }
 
     // Notificações não lidas
     const { data: notifications, error: notificationsError } = await supabase
-      .from("realtime_notifications")
-      .select("id")
-      .eq("user_id", userId)
-      .eq("read", false)
+      .from('realtime_notifications')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('read', false)
 
     if (notificationsError) {
-      console.error("Erro ao buscar notificações:", notificationsError)
+      // Silent error handling: Error fetching notifications
     }
 
     return {
@@ -43,7 +45,7 @@ export async function getNutritionistStats(userId: string): Promise<DashboardSta
       unreadNotifications: notifications?.length || 0,
     }
   } catch (error) {
-    console.error("Erro ao buscar estatísticas do nutricionista:", error)
+    // Silent error handling: Error fetching nutritionist statistics
     return {
       upcomingAppointments: 0,
       availableJobs: 0,
@@ -62,13 +64,13 @@ export async function getPatientStats(userId: string): Promise<DashboardStats> {
 
     // Notificações não lidas
     const { data: notifications, error: notificationsError } = await supabase
-      .from("realtime_notifications")
-      .select("id")
-      .eq("user_id", userId)
-      .eq("read", false)
+      .from('realtime_notifications')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('read', false)
 
     if (notificationsError) {
-      console.error("Erro ao buscar notificações:", notificationsError)
+      // Silent error handling: Error fetching notifications
     }
 
     return {
@@ -77,7 +79,7 @@ export async function getPatientStats(userId: string): Promise<DashboardStats> {
       unreadNotifications: notifications?.length || 0,
     }
   } catch (error) {
-    console.error("Erro ao buscar estatísticas do paciente:", error)
+    // Silent error handling: Error fetching patient statistics
     return {
       upcomingAppointments: 0,
       availableJobs: 0,
@@ -93,24 +95,24 @@ export async function getCompanyStats(userId: string): Promise<DashboardStats> {
   try {
     // Vagas ativas da empresa
     const { data: jobs, error: jobsError } = await supabase
-      .from("job_postings")
-      .select("id")
-      .eq("company_id", userId)
-      .eq("status", "active")
+      .from('job_postings')
+      .select('id')
+      .eq('company_id', userId)
+      .eq('status', 'active')
 
     if (jobsError) {
-      console.error("Erro ao buscar vagas da empresa:", jobsError)
+      // Silent error handling: Error fetching company jobs
     }
 
     // Notificações não lidas
     const { data: notifications, error: notificationsError } = await supabase
-      .from("realtime_notifications")
-      .select("id")
-      .eq("user_id", userId)
-      .eq("read", false)
+      .from('realtime_notifications')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('read', false)
 
     if (notificationsError) {
-      console.error("Erro ao buscar notificações:", notificationsError)
+      // Silent error handling: Error fetching notifications
     }
 
     return {
@@ -119,7 +121,7 @@ export async function getCompanyStats(userId: string): Promise<DashboardStats> {
       unreadNotifications: notifications?.length || 0,
     }
   } catch (error) {
-    console.error("Erro ao buscar estatísticas da empresa:", error)
+    // Silent error handling: Error fetching company statistics
     return {
       upcomingAppointments: 0,
       availableJobs: 0,
@@ -135,33 +137,33 @@ export async function getAdminStats(): Promise<DashboardStats> {
   try {
     // Relatórios pendentes (posts do blog aguardando aprovação)
     const { data: pendingPosts, error: postsError } = await supabase
-      .from("blog_posts")
-      .select("id")
-      .eq("status", "pending")
+      .from('blog_posts')
+      .select('id')
+      .eq('status', 'pending')
 
     if (postsError) {
-      console.error("Erro ao buscar posts pendentes:", postsError)
+      // Silent error handling: Error fetching pending posts
     }
 
     // Moderações pendentes (denúncias ou conteúdo para revisar)
     const { data: pendingModerations, error: moderationsError } = await supabase
-      .from("forum_posts")
-      .select("id")
-      .eq("status", "reported")
+      .from('forum_posts')
+      .select('id')
+      .eq('status', 'reported')
 
     if (moderationsError) {
-      console.error("Erro ao buscar moderações pendentes:", moderationsError)
+      // Silent error handling: Error fetching pending moderations
     }
 
     // Notificações não lidas do sistema
     const { data: notifications, error: notificationsError } = await supabase
-      .from("realtime_notifications")
-      .select("id")
-      .eq("notification_type", "system")
-      .eq("read", false)
+      .from('realtime_notifications')
+      .select('id')
+      .eq('notification_type', 'system')
+      .eq('read', false)
 
     if (notificationsError) {
-      console.error("Erro ao buscar notificações do sistema:", notificationsError)
+      // Silent error handling: Error fetching system notifications
     }
 
     return {
@@ -172,7 +174,7 @@ export async function getAdminStats(): Promise<DashboardStats> {
       pendingModerations: pendingModerations?.length || 0,
     }
   } catch (error) {
-    console.error("Erro ao buscar estatísticas do admin:", error)
+    // Silent error handling: Error fetching admin statistics
     return {
       upcomingAppointments: 0,
       availableJobs: 0,
@@ -186,15 +188,18 @@ export async function getAdminStats(): Promise<DashboardStats> {
 /**
  * Função principal para buscar estatísticas baseadas no tipo de usuário
  */
-export async function getDashboardStats(userType: string, userId: string): Promise<DashboardStats> {
+export async function getDashboardStats(
+  userType: string,
+  userId: string
+): Promise<DashboardStats> {
   switch (userType) {
-    case "nutricionista":
+    case 'nutricionista':
       return getNutritionistStats(userId)
-    case "paciente":
+    case 'paciente':
       return getPatientStats(userId)
-    case "empresa":
+    case 'empresa':
       return getCompanyStats(userId)
-    case "admin":
+    case 'admin':
       return getAdminStats()
     default:
       return {

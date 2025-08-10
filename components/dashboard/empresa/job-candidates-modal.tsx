@@ -1,16 +1,27 @@
-"use client"
+'use client'
 
-import { useState } from "react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Textarea } from "@/components/ui/textarea"
-import { Checkbox } from "@/components/ui/checkbox"
+import { useState } from 'react'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Textarea } from '@/components/ui/textarea'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Search,
   Filter,
@@ -33,14 +44,14 @@ import {
   User,
   GraduationCap,
   Award,
-} from "lucide-react"
+} from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from '@/components/ui/dropdown-menu'
 
 interface Candidate {
   id: string
@@ -49,7 +60,7 @@ interface Candidate {
   phone: string
   location: string
   avatar?: string
-  status: "new" | "reviewing" | "interview" | "approved" | "rejected"
+  status: 'new' | 'reviewing' | 'interview' | 'approved' | 'rejected'
   score: number
   appliedDate: string
   experience: string
@@ -77,134 +88,144 @@ interface JobCandidatesModalProps {
 
 const mockCandidates: Candidate[] = [
   {
-    id: "1",
-    name: "Dr. Ana Silva",
-    email: "ana.silva@email.com",
-    phone: "(11) 99999-9999",
-    location: "São Paulo, SP",
-    status: "new",
+    id: '1',
+    name: 'Dr. Ana Silva',
+    email: 'ana.silva@email.com',
+    phone: '(11) 99999-9999',
+    location: 'São Paulo, SP',
+    status: 'new',
     score: 95,
-    appliedDate: "2024-01-20",
-    experience: "5 anos",
-    education: "Nutrição - USP",
-    specializations: ["Nutrição Clínica", "Diabetes", "Obesidade"],
-    crn: "CRN-3 12345",
-    lastActivity: "2 horas atrás",
+    appliedDate: '2024-01-20',
+    experience: '5 anos',
+    education: 'Nutrição - USP',
+    specializations: ['Nutrição Clínica', 'Diabetes', 'Obesidade'],
+    crn: 'CRN-3 12345',
+    lastActivity: '2 horas atrás',
     coverLetter:
-      "Tenho grande interesse na vaga e acredito que minha experiência em nutrição clínica pode contribuir significativamente para a equipe.",
+      'Tenho grande interesse na vaga e acredito que minha experiência em nutrição clínica pode contribuir significativamente para a equipe.',
   },
   {
-    id: "2",
-    name: "Dra. Maria Santos",
-    email: "maria.santos@email.com",
-    phone: "(11) 88888-8888",
-    location: "São Paulo, SP",
-    status: "reviewing",
+    id: '2',
+    name: 'Dra. Maria Santos',
+    email: 'maria.santos@email.com',
+    phone: '(11) 88888-8888',
+    location: 'São Paulo, SP',
+    status: 'reviewing',
     score: 88,
-    appliedDate: "2024-01-18",
-    experience: "3 anos",
-    education: "Nutrição - UNIFESP",
-    specializations: ["Nutrição Esportiva", "Suplementação"],
-    crn: "CRN-3 23456",
-    lastActivity: "1 dia atrás",
-    coverLetter: "Sou apaixonada por nutrição esportiva e gostaria de fazer parte da equipe.",
-  },
-  {
-    id: "3",
-    name: "Dr. João Oliveira",
-    email: "joao.oliveira@email.com",
-    phone: "(11) 77777-7777",
-    location: "São Paulo, SP",
-    status: "interview",
-    score: 92,
-    appliedDate: "2024-01-15",
-    experience: "7 anos",
-    education: "Nutrição - PUC-SP",
-    specializations: ["Nutrição Clínica", "Geriatria", "Cardiologia"],
-    crn: "CRN-3 34567",
-    lastActivity: "3 dias atrás",
-    coverLetter: "Com minha experiência em nutrição geriátrica, acredito poder agregar muito valor à equipe.",
-  },
-  {
-    id: "4",
-    name: "Dra. Carla Ferreira",
-    email: "carla.ferreira@email.com",
-    phone: "(11) 66666-6666",
-    location: "São Paulo, SP",
-    status: "approved",
-    score: 97,
-    appliedDate: "2024-01-12",
-    experience: "8 anos",
-    education: "Nutrição - UNESP",
-    specializations: ["Nutrição Clínica", "Oncologia", "Terapia Nutricional"],
-    crn: "CRN-3 45678",
-    lastActivity: "1 semana atrás",
+    appliedDate: '2024-01-18',
+    experience: '3 anos',
+    education: 'Nutrição - UNIFESP',
+    specializations: ['Nutrição Esportiva', 'Suplementação'],
+    crn: 'CRN-3 23456',
+    lastActivity: '1 dia atrás',
     coverLetter:
-      "Minha especialização em nutrição oncológica me permite oferecer um cuidado diferenciado aos pacientes.",
+      'Sou apaixonada por nutrição esportiva e gostaria de fazer parte da equipe.',
   },
   {
-    id: "5",
-    name: "Dr. Pedro Costa",
-    email: "pedro.costa@email.com",
-    phone: "(11) 55555-5555",
-    location: "São Paulo, SP",
-    status: "rejected",
+    id: '3',
+    name: 'Dr. João Oliveira',
+    email: 'joao.oliveira@email.com',
+    phone: '(11) 77777-7777',
+    location: 'São Paulo, SP',
+    status: 'interview',
+    score: 92,
+    appliedDate: '2024-01-15',
+    experience: '7 anos',
+    education: 'Nutrição - PUC-SP',
+    specializations: ['Nutrição Clínica', 'Geriatria', 'Cardiologia'],
+    crn: 'CRN-3 34567',
+    lastActivity: '3 dias atrás',
+    coverLetter:
+      'Com minha experiência em nutrição geriátrica, acredito poder agregar muito valor à equipe.',
+  },
+  {
+    id: '4',
+    name: 'Dra. Carla Ferreira',
+    email: 'carla.ferreira@email.com',
+    phone: '(11) 66666-6666',
+    location: 'São Paulo, SP',
+    status: 'approved',
+    score: 97,
+    appliedDate: '2024-01-12',
+    experience: '8 anos',
+    education: 'Nutrição - UNESP',
+    specializations: ['Nutrição Clínica', 'Oncologia', 'Terapia Nutricional'],
+    crn: 'CRN-3 45678',
+    lastActivity: '1 semana atrás',
+    coverLetter:
+      'Minha especialização em nutrição oncológica me permite oferecer um cuidado diferenciado aos pacientes.',
+  },
+  {
+    id: '5',
+    name: 'Dr. Pedro Costa',
+    email: 'pedro.costa@email.com',
+    phone: '(11) 55555-5555',
+    location: 'São Paulo, SP',
+    status: 'rejected',
     score: 65,
-    appliedDate: "2024-01-10",
-    experience: "2 anos",
-    education: "Nutrição - Anhembi Morumbi",
-    specializations: ["Nutrição Clínica"],
-    crn: "CRN-3 56789",
-    lastActivity: "2 semanas atrás",
-    coverLetter: "Estou em busca de uma oportunidade para crescer profissionalmente na área clínica.",
+    appliedDate: '2024-01-10',
+    experience: '2 anos',
+    education: 'Nutrição - Anhembi Morumbi',
+    specializations: ['Nutrição Clínica'],
+    crn: 'CRN-3 56789',
+    lastActivity: '2 semanas atrás',
+    coverLetter:
+      'Estou em busca de uma oportunidade para crescer profissionalmente na área clínica.',
   },
 ]
 
-export function JobCandidatesModal({ isOpen, onClose, job }: JobCandidatesModalProps) {
+export function JobCandidatesModal({
+  isOpen,
+  onClose,
+  job,
+}: JobCandidatesModalProps) {
   const [candidates] = useState<Candidate[]>(mockCandidates)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [statusFilter, setStatusFilter] = useState<string>("all")
+  const [searchTerm, setSearchTerm] = useState('')
+  const [statusFilter, setStatusFilter] = useState<string>('all')
   const [selectedCandidates, setSelectedCandidates] = useState<string[]>([])
-  const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null)
+  const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(
+    null
+  )
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
 
-  const filteredCandidates = candidates.filter((candidate) => {
+  const filteredCandidates = candidates.filter(candidate => {
     const matchesSearch =
       candidate.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       candidate.email.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesStatus = statusFilter === "all" || candidate.status === statusFilter
+    const matchesStatus =
+      statusFilter === 'all' || candidate.status === statusFilter
     return matchesSearch && matchesStatus
   })
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "new":
-        return "bg-blue-100 text-blue-800 border-blue-200"
-      case "reviewing":
-        return "bg-yellow-100 text-yellow-800 border-yellow-200"
-      case "interview":
-        return "bg-purple-100 text-purple-800 border-purple-200"
-      case "approved":
-        return "bg-green-100 text-green-800 border-green-200"
-      case "rejected":
-        return "bg-red-100 text-red-800 border-red-200"
+      case 'new':
+        return 'bg-blue-100 text-blue-800 border-blue-200'
+      case 'reviewing':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200'
+      case 'interview':
+        return 'bg-purple-100 text-purple-800 border-purple-200'
+      case 'approved':
+        return 'bg-green-100 text-green-800 border-green-200'
+      case 'rejected':
+        return 'bg-red-100 text-red-800 border-red-200'
       default:
-        return "bg-gray-100 text-gray-800 border-gray-200"
+        return 'bg-gray-100 text-gray-800 border-gray-200'
     }
   }
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case "new":
-        return "Novo"
-      case "reviewing":
-        return "Em Análise"
-      case "interview":
-        return "Entrevista"
-      case "approved":
-        return "Aprovado"
-      case "rejected":
-        return "Rejeitado"
+      case 'new':
+        return 'Novo'
+      case 'reviewing':
+        return 'Em Análise'
+      case 'interview':
+        return 'Entrevista'
+      case 'approved':
+        return 'Aprovado'
+      case 'rejected':
+        return 'Rejeitado'
       default:
         return status
     }
@@ -212,15 +233,15 @@ export function JobCandidatesModal({ isOpen, onClose, job }: JobCandidatesModalP
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case "new":
+      case 'new':
         return <AlertCircle className="h-4 w-4" />
-      case "reviewing":
+      case 'reviewing':
         return <Clock className="h-4 w-4" />
-      case "interview":
+      case 'interview':
         return <Calendar className="h-4 w-4" />
-      case "approved":
+      case 'approved':
         return <CheckCircle className="h-4 w-4" />
-      case "rejected":
+      case 'rejected':
         return <XCircle className="h-4 w-4" />
       default:
         return <User className="h-4 w-4" />
@@ -228,12 +249,14 @@ export function JobCandidatesModal({ isOpen, onClose, job }: JobCandidatesModalP
   }
 
   const handleStatusChange = (candidateId: string, newStatus: string) => {
-    console.log(`Alterando status do candidato ${candidateId} para ${newStatus}`)
+    // Handle status change for candidate
   }
 
   const handleSelectCandidate = (candidateId: string) => {
-    setSelectedCandidates((prev) =>
-      prev.includes(candidateId) ? prev.filter((id) => id !== candidateId) : [...prev, candidateId],
+    setSelectedCandidates(prev =>
+      prev.includes(candidateId)
+        ? prev.filter(id => id !== candidateId)
+        : [...prev, candidateId]
     )
   }
 
@@ -241,7 +264,7 @@ export function JobCandidatesModal({ isOpen, onClose, job }: JobCandidatesModalP
     if (selectedCandidates.length === filteredCandidates.length) {
       setSelectedCandidates([])
     } else {
-      setSelectedCandidates(filteredCandidates.map((c) => c.id))
+      setSelectedCandidates(filteredCandidates.map(c => c.id))
     }
   }
 
@@ -251,18 +274,18 @@ export function JobCandidatesModal({ isOpen, onClose, job }: JobCandidatesModalP
   }
 
   const getScoreColor = (score: number) => {
-    if (score >= 90) return "text-green-600"
-    if (score >= 80) return "text-yellow-600"
-    if (score >= 70) return "text-orange-600"
-    return "text-red-600"
+    if (score >= 90) return 'text-green-600'
+    if (score >= 80) return 'text-yellow-600'
+    if (score >= 70) return 'text-orange-600'
+    return 'text-red-600'
   }
 
   const statusStats = {
-    new: candidates.filter((c) => c.status === "new").length,
-    reviewing: candidates.filter((c) => c.status === "reviewing").length,
-    interview: candidates.filter((c) => c.status === "interview").length,
-    approved: candidates.filter((c) => c.status === "approved").length,
-    rejected: candidates.filter((c) => c.status === "rejected").length,
+    new: candidates.filter(c => c.status === 'new').length,
+    reviewing: candidates.filter(c => c.status === 'reviewing').length,
+    interview: candidates.filter(c => c.status === 'interview').length,
+    approved: candidates.filter(c => c.status === 'approved').length,
+    rejected: candidates.filter(c => c.status === 'rejected').length,
   }
 
   if (!job) return null
@@ -272,9 +295,12 @@ export function JobCandidatesModal({ isOpen, onClose, job }: JobCandidatesModalP
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="max-w-7xl max-h-[90vh] overflow-hidden">
           <DialogHeader>
-            <DialogTitle className="text-2xl">Candidatos - {job.title}</DialogTitle>
+            <DialogTitle className="text-2xl">
+              Candidatos - {job.title}
+            </DialogTitle>
             <p className="text-gray-600">
-              {job.applicationsCount} candidaturas • {job.department || job.company} • {job.location}
+              {job.applicationsCount} candidaturas •{' '}
+              {job.department || job.company} • {job.location}
             </p>
           </DialogHeader>
 
@@ -285,52 +311,75 @@ export function JobCandidatesModal({ isOpen, onClose, job }: JobCandidatesModalP
               <TabsTrigger value="actions">Ações em Massa</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="candidates" className="space-y-4 overflow-hidden">
+            <TabsContent
+              value="candidates"
+              className="space-y-4 overflow-hidden"
+            >
               {/* Stats Cards */}
               <div className="grid grid-cols-5 gap-4">
                 <Card className="border-0 shadow-sm bg-blue-50">
                   <CardContent className="p-4 text-center">
                     <div className="flex items-center justify-center gap-2 mb-2">
                       <AlertCircle className="h-4 w-4 text-blue-600" />
-                      <span className="text-sm font-medium text-blue-600">Novos</span>
+                      <span className="text-sm font-medium text-blue-600">
+                        Novos
+                      </span>
                     </div>
-                    <p className="text-2xl font-bold text-blue-700">{statusStats.new}</p>
+                    <p className="text-2xl font-bold text-blue-700">
+                      {statusStats.new}
+                    </p>
                   </CardContent>
                 </Card>
                 <Card className="border-0 shadow-sm bg-yellow-50">
                   <CardContent className="p-4 text-center">
                     <div className="flex items-center justify-center gap-2 mb-2">
                       <Clock className="h-4 w-4 text-yellow-600" />
-                      <span className="text-sm font-medium text-yellow-600">Em Análise</span>
+                      <span className="text-sm font-medium text-yellow-600">
+                        Em Análise
+                      </span>
                     </div>
-                    <p className="text-2xl font-bold text-yellow-700">{statusStats.reviewing}</p>
+                    <p className="text-2xl font-bold text-yellow-700">
+                      {statusStats.reviewing}
+                    </p>
                   </CardContent>
                 </Card>
                 <Card className="border-0 shadow-sm bg-purple-50">
                   <CardContent className="p-4 text-center">
                     <div className="flex items-center justify-center gap-2 mb-2">
                       <Calendar className="h-4 w-4 text-purple-600" />
-                      <span className="text-sm font-medium text-purple-600">Entrevista</span>
+                      <span className="text-sm font-medium text-purple-600">
+                        Entrevista
+                      </span>
                     </div>
-                    <p className="text-2xl font-bold text-purple-700">{statusStats.interview}</p>
+                    <p className="text-2xl font-bold text-purple-700">
+                      {statusStats.interview}
+                    </p>
                   </CardContent>
                 </Card>
                 <Card className="border-0 shadow-sm bg-green-50">
                   <CardContent className="p-4 text-center">
                     <div className="flex items-center justify-center gap-2 mb-2">
                       <CheckCircle className="h-4 w-4 text-green-600" />
-                      <span className="text-sm font-medium text-green-600">Aprovados</span>
+                      <span className="text-sm font-medium text-green-600">
+                        Aprovados
+                      </span>
                     </div>
-                    <p className="text-2xl font-bold text-green-700">{statusStats.approved}</p>
+                    <p className="text-2xl font-bold text-green-700">
+                      {statusStats.approved}
+                    </p>
                   </CardContent>
                 </Card>
                 <Card className="border-0 shadow-sm bg-red-50">
                   <CardContent className="p-4 text-center">
                     <div className="flex items-center justify-center gap-2 mb-2">
                       <XCircle className="h-4 w-4 text-red-600" />
-                      <span className="text-sm font-medium text-red-600">Rejeitados</span>
+                      <span className="text-sm font-medium text-red-600">
+                        Rejeitados
+                      </span>
                     </div>
-                    <p className="text-2xl font-bold text-red-700">{statusStats.rejected}</p>
+                    <p className="text-2xl font-bold text-red-700">
+                      {statusStats.rejected}
+                    </p>
                   </CardContent>
                 </Card>
               </div>
@@ -343,7 +392,7 @@ export function JobCandidatesModal({ isOpen, onClose, job }: JobCandidatesModalP
                     <Input
                       placeholder="Buscar candidatos..."
                       value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
+                      onChange={e => setSearchTerm(e.target.value)}
                       className="pl-10"
                     />
                   </div>
@@ -364,46 +413,66 @@ export function JobCandidatesModal({ isOpen, onClose, job }: JobCandidatesModalP
                 </Select>
                 <div className="flex items-center gap-2">
                   <Checkbox
-                    checked={selectedCandidates.length === filteredCandidates.length}
+                    checked={
+                      selectedCandidates.length === filteredCandidates.length
+                    }
                     onCheckedChange={handleSelectAll}
                   />
                   <span className="text-sm text-gray-600">
-                    {selectedCandidates.length > 0 && `${selectedCandidates.length} selecionados`}
+                    {selectedCandidates.length > 0 &&
+                      `${selectedCandidates.length} selecionados`}
                   </span>
                 </div>
               </div>
 
               {/* Candidates List */}
               <div className="space-y-4 overflow-y-auto max-h-96">
-                {filteredCandidates.map((candidate) => (
-                  <Card key={candidate.id} className="border-0 shadow-sm hover:shadow-md transition-all duration-200">
+                {filteredCandidates.map(candidate => (
+                  <Card
+                    key={candidate.id}
+                    className="border-0 shadow-sm hover:shadow-md transition-all duration-200"
+                  >
                     <CardContent className="p-6">
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex items-start gap-4 flex-1">
                           <Checkbox
                             checked={selectedCandidates.includes(candidate.id)}
-                            onCheckedChange={() => handleSelectCandidate(candidate.id)}
+                            onCheckedChange={() =>
+                              handleSelectCandidate(candidate.id)
+                            }
                           />
                           <Avatar className="h-12 w-12">
-                            <AvatarImage src={candidate.avatar || "/placeholder.svg"} />
+                            <AvatarImage
+                              src={candidate.avatar || '/placeholder.svg'}
+                            />
                             <AvatarFallback className="bg-blue-100 text-blue-600 font-semibold">
                               {candidate.name
-                                .split(" ")
-                                .map((n) => n[0])
-                                .join("")
+                                .split(' ')
+                                .map(n => n[0])
+                                .join('')
                                 .slice(0, 2)}
                             </AvatarFallback>
                           </Avatar>
                           <div className="flex-1 space-y-2">
                             <div className="flex items-center gap-3">
-                              <h3 className="font-semibold text-[#1E1D40] text-lg">{candidate.name}</h3>
-                              <Badge className={getStatusColor(candidate.status)}>
+                              <h3 className="font-semibold text-[#1E1D40] text-lg">
+                                {candidate.name}
+                              </h3>
+                              <Badge
+                                className={getStatusColor(candidate.status)}
+                              >
                                 {getStatusIcon(candidate.status)}
-                                <span className="ml-1">{getStatusLabel(candidate.status)}</span>
+                                <span className="ml-1">
+                                  {getStatusLabel(candidate.status)}
+                                </span>
                               </Badge>
                               <div className="flex items-center gap-1">
-                                <Star className={`h-4 w-4 ${getScoreColor(candidate.score)}`} />
-                                <span className={`font-semibold ${getScoreColor(candidate.score)}`}>
+                                <Star
+                                  className={`h-4 w-4 ${getScoreColor(candidate.score)}`}
+                                />
+                                <span
+                                  className={`font-semibold ${getScoreColor(candidate.score)}`}
+                                >
                                   {candidate.score}%
                                 </span>
                               </div>
@@ -423,12 +492,21 @@ export function JobCandidatesModal({ isOpen, onClose, job }: JobCandidatesModalP
                               </div>
                               <div className="flex items-center gap-1">
                                 <Calendar className="h-4 w-4" />
-                                <span>Aplicou em {new Date(candidate.appliedDate).toLocaleDateString("pt-BR")}</span>
+                                <span>
+                                  Aplicou em{' '}
+                                  {new Date(
+                                    candidate.appliedDate
+                                  ).toLocaleDateString('pt-BR')}
+                                </span>
                               </div>
                             </div>
                             <div className="flex flex-wrap gap-2">
                               {candidate.specializations.map((spec, index) => (
-                                <Badge key={`candidate-${candidate.id}-spec-${spec}-${index}`} variant="outline" className="text-xs">
+                                <Badge
+                                  key={`candidate-${candidate.id}-spec-${spec}-${index}`}
+                                  variant="outline"
+                                  className="text-xs"
+                                >
                                   {spec}
                                 </Badge>
                               ))}
@@ -437,7 +515,11 @@ export function JobCandidatesModal({ isOpen, onClose, job }: JobCandidatesModalP
                         </div>
 
                         <div className="flex items-center gap-2">
-                          <Button variant="outline" size="sm" onClick={() => handleViewProfile(candidate)}>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleViewProfile(candidate)}
+                          >
                             <Eye className="h-4 w-4 mr-2" />
                             Ver Perfil
                           </Button>
@@ -448,15 +530,27 @@ export function JobCandidatesModal({ isOpen, onClose, job }: JobCandidatesModalP
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => handleStatusChange(candidate.id, "reviewing")}>
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  handleStatusChange(candidate.id, 'reviewing')
+                                }
+                              >
                                 <Clock className="h-4 w-4 mr-2" />
                                 Mover para Análise
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleStatusChange(candidate.id, "interview")}>
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  handleStatusChange(candidate.id, 'interview')
+                                }
+                              >
                                 <Calendar className="h-4 w-4 mr-2" />
                                 Agendar Entrevista
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleStatusChange(candidate.id, "approved")}>
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  handleStatusChange(candidate.id, 'approved')
+                                }
+                              >
                                 <UserCheck className="h-4 w-4 mr-2" />
                                 Aprovar
                               </DropdownMenuItem>
@@ -471,7 +565,9 @@ export function JobCandidatesModal({ isOpen, onClose, job }: JobCandidatesModalP
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
-                                onClick={() => handleStatusChange(candidate.id, "rejected")}
+                                onClick={() =>
+                                  handleStatusChange(candidate.id, 'rejected')
+                                }
                                 className="text-red-600 hover:text-red-700"
                               >
                                 <UserX className="h-4 w-4 mr-2" />
@@ -499,46 +595,63 @@ export function JobCandidatesModal({ isOpen, onClose, job }: JobCandidatesModalP
                   <CardContent className="space-y-4">
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">Candidaturas</span>
+                        <span className="text-sm font-medium">
+                          Candidaturas
+                        </span>
                         <span className="font-bold">{candidates.length}</span>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div className="bg-blue-600 h-2 rounded-full" style={{ width: "100%" }}></div>
+                        <div
+                          className="bg-blue-600 h-2 rounded-full"
+                          style={{ width: '100%' }}
+                        ></div>
                       </div>
                     </div>
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium">Em Análise</span>
-                        <span className="font-bold">{statusStats.reviewing}</span>
+                        <span className="font-bold">
+                          {statusStats.reviewing}
+                        </span>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2">
                         <div
                           className="bg-yellow-600 h-2 rounded-full"
-                          style={{ width: `${(statusStats.reviewing / candidates.length) * 100}%` }}
+                          style={{
+                            width: `${(statusStats.reviewing / candidates.length) * 100}%`,
+                          }}
                         ></div>
                       </div>
                     </div>
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium">Entrevistas</span>
-                        <span className="font-bold">{statusStats.interview}</span>
+                        <span className="font-bold">
+                          {statusStats.interview}
+                        </span>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2">
                         <div
                           className="bg-purple-600 h-2 rounded-full"
-                          style={{ width: `${(statusStats.interview / candidates.length) * 100}%` }}
+                          style={{
+                            width: `${(statusStats.interview / candidates.length) * 100}%`,
+                          }}
                         ></div>
                       </div>
                     </div>
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium">Aprovados</span>
-                        <span className="font-bold">{statusStats.approved}</span>
+                        <span className="font-bold">
+                          {statusStats.approved}
+                        </span>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2">
                         <div
                           className="bg-green-600 h-2 rounded-full"
-                          style={{ width: `${(statusStats.approved / candidates.length) * 100}%` }}
+                          style={{
+                            width: `${(statusStats.approved / candidates.length) * 100}%`,
+                          }}
                         ></div>
                       </div>
                     </div>
@@ -557,27 +670,40 @@ export function JobCandidatesModal({ isOpen, onClose, job }: JobCandidatesModalP
                       .sort((a, b) => b.score - a.score)
                       .slice(0, 5)
                       .map((candidate, index) => (
-                        <div key={candidate.id} className="flex items-center gap-3">
+                        <div
+                          key={candidate.id}
+                          className="flex items-center gap-3"
+                        >
                           <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
                             {index + 1}
                           </div>
                           <Avatar className="h-8 w-8">
-                            <AvatarImage src={candidate.avatar || "/placeholder.svg"} />
+                            <AvatarImage
+                              src={candidate.avatar || '/placeholder.svg'}
+                            />
                             <AvatarFallback className="bg-blue-100 text-blue-600 text-xs font-semibold">
                               {candidate.name
-                                .split(" ")
-                                .map((n) => n[0])
-                                .join("")
+                                .split(' ')
+                                .map(n => n[0])
+                                .join('')
                                 .slice(0, 2)}
                             </AvatarFallback>
                           </Avatar>
                           <div className="flex-1">
-                            <p className="font-semibold text-sm">{candidate.name}</p>
-                            <p className="text-xs text-gray-600">{candidate.experience} de experiência</p>
+                            <p className="font-semibold text-sm">
+                              {candidate.name}
+                            </p>
+                            <p className="text-xs text-gray-600">
+                              {candidate.experience} de experiência
+                            </p>
                           </div>
                           <div className="flex items-center gap-1">
-                            <Star className={`h-4 w-4 ${getScoreColor(candidate.score)}`} />
-                            <span className={`font-semibold text-sm ${getScoreColor(candidate.score)}`}>
+                            <Star
+                              className={`h-4 w-4 ${getScoreColor(candidate.score)}`}
+                            />
+                            <span
+                              className={`font-semibold text-sm ${getScoreColor(candidate.score)}`}
+                            >
                               {candidate.score}%
                             </span>
                           </div>
@@ -595,7 +721,9 @@ export function JobCandidatesModal({ isOpen, onClose, job }: JobCandidatesModalP
                     <Send className="h-5 w-5" />
                     Ações em Massa
                   </CardTitle>
-                  <p className="text-sm text-gray-600">{selectedCandidates.length} candidatos selecionados</p>
+                  <p className="text-sm text-gray-600">
+                    {selectedCandidates.length} candidatos selecionados
+                  </p>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -642,7 +770,10 @@ export function JobCandidatesModal({ isOpen, onClose, job }: JobCandidatesModalP
                       <div className="space-y-3">
                         <Input placeholder="Assunto do email" />
                         <Textarea placeholder="Mensagem..." rows={4} />
-                        <Button className="w-full" disabled={selectedCandidates.length === 0}>
+                        <Button
+                          className="w-full"
+                          disabled={selectedCandidates.length === 0}
+                        >
                           <Mail className="h-4 w-4 mr-2" />
                           Enviar para {selectedCandidates.length} candidatos
                         </Button>
@@ -662,15 +793,23 @@ export function JobCandidatesModal({ isOpen, onClose, job }: JobCandidatesModalP
           {selectedCandidate && (
             <div className="space-y-6">
               <DialogHeader>
-                <DialogTitle className="text-2xl">{selectedCandidate.name}</DialogTitle>
+                <DialogTitle className="text-2xl">
+                  {selectedCandidate.name}
+                </DialogTitle>
                 <div className="flex items-center gap-4">
                   <Badge className={getStatusColor(selectedCandidate.status)}>
                     {getStatusIcon(selectedCandidate.status)}
-                    <span className="ml-1">{getStatusLabel(selectedCandidate.status)}</span>
+                    <span className="ml-1">
+                      {getStatusLabel(selectedCandidate.status)}
+                    </span>
                   </Badge>
                   <div className="flex items-center gap-1">
-                    <Star className={`h-4 w-4 ${getScoreColor(selectedCandidate.score)}`} />
-                    <span className={`font-semibold ${getScoreColor(selectedCandidate.score)}`}>
+                    <Star
+                      className={`h-4 w-4 ${getScoreColor(selectedCandidate.score)}`}
+                    />
+                    <span
+                      className={`font-semibold ${getScoreColor(selectedCandidate.score)}`}
+                    >
                       {selectedCandidate.score}% de compatibilidade
                     </span>
                   </div>
@@ -689,20 +828,36 @@ export function JobCandidatesModal({ isOpen, onClose, job }: JobCandidatesModalP
                     <CardContent className="space-y-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <label className="text-sm font-medium text-gray-600">Email</label>
-                          <p className="text-[#1E1D40] font-semibold">{selectedCandidate.email}</p>
+                          <label className="text-sm font-medium text-gray-600">
+                            Email
+                          </label>
+                          <p className="text-[#1E1D40] font-semibold">
+                            {selectedCandidate.email}
+                          </p>
                         </div>
                         <div>
-                          <label className="text-sm font-medium text-gray-600">Telefone</label>
-                          <p className="text-[#1E1D40] font-semibold">{selectedCandidate.phone}</p>
+                          <label className="text-sm font-medium text-gray-600">
+                            Telefone
+                          </label>
+                          <p className="text-[#1E1D40] font-semibold">
+                            {selectedCandidate.phone}
+                          </p>
                         </div>
                         <div>
-                          <label className="text-sm font-medium text-gray-600">Localização</label>
-                          <p className="text-[#1E1D40] font-semibold">{selectedCandidate.location}</p>
+                          <label className="text-sm font-medium text-gray-600">
+                            Localização
+                          </label>
+                          <p className="text-[#1E1D40] font-semibold">
+                            {selectedCandidate.location}
+                          </p>
                         </div>
                         <div>
-                          <label className="text-sm font-medium text-gray-600">CRN</label>
-                          <p className="text-[#1E1D40] font-semibold">{selectedCandidate.crn}</p>
+                          <label className="text-sm font-medium text-gray-600">
+                            CRN
+                          </label>
+                          <p className="text-[#1E1D40] font-semibold">
+                            {selectedCandidate.crn}
+                          </p>
                         </div>
                       </div>
                     </CardContent>
@@ -717,12 +872,20 @@ export function JobCandidatesModal({ isOpen, onClose, job }: JobCandidatesModalP
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div>
-                        <label className="text-sm font-medium text-gray-600">Formação</label>
-                        <p className="text-[#1E1D40] font-semibold">{selectedCandidate.education}</p>
+                        <label className="text-sm font-medium text-gray-600">
+                          Formação
+                        </label>
+                        <p className="text-[#1E1D40] font-semibold">
+                          {selectedCandidate.education}
+                        </p>
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-gray-600">Experiência</label>
-                        <p className="text-[#1E1D40] font-semibold">{selectedCandidate.experience}</p>
+                        <label className="text-sm font-medium text-gray-600">
+                          Experiência
+                        </label>
+                        <p className="text-[#1E1D40] font-semibold">
+                          {selectedCandidate.experience}
+                        </p>
                       </div>
                     </CardContent>
                   </Card>
@@ -736,11 +899,17 @@ export function JobCandidatesModal({ isOpen, onClose, job }: JobCandidatesModalP
                     </CardHeader>
                     <CardContent>
                       <div className="flex flex-wrap gap-2">
-                        {selectedCandidate.specializations.map((spec, index) => (
-                          <Badge key={`selected-candidate-spec-${spec}-${index}`} variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                            {spec}
-                          </Badge>
-                        ))}
+                        {selectedCandidate.specializations.map(
+                          (spec, index) => (
+                            <Badge
+                              key={`selected-candidate-spec-${spec}-${index}`}
+                              variant="outline"
+                              className="bg-blue-50 text-blue-700 border-blue-200"
+                            >
+                              {spec}
+                            </Badge>
+                          )
+                        )}
                       </div>
                     </CardContent>
                   </Card>
@@ -754,7 +923,9 @@ export function JobCandidatesModal({ isOpen, onClose, job }: JobCandidatesModalP
                         </CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <p className="text-[#1E1D40]">{selectedCandidate.coverLetter}</p>
+                        <p className="text-[#1E1D40]">
+                          {selectedCandidate.coverLetter}
+                        </p>
                       </CardContent>
                     </Card>
                   )}
@@ -766,15 +937,24 @@ export function JobCandidatesModal({ isOpen, onClose, job }: JobCandidatesModalP
                       <CardTitle>Ações</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3">
-                      <Button className="w-full bg-transparent" variant="outline">
+                      <Button
+                        className="w-full bg-transparent"
+                        variant="outline"
+                      >
                         <MessageSquare className="h-4 w-4 mr-2" />
                         Enviar Mensagem
                       </Button>
-                      <Button className="w-full bg-transparent" variant="outline">
+                      <Button
+                        className="w-full bg-transparent"
+                        variant="outline"
+                      >
                         <Calendar className="h-4 w-4 mr-2" />
                         Agendar Entrevista
                       </Button>
-                      <Button className="w-full bg-transparent" variant="outline">
+                      <Button
+                        className="w-full bg-transparent"
+                        variant="outline"
+                      >
                         <Download className="h-4 w-4 mr-2" />
                         Baixar Currículo
                       </Button>
@@ -800,12 +980,16 @@ export function JobCandidatesModal({ isOpen, onClose, job }: JobCandidatesModalP
                       <div className="text-sm">
                         <p className="font-medium">Candidatura enviada</p>
                         <p className="text-gray-600">
-                          {new Date(selectedCandidate.appliedDate).toLocaleDateString("pt-BR")}
+                          {new Date(
+                            selectedCandidate.appliedDate
+                          ).toLocaleDateString('pt-BR')}
                         </p>
                       </div>
                       <div className="text-sm">
                         <p className="font-medium">Última atividade</p>
-                        <p className="text-gray-600">{selectedCandidate.lastActivity}</p>
+                        <p className="text-gray-600">
+                          {selectedCandidate.lastActivity}
+                        </p>
                       </div>
                     </CardContent>
                   </Card>

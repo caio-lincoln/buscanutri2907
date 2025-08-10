@@ -3,6 +3,7 @@
 ## ✅ Configurações Necessárias
 
 ### 1. Variáveis de Ambiente no Vercel
+
 ⚠️ **IMPORTANTE**: Configure TODAS as variáveis antes do deploy para evitar erros de build.
 
 Configure as seguintes variáveis no painel do Vercel (Settings > Environment Variables):
@@ -21,13 +22,16 @@ NODE_ENV=production
 ```
 
 **Passos para configurar no Vercel:**
+
 1. Acesse seu projeto no Vercel
 2. Vá em Settings > Environment Variables
 3. Adicione cada variável individualmente
 4. Certifique-se de aplicar para Production, Preview e Development
 
 ### 2. Configurações de Build
+
 O projeto já está configurado com:
+
 - ✅ `vercel.json` - Configurações específicas do Vercel (runtime corrigido)
 - ✅ `next.config.mjs` - Ignora erros de TypeScript durante build
 - ✅ Build command: `npm run build`
@@ -60,34 +64,42 @@ O projeto já está configurado com:
 ## 🔧 Troubleshooting
 
 ### Erro: "As variáveis de ambiente NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY devem ser definidas"
+
 **Causa**: Variáveis de ambiente do Supabase não configuradas no Vercel.
 
 **Solução**:
+
 1. Acesse Settings > Environment Variables no Vercel
 2. Adicione `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 3. Certifique-se de aplicar para todos os ambientes (Production, Preview, Development)
 4. Faça um novo deploy após configurar
 
 ### Erro de Build
+
 Se o build falhar:
+
 1. Verifique se todas as variáveis de ambiente estão configuradas
 2. Confirme que `NODE_ENV=production` está definido
 3. Verifique os logs de build no painel do Vercel
 4. Se persistir, verifique se há erros de TypeScript nos logs
 
 ### Erro de Runtime
+
 Se a aplicação não carregar:
+
 1. Verifique as variáveis do Supabase
 2. Confirme que o banco de dados está acessível
 3. Verifique os logs de função no painel do Vercel
 
 ### Performance
+
 - ✅ Imagens otimizadas com Next.js Image
 - ✅ Bundle splitting automático
 - ✅ Static generation onde possível
 - ✅ Server-side rendering para páginas dinâmicas
 
 ## 📊 Status do Projeto
+
 - **Build**: ✅ Funcionando
 - **TypeScript**: ⚠️ Warnings ignorados durante build
 - **ESLint**: ✅ Apenas warnings de otimização

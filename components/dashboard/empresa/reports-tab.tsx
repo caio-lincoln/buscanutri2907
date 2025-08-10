@@ -1,9 +1,15 @@
-"use client"
+'use client'
 
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useState, useEffect } from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import {
   BarChart,
   Bar,
@@ -17,7 +23,7 @@ import {
   Cell,
   Area,
   AreaChart,
-} from "recharts"
+} from 'recharts'
 import {
   TrendingUp,
   TrendingDown,
@@ -31,16 +37,16 @@ import {
   CheckCircle,
   Star,
   Loader2,
-} from "lucide-react"
-import { useUser } from "@/hooks/use-user"
-import { 
-  getCompanyKPIs, 
-  getCompanyReportsData, 
+} from 'lucide-react'
+import { useUser } from '@/hooks/use-user'
+import {
+  getCompanyKPIs,
+  getCompanyReportsData,
   getJobPerformanceDetails,
   type CompanyKPIs,
   type CompanyReportsData,
-  type JobPerformanceData
-} from "@/lib/company-reports-service"
+  type JobPerformanceData,
+} from '@/lib/company-reports-service'
 
 interface ReportsTabProps {
   companyId?: string
@@ -48,12 +54,16 @@ interface ReportsTabProps {
 
 export function ReportsTab({ companyId }: ReportsTabProps) {
   const { user } = useUser()
-  const [timeRange, setTimeRange] = useState("6months")
-  const [selectedMetric, setSelectedMetric] = useState("applications")
+  const [timeRange, setTimeRange] = useState('6months')
+  const [selectedMetric, setSelectedMetric] = useState('applications')
   const [loading, setLoading] = useState(true)
   const [kpis, setKpis] = useState<CompanyKPIs | null>(null)
-  const [reportsData, setReportsData] = useState<CompanyReportsData | null>(null)
-  const [jobPerformanceData, setJobPerformanceData] = useState<JobPerformanceData[]>([])
+  const [reportsData, setReportsData] = useState<CompanyReportsData | null>(
+    null
+  )
+  const [jobPerformanceData, setJobPerformanceData] = useState<
+    JobPerformanceData[]
+  >([])
 
   const currentCompanyId = companyId || user?.id
 
@@ -74,59 +84,60 @@ export function ReportsTab({ companyId }: ReportsTabProps) {
           'Taxa de Conversão (%)': kpis.conversionRate,
           'Tempo Médio de Contratação (dias)': kpis.avgHiringTime,
           'Tendência de Candidaturas (%)': kpis.applicationsTrend,
-          'Tendência de Contratações (%)': kpis.hiresTrend
+          'Tendência de Contratações (%)': kpis.hiresTrend,
         },
         monthlyStats: reportsData.monthlyStats || [],
         sourceData: reportsData.sourceData || [],
         timeToHire: reportsData.timeToHire || [],
-        jobPerformance: jobPerformanceData || []
+        jobPerformance: jobPerformanceData || [],
       }
 
       // Criar conteúdo CSV
-      let csvContent = "data:text/csv;charset=utf-8,"
+      let csvContent = 'data:text/csv;charset=utf-8,'
 
       // Seção KPIs
-      csvContent += "=== INDICADORES PRINCIPAIS ===\n"
-      csvContent += "Métrica,Valor\n"
+      csvContent += '=== INDICADORES PRINCIPAIS ===\n'
+      csvContent += 'Métrica,Valor\n'
       Object.entries(exportData.kpis).forEach(([key, value]) => {
         csvContent += `"${key}","${value}"\n`
       })
-      csvContent += "\n"
+      csvContent += '\n'
 
       // Seção Estatísticas Mensais
       if (exportData.monthlyStats.length > 0) {
-        csvContent += "=== ESTATÍSTICAS MENSAIS ===\n"
-        csvContent += "Mês,Candidaturas,Entrevistas,Contratações\n"
+        csvContent += '=== ESTATÍSTICAS MENSAIS ===\n'
+        csvContent += 'Mês,Candidaturas,Entrevistas,Contratações\n'
         exportData.monthlyStats.forEach(stat => {
           csvContent += `"${stat.month}","${stat.applications || 0}","${stat.interviews || 0}","${stat.hires || 0}"\n`
         })
-        csvContent += "\n"
+        csvContent += '\n'
       }
 
       // Seção Origem dos Candidatos
       if (exportData.sourceData.length > 0) {
-        csvContent += "=== ORIGEM DOS CANDIDATOS ===\n"
-        csvContent += "Fonte,Percentual (%)\n"
+        csvContent += '=== ORIGEM DOS CANDIDATOS ===\n'
+        csvContent += 'Fonte,Percentual (%)\n'
         exportData.sourceData.forEach(source => {
           csvContent += `"${source.name}","${source.value}"\n`
         })
-        csvContent += "\n"
+        csvContent += '\n'
       }
 
       // Seção Tempo por Etapa
       if (exportData.timeToHire.length > 0) {
-        csvContent += "=== TEMPO POR ETAPA ===\n"
-        csvContent += "Etapa,Dias\n"
+        csvContent += '=== TEMPO POR ETAPA ===\n'
+        csvContent += 'Etapa,Dias\n'
         exportData.timeToHire.forEach(stage => {
           csvContent += `"${stage.stage}","${stage.days}"\n`
         })
-        csvContent += "\n"
+        csvContent += '\n'
       }
 
       // Seção Performance por Vaga
       if (exportData.jobPerformance.length > 0) {
-        csvContent += "=== PERFORMANCE POR VAGA ===\n"
-        csvContent += "Vaga,Candidaturas,Entrevistas,Contratações,Taxa de Conversão (%),Status\n"
+        csvContent += '=== PERFORMANCE POR VAGA ===\n'
+        csvContent +=
+          'Vaga,Candidaturas,Entrevistas,Contratações,Taxa de Conversão (%),Status\n'
         exportData.jobPerformance.forEach(job => {
           csvContent += `"${job.title}","${job.applications}","${job.interviews || 0}","${job.hires || 0}","${job.conversionRate.toFixed(1)}","${job.status}"\n`
         })
@@ -134,13 +145,13 @@ export function ReportsTab({ companyId }: ReportsTabProps) {
 
       // Criar e baixar arquivo
       const encodedUri = encodeURI(csvContent)
-      const link = document.createElement("a")
-      link.setAttribute("href", encodedUri)
-      
+      const link = document.createElement('a')
+      link.setAttribute('href', encodedUri)
+
       // Nome do arquivo com data atual
       const currentDate = new Date().toISOString().split('T')[0]
-      link.setAttribute("download", `relatorio_empresa_${currentDate}.csv`)
-      
+      link.setAttribute('download', `relatorio_empresa_${currentDate}.csv`)
+
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
@@ -148,7 +159,7 @@ export function ReportsTab({ companyId }: ReportsTabProps) {
       // Feedback para o usuário
       alert('Relatório exportado com sucesso!')
     } catch (error) {
-      console.error('Erro ao exportar relatório:', error)
+      // Silent error handling: Error exporting report
       alert('Erro ao exportar relatório. Tente novamente.')
     }
   }
@@ -159,19 +170,20 @@ export function ReportsTab({ companyId }: ReportsTabProps) {
 
       try {
         setLoading(true)
-        
+
         // Carregar dados em paralelo
-        const [kpisData, reportsDataResult, jobPerformanceResult] = await Promise.all([
-          getCompanyKPIs(currentCompanyId),
-          getCompanyReportsData(currentCompanyId),
-          getJobPerformanceDetails(currentCompanyId)
-        ])
+        const [kpisData, reportsDataResult, jobPerformanceResult] =
+          await Promise.all([
+            getCompanyKPIs(currentCompanyId),
+            getCompanyReportsData(currentCompanyId),
+            getJobPerformanceDetails(currentCompanyId),
+          ])
 
         setKpis(kpisData)
         setReportsData(reportsDataResult)
         setJobPerformanceData(jobPerformanceResult)
       } catch (error) {
-        console.error('Erro ao carregar dados de relatórios:', error)
+        // Silent error handling: Error loading reports data
       } finally {
         setLoading(false)
       }
@@ -192,7 +204,9 @@ export function ReportsTab({ companyId }: ReportsTabProps) {
   if (!kpis || !reportsData) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-600">Não foi possível carregar os dados de relatórios.</p>
+        <p className="text-gray-600">
+          Não foi possível carregar os dados de relatórios.
+        </p>
       </div>
     )
   }
@@ -202,8 +216,12 @@ export function ReportsTab({ companyId }: ReportsTabProps) {
       {/* Header */}
       <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-[#1E1D40]">Relatórios e Analytics</h1>
-          <p className="text-gray-600">Analise o desempenho dos seus processos de recrutamento</p>
+          <h1 className="text-3xl font-bold text-[#1E1D40]">
+            Relatórios e Analytics
+          </h1>
+          <p className="text-gray-600">
+            Analise o desempenho dos seus processos de recrutamento
+          </p>
         </div>
         <div className="flex gap-3">
           <Select value={timeRange} onValueChange={setTimeRange}>
@@ -218,8 +236,8 @@ export function ReportsTab({ companyId }: ReportsTabProps) {
               <SelectItem value="1year">Último ano</SelectItem>
             </SelectContent>
           </Select>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             className="hover-lift bg-transparent"
             onClick={exportToCSV}
             disabled={loading || !kpis || !reportsData}
@@ -236,16 +254,23 @@ export function ReportsTab({ companyId }: ReportsTabProps) {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-blue-600">Total de Candidaturas</p>
-                <p className="text-3xl font-bold text-blue-700">{kpis.totalApplications}</p>
+                <p className="text-sm font-medium text-blue-600">
+                  Total de Candidaturas
+                </p>
+                <p className="text-3xl font-bold text-blue-700">
+                  {kpis.totalApplications}
+                </p>
                 <div className="flex items-center gap-1 mt-2">
                   {kpis.applicationsTrend >= 0 ? (
                     <TrendingUp className="h-4 w-4 text-green-600" />
                   ) : (
                     <TrendingDown className="h-4 w-4 text-red-600" />
                   )}
-                  <span className={`text-sm font-medium ${kpis.applicationsTrend >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {kpis.applicationsTrend >= 0 ? '+' : ''}{kpis.applicationsTrend}% vs mês anterior
+                  <span
+                    className={`text-sm font-medium ${kpis.applicationsTrend >= 0 ? 'text-green-600' : 'text-red-600'}`}
+                  >
+                    {kpis.applicationsTrend >= 0 ? '+' : ''}
+                    {kpis.applicationsTrend}% vs mês anterior
                   </span>
                 </div>
               </div>
@@ -260,16 +285,23 @@ export function ReportsTab({ companyId }: ReportsTabProps) {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-green-600">Contratações</p>
-                <p className="text-3xl font-bold text-green-700">{kpis.totalHires}</p>
+                <p className="text-sm font-medium text-green-600">
+                  Contratações
+                </p>
+                <p className="text-3xl font-bold text-green-700">
+                  {kpis.totalHires}
+                </p>
                 <div className="flex items-center gap-1 mt-2">
                   {kpis.hiresTrend >= 0 ? (
                     <TrendingUp className="h-4 w-4 text-green-600" />
                   ) : (
                     <TrendingDown className="h-4 w-4 text-red-600" />
                   )}
-                  <span className={`text-sm font-medium ${kpis.hiresTrend >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {kpis.hiresTrend >= 0 ? '+' : ''}{kpis.hiresTrend}% vs mês anterior
+                  <span
+                    className={`text-sm font-medium ${kpis.hiresTrend >= 0 ? 'text-green-600' : 'text-red-600'}`}
+                  >
+                    {kpis.hiresTrend >= 0 ? '+' : ''}
+                    {kpis.hiresTrend}% vs mês anterior
                   </span>
                 </div>
               </div>
@@ -284,15 +316,21 @@ export function ReportsTab({ companyId }: ReportsTabProps) {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-purple-600">Taxa de Conversão</p>
-                <p className="text-3xl font-bold text-purple-700">{kpis.conversionRate}%</p>
+                <p className="text-sm font-medium text-purple-600">
+                  Taxa de Conversão
+                </p>
+                <p className="text-3xl font-bold text-purple-700">
+                  {kpis.conversionRate}%
+                </p>
                 <div className="flex items-center gap-1 mt-2">
                   {kpis.conversionRate >= 10 ? (
                     <TrendingUp className="h-4 w-4 text-green-600" />
                   ) : (
                     <TrendingDown className="h-4 w-4 text-red-600" />
                   )}
-                  <span className={`text-sm font-medium ${kpis.conversionRate >= 10 ? 'text-green-600' : 'text-red-600'}`}>
+                  <span
+                    className={`text-sm font-medium ${kpis.conversionRate >= 10 ? 'text-green-600' : 'text-red-600'}`}
+                  >
                     {kpis.conversionRate >= 10 ? 'Boa' : 'Baixa'} conversão
                   </span>
                 </div>
@@ -308,15 +346,21 @@ export function ReportsTab({ companyId }: ReportsTabProps) {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-orange-600">Tempo Médio de Contratação</p>
-                <p className="text-3xl font-bold text-orange-700">{kpis.avgHiringTime} dias</p>
+                <p className="text-sm font-medium text-orange-600">
+                  Tempo Médio de Contratação
+                </p>
+                <p className="text-3xl font-bold text-orange-700">
+                  {kpis.avgHiringTime} dias
+                </p>
                 <div className="flex items-center gap-1 mt-2">
                   {kpis.avgHiringTime <= 20 ? (
                     <TrendingUp className="h-4 w-4 text-green-600" />
                   ) : (
                     <TrendingDown className="h-4 w-4 text-red-600" />
                   )}
-                  <span className={`text-sm font-medium ${kpis.avgHiringTime <= 20 ? 'text-green-600' : 'text-red-600'}`}>
+                  <span
+                    className={`text-sm font-medium ${kpis.avgHiringTime <= 20 ? 'text-green-600' : 'text-red-600'}`}
+                  >
                     {kpis.avgHiringTime <= 20 ? 'Rápido' : 'Lento'} processo
                   </span>
                 </div>
@@ -403,7 +447,10 @@ export function ReportsTab({ companyId }: ReportsTabProps) {
             <div className="grid grid-cols-2 gap-2 mt-4">
               {(reportsData.sourceData || []).map((item, index) => (
                 <div key={index} className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
+                  <div
+                    className="w-3 h-3 rounded-full"
+                    style={{ backgroundColor: item.color }}
+                  />
                   <span className="text-sm text-gray-600">
                     {item.name}: {item.value}%
                   </span>
@@ -430,7 +477,11 @@ export function ReportsTab({ companyId }: ReportsTabProps) {
                 <XAxis type="number" />
                 <YAxis dataKey="job" type="category" width={120} />
                 <Tooltip />
-                <Bar dataKey="applications" fill="#3B82F6" name="Candidaturas" />
+                <Bar
+                  dataKey="applications"
+                  fill="#3B82F6"
+                  name="Candidaturas"
+                />
                 <Bar dataKey="views" fill="#10B981" name="Visualizações" />
               </BarChart>
             </ResponsiveContainer>
@@ -471,38 +522,65 @@ export function ReportsTab({ companyId }: ReportsTabProps) {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-200">
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Vaga</th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Candidaturas</th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Entrevistas</th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Contratações</th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Taxa de Conversão</th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Status</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                    Vaga
+                  </th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                    Candidaturas
+                  </th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                    Entrevistas
+                  </th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                    Contratações
+                  </th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                    Taxa de Conversão
+                  </th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                    Status
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {(jobPerformanceData || []).map((job, index) => (
-                  <tr key={index} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                    <td className="py-3 px-4 font-medium text-gray-900">{job.title}</td>
-                    <td className="py-3 px-4 text-gray-700">{job.applications}</td>
-                    <td className="py-3 px-4 text-gray-700">{job.interviews || 0}</td>
-                    <td className="py-3 px-4 text-gray-700">{job.hires || 0}</td>
+                  <tr
+                    key={index}
+                    className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                  >
+                    <td className="py-3 px-4 font-medium text-gray-900">
+                      {job.title}
+                    </td>
+                    <td className="py-3 px-4 text-gray-700">
+                      {job.applications}
+                    </td>
+                    <td className="py-3 px-4 text-gray-700">
+                      {job.interviews || 0}
+                    </td>
+                    <td className="py-3 px-4 text-gray-700">
+                      {job.hires || 0}
+                    </td>
                     <td className="py-3 px-4">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        job.conversionRate > 10 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-yellow-100 text-yellow-800'
-                      }`}>
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          job.conversionRate > 10
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-yellow-100 text-yellow-800'
+                        }`}
+                      >
                         {job.conversionRate.toFixed(1)}%
                       </span>
                     </td>
                     <td className="py-3 px-4">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        job.status === 'ativa' 
-                          ? 'bg-green-100 text-green-800' 
-                          : job.status === 'pausada'
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : 'bg-gray-100 text-gray-800'
-                      }`}>
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          job.status === 'ativa'
+                            ? 'bg-green-100 text-green-800'
+                            : job.status === 'pausada'
+                              ? 'bg-yellow-100 text-yellow-800'
+                              : 'bg-gray-100 text-gray-800'
+                        }`}
+                      >
                         {job.status}
                       </span>
                     </td>

@@ -1,17 +1,17 @@
-"use client";
+'use client'
 
-import { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { 
-  ThumbsUp, 
-  MessageCircle, 
-  Search, 
+import { useState, useEffect } from 'react'
+import { useParams, useRouter } from 'next/navigation'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Badge } from '@/components/ui/badge'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  ThumbsUp,
+  MessageCircle,
+  Search,
   Heart,
   Send,
   ArrowLeft,
@@ -20,136 +20,136 @@ import {
   Eye,
   Edit,
   Trash2,
-  MoreVertical
-} from "lucide-react";
-import { EditForumModal } from "@/components/edit-forum-modal";
-import { DeleteForumModal } from "@/components/delete-forum-modal";
-import { ForumCleanupModal } from "@/components/forum-cleanup-modal";
+  MoreVertical,
+} from 'lucide-react'
+import { EditForumModal } from '@/components/edit-forum-modal'
+import { DeleteForumModal } from '@/components/delete-forum-modal'
+import { ForumCleanupModal } from '@/components/forum-cleanup-modal'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { getCurrentUser } from "@/lib/auth";
-import { supabase } from "@/lib/supabase";
+} from '@/components/ui/dropdown-menu'
+import { getCurrentUser } from '@/lib/auth'
+import { supabase } from '@/lib/supabase'
 
 interface Author {
-  id: string;
-  name: string;
-  avatar?: string;
-  userType: 'nutricionista' | 'paciente';
-  crn?: string;
+  id: string
+  name: string
+  avatar?: string
+  userType: 'nutricionista' | 'paciente'
+  crn?: string
 }
 
 interface ForumQuestion {
-  id: string;
-  title: string;
-  content: string;
-  category?: string;
-  author: Author;
-  timestamp: string;
-  likes: number;
-  views: number;
-  hasLiked: boolean;
-  replies: number;
+  id: string
+  title: string
+  content: string
+  category?: string
+  author: Author
+  timestamp: string
+  likes: number
+  views: number
+  hasLiked: boolean
+  replies: number
 }
 
 interface ForumReply {
-  id: string;
-  content: string;
-  author: Author;
-  timestamp: string;
-  likes: number;
-  hasLiked: boolean;
-  isBestAnswer: boolean;
+  id: string
+  content: string
+  author: Author
+  timestamp: string
+  likes: number
+  hasLiked: boolean
+  isBestAnswer: boolean
 }
 
 export default function NutritionistForumQuestionPage() {
-  const params = useParams();
-  const router = useRouter();
-  const questionId = params.id as string;
+  const params = useParams()
+  const router = useRouter()
+  const questionId = params.id as string
 
   // User and auth states
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<any>(null)
 
   // Filter and search states for replies
-  const [searchTerm, setSearchTerm] = useState("");
-  const [sortBy, setSortBy] = useState<"recent" | "likes" | "best">("recent");
+  const [searchTerm, setSearchTerm] = useState('')
+  const [sortBy, setSortBy] = useState<'recent' | 'likes' | 'best'>('recent')
 
   // Data states
-  const [question, setQuestion] = useState<ForumQuestion | null>(null);
-  const [replies, setReplies] = useState<ForumReply[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [question, setQuestion] = useState<ForumQuestion | null>(null)
+  const [replies, setReplies] = useState<ForumReply[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   // Reply form states
-  const [replyContent, setReplyContent] = useState("");
-  const [isSubmittingReply, setIsSubmittingReply] = useState(false);
+  const [replyContent, setReplyContent] = useState('')
+  const [isSubmittingReply, setIsSubmittingReply] = useState(false)
 
   // Modal states
-  const [editModalOpen, setEditModalOpen] = useState(false);
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [cleanupModalOpen, setCleanupModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false)
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [cleanupModalOpen, setCleanupModalOpen] = useState(false)
   const [editingItem, setEditingItem] = useState<{
-    type: "question" | "answer";
-    id: string;
-    data: any;
-  } | null>(null);
+    type: 'question' | 'answer'
+    id: string
+    data: any
+  } | null>(null)
 
   // Load user and question data
   useEffect(() => {
     const loadData = async () => {
       try {
-        setLoading(true);
-        
-        const user = await getCurrentUser();
-        setCurrentUser(user);
+        setLoading(true)
+
+        const user = await getCurrentUser()
+        setCurrentUser(user)
 
         // Fetch question from Supabase
         const { data: questionData, error: questionError } = await supabase
           .from('forum_questions')
           .select('*')
           .eq('id', questionId)
-          .single();
+          .single()
 
         if (questionError) {
-          throw questionError;
+          throw questionError
         }
 
         if (questionData) {
           // Buscar perfil do autor separadamente
-          let profile = null;
-          let isPatient = false;
-          
+          let profile = null
+          let isPatient = false
+
           if (questionData.patient_id) {
             const { data: patientProfile } = await supabase
               .from('patient_profiles')
               .select('id, full_name, profile_image_url, user_id')
               .eq('user_id', questionData.patient_id)
-              .single();
-            profile = patientProfile;
-            isPatient = true;
+              .single()
+            profile = patientProfile
+            isPatient = true
           } else if (questionData.nutritionist_id) {
             const { data: nutritionistProfile } = await supabase
               .from('nutritionist_profiles')
               .select('id, full_name, profile_image_url, crn, user_id')
               .eq('user_id', questionData.nutritionist_id)
-              .single();
-            profile = nutritionistProfile;
-            isPatient = false;
+              .single()
+            profile = nutritionistProfile
+            isPatient = false
           }
-          
+
           // Check if current user has liked this question
-          let hasLikedQuestion = false;
+          let hasLikedQuestion = false
           if (user) {
             const { data: questionLike } = await supabase
               .from('forum_question_likes')
               .select('id')
               .eq('question_id', questionData.id)
               .eq('user_id', user.id)
-              .single();
-            hasLikedQuestion = !!questionLike;
+              .single()
+            hasLikedQuestion = !!questionLike
           }
 
           // Transform data to match interface
@@ -161,119 +161,129 @@ export default function NutritionistForumQuestionPage() {
             author: {
               id: profile?.user_id || '',
               name: profile?.full_name || 'Usuário',
-              avatar: profile?.profile_image_url || "/placeholder.svg",
+              avatar: profile?.profile_image_url || '/placeholder.svg',
               userType: isPatient ? 'paciente' : 'nutricionista',
-              crn: !isPatient ? profile?.crn : undefined
+              crn: !isPatient ? profile?.crn : undefined,
             },
             timestamp: questionData.created_at,
             likes: questionData.likes_count || 0,
             views: questionData.views_count || 0,
             hasLiked: hasLikedQuestion,
-            replies: questionData.answers_count || 0
-          };
+            replies: questionData.answers_count || 0,
+          }
 
-          setQuestion(transformedQuestion);
+          setQuestion(transformedQuestion)
 
           // Increment view count
-          const newViewCount = (questionData.views_count || 0) + 1;
+          const newViewCount = (questionData.views_count || 0) + 1
           await supabase
             .from('forum_questions')
             .update({ views_count: newViewCount })
-            .eq('id', questionId);
+            .eq('id', questionId)
 
           // Update local state with new view count
-          setQuestion(prev => prev ? {
-            ...prev,
-            views: newViewCount
-          } : null);
+          setQuestion(prev =>
+            prev
+              ? {
+                  ...prev,
+                  views: newViewCount,
+                }
+              : null
+          )
 
           // Load replies
-          await loadReplies(user);
+          await loadReplies(user)
         }
       } catch (err) {
-        console.error("Erro ao carregar dados:", err);
-        setError("Erro ao carregar a pergunta");
+        // Silent error handling for data loading
+        setError('Erro ao carregar a pergunta')
       } finally {
-        setLoading(false);
+        setLoading(false)
       }
-    };
+    }
 
     if (questionId) {
-      loadData();
+      loadData()
     }
-  }, [questionId]);
+  }, [questionId])
 
   // Function to load replies
   const loadReplies = async (user: any = currentUser) => {
     try {
       const { data: repliesData, error: repliesError } = await supabase
         .from('forum_answers')
-        .select(`
+        .select(
+          `
           *
-        `)
+        `
+        )
         .eq('question_id', questionId)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
 
       if (!repliesError && repliesData) {
         // Fetch nutritionist profiles and likes separately for each reply
         const repliesWithProfiles = await Promise.all(
-          repliesData.map(async (reply) => {
+          repliesData.map(async reply => {
             const { data: nutritionistProfile } = await supabase
               .from('nutritionist_profiles')
               .select('id, full_name, profile_image_url, crn, user_id')
               .eq('user_id', reply.author_id)
-              .single();
+              .single()
 
             // Check if current user has liked this reply
-            let hasLikedReply = false;
+            let hasLikedReply = false
             if (user) {
               const { data: replyLike } = await supabase
                 .from('forum_answer_likes')
                 .select('id')
                 .eq('answer_id', reply.id)
                 .eq('user_id', user.id)
-                .single();
-              hasLikedReply = !!replyLike;
+                .single()
+              hasLikedReply = !!replyLike
             }
 
             return {
               ...reply,
               nutritionist_profile: nutritionistProfile,
-              hasLiked: hasLikedReply
-            };
+              hasLiked: hasLikedReply,
+            }
           })
-        );
+        )
 
-        const transformedReplies: ForumReply[] = repliesWithProfiles.map(reply => {
-          return {
-            id: reply.id,
-            content: reply.content,
-            author: {
-              id: reply.nutritionist_profile?.user_id || '',
-              name: reply.nutritionist_profile?.full_name || 'Nutricionista',
-              avatar: reply.nutritionist_profile?.profile_image_url || "/placeholder.svg",
-              userType: 'nutricionista',
-              crn: reply.nutritionist_profile?.crn
-            },
-            timestamp: reply.created_at,
-            likes: reply.likes_count || 0,
-            hasLiked: reply.hasLiked,
-            isBestAnswer: reply.is_best_answer || false
-          };
-        });
+        const transformedReplies: ForumReply[] = repliesWithProfiles.map(
+          reply => {
+            return {
+              id: reply.id,
+              content: reply.content,
+              author: {
+                id: reply.nutritionist_profile?.user_id || '',
+                name: reply.nutritionist_profile?.full_name || 'Nutricionista',
+                avatar:
+                  reply.nutritionist_profile?.profile_image_url ||
+                  '/placeholder.svg',
+                userType: 'nutricionista',
+                crn: reply.nutritionist_profile?.crn,
+              },
+              timestamp: reply.created_at,
+              likes: reply.likes_count || 0,
+              hasLiked: reply.hasLiked,
+              isBestAnswer: reply.is_best_answer || false,
+            }
+          }
+        )
 
-        setReplies(transformedReplies);
+        setReplies(transformedReplies)
       }
     } catch (error) {
-      console.error("Erro ao carregar respostas:", error);
+      // Silent error handling for replies loading
     }
-  };
+  }
 
   // Real-time subscriptions
   useEffect(() => {
-    if (!questionId) return;
+    if (!questionId) return
 
-    console.log('🔄 Configurando subscriptions do Realtime para pergunta:', questionId);
+    // Silent realtime subscription setup
 
     // Subscribe to forum_questions changes (likes and views)
     const questionSubscription = supabase
@@ -284,21 +294,25 @@ export default function NutritionistForumQuestionPage() {
           event: 'UPDATE',
           schema: 'public',
           table: 'forum_questions',
-          filter: `id=eq.${questionId}`
+          filter: `id=eq.${questionId}`,
         },
-        (payload) => {
-          console.log('📝 Pergunta atualizada em tempo real:', payload);
-          setQuestion(prev => prev ? {
-            ...prev,
-            likes: payload.new.likes_count || 0,
-            views: payload.new.views_count || 0,
-            replies: payload.new.answers_count || 0
-          } : null);
+        payload => {
+          // Silent realtime question update
+          setQuestion(prev =>
+            prev
+              ? {
+                  ...prev,
+                  likes: payload.new.likes_count || 0,
+                  views: payload.new.views_count || 0,
+                  replies: payload.new.answers_count || 0,
+                }
+              : null
+          )
         }
       )
-      .subscribe((status) => {
-        console.log('📡 Status da subscription da pergunta:', status);
-      });
+      .subscribe(status => {
+        // Silent subscription status
+      })
 
     // Subscribe to forum_answers changes (new replies)
     const answersSubscription = supabase
@@ -309,11 +323,11 @@ export default function NutritionistForumQuestionPage() {
           event: 'INSERT',
           schema: 'public',
           table: 'forum_answers',
-          filter: `question_id=eq.${questionId}`
+          filter: `question_id=eq.${questionId}`,
         },
-        (payload) => {
-          console.log('💬 Nova resposta adicionada em tempo real:', payload);
-          loadReplies(); // Reload replies when new answer is added
+        payload => {
+          // Silent realtime new answer
+          loadReplies() // Reload replies when new answer is added
         }
       )
       .on(
@@ -322,19 +336,21 @@ export default function NutritionistForumQuestionPage() {
           event: 'UPDATE',
           schema: 'public',
           table: 'forum_answers',
-          filter: `question_id=eq.${questionId}`
+          filter: `question_id=eq.${questionId}`,
         },
-        (payload) => {
-          console.log('✏️ Resposta atualizada em tempo real:', payload);
-          setReplies(prev => prev.map(reply => 
-            reply.id === payload.new.id 
-              ? { 
-                  ...reply, 
-                  likes: payload.new.likes_count || 0,
-                  isBestAnswer: payload.new.is_best_answer || false
-                }
-              : reply
-          ));
+        payload => {
+          // Silent realtime answer update
+          setReplies(prev =>
+            prev.map(reply =>
+              reply.id === payload.new.id
+                ? {
+                    ...reply,
+                    likes: payload.new.likes_count || 0,
+                    isBestAnswer: payload.new.is_best_answer || false,
+                  }
+                : reply
+            )
+          )
         }
       )
       .on(
@@ -343,16 +359,16 @@ export default function NutritionistForumQuestionPage() {
           event: 'DELETE',
           schema: 'public',
           table: 'forum_answers',
-          filter: `question_id=eq.${questionId}`
+          filter: `question_id=eq.${questionId}`,
         },
-        (payload) => {
-          console.log('🗑️ Resposta deletada em tempo real:', payload);
-          setReplies(prev => prev.filter(reply => reply.id !== payload.old.id));
+        payload => {
+          // Silent realtime answer deletion
+          setReplies(prev => prev.filter(reply => reply.id !== payload.old.id))
         }
       )
-      .subscribe((status) => {
-        console.log('📡 Status da subscription das respostas:', status);
-      });
+      .subscribe(status => {
+        // Realtime answers subscription status
+      })
 
     // Subscribe to forum_question_likes changes
     const questionLikesSubscription = supabase
@@ -363,16 +379,20 @@ export default function NutritionistForumQuestionPage() {
           event: 'INSERT',
           schema: 'public',
           table: 'forum_question_likes',
-          filter: `question_id=eq.${questionId}`
+          filter: `question_id=eq.${questionId}`,
         },
-        (payload) => {
-          console.log('👍 Pergunta curtida em tempo real:', payload);
+        payload => {
+          // Question liked in real-time
           // Check if current user liked it
           if (currentUser && payload.new.user_id === currentUser.id) {
-            setQuestion(prev => prev ? {
-              ...prev,
-              hasLiked: true
-            } : null);
+            setQuestion(prev =>
+              prev
+                ? {
+                    ...prev,
+                    hasLiked: true,
+                  }
+                : null
+            )
           }
         }
       )
@@ -382,22 +402,26 @@ export default function NutritionistForumQuestionPage() {
           event: 'DELETE',
           schema: 'public',
           table: 'forum_question_likes',
-          filter: `question_id=eq.${questionId}`
+          filter: `question_id=eq.${questionId}`,
         },
-        (payload) => {
-          console.log('👎 Like da pergunta removido em tempo real:', payload);
+        payload => {
+          // Question like removed in real-time
           // Check if current user unliked it
           if (currentUser && payload.old.user_id === currentUser.id) {
-            setQuestion(prev => prev ? {
-              ...prev,
-              hasLiked: false
-            } : null);
+            setQuestion(prev =>
+              prev
+                ? {
+                    ...prev,
+                    hasLiked: false,
+                  }
+                : null
+            )
           }
         }
       )
-      .subscribe((status) => {
-        console.log('📡 Status da subscription dos likes da pergunta:', status);
-      });
+      .subscribe(status => {
+        // Question likes subscription status
+      })
 
     // Subscribe to forum_answer_likes changes
     const answerLikesSubscription = supabase
@@ -407,17 +431,19 @@ export default function NutritionistForumQuestionPage() {
         {
           event: 'INSERT',
           schema: 'public',
-          table: 'forum_answer_likes'
+          table: 'forum_answer_likes',
         },
-        (payload) => {
-          console.log('👍 Resposta curtida em tempo real:', payload);
+        payload => {
+          // Answer liked in real-time
           // Check if current user liked it
           if (currentUser && payload.new.user_id === currentUser.id) {
-            setReplies(prev => prev.map(reply => 
-              reply.id === payload.new.answer_id 
-                ? { ...reply, hasLiked: true }
-                : reply
-            ));
+            setReplies(prev =>
+              prev.map(reply =>
+                reply.id === payload.new.answer_id
+                  ? { ...reply, hasLiked: true }
+                  : reply
+              )
+            )
           }
         }
       )
@@ -426,57 +452,62 @@ export default function NutritionistForumQuestionPage() {
         {
           event: 'DELETE',
           schema: 'public',
-          table: 'forum_answer_likes'
+          table: 'forum_answer_likes',
         },
-        (payload) => {
-          console.log('👎 Like da resposta removido em tempo real:', payload);
+        payload => {
+          // Answer like removed in real-time
           // Check if current user unliked it
           if (currentUser && payload.old.user_id === currentUser.id) {
-            setReplies(prev => prev.map(reply => 
-              reply.id === payload.old.answer_id 
-                ? { ...reply, hasLiked: false }
-                : reply
-            ));
+            setReplies(prev =>
+              prev.map(reply =>
+                reply.id === payload.old.answer_id
+                  ? { ...reply, hasLiked: false }
+                  : reply
+              )
+            )
           }
         }
       )
-      .subscribe((status) => {
-        console.log('📡 Status da subscription dos likes das respostas:', status);
-      });
+      .subscribe(status => {
+        // Answer likes subscription status
+      })
 
     // Cleanup subscriptions
     return () => {
-      console.log('🧹 Limpando subscriptions do Realtime');
-      questionSubscription.unsubscribe();
-      answersSubscription.unsubscribe();
-      questionLikesSubscription.unsubscribe();
-      answerLikesSubscription.unsubscribe();
-    };
-  }, [questionId, currentUser]);
+      // Cleaning up realtime subscriptions
+      questionSubscription.unsubscribe()
+      answersSubscription.unsubscribe()
+      questionLikesSubscription.unsubscribe()
+      answerLikesSubscription.unsubscribe()
+    }
+  }, [questionId, currentUser])
 
   // Filter and sort replies
   const filteredAndSortedReplies = replies
-    .filter(reply => 
-      reply.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      reply.author.name.toLowerCase().includes(searchTerm.toLowerCase())
+    .filter(
+      reply =>
+        reply.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        reply.author.name.toLowerCase().includes(searchTerm.toLowerCase())
     )
     .sort((a, b) => {
       switch (sortBy) {
-        case "likes":
-          return b.likes - a.likes;
-        case "best":
-          if (a.isBestAnswer && !b.isBestAnswer) return -1;
-          if (!a.isBestAnswer && b.isBestAnswer) return 1;
-          return b.likes - a.likes;
-        case "recent":
+        case 'likes':
+          return b.likes - a.likes
+        case 'best':
+          if (a.isBestAnswer && !b.isBestAnswer) return -1
+          if (!a.isBestAnswer && b.isBestAnswer) return 1
+          return b.likes - a.likes
+        case 'recent':
         default:
-          return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+          return (
+            new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+          )
       }
-    });
+    })
 
   // Handle like question
   const handleLikeQuestion = async () => {
-    if (!currentUser || !question) return;
+    if (!currentUser || !question) return
 
     try {
       // Check if user already liked this question
@@ -485,45 +516,43 @@ export default function NutritionistForumQuestionPage() {
         .select('id')
         .eq('question_id', question.id)
         .eq('user_id', currentUser.id)
-        .single();
+        .single()
 
       if (existingLike) {
         // Unlike: remove the like
         await supabase
           .from('forum_question_likes')
           .delete()
-          .eq('id', existingLike.id);
+          .eq('id', existingLike.id)
 
         // Update question likes count
-        const newLikesCount = Math.max(0, question.likes - 1);
+        const newLikesCount = Math.max(0, question.likes - 1)
         await supabase
           .from('forum_questions')
           .update({ likes_count: newLikesCount })
-          .eq('id', question.id);
+          .eq('id', question.id)
       } else {
         // Like: add the like
-        await supabase
-          .from('forum_question_likes')
-          .insert({
-            question_id: question.id,
-            user_id: currentUser.id
-          });
+        await supabase.from('forum_question_likes').insert({
+          question_id: question.id,
+          user_id: currentUser.id,
+        })
 
         // Update question likes count
-        const newLikesCount = question.likes + 1;
+        const newLikesCount = question.likes + 1
         await supabase
           .from('forum_questions')
           .update({ likes_count: newLikesCount })
-          .eq('id', question.id);
+          .eq('id', question.id)
       }
     } catch (error) {
-      console.error('Erro ao curtir pergunta:', error);
+      // Error liking question
     }
-  };
+  }
 
   // Handle like reply
   const handleLikeReply = async (replyId: string) => {
-    if (!currentUser) return;
+    if (!currentUser) return
 
     try {
       // Check if user already liked this reply
@@ -532,179 +561,180 @@ export default function NutritionistForumQuestionPage() {
         .select('id')
         .eq('answer_id', replyId)
         .eq('user_id', currentUser.id)
-        .single();
+        .single()
 
       if (existingLike) {
-          // Unlike: remove the like
+        // Unlike: remove the like
+        await supabase
+          .from('forum_answer_likes')
+          .delete()
+          .eq('id', existingLike.id)
+
+        // Update likes count in reply
+        const currentReply = replies.find(r => r.id === replyId)
+        if (currentReply) {
+          const newLikesCount = Math.max(0, currentReply.likes - 1)
           await supabase
-            .from('forum_answer_likes')
-            .delete()
-            .eq('id', existingLike.id);
-
-          // Update likes count in reply
-          const currentReply = replies.find(r => r.id === replyId);
-          if (currentReply) {
-            const newLikesCount = Math.max(0, currentReply.likes - 1);
-            await supabase
-              .from('forum_answers')
-              .update({ likes_count: newLikesCount })
-              .eq('id', replyId);
-          }
-
-          // Update local state immediately for better UX
-          setReplies(prev => prev.map(reply => 
-            reply.id === replyId 
-              ? { ...reply, hasLiked: false }
-              : reply
-          ));
-        } else {
-          // Like: add the like
-          await supabase
-            .from('forum_answer_likes')
-            .insert({
-              answer_id: replyId,
-              user_id: currentUser.id
-            });
-
-          // Update likes count in reply
-          const currentReply = replies.find(r => r.id === replyId);
-          if (currentReply) {
-            const newLikesCount = currentReply.likes + 1;
-            await supabase
-              .from('forum_answers')
-              .update({ likes_count: newLikesCount })
-              .eq('id', replyId);
-          }
-
-          // Update local state immediately for better UX
-          setReplies(prev => prev.map(reply => 
-            reply.id === replyId 
-              ? { ...reply, hasLiked: true }
-              : reply
-          ));
+            .from('forum_answers')
+            .update({ likes_count: newLikesCount })
+            .eq('id', replyId)
         }
+
+        // Update local state immediately for better UX
+        setReplies(prev =>
+          prev.map(reply =>
+            reply.id === replyId ? { ...reply, hasLiked: false } : reply
+          )
+        )
+      } else {
+        // Like: add the like
+        await supabase.from('forum_answer_likes').insert({
+          answer_id: replyId,
+          user_id: currentUser.id,
+        })
+
+        // Update likes count in reply
+        const currentReply = replies.find(r => r.id === replyId)
+        if (currentReply) {
+          const newLikesCount = currentReply.likes + 1
+          await supabase
+            .from('forum_answers')
+            .update({ likes_count: newLikesCount })
+            .eq('id', replyId)
+        }
+
+        // Update local state immediately for better UX
+        setReplies(prev =>
+          prev.map(reply =>
+            reply.id === replyId ? { ...reply, hasLiked: true } : reply
+          )
+        )
+      }
     } catch (error) {
-      console.error('Erro ao curtir resposta:', error);
+      // Silent error handling - error liking reply
     }
-  };
+  }
 
   // Handle mark as best answer
   const handleMarkAsBest = async (replyId: string) => {
-    if (!currentUser || !question || currentUser.id !== question.author.id) return;
+    if (!currentUser || !question || currentUser.id !== question.author.id)
+      return
 
     try {
       // Remove best answer from all replies
       await supabase
         .from('forum_answers')
         .update({ is_best_answer: false })
-        .eq('question_id', question.id);
+        .eq('question_id', question.id)
 
       // Mark selected reply as best
       const { error } = await supabase
         .from('forum_answers')
         .update({ is_best_answer: true })
-        .eq('id', replyId);
+        .eq('id', replyId)
 
       if (!error) {
-        setReplies(prev => prev.map(reply => ({
-          ...reply,
-          isBestAnswer: reply.id === replyId
-        })));
+        setReplies(prev =>
+          prev.map(reply => ({
+            ...reply,
+            isBestAnswer: reply.id === replyId,
+          }))
+        )
       }
     } catch (error) {
-      console.error("Erro ao marcar como melhor resposta:", error);
+      // Silent error handling - error marking as best answer
     }
-  };
-
-
+  }
 
   // Handle edit question
   const handleEditQuestion = () => {
-    if (!question || !currentUser) return;
-    
+    if (!question || !currentUser) return
+
     setEditingItem({
-      type: "question",
+      type: 'question',
       id: question.id,
       data: {
         title: question.title,
         content: question.content,
         category: question.category,
-        tags: [] // Add tags if available in your data structure
-      }
-    });
-    setEditModalOpen(true);
-  };
+        tags: [], // Add tags if available in your data structure
+      },
+    })
+    setEditModalOpen(true)
+  }
 
   // Handle edit answer
   const handleEditAnswer = (reply: ForumReply) => {
-    if (!currentUser) return;
-    
+    if (!currentUser) return
+
     setEditingItem({
-      type: "answer",
+      type: 'answer',
       id: reply.id,
       data: {
-        content: reply.content
-      }
-    });
-    setEditModalOpen(true);
-  };
+        content: reply.content,
+      },
+    })
+    setEditModalOpen(true)
+  }
 
   // Handle delete question
   const handleDeleteQuestion = () => {
-    if (!question || !currentUser) return;
-    
+    if (!question || !currentUser) return
+
     setEditingItem({
-      type: "question",
+      type: 'question',
       id: question.id,
-      data: { title: question.title }
-    });
-    setDeleteModalOpen(true);
-  };
+      data: { title: question.title },
+    })
+    setDeleteModalOpen(true)
+  }
 
   // Handle delete answer
   const handleDeleteAnswer = (reply: ForumReply) => {
-    if (!currentUser) return;
-    
+    if (!currentUser) return
+
     setEditingItem({
-      type: "answer",
+      type: 'answer',
       id: reply.id,
-      data: { title: reply.content.substring(0, 100) + "..." }
-    });
-    setDeleteModalOpen(true);
-  };
+      data: { title: reply.content.substring(0, 100) + '...' },
+    })
+    setDeleteModalOpen(true)
+  }
 
   // Handle modal success
   const handleModalSuccess = () => {
     // Reload data
-    window.location.reload();
-  };
+    window.location.reload()
+  }
 
   // Handle submit reply
   const handleSubmitReply = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+    e.preventDefault()
+
     if (!currentUser || !question || !replyContent.trim()) {
-      alert("Por favor, preencha o conteúdo da resposta.");
-      return;
+      alert('Por favor, preencha o conteúdo da resposta.')
+      return
     }
-    
+
     if (currentUser.user_type !== 'nutricionista') {
-      alert("Apenas nutricionistas podem responder no fórum.");
-      return;
+      alert('Apenas nutricionistas podem responder no fórum.')
+      return
     }
 
     try {
-      setIsSubmittingReply(true);
-      
+      setIsSubmittingReply(true)
+
       // Get current user's nutritionist profile
       const { data: nutritionistProfile, error: profileError } = await supabase
         .from('nutritionist_profiles')
         .select('id, user_id, full_name, profile_image_url, crn')
         .eq('user_id', currentUser.id)
-        .single();
+        .single()
 
       if (profileError || !nutritionistProfile) {
-        throw new Error('Perfil de nutricionista não encontrado. Verifique se seu perfil está completo.');
+        throw new Error(
+          'Perfil de nutricionista não encontrado. Verifique se seu perfil está completo.'
+        )
       }
 
       const { data: newReply, error } = await supabase
@@ -713,29 +743,29 @@ export default function NutritionistForumQuestionPage() {
           question_id: question.id,
           content: replyContent.trim(),
           author_id: currentUser.id,
-          nutritionist_id: nutritionistProfile.id
+          nutritionist_id: nutritionistProfile.id,
         })
         .select('*')
-        .single();
+        .single()
 
       if (error) {
-        throw new Error(`Erro ao salvar resposta: ${error.message}`);
+        throw new Error(`Erro ao salvar resposta: ${error.message}`)
       }
 
       if (newReply) {
-        setReplyContent("");
-        alert("Resposta enviada com sucesso!");
-        
+        setReplyContent('')
+        alert('Resposta enviada com sucesso!')
+
         // The real-time subscription will handle updating the UI
         // No need to manually update state here
       }
     } catch (error) {
-      console.error("Erro ao enviar resposta:", error);
-      alert("Erro ao enviar resposta: " + (error as Error).message);
+      // Silent error handling - error sending reply
+      alert('Erro ao enviar resposta: ' + (error as Error).message)
     } finally {
-      setIsSubmittingReply(false);
+      setIsSubmittingReply(false)
     }
-  };
+  }
 
   if (loading) {
     return (
@@ -747,7 +777,7 @@ export default function NutritionistForumQuestionPage() {
           </div>
         </div>
       </div>
-    );
+    )
   }
 
   if (error || !question) {
@@ -755,7 +785,9 @@ export default function NutritionistForumQuestionPage() {
       <div className="min-h-screen bg-gray-50">
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
-            <p className="text-red-600 mb-4">{error || "Pergunta não encontrada"}</p>
+            <p className="text-red-600 mb-4">
+              {error || 'Pergunta não encontrada'}
+            </p>
             <Button onClick={() => router.back()}>
               <ArrowLeft className="h-4 w-4 mr-2" />
               Voltar
@@ -763,7 +795,7 @@ export default function NutritionistForumQuestionPage() {
           </div>
         </div>
       </div>
-    );
+    )
   }
 
   return (
@@ -781,9 +813,11 @@ export default function NutritionistForumQuestionPage() {
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Voltar ao Fórum
               </Button>
-              <h1 className="text-2xl font-bold text-gray-900">Discussão do Fórum</h1>
+              <h1 className="text-2xl font-bold text-gray-900">
+                Discussão do Fórum
+              </h1>
             </div>
-            
+
             {currentUser?.user_type === 'nutricionista' && (
               <Button
                 variant="outline"
@@ -805,30 +839,41 @@ export default function NutritionistForumQuestionPage() {
                   <Avatar>
                     <AvatarImage src={question.author.avatar} />
                     <AvatarFallback>
-                      {question.author.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                      {question.author.name
+                        .split(' ')
+                        .map(n => n[0])
+                        .join('')
+                        .toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   <div>
                     <div className="flex items-center gap-2">
                       <h3 className="font-semibold">{question.author.name}</h3>
-                      <Badge variant={question.author.userType === 'nutricionista' ? 'default' : 'secondary'}>
-                  {question.author.userType === 'nutricionista' ? 'Nutricionista' : 'Paciente'}
-                </Badge>
-                {question.author.userType === 'nutricionista' && question.author.crn && (
-                        <Badge variant="outline" className="text-xs">
-                          CRN: {question.author.crn}
-                        </Badge>
-                      )}
+                      <Badge
+                        variant={
+                          question.author.userType === 'nutricionista'
+                            ? 'default'
+                            : 'secondary'
+                        }
+                      >
+                        {question.author.userType === 'nutricionista'
+                          ? 'Nutricionista'
+                          : 'Paciente'}
+                      </Badge>
+                      {question.author.userType === 'nutricionista' &&
+                        question.author.crn && (
+                          <Badge variant="outline" className="text-xs">
+                            CRN: {question.author.crn}
+                          </Badge>
+                        )}
                     </div>
                     <p className="text-sm text-gray-500">
                       {new Date(question.timestamp).toLocaleDateString('pt-BR')}
                     </p>
                   </div>
                 </div>
-                
-                <div className="flex items-center gap-2">
 
-                  
+                <div className="flex items-center gap-2">
                   {currentUser?.id === question.author.id && (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -841,7 +886,7 @@ export default function NutritionistForumQuestionPage() {
                           <Edit className="h-4 w-4 mr-2" />
                           Editar Pergunta
                         </DropdownMenuItem>
-                        <DropdownMenuItem 
+                        <DropdownMenuItem
                           onClick={handleDeleteQuestion}
                           className="text-red-600"
                         >
@@ -853,37 +898,39 @@ export default function NutritionistForumQuestionPage() {
                   )}
                 </div>
               </div>
-              
+
               <CardTitle className="text-xl">{question.title}</CardTitle>
-              
+
               {question.category && (
                 <Badge variant="secondary" className="w-fit">
                   {question.category}
                 </Badge>
               )}
             </CardHeader>
-            
+
             <CardContent>
               <div className="space-y-4">
-                <p className="text-gray-700 whitespace-pre-wrap">{question.content}</p>
-                
+                <p className="text-gray-700 whitespace-pre-wrap">
+                  {question.content}
+                </p>
+
                 <div className="flex items-center gap-6 pt-4 border-t">
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={handleLikeQuestion}
                     disabled={question.hasLiked}
-                    className={question.hasLiked ? "text-blue-600" : ""}
+                    className={question.hasLiked ? 'text-blue-600' : ''}
                   >
                     <ThumbsUp className="h-4 w-4 mr-2" />
                     {question.likes}
                   </Button>
-                  
+
                   <div className="flex items-center gap-2 text-sm text-gray-500">
                     <MessageCircle className="h-4 w-4" />
                     {replies.length} respostas
                   </div>
-                  
+
                   <div className="flex items-center gap-2 text-sm text-gray-500">
                     <Eye className="h-4 w-4" />
                     {question.views} visualizações
@@ -904,17 +951,17 @@ export default function NutritionistForumQuestionPage() {
                   <Textarea
                     placeholder="Compartilhe seu conhecimento e ajude este paciente..."
                     value={replyContent}
-                    onChange={(e) => setReplyContent(e.target.value)}
+                    onChange={e => setReplyContent(e.target.value)}
                     rows={4}
                     className="resize-none"
                   />
                   <div className="flex justify-end">
-                    <Button 
-                      type="submit" 
+                    <Button
+                      type="submit"
                       disabled={!replyContent.trim() || isSubmittingReply}
                     >
                       <Send className="h-4 w-4 mr-2" />
-                      {isSubmittingReply ? "Enviando..." : "Responder"}
+                      {isSubmittingReply ? 'Enviando...' : 'Responder'}
                     </Button>
                   </div>
                 </form>
@@ -926,7 +973,9 @@ export default function NutritionistForumQuestionPage() {
           {currentUser?.user_type !== 'nutricionista' && (
             <div className="flex items-center gap-2 text-sm text-blue-600 bg-blue-50 px-3 py-2 rounded-md border border-blue-200">
               <Shield className="h-4 w-4" />
-              <span className="font-medium">Apenas nutricionistas podem responder no fórum</span>
+              <span className="font-medium">
+                Apenas nutricionistas podem responder no fórum
+              </span>
             </div>
           )}
 
@@ -936,21 +985,21 @@ export default function NutritionistForumQuestionPage() {
               <h2 className="text-xl font-semibold">
                 Respostas ({replies.length})
               </h2>
-              
+
               <div className="flex items-center gap-4">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                   <Input
                     placeholder="Buscar respostas..."
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onChange={e => setSearchTerm(e.target.value)}
                     className="pl-10 w-64"
                   />
                 </div>
-                
+
                 <select
                   value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as any)}
+                  onChange={e => setSortBy(e.target.value as any)}
                   className="px-3 py-2 border border-gray-300 rounded-md text-sm"
                 >
                   <option value="recent">Mais recentes</option>
@@ -965,14 +1014,21 @@ export default function NutritionistForumQuestionPage() {
                 <CardContent className="text-center py-8">
                   <MessageCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                   <p className="text-gray-500">
-                    {searchTerm ? "Nenhuma resposta encontrada" : "Ainda não há respostas para esta pergunta"}
+                    {searchTerm
+                      ? 'Nenhuma resposta encontrada'
+                      : 'Ainda não há respostas para esta pergunta'}
                   </p>
                 </CardContent>
               </Card>
             ) : (
               <div className="space-y-4">
-                {filteredAndSortedReplies.map((reply) => (
-                  <Card key={reply.id} className={reply.isBestAnswer ? "border-green-200 bg-green-50" : ""}>
+                {filteredAndSortedReplies.map(reply => (
+                  <Card
+                    key={reply.id}
+                    className={
+                      reply.isBestAnswer ? 'border-green-200 bg-green-50' : ''
+                    }
+                  >
                     <CardContent className="pt-6">
                       <div className="space-y-4">
                         <div className="flex items-start justify-between">
@@ -980,45 +1036,69 @@ export default function NutritionistForumQuestionPage() {
                             <Avatar>
                               <AvatarImage src={reply.author.avatar} />
                               <AvatarFallback>
-                                {reply.author.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                                {reply.author.name
+                                  .split(' ')
+                                  .map(n => n[0])
+                                  .join('')
+                                  .toUpperCase()}
                               </AvatarFallback>
                             </Avatar>
                             <div>
                               <div className="flex items-center gap-2">
-                                <h4 className="font-semibold">{reply.author.name}</h4>
-                                <Badge variant={reply.author.userType === 'nutricionista' ? 'default' : 'secondary'}>
-                        {reply.author.userType === 'nutricionista' ? 'Nutricionista' : 'Paciente'}
-                      </Badge>
-                      {reply.author.userType === 'nutricionista' && reply.author.crn && (
-                                  <Badge variant="outline" className="text-xs">
-                                    CRN: {reply.author.crn}
-                                  </Badge>
-                                )}
+                                <h4 className="font-semibold">
+                                  {reply.author.name}
+                                </h4>
+                                <Badge
+                                  variant={
+                                    reply.author.userType === 'nutricionista'
+                                      ? 'default'
+                                      : 'secondary'
+                                  }
+                                >
+                                  {reply.author.userType === 'nutricionista'
+                                    ? 'Nutricionista'
+                                    : 'Paciente'}
+                                </Badge>
+                                {reply.author.userType === 'nutricionista' &&
+                                  reply.author.crn && (
+                                    <Badge
+                                      variant="outline"
+                                      className="text-xs"
+                                    >
+                                      CRN: {reply.author.crn}
+                                    </Badge>
+                                  )}
                                 {reply.isBestAnswer && (
-                                  <Badge variant="default" className="bg-green-600">
+                                  <Badge
+                                    variant="default"
+                                    className="bg-green-600"
+                                  >
                                     <CheckCircle className="h-3 w-3 mr-1" />
                                     Melhor Resposta
                                   </Badge>
                                 )}
                               </div>
                               <p className="text-sm text-gray-500">
-                                {new Date(reply.timestamp).toLocaleDateString('pt-BR')}
+                                {new Date(reply.timestamp).toLocaleDateString(
+                                  'pt-BR'
+                                )}
                               </p>
                             </div>
                           </div>
-                          
+
                           <div className="flex items-center gap-2">
-                            {currentUser?.id === question.author.id && !reply.isBestAnswer && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleMarkAsBest(reply.id)}
-                              >
-                                <CheckCircle className="h-4 w-4 mr-2" />
-                                Marcar como melhor
-                              </Button>
-                            )}
-                            
+                            {currentUser?.id === question.author.id &&
+                              !reply.isBestAnswer && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleMarkAsBest(reply.id)}
+                                >
+                                  <CheckCircle className="h-4 w-4 mr-2" />
+                                  Marcar como melhor
+                                </Button>
+                              )}
+
                             {currentUser?.id === reply.author.id && (
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
@@ -1027,11 +1107,13 @@ export default function NutritionistForumQuestionPage() {
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onClick={() => handleEditAnswer(reply)}>
+                                  <DropdownMenuItem
+                                    onClick={() => handleEditAnswer(reply)}
+                                  >
                                     <Edit className="h-4 w-4 mr-2" />
                                     Editar Resposta
                                   </DropdownMenuItem>
-                                  <DropdownMenuItem 
+                                  <DropdownMenuItem
                                     onClick={() => handleDeleteAnswer(reply)}
                                     className="text-red-600"
                                   >
@@ -1043,22 +1125,22 @@ export default function NutritionistForumQuestionPage() {
                             )}
                           </div>
                         </div>
-                        
-                        <p className="text-gray-700 whitespace-pre-wrap">{reply.content}</p>
-                        
+
+                        <p className="text-gray-700 whitespace-pre-wrap">
+                          {reply.content}
+                        </p>
+
                         <div className="flex items-center gap-4 pt-2">
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => handleLikeReply(reply.id)}
                             disabled={reply.hasLiked}
-                            className={reply.hasLiked ? "text-blue-600" : ""}
+                            className={reply.hasLiked ? 'text-blue-600' : ''}
                           >
                             <ThumbsUp className="h-4 w-4 mr-2" />
                             {reply.likes}
                           </Button>
-                          
-
                         </div>
                       </div>
                     </CardContent>
@@ -1075,13 +1157,13 @@ export default function NutritionistForumQuestionPage() {
         <EditForumModal
           isOpen={editModalOpen}
           onClose={() => {
-            setEditModalOpen(false);
-            setEditingItem(null);
+            setEditModalOpen(false)
+            setEditingItem(null)
           }}
           onSuccess={handleModalSuccess}
           type={editingItem.type}
           itemId={editingItem.id}
-          userId={currentUser?.id || ""}
+          userId={currentUser?.id || ''}
           initialData={editingItem.data}
         />
       )}
@@ -1090,13 +1172,13 @@ export default function NutritionistForumQuestionPage() {
         <DeleteForumModal
           isOpen={deleteModalOpen}
           onClose={() => {
-            setDeleteModalOpen(false);
-            setEditingItem(null);
+            setDeleteModalOpen(false)
+            setEditingItem(null)
           }}
           onSuccess={handleModalSuccess}
           type={editingItem.type}
           itemId={editingItem.id}
-          userId={currentUser?.id || ""}
+          userId={currentUser?.id || ''}
           itemTitle={editingItem.data.title}
         />
       )}
@@ -1107,5 +1189,5 @@ export default function NutritionistForumQuestionPage() {
         onSuccess={handleModalSuccess}
       />
     </div>
-  );
+  )
 }

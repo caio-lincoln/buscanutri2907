@@ -1,21 +1,21 @@
-"use client"
+'use client'
 
-import * as React from "react"
-import { Check, ChevronDown, X } from "lucide-react"
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
+import * as React from 'react'
+import { Check, ChevronDown, X } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
 import {
   Command,
   CommandEmpty,
   CommandGroup,
   CommandInput,
   CommandItem,
-} from "@/components/ui/command"
+} from '@/components/ui/command'
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover"
+} from '@/components/ui/popover'
 
 interface Option {
   value: string
@@ -34,18 +34,18 @@ export function MultiSelect({
   options,
   selected,
   onChange,
-  placeholder = "Selecione opções...",
+  placeholder = 'Selecione opções...',
   className,
 }: MultiSelectProps) {
   const [open, setOpen] = React.useState(false)
 
   const handleUnselect = (item: string) => {
-    onChange(selected.filter((i) => i !== item))
+    onChange(selected.filter(i => i !== item))
   }
 
   const handleSelect = (item: string) => {
     if (selected.includes(item)) {
-      onChange(selected.filter((i) => i !== item))
+      onChange(selected.filter(i => i !== item))
     } else {
       onChange([...selected, item])
     }
@@ -58,15 +58,12 @@ export function MultiSelect({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className={cn(
-            "w-full justify-between min-h-10 h-auto",
-            className
-          )}
+          className={cn('w-full justify-between min-h-10 h-auto', className)}
         >
           <div className="flex flex-wrap gap-1">
             {selected.length > 0 ? (
-              selected.map((item) => {
-                const option = options.find((opt) => opt.value === item)
+              selected.map(item => {
+                const option = options.find(opt => opt.value === item)
                 return (
                   <span
                     key={item}
@@ -75,12 +72,12 @@ export function MultiSelect({
                     {option?.label || item}
                     <span
                       className="ml-1 ring-offset-background rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') {
                           handleUnselect(item)
                         }
                       }}
-                      onMouseDown={(e) => {
+                      onMouseDown={e => {
                         e.preventDefault()
                         e.stopPropagation()
                       }}
@@ -105,7 +102,7 @@ export function MultiSelect({
           <CommandInput placeholder="Buscar..." />
           <CommandEmpty>Nenhuma opção encontrada.</CommandEmpty>
           <CommandGroup className="max-h-64 overflow-y-auto">
-            {options.map((option) => (
+            {options.map(option => (
               <CommandItem
                 key={option.value}
                 value={option.value}
@@ -114,8 +111,10 @@ export function MultiSelect({
               >
                 <Check
                   className={cn(
-                    "mr-2 h-4 w-4",
-                    selected.includes(option.value) ? "opacity-100" : "opacity-0"
+                    'mr-2 h-4 w-4',
+                    selected.includes(option.value)
+                      ? 'opacity-100'
+                      : 'opacity-0'
                   )}
                 />
                 {option.label}

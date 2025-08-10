@@ -1,10 +1,10 @@
-import { supabase } from "./supabase"
-import type { NutritionistAddress } from "./supabase"
+import { supabase } from './supabase'
+import type { NutritionistAddress } from './supabase'
 
 export interface CreateAddressData {
   nutritionist_id: string
-  type: "in_person" | "teleconsultation"
-  status?: "active" | "inactive"
+  type: 'in_person' | 'teleconsultation'
+  status?: 'active' | 'inactive'
   is_main?: boolean
   country?: string
   state: string
@@ -20,8 +20,8 @@ export interface CreateAddressData {
 }
 
 export interface UpdateAddressData {
-  type?: "in_person" | "teleconsultation"
-  status?: "active" | "inactive"
+  type?: 'in_person' | 'teleconsultation'
+  status?: 'active' | 'inactive'
   is_main?: boolean
   country?: string
   state?: string
@@ -38,8 +38,8 @@ export interface UpdateAddressData {
 
 export interface AddressFilters {
   nutritionist_id?: string
-  type?: "in_person" | "teleconsultation"
-  status?: "active" | "inactive"
+  type?: 'in_person' | 'teleconsultation'
+  status?: 'active' | 'inactive'
   city_slug?: string
   state?: string
   city?: string
@@ -59,13 +59,13 @@ class NutritionistAddressService {
    */
   async createAddress(data: CreateAddressData): Promise<NutritionistAddress> {
     const { data: address, error } = await supabase
-      .from("nutritionist_addresses")
+      .from('nutritionist_addresses')
       .insert({
         nutritionist_id: data.nutritionist_id,
         type: data.type,
-        status: data.status || "active",
+        status: data.status || 'active',
         is_main: data.is_main || false,
-        country: data.country || "Brasil",
+        country: data.country || 'Brasil',
         state: data.state,
         city: data.city,
         neighborhood: data.neighborhood,
@@ -92,21 +92,21 @@ class NutritionistAddressService {
    */
   async getAddressesByNutritionist(
     nutritionist_id: string,
-    filters?: Omit<AddressFilters, "nutritionist_id">
+    filters?: Omit<AddressFilters, 'nutritionist_id'>
   ): Promise<NutritionistAddress[]> {
     let query = supabase
-      .from("nutritionist_addresses")
-      .select("*")
-      .eq("nutritionist_id", nutritionist_id)
-      .order("is_main", { ascending: false })
-      .order("created_at", { ascending: true })
+      .from('nutritionist_addresses')
+      .select('*')
+      .eq('nutritionist_id', nutritionist_id)
+      .order('is_main', { ascending: false })
+      .order('created_at', { ascending: true })
 
     if (filters?.type) {
-      query = query.eq("type", filters.type)
+      query = query.eq('type', filters.type)
     }
 
     if (filters?.status) {
-      query = query.eq("status", filters.status)
+      query = query.eq('status', filters.status)
     }
 
     const { data, error } = await query
@@ -123,13 +123,13 @@ class NutritionistAddressService {
    */
   async getAddressById(id: string): Promise<NutritionistAddress | null> {
     const { data, error } = await supabase
-      .from("nutritionist_addresses")
-      .select("*")
-      .eq("id", id)
+      .from('nutritionist_addresses')
+      .select('*')
+      .eq('id', id)
       .single()
 
     if (error) {
-      if (error.code === "PGRST116") {
+      if (error.code === 'PGRST116') {
         return null // Address not found
       }
       throw new Error(`Failed to fetch address: ${error.message}`)
@@ -141,11 +141,14 @@ class NutritionistAddressService {
   /**
    * Update an address
    */
-  async updateAddress(id: string, data: UpdateAddressData): Promise<NutritionistAddress> {
+  async updateAddress(
+    id: string,
+    data: UpdateAddressData
+  ): Promise<NutritionistAddress> {
     const { data: address, error } = await supabase
-      .from("nutritionist_addresses")
+      .from('nutritionist_addresses')
       .update(data)
-      .eq("id", id)
+      .eq('id', id)
       .select()
       .single()
 
@@ -161,9 +164,9 @@ class NutritionistAddressService {
    */
   async deleteAddress(id: string): Promise<void> {
     const { error } = await supabase
-      .from("nutritionist_addresses")
+      .from('nutritionist_addresses')
       .delete()
-      .eq("id", id)
+      .eq('id', id)
 
     if (error) {
       throw new Error(`Failed to delete address: ${error.message}`)
@@ -175,9 +178,9 @@ class NutritionistAddressService {
    */
   async setMainAddress(id: string): Promise<NutritionistAddress> {
     const { data: address, error } = await supabase
-      .from("nutritionist_addresses")
+      .from('nutritionist_addresses')
       .update({ is_main: true })
-      .eq("id", id)
+      .eq('id', id)
       .select()
       .single()
 
@@ -191,17 +194,19 @@ class NutritionistAddressService {
   /**
    * Get the main address for a nutritionist
    */
-  async getMainAddress(nutritionist_id: string): Promise<NutritionistAddress | null> {
+  async getMainAddress(
+    nutritionist_id: string
+  ): Promise<NutritionistAddress | null> {
     const { data, error } = await supabase
-      .from("nutritionist_addresses")
-      .select("*")
-      .eq("nutritionist_id", nutritionist_id)
-      .eq("is_main", true)
-      .eq("status", "active")
+      .from('nutritionist_addresses')
+      .select('*')
+      .eq('nutritionist_id', nutritionist_id)
+      .eq('is_main', true)
+      .eq('status', 'active')
       .single()
 
     if (error) {
-      if (error.code === "PGRST116") {
+      if (error.code === 'PGRST116') {
         return null // No main address found
       }
       throw new Error(`Failed to fetch main address: ${error.message}`)
@@ -216,10 +221,10 @@ class NutritionistAddressService {
    */
   async getAvailableCities(): Promise<CityOption[]> {
     const { data, error } = await supabase
-      .from("nutritionist_addresses")
-      .select("city, state, city_slug")
-      .eq("type", "in_person")
-      .eq("status", "active")
+      .from('nutritionist_addresses')
+      .select('city, state, city_slug')
+      .eq('type', 'in_person')
+      .eq('status', 'active')
 
     if (error) {
       throw new Error(`Failed to fetch available cities: ${error.message}`)
@@ -263,11 +268,14 @@ class NutritionistAddressService {
     radiusKm: number = 50
   ): Promise<NutritionistAddress[]> {
     // Using PostGIS distance calculation
-    const { data, error } = await supabase.rpc("search_nutritionists_by_location", {
-      search_lat: latitude,
-      search_lng: longitude,
-      radius_km: radiusKm,
-    })
+    const { data, error } = await supabase.rpc(
+      'search_nutritionists_by_location',
+      {
+        search_lat: latitude,
+        search_lng: longitude,
+        radius_km: radiusKm,
+      }
+    )
 
     if (error) {
       throw new Error(`Failed to search by location: ${error.message}`)
@@ -279,13 +287,15 @@ class NutritionistAddressService {
   /**
    * Get addresses by city slug (for filtering)
    */
-  async getAddressesByCitySlug(city_slug: string): Promise<NutritionistAddress[]> {
+  async getAddressesByCitySlug(
+    city_slug: string
+  ): Promise<NutritionistAddress[]> {
     const { data, error } = await supabase
-      .from("nutritionist_addresses")
-      .select("*")
-      .eq("city_slug", city_slug)
-      .eq("type", "in_person")
-      .eq("status", "active")
+      .from('nutritionist_addresses')
+      .select('*')
+      .eq('city_slug', city_slug)
+      .eq('type', 'in_person')
+      .eq('status', 'active')
 
     if (error) {
       throw new Error(`Failed to fetch addresses by city: ${error.message}`)
@@ -300,36 +310,36 @@ class NutritionistAddressService {
   validateAddressData(data: CreateAddressData | UpdateAddressData): string[] {
     const errors: string[] = []
 
-    if ("state" in data && !data.state?.trim()) {
-      errors.push("Estado é obrigatório")
+    if ('state' in data && !data.state?.trim()) {
+      errors.push('Estado é obrigatório')
     }
 
-    if ("city" in data && !data.city?.trim()) {
-      errors.push("Cidade é obrigatória")
+    if ('city' in data && !data.city?.trim()) {
+      errors.push('Cidade é obrigatória')
     }
 
-    if ("zip_code" in data && data.zip_code) {
+    if ('zip_code' in data && data.zip_code) {
       const zipRegex = /^\d{5}-?\d{3}$/
       if (!zipRegex.test(data.zip_code)) {
-        errors.push("CEP deve estar no formato 00000-000")
+        errors.push('CEP deve estar no formato 00000-000')
       }
     }
 
-    if ("latitude" in data && data.latitude !== undefined) {
+    if ('latitude' in data && data.latitude !== undefined) {
       if (data.latitude < -90 || data.latitude > 90) {
-        errors.push("Latitude deve estar entre -90 e 90")
+        errors.push('Latitude deve estar entre -90 e 90')
       }
     }
 
-    if ("longitude" in data && data.longitude !== undefined) {
+    if ('longitude' in data && data.longitude !== undefined) {
       if (data.longitude < -180 || data.longitude > 180) {
-        errors.push("Longitude deve estar entre -180 e 180")
+        errors.push('Longitude deve estar entre -180 e 180')
       }
     }
 
-    if ("service_radius_km" in data && data.service_radius_km !== undefined) {
+    if ('service_radius_km' in data && data.service_radius_km !== undefined) {
       if (data.service_radius_km < 0 || data.service_radius_km > 500) {
-        errors.push("Raio de atendimento deve estar entre 0 e 500 km")
+        errors.push('Raio de atendimento deve estar entre 0 e 500 km')
       }
     }
 

@@ -1,21 +1,32 @@
-"use client"
+'use client'
 
-import { useState, useEffect } from "react"
-import Link from "next/link"
-import Image from "next/image"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { Search, MessageCircle, Eye, ThumbsUp, Clock, ArrowRight, Home, Users } from "lucide-react"
-import { getAllForumQuestions, type ForumQuestion } from "@/lib/forum-data"
-import { formatDistanceToNow } from "date-fns"
-import { ptBR } from "date-fns/locale"
+import { useState, useEffect } from 'react'
+import Link from 'next/link'
+import Image from 'next/image'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
+import {
+  Search,
+  MessageCircle,
+  Eye,
+  ThumbsUp,
+  Clock,
+  ArrowRight,
+  Home,
+  Users,
+} from 'lucide-react'
+import { getAllForumQuestions, type ForumQuestion } from '@/lib/forum-data'
+import { formatDistanceToNow } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
 
 export default function DuvidasPacientesPage() {
   const [questions, setQuestions] = useState<ForumQuestion[]>([])
-  const [filteredQuestions, setFilteredQuestions] = useState<ForumQuestion[]>([])
-  const [searchTerm, setSearchTerm] = useState("")
+  const [filteredQuestions, setFilteredQuestions] = useState<ForumQuestion[]>(
+    []
+  )
+  const [searchTerm, setSearchTerm] = useState('')
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -25,7 +36,7 @@ export default function DuvidasPacientesPage() {
         setQuestions(data)
         setFilteredQuestions(data)
       } catch (error) {
-        console.error("Erro ao carregar perguntas:", error)
+      // Error loading questions - handled silently
       } finally {
         setLoading(false)
       }
@@ -35,14 +46,16 @@ export default function DuvidasPacientesPage() {
   }, [])
 
   useEffect(() => {
-    if (searchTerm.trim() === "") {
+    if (searchTerm.trim() === '') {
       setFilteredQuestions(questions)
     } else {
       const filtered = questions.filter(
-        (question) =>
+        question =>
           question.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
           question.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          question.tags.some((tag) => tag.toLowerCase().includes(searchTerm.toLowerCase()))
+          question.tags.some(tag =>
+            tag.toLowerCase().includes(searchTerm.toLowerCase())
+          )
       )
       setFilteredQuestions(filtered)
     }
@@ -50,7 +63,12 @@ export default function DuvidasPacientesPage() {
 
   const formatTimeAgo = (timestamp: string) => {
     try {
-      const date = new Date(timestamp.replace(/(\d{2})\/(\d{2})\/(\d{4}), (\d{2}):(\d{2}):(\d{2})/, "$3-$2-$1T$4:$5:$6"))
+      const date = new Date(
+        timestamp.replace(
+          /(\d{2})\/(\d{2})\/(\d{4}), (\d{2}):(\d{2}):(\d{2})/,
+          '$3-$2-$1T$4:$5:$6'
+        )
+      )
       return formatDistanceToNow(date, { addSuffix: true, locale: ptBR })
     } catch {
       return timestamp
@@ -95,7 +113,10 @@ export default function DuvidasPacientesPage() {
 
           <div className="flex items-center gap-3">
             <Link href="/login">
-              <Button variant="ghost" className="hidden md:flex text-[#1E1D40] hover:text-[#4AB0D9]">
+              <Button
+                variant="ghost"
+                className="hidden md:flex text-[#1E1D40] hover:text-[#4AB0D9]"
+              >
                 Entrar
               </Button>
             </Link>
@@ -111,12 +132,18 @@ export default function DuvidasPacientesPage() {
       {/* Breadcrumbs */}
       <div className="container px-4 md:px-6 py-4">
         <nav className="flex items-center space-x-2 text-sm text-[#1E1D40]/60">
-          <Link href="/" className="hover:text-[#4AB0D9] transition-colors flex items-center gap-1">
+          <Link
+            href="/"
+            className="hover:text-[#4AB0D9] transition-colors flex items-center gap-1"
+          >
             <Home className="h-4 w-4" />
             Home
           </Link>
           <span>/</span>
-          <Link href="/dashboard/paciente/forum" className="hover:text-[#4AB0D9] transition-colors flex items-center gap-1">
+          <Link
+            href="/dashboard/paciente/forum"
+            className="hover:text-[#4AB0D9] transition-colors flex items-center gap-1"
+          >
             <Users className="h-4 w-4" />
             Fórum de Pacientes
           </Link>
@@ -132,10 +159,11 @@ export default function DuvidasPacientesPage() {
             Dúvidas dos Pacientes
           </h1>
           <p className="text-lg text-[#1E1D40]/70 max-w-2xl mx-auto mb-8">
-            Explore as perguntas mais frequentes da nossa comunidade de pacientes. 
-            Encontre respostas valiosas de nutricionistas especializados.
+            Explore as perguntas mais frequentes da nossa comunidade de
+            pacientes. Encontre respostas valiosas de nutricionistas
+            especializados.
           </p>
-          
+
           {/* Search Bar */}
           <div className="relative max-w-md mx-auto">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
@@ -143,7 +171,7 @@ export default function DuvidasPacientesPage() {
               type="text"
               placeholder="Buscar dúvidas..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={e => setSearchTerm(e.target.value)}
               className="pl-10 h-12 border-gray-200 focus:border-[#4AB0D9] focus:ring-[#4AB0D9]"
             />
           </div>
@@ -154,7 +182,9 @@ export default function DuvidasPacientesPage() {
           <Card className="text-center">
             <CardContent className="pt-6">
               <MessageCircle className="h-8 w-8 text-[#4AB0D9] mx-auto mb-2" />
-              <div className="text-2xl font-bold text-[#1E1D40]">{questions.length}</div>
+              <div className="text-2xl font-bold text-[#1E1D40]">
+                {questions.length}
+              </div>
               <div className="text-sm text-[#1E1D40]/60">Perguntas</div>
             </CardContent>
           </Card>
@@ -196,24 +226,28 @@ export default function DuvidasPacientesPage() {
             <CardContent>
               <MessageCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-[#1E1D40] mb-2">
-                {searchTerm ? "Nenhuma dúvida encontrada" : "Ainda não há dúvidas"}
+                {searchTerm
+                  ? 'Nenhuma dúvida encontrada'
+                  : 'Ainda não há dúvidas'}
               </h3>
               <p className="text-[#1E1D40]/60">
-                {searchTerm 
-                  ? "Tente buscar com outros termos ou navegue por todas as dúvidas."
-                  : "Seja o primeiro a fazer uma pergunta na nossa comunidade!"
-                }
+                {searchTerm
+                  ? 'Tente buscar com outros termos ou navegue por todas as dúvidas.'
+                  : 'Seja o primeiro a fazer uma pergunta na nossa comunidade!'}
               </p>
             </CardContent>
           </Card>
         ) : (
           <div className="space-y-6">
-            {filteredQuestions.map((question) => (
-              <Card key={question.id} className="hover:shadow-lg transition-shadow duration-300">
+            {filteredQuestions.map(question => (
+              <Card
+                key={question.id}
+                className="hover:shadow-lg transition-shadow duration-300"
+              >
                 <CardHeader className="pb-4">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
-                      <Link 
+                      <Link
                         href={`/duvidas-pacientes/${question.id}`}
                         className="block group"
                       >
@@ -224,12 +258,16 @@ export default function DuvidasPacientesPage() {
                       <p className="text-[#1E1D40]/70 line-clamp-2 mb-3">
                         {question.content}
                       </p>
-                      
+
                       {/* Tags */}
                       {question.tags.length > 0 && (
                         <div className="flex flex-wrap gap-2 mb-3">
                           {question.tags.slice(0, 3).map((tag, index) => (
-                            <Badge key={index} variant="secondary" className="text-xs">
+                            <Badge
+                              key={index}
+                              variant="secondary"
+                              className="text-xs"
+                            >
                               {tag}
                             </Badge>
                           ))}
@@ -241,7 +279,7 @@ export default function DuvidasPacientesPage() {
                         </div>
                       )}
                     </div>
-                    
+
                     {question.isBestAnswerSelected && (
                       <Badge className="bg-green-100 text-green-800 border-green-200">
                         Resolvida
@@ -249,7 +287,7 @@ export default function DuvidasPacientesPage() {
                     )}
                   </div>
                 </CardHeader>
-                
+
                 <CardContent className="pt-0">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4 text-sm text-[#1E1D40]/60">
@@ -270,15 +308,19 @@ export default function DuvidasPacientesPage() {
                         <span>{formatTimeAgo(question.timestamp)}</span>
                       </div>
                     </div>
-                    
+
                     <Link href={`/duvidas-pacientes/${question.id}`}>
-                      <Button variant="ghost" size="sm" className="text-[#4AB0D9] hover:text-[#4AB0D9] hover:bg-[#4AB0D9]/10">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-[#4AB0D9] hover:text-[#4AB0D9] hover:bg-[#4AB0D9]/10"
+                      >
                         Ver detalhes
                         <ArrowRight className="h-4 w-4 ml-1" />
                       </Button>
                     </Link>
                   </div>
-                  
+
                   {/* Author info */}
                   <div className="flex items-center gap-2 mt-4 pt-4 border-t border-gray-100">
                     <div className="w-8 h-8 rounded-full bg-[#4AB0D9]/10 flex items-center justify-center">
@@ -305,7 +347,8 @@ export default function DuvidasPacientesPage() {
                 Tem uma dúvida sobre nutrição?
               </h3>
               <p className="text-[#1E1D40]/70 mb-4">
-                Cadastre-se como paciente e faça sua pergunta para nossa comunidade de nutricionistas especializados.
+                Cadastre-se como paciente e faça sua pergunta para nossa
+                comunidade de nutricionistas especializados.
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <Link href="/cadastro?tipo=paciente">
@@ -314,7 +357,10 @@ export default function DuvidasPacientesPage() {
                   </Button>
                 </Link>
                 <Link href="/login">
-                  <Button variant="outline" className="border-[#4AB0D9] text-[#4AB0D9] hover:bg-[#4AB0D9] hover:text-white">
+                  <Button
+                    variant="outline"
+                    className="border-[#4AB0D9] text-[#4AB0D9] hover:bg-[#4AB0D9] hover:text-white"
+                  >
                     Já tenho conta
                   </Button>
                 </Link>
@@ -336,7 +382,8 @@ export default function DuvidasPacientesPage() {
               className="h-8 w-auto mx-auto mb-4 brightness-0 invert"
             />
             <p className="text-white/70">
-              Conectando nutricionistas e transformando vidas através da alimentação saudável.
+              Conectando nutricionistas e transformando vidas através da
+              alimentação saudável.
             </p>
           </div>
         </div>

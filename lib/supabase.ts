@@ -1,36 +1,32 @@
-import { createClient } from "@supabase/supabase-js"
-import { createBrowserClient } from "@supabase/ssr"
+import { createClient } from '@supabase/supabase-js'
+import { createBrowserClient } from '@supabase/ssr'
 
 // Certifique-se de que estas variáveis de ambiente estão configuradas no seu projeto Vercel
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
 // Durante o build, use valores padrão para evitar erros
-const defaultUrl = "https://placeholder.supabase.co"
-const defaultKey = "placeholder-key"
+const defaultUrl = 'https://placeholder.supabase.co'
+const defaultKey = 'placeholder-key'
 
 // Use valores padrão durante o build se as variáveis não estiverem definidas
 const finalUrl = supabaseUrl || defaultUrl
 const finalKey = supabaseAnonKey || defaultKey
 
 // Só lance erro em runtime se as variáveis não estiverem definidas
-if (typeof window !== "undefined" && (!supabaseUrl || !supabaseAnonKey)) {
-  console.error(
-    "As variáveis de ambiente NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY devem ser definidas.",
-  )
+if (typeof window !== 'undefined' && (!supabaseUrl || !supabaseAnonKey)) {
+  // Silent error handling: Environment variables not defined
 }
 
 // Cliente antigo para compatibilidade
 export const supabase = createClient(finalUrl, finalKey)
 
 // Novo cliente para autenticação
-export const createSupabaseClient = () => createBrowserClient<Database>(
-  finalUrl,
-  finalKey
-)
+export const createSupabaseClient = () =>
+  createBrowserClient<Database>(finalUrl, finalKey)
 
 // Export UserType for use in other files
-export type UserType = "patient" | "nutritionist" | "company" | "admin"
+export type UserType = 'patient' | 'nutritionist' | 'company' | 'admin'
 
 // ────────────────────────────────────────────────────────────────────────────────
 // Interfaces de Perfil
@@ -45,7 +41,7 @@ export interface UserProfile {
   profile_image_url?: string | null
   created_at: string
   updated_at: string
-  user_type: "patient" | "nutritionist" | "company" | "admin"
+  user_type: 'patient' | 'nutritionist' | 'company' | 'admin'
   // Preferências de notificação
   email_notifications_enabled?: boolean
   in_app_notifications_enabled?: boolean
@@ -73,7 +69,10 @@ export interface NutritionistProfile extends UserProfile {
   crn_document_url?: string | null
   identity_document_url?: string | null
   // Novas configurações de atendimento
-  consultation_mode?: "online_only" | "presential_only" | "online_and_presential"
+  consultation_mode?:
+    | 'online_only'
+    | 'presential_only'
+    | 'online_and_presential'
   default_consultation_duration?: number // em minutos (ex: 30, 45, 60)
   min_time_between_appointments?: number // em minutos
   // Campo online_only_consultation removido - simplificado para service_online_available
@@ -86,7 +85,7 @@ export interface NutritionistProfile extends UserProfile {
   crn?: string | null // Alias para crn_number
   profile_image_url?: string | null // URL da imagem de perfil
   badges?: Badge[] | null // Badges/insígnias do nutricionista
-  
+
   // Redes sociais (campos individuais)
   instagram_username?: string | null
   linkedin_username?: string | null
@@ -94,7 +93,7 @@ export interface NutritionistProfile extends UserProfile {
   youtube_channel?: string | null
   tiktok_username?: string | null
   website_url?: string | null
-  
+
   // Serviços (campos individuais)
   service_consultation_price?: number | null
   service_followup_price?: number | null
@@ -102,7 +101,7 @@ export interface NutritionistProfile extends UserProfile {
   service_group_consultation?: boolean | null
   service_online_available?: boolean | null
   service_presential_available?: boolean | null
-  
+
   // Horários de trabalho (campos individuais)
   monday_hours?: string | null
   tuesday_hours?: string | null
@@ -112,14 +111,15 @@ export interface NutritionistProfile extends UserProfile {
   saturday_hours?: string | null
   sunday_hours?: string | null
   break_time?: string | null
-  
+
   // Preferências e configurações
   accepts_insurance?: boolean | null
   emergency_consultation?: boolean | null
   consultation_languages?: string | null // separado por vírgula
   payment_methods?: string | null // separado por vírgula
   max_patients_per_day?: number | null
-  
+  aceita_cupons?: boolean | null // Consentimento para participar de campanhas com cupons de desconto
+
   // Estatísticas de visualização
   totalViews?: number | null // Total de visualizações do perfil
   uniqueViews?: number | null // Visualizações únicas do perfil
@@ -171,7 +171,7 @@ export interface JobApplication {
   id: string
   job_id: string
   applicant_id: string
-  status: "pending" | "reviewed" | "interview" | "rejected" | "hired"
+  status: 'pending' | 'reviewed' | 'interview' | 'rejected' | 'hired'
   applied_at: string
   resume_url?: string
   cover_letter_url?: string
@@ -251,10 +251,10 @@ export interface NutritionistService {
 export interface NutritionistAddress {
   id: string
   nutritionist_id: string
-  type: "in_person" | "teleconsultation"
-  status: "active" | "inactive"
+  type: 'in_person' | 'teleconsultation'
+  status: 'active' | 'inactive'
   is_main: boolean
-  
+
   // Structured address fields
   country: string
   state: string
@@ -264,18 +264,18 @@ export interface NutritionistAddress {
   street?: string | null
   number?: string | null
   complement?: string | null
-  
+
   // Geocoding for search and maps
   latitude?: number | null
   longitude?: number | null
-  
+
   // Service radius in kilometers (optional)
   service_radius_km?: number | null
-  
+
   // Generated fields
   city_slug: string // normalized city + state for filtering
   full_address: string // complete address for display
-  
+
   created_at: string
   updated_at: string
 }
@@ -289,69 +289,83 @@ export interface Database {
     Tables: {
       user_profiles: {
         Row: UserProfile
-        Insert: Omit<UserProfile, "id" | "created_at" | "updated_at">
-        Update: Partial<Omit<UserProfile, "id" | "created_at" | "updated_at">>
+        Insert: Omit<UserProfile, 'id' | 'created_at' | 'updated_at'>
+        Update: Partial<Omit<UserProfile, 'id' | 'created_at' | 'updated_at'>>
       }
       patient_profiles: {
         Row: PatientProfile
-        Insert: Omit<PatientProfile, "id" | "created_at" | "updated_at">
-        Update: Partial<Omit<PatientProfile, "id" | "created_at" | "updated_at">>
+        Insert: Omit<PatientProfile, 'id' | 'created_at' | 'updated_at'>
+        Update: Partial<
+          Omit<PatientProfile, 'id' | 'created_at' | 'updated_at'>
+        >
       }
       nutritionist_profiles: {
         Row: NutritionistProfile
-        Insert: Omit<NutritionistProfile, "id" | "created_at" | "updated_at">
-        Update: Partial<Omit<NutritionistProfile, "id" | "created_at" | "updated_at">>
+        Insert: Omit<NutritionistProfile, 'id' | 'created_at' | 'updated_at'>
+        Update: Partial<
+          Omit<NutritionistProfile, 'id' | 'created_at' | 'updated_at'>
+        >
       }
       company_profiles: {
         Row: CompanyProfile
-        Insert: Omit<CompanyProfile, "id" | "created_at" | "updated_at">
-        Update: Partial<Omit<CompanyProfile, "id" | "created_at" | "updated_at">>
+        Insert: Omit<CompanyProfile, 'id' | 'created_at' | 'updated_at'>
+        Update: Partial<
+          Omit<CompanyProfile, 'id' | 'created_at' | 'updated_at'>
+        >
       }
       // consultations: Tabela removida - funcionalidade de telemedicina desabilitada
       job_postings: {
         Row: JobPosting
-        Insert: Omit<JobPosting, "id" | "created_at" | "updated_at">
-        Update: Partial<Omit<JobPosting, "id" | "created_at" | "updated_at">>
+        Insert: Omit<JobPosting, 'id' | 'created_at' | 'updated_at'>
+        Update: Partial<Omit<JobPosting, 'id' | 'created_at' | 'updated_at'>>
       }
       forum_questions: {
         Row: ForumQuestion
-        Insert: Omit<ForumQuestion, "id" | "created_at" | "updated_at">
-        Update: Partial<Omit<ForumQuestion, "id" | "created_at" | "updated_at">>
+        Insert: Omit<ForumQuestion, 'id' | 'created_at' | 'updated_at'>
+        Update: Partial<Omit<ForumQuestion, 'id' | 'created_at' | 'updated_at'>>
       }
       forum_answers: {
         Row: ForumAnswer
-        Insert: Omit<ForumAnswer, "id" | "created_at" | "updated_at">
-        Update: Partial<Omit<ForumAnswer, "id" | "created_at" | "updated_at">>
+        Insert: Omit<ForumAnswer, 'id' | 'created_at' | 'updated_at'>
+        Update: Partial<Omit<ForumAnswer, 'id' | 'created_at' | 'updated_at'>>
       }
       blog_posts: {
         Row: BlogPost
-        Insert: Omit<BlogPost, "id" | "updated_at">
-        Update: Partial<Omit<BlogPost, "id" | "updated_at">>
+        Insert: Omit<BlogPost, 'id' | 'updated_at'>
+        Update: Partial<Omit<BlogPost, 'id' | 'updated_at'>>
       }
       badges: {
         Row: Badge
-        Insert: Omit<Badge, "id" | "created_at">
-        Update: Partial<Omit<Badge, "id" | "created_at">>
+        Insert: Omit<Badge, 'id' | 'created_at'>
+        Update: Partial<Omit<Badge, 'id' | 'created_at'>>
       }
       user_badges: {
         Row: UserBadge
-        Insert: Omit<UserBadge, "id">
-        Update: Partial<Omit<UserBadge, "id">>
+        Insert: Omit<UserBadge, 'id'>
+        Update: Partial<Omit<UserBadge, 'id'>>
       }
       specialties: {
         Row: Specialty
-        Insert: Omit<Specialty, "id">
-        Update: Partial<Omit<Specialty, "id">>
+        Insert: Omit<Specialty, 'id'>
+        Update: Partial<Omit<Specialty, 'id'>>
       }
       nutritionist_services: {
         Row: NutritionistService
-        Insert: Omit<NutritionistService, "id">
-        Update: Partial<Omit<NutritionistService, "id">>
+        Insert: Omit<NutritionistService, 'id'>
+        Update: Partial<Omit<NutritionistService, 'id'>>
       }
       nutritionist_addresses: {
         Row: NutritionistAddress
-        Insert: Omit<NutritionistAddress, "id" | "city_slug" | "full_address" | "created_at" | "updated_at">
-        Update: Partial<Omit<NutritionistAddress, "id" | "city_slug" | "full_address" | "created_at" | "updated_at">>
+        Insert: Omit<
+          NutritionistAddress,
+          'id' | 'city_slug' | 'full_address' | 'created_at' | 'updated_at'
+        >
+        Update: Partial<
+          Omit<
+            NutritionistAddress,
+            'id' | 'city_slug' | 'full_address' | 'created_at' | 'updated_at'
+          >
+        >
       }
     }
     Views: {

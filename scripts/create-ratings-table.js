@@ -10,7 +10,7 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey)
 async function createConsultationRatingsTable() {
   try {
     console.log('🚀 Criando tabela de avaliações de consultas...')
-    
+
     // Criar a tabela consultation_ratings
     const createTableSQL = `
       CREATE TABLE IF NOT EXISTS consultation_ratings (
@@ -27,29 +27,33 @@ async function createConsultationRatingsTable() {
           UNIQUE(consultation_id)
       );
     `
-    
-    const { error: createError } = await supabase.rpc('exec', { sql: createTableSQL })
-    
+
+    const { error: createError } = await supabase.rpc('exec', {
+      sql: createTableSQL,
+    })
+
     if (createError) {
-      console.log('⚠️ Erro ao criar tabela (pode já existir):', createError.message)
+      console.log(
+        '⚠️ Erro ao criar tabela (pode já existir):',
+        createError.message
+      )
     } else {
       console.log('✅ Tabela consultation_ratings criada com sucesso!')
     }
-    
+
     // Verificar se a tabela existe
     const { data: tables, error: checkError } = await supabase
       .from('consultation_ratings')
       .select('id')
       .limit(1)
-    
+
     if (checkError) {
       console.log('❌ Tabela não foi criada:', checkError.message)
     } else {
       console.log('✅ Tabela consultation_ratings está funcionando!')
     }
-    
+
     console.log('🎉 Processo concluído!')
-    
   } catch (error) {
     console.error('❌ Erro geral:', error.message)
   }

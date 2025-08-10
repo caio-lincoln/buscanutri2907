@@ -1,22 +1,22 @@
-"use client"
+'use client'
 
-import { useState } from "react"
+import { useState } from 'react'
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Trash2, Loader2, AlertTriangle } from "lucide-react"
-import { deleteForumQuestion, deleteForumAnswer } from "@/lib/forum-data"
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Trash2, Loader2, AlertTriangle } from 'lucide-react'
+import { deleteForumQuestion, deleteForumAnswer } from '@/lib/forum-data'
 
 interface DeleteForumModalProps {
   isOpen: boolean
   onClose: () => void
   onSuccess: () => void
-  type: "question" | "answer"
+  type: 'question' | 'answer'
   itemId: string
   userId: string
   itemTitle?: string
@@ -29,7 +29,7 @@ export function DeleteForumModal({
   type,
   itemId,
   userId,
-  itemTitle
+  itemTitle,
 }: DeleteForumModalProps) {
   const [isDeleting, setIsDeleting] = useState(false)
 
@@ -39,7 +39,7 @@ export function DeleteForumModal({
     try {
       let success = false
 
-      if (type === "question") {
+      if (type === 'question') {
         success = await deleteForumQuestion(itemId, userId)
       } else {
         success = await deleteForumAnswer(itemId, userId)
@@ -49,11 +49,13 @@ export function DeleteForumModal({
         onSuccess()
         onClose()
       } else {
-        alert("Erro ao excluir. Verifique se você tem permissão para excluir este item.")
+        alert(
+          'Erro ao excluir. Verifique se você tem permissão para excluir este item.'
+        )
       }
     } catch (error) {
-      console.error("Erro ao excluir:", error)
-      alert("Erro ao excluir. Tente novamente.")
+      // Silent error handling: Error deleting item
+      alert('Erro ao excluir. Tente novamente.')
     } finally {
       setIsDeleting(false)
     }
@@ -71,24 +73,24 @@ export function DeleteForumModal({
 
         <div className="py-4">
           <p className="text-gray-700 mb-4">
-            Tem certeza que deseja excluir esta {type === "question" ? "pergunta" : "resposta"}?
+            Tem certeza que deseja excluir esta{' '}
+            {type === 'question' ? 'pergunta' : 'resposta'}?
           </p>
-          
+
           {itemTitle && (
             <div className="bg-gray-50 p-3 rounded-lg border">
               <p className="text-sm font-medium text-gray-600 mb-1">
-                {type === "question" ? "Pergunta:" : "Resposta:"}
+                {type === 'question' ? 'Pergunta:' : 'Resposta:'}
               </p>
-              <p className="text-sm text-gray-800 line-clamp-3">
-                {itemTitle}
-              </p>
+              <p className="text-sm text-gray-800 line-clamp-3">{itemTitle}</p>
             </div>
           )}
 
           <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
             <p className="text-sm text-red-700">
               <strong>Atenção:</strong> Esta ação não pode ser desfeita.
-              {type === "question" && " Todas as respostas associadas também serão excluídas."}
+              {type === 'question' &&
+                ' Todas as respostas associadas também serão excluídas.'}
             </p>
           </div>
         </div>
@@ -117,7 +119,7 @@ export function DeleteForumModal({
             ) : (
               <>
                 <Trash2 className="h-4 w-4 mr-2" />
-                Excluir {type === "question" ? "Pergunta" : "Resposta"}
+                Excluir {type === 'question' ? 'Pergunta' : 'Resposta'}
               </>
             )}
           </Button>

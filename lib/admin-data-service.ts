@@ -1,4 +1,4 @@
-import { createSupabaseClient } from "./supabase"
+import { createSupabaseClient } from './supabase'
 
 const supabase = createSupabaseClient()
 
@@ -7,19 +7,19 @@ export interface UserData {
   id: string
   name: string
   email: string
-  type: "paciente" | "nutricionista" | "empresa"
-  status: "ativo" | "inativo" | "pendente"
+  type: 'paciente' | 'nutricionista' | 'empresa'
+  status: 'ativo' | 'inativo' | 'pendente'
   createdAt: string
   lastLogin?: string
 }
 
 export interface TransactionData {
   id: string
-  type: "receita" | "despesa"
+  type: 'receita' | 'despesa'
   amount: number
   description: string
   date: string
-  status: "concluída" | "pendente" | "cancelada"
+  status: 'concluída' | 'pendente' | 'cancelada'
   userId?: string
   userName?: string
 }
@@ -30,23 +30,23 @@ export interface ReportMetric {
   value: number
   change: number
   period: string
-  type: "users" | "revenue" | "consultations" | "posts"
+  type: 'users' | 'revenue' | 'consultations' | 'posts'
 }
 
 export interface ReportData {
   id: string
-  type: "spam" | "conteudo_inadequado" | "perfil_falso" | "outros"
+  type: 'spam' | 'conteudo_inadequado' | 'perfil_falso' | 'outros'
   reportedItem: string
   reportedBy: string
   reason: string
-  status: "pendente" | "resolvido" | "rejeitado"
+  status: 'pendente' | 'resolvido' | 'rejeitado'
   createdAt: string
 }
 
 export interface ServiceStatus {
   id: string
   name: string
-  status: "online" | "offline" | "manutencao"
+  status: 'online' | 'offline' | 'manutencao'
   uptime: number
   lastCheck: string
 }
@@ -59,8 +59,9 @@ export interface ServiceStatus {
 export async function getAllUsers(): Promise<UserData[]> {
   try {
     const { data: users, error } = await supabase
-      .from("users")
-      .select(`
+      .from('users')
+      .select(
+        `
         id,
         email,
         user_type,
@@ -69,28 +70,30 @@ export async function getAllUsers(): Promise<UserData[]> {
         patient_profiles(full_name),
         nutritionist_profiles(full_name),
         company_profiles(company_name)
-      `)
-      .order("created_at", { ascending: false })
+      `
+      )
+      .order('created_at', { ascending: false })
 
     if (error) {
-      console.error("Error fetching users:", error)
+      // Silent error handling: Error fetching users
       return []
     }
 
     return users.map(user => ({
       id: user.id,
-      name: user.patient_profiles?.[0]?.full_name || 
-            user.nutritionist_profiles?.[0]?.full_name || 
-            user.company_profiles?.[0]?.company_name || 
-            "Nome não disponível",
+      name:
+        user.patient_profiles?.[0]?.full_name ||
+        user.nutritionist_profiles?.[0]?.full_name ||
+        user.company_profiles?.[0]?.company_name ||
+        'Nome não disponível',
       email: user.email,
-      type: user.user_type as "paciente" | "nutricionista" | "empresa",
-      status: "ativo", // Pode ser determinado por lógica de negócio
+      type: user.user_type as 'paciente' | 'nutricionista' | 'empresa',
+      status: 'ativo', // Pode ser determinado por lógica de negócio
       createdAt: user.created_at,
-      lastLogin: user.last_sign_in_at
+      lastLogin: user.last_sign_in_at,
     }))
   } catch (error) {
-    console.error("Error in getAllUsers:", error)
+    // Silent error handling: Error in getAllUsers
     return []
   }
 }
@@ -102,63 +105,64 @@ export async function getReportMetrics(): Promise<ReportMetric[]> {
   try {
     // Buscar contagem de usuários
     const { count: usersCount } = await supabase
-      .from("users")
-      .select("*", { count: "exact", head: true })
+      .from('users')
+      .select('*', { count: 'exact', head: true })
 
     // Buscar contagem de consultas
     const { count: consultationsCount } = await supabase
-      .from("consultations")
-      .select("*", { count: "exact", head: true })
+      .from('consultations')
+      .select('*', { count: 'exact', head: true })
 
     // Buscar contagem de posts do blog
     const { count: postsCount } = await supabase
-      .from("posts")
-      .select("*", { count: "exact", head: true })
+      .from('posts')
+      .select('*', { count: 'exact', head: true })
 
     // Calcular receita total (exemplo - adaptar conforme necessário)
     const { data: appointments } = await supabase
-      .from("consultations")
-      .select("price")
-      .eq("status", "completed")
+      .from('consultations')
+      .select('price')
+      .eq('status', 'completed')
 
-    const totalRevenue = appointments?.reduce((sum, apt) => sum + (apt.price || 0), 0) || 0
+    const totalRevenue =
+      appointments?.reduce((sum, apt) => sum + (apt.price || 0), 0) || 0
 
     return [
       {
-        id: "1",
-        title: "Total de Usuários",
+        id: '1',
+        title: 'Total de Usuários',
         value: usersCount || 0,
         change: 12, // Calcular baseado em período anterior
-        period: "último mês",
-        type: "users"
+        period: 'último mês',
+        type: 'users',
       },
       {
-        id: "2",
-        title: "Receita Total",
+        id: '2',
+        title: 'Receita Total',
         value: totalRevenue,
         change: 8,
-        period: "último mês",
-        type: "revenue"
+        period: 'último mês',
+        type: 'revenue',
       },
       {
-        id: "3",
-        title: "Consultas Realizadas",
+        id: '3',
+        title: 'Consultas Realizadas',
         value: consultationsCount || 0,
         change: 15,
-        period: "último mês",
-        type: "consultations"
+        period: 'último mês',
+        type: 'consultations',
       },
       {
-        id: "4",
-        title: "Posts Publicados",
+        id: '4',
+        title: 'Posts Publicados',
         value: postsCount || 0,
         change: 5,
-        period: "último mês",
-        type: "posts"
-      }
+        period: 'último mês',
+        type: 'posts',
+      },
     ]
   } catch (error) {
-    console.error("Error in getReportMetrics:", error)
+    // Silent error handling: Error in getReportMetrics
     return []
   }
 }
@@ -170,36 +174,42 @@ export async function getTransactions(): Promise<TransactionData[]> {
   try {
     // Buscar consultas como transações de receita
     const { data: appointments, error } = await supabase
-      .from("consultations")
-      .select(`
+      .from('consultations')
+      .select(
+        `
         id,
         price,
         status,
         start_time,
         patient_profiles(full_name),
         nutritionist_profiles(full_name)
-      `)
-      .not("price", "is", null)
-      .order("start_time", { ascending: false })
+      `
+      )
+      .not('price', 'is', null)
+      .order('start_time', { ascending: false })
       .limit(50)
 
     if (error) {
-      console.error("Error fetching transactions:", error)
+      // Silent error handling: Error fetching transactions
       return []
     }
 
     return appointments.map(apt => ({
       id: apt.id,
-      type: "receita" as const,
+      type: 'receita' as const,
       amount: apt.price || 0,
-      description: `Consulta - ${apt.patient_profiles?.full_name || "Paciente"} com ${apt.nutritionist_profiles?.full_name || "Nutricionista"}`,
+      description: `Consulta - ${apt.patient_profiles?.full_name || 'Paciente'} com ${apt.nutritionist_profiles?.full_name || 'Nutricionista'}`,
       date: apt.start_time,
-      status: apt.status === "completed" ? "concluída" : 
-              apt.status === "scheduled" ? "pendente" : "cancelada",
-      userName: apt.patient_profiles?.full_name || "Usuário"
+      status:
+        apt.status === 'completed'
+          ? 'concluída'
+          : apt.status === 'scheduled'
+            ? 'pendente'
+            : 'cancelada',
+      userName: apt.patient_profiles?.full_name || 'Usuário',
     }))
   } catch (error) {
-    console.error("Error in getTransactions:", error)
+    // Silent error handling: Error in getTransactions
     return []
   }
 }
@@ -212,46 +222,46 @@ export async function getSystemServices(): Promise<ServiceStatus[]> {
     // Para serviços do sistema, podemos verificar a conectividade com diferentes partes
     const services: ServiceStatus[] = [
       {
-        id: "1",
-        name: "Banco de Dados",
-        status: "online",
+        id: '1',
+        name: 'Banco de Dados',
+        status: 'online',
         uptime: 99.9,
-        lastCheck: new Date().toISOString()
+        lastCheck: new Date().toISOString(),
       },
       {
-        id: "2",
-        name: "Autenticação",
-        status: "online",
+        id: '2',
+        name: 'Autenticação',
+        status: 'online',
         uptime: 99.8,
-        lastCheck: new Date().toISOString()
+        lastCheck: new Date().toISOString(),
       },
       {
-        id: "3",
-        name: "Notificações",
-        status: "online",
+        id: '3',
+        name: 'Notificações',
+        status: 'online',
         uptime: 98.5,
-        lastCheck: new Date().toISOString()
+        lastCheck: new Date().toISOString(),
       },
       {
-        id: "4",
-        name: "Upload de Arquivos",
-        status: "online",
+        id: '4',
+        name: 'Upload de Arquivos',
+        status: 'online',
         uptime: 99.2,
-        lastCheck: new Date().toISOString()
-      }
+        lastCheck: new Date().toISOString(),
+      },
     ]
 
     // Testar conectividade com o banco
     try {
-      await supabase.from("users").select("id").limit(1)
+      await supabase.from('users').select('id').limit(1)
     } catch (error) {
-      services[0].status = "offline"
+      services[0].status = 'offline'
       services[0].uptime = 0
     }
 
     return services
   } catch (error) {
-    console.error("Error in getSystemServices:", error)
+    // Silent error handling: Error in getSystemServices
     return []
   }
 }
@@ -265,7 +275,7 @@ export async function getModerationReports(): Promise<ReportData[]> {
     // Quando implementar, buscar da tabela de reports
     return []
   } catch (error) {
-    console.error("Error in getModerationReports:", error)
+    // Silent error handling: Error in getModerationReports
     return []
   }
 }

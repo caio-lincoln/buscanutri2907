@@ -1,17 +1,15 @@
-"use client"
+'use client'
 
 type ToastProps = {
   title?: string
   description?: string
-  variant?: "default" | "destructive"
+  variant?: 'default' | 'destructive'
 }
 
-export function toast({ title, description, variant = "default" }: ToastProps) {
+export function toast({ title, description, variant = 'default' }: ToastProps) {
   // Simple toast implementation - in a real app you'd use a proper toast library
-  console.log(`Toast: ${title} - ${description} (${variant})`)
-
   // For demo purposes, we'll use a simple alert
-  if (variant === "destructive") {
+  if (variant === 'destructive') {
     alert(`Erro: ${title}\n${description}`)
   } else {
     alert(`${title}\n${description}`)

@@ -1,12 +1,12 @@
-"use client"
+'use client'
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Eye, Users, Clock, RefreshCw } from "lucide-react"
-import { useRealtimeProfileViews } from "@/hooks/use-realtime-profile-views"
-import { profileViewsService } from "@/lib/profile-views-service"
+import { useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Eye, Users, Clock, RefreshCw } from 'lucide-react'
+import { useRealtimeProfileViews } from '@/hooks/use-realtime-profile-views'
+import { profileViewsService } from '@/lib/profile-views-service'
 
 interface RealtimeViewsTestProps {
   nutritionistId: string
@@ -17,16 +17,22 @@ interface RealtimeViewsTestProps {
   }
 }
 
-export function RealtimeViewsTest({ nutritionistId, initialStats }: RealtimeViewsTestProps) {
+export function RealtimeViewsTest({
+  nutritionistId,
+  initialStats,
+}: RealtimeViewsTestProps) {
   const [isRecording, setIsRecording] = useState(false)
-  const { viewStats, recordView, refreshStats } = useRealtimeProfileViews(nutritionistId, initialStats)
+  const { viewStats, recordView, refreshStats } = useRealtimeProfileViews(
+    nutritionistId,
+    initialStats
+  )
 
   const handleRecordView = async () => {
     setIsRecording(true)
     try {
       await recordView()
     } catch (error) {
-      console.error('Erro ao registrar visualização:', error)
+      // Silent error handling - view registration error
     } finally {
       setIsRecording(false)
     }
@@ -36,7 +42,7 @@ export function RealtimeViewsTest({ nutritionistId, initialStats }: RealtimeView
     try {
       await refreshStats()
     } catch (error) {
-      console.error('Erro ao atualizar estatísticas:', error)
+      // Silent error handling - stats update error
     }
   }
 
@@ -74,7 +80,9 @@ export function RealtimeViewsTest({ nutritionistId, initialStats }: RealtimeView
           <div className="text-center">
             <div className="flex items-center justify-center gap-1 mb-1">
               <Clock className="h-4 w-4 text-orange-500" />
-              <span className="text-sm font-medium text-gray-600">Última Visualização</span>
+              <span className="text-sm font-medium text-gray-600">
+                Última Visualização
+              </span>
             </div>
             <p className="text-xs text-gray-500">
               {new Date(viewStats.lastViewAt).toLocaleString('pt-BR')}
@@ -83,8 +91,8 @@ export function RealtimeViewsTest({ nutritionistId, initialStats }: RealtimeView
         )}
 
         <div className="flex gap-2">
-          <Button 
-            onClick={handleRecordView} 
+          <Button
+            onClick={handleRecordView}
             disabled={isRecording}
             className="flex-1"
             size="sm"
@@ -101,11 +109,7 @@ export function RealtimeViewsTest({ nutritionistId, initialStats }: RealtimeView
               </>
             )}
           </Button>
-          <Button 
-            onClick={handleRefreshStats} 
-            variant="outline"
-            size="sm"
-          >
+          <Button onClick={handleRefreshStats} variant="outline" size="sm">
             <RefreshCw className="h-4 w-4" />
           </Button>
         </div>

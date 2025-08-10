@@ -1,7 +1,7 @@
-"use client"
+'use client'
 
-import React from "react"
-import * as ReactAll from "react"
+import React from 'react'
+import * as ReactAll from 'react'
 import {
   format,
   addMonths,
@@ -14,11 +14,11 @@ import {
   isToday,
   isBefore,
   startOfDay,
-} from "date-fns"
-import { ptBR } from "date-fns/locale"
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+} from 'date-fns'
+import { ptBR } from 'date-fns/locale'
+import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 interface CustomCalendarProps {
   selectedDate: Date | undefined
@@ -72,8 +72,10 @@ export function CustomCalendar({
 
   const isDateDisabled = (date: Date) => {
     const today = startOfDay(new Date())
-    if (disablePastDates && isBefore(date, today) && !isSameDay(date, today)) return true
-    if (disableWeekends && (date.getDay() === 0 || date.getDay() === 6)) return true // Domingo (0) e Sábado (6)
+    if (disablePastDates && isBefore(date, today) && !isSameDay(date, today))
+      return true
+    if (disableWeekends && (date.getDay() === 0 || date.getDay() === 6))
+      return true // Domingo (0) e Sábado (6)
     return false
   }
 
@@ -85,12 +87,12 @@ export function CustomCalendar({
   }
 
   const getDateStatus = (date: Date) => {
-    if (isDateDisabled(date)) return "disabled"
-    if (!isSameMonth(date, currentMonth)) return "outside"
-    if (selectedDate && isSameDay(date, selectedDate)) return "selected"
-    if (isToday(date)) return "today"
-    if (showAvailabilityIndicator && isDateAvailable(date)) return "available"
-    return "unavailable"
+    if (isDateDisabled(date)) return 'disabled'
+    if (!isSameMonth(date, currentMonth)) return 'outside'
+    if (selectedDate && isSameDay(date, selectedDate)) return 'selected'
+    if (isToday(date)) return 'today'
+    if (showAvailabilityIndicator && isDateAvailable(date)) return 'available'
+    return 'unavailable'
   }
 
   const previousMonth = () => {
@@ -102,7 +104,8 @@ export function CustomCalendar({
   }
 
   const handleDayClick = (date: Date) => {
-    if (getDateStatus(date) === "disabled" || getDateStatus(date) === "outside") return
+    if (getDateStatus(date) === 'disabled' || getDateStatus(date) === 'outside')
+      return
     onSelectDate(date)
   }
 
@@ -111,13 +114,25 @@ export function CustomCalendar({
       {/* Header do Calendário */}
       <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-lg p-4 text-white">
         <div className="flex items-center justify-between">
-          <Button variant="ghost" size="sm" onClick={previousMonth} className="text-white hover:bg-white/20 p-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={previousMonth}
+            className="text-white hover:bg-white/20 p-2"
+          >
             <ChevronLeft className="h-4 w-4" />
           </Button>
 
-          <h3 className="text-lg font-semibold">{format(currentMonth, "MMMM yyyy", { locale: ptBR })}</h3>
+          <h3 className="text-lg font-semibold">
+            {format(currentMonth, 'MMMM yyyy', { locale: ptBR })}
+          </h3>
 
-          <Button variant="ghost" size="sm" onClick={nextMonth} className="text-white hover:bg-white/20 p-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={nextMonth}
+            className="text-white hover:bg-white/20 p-2"
+          >
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
@@ -125,7 +140,7 @@ export function CustomCalendar({
 
       {/* Dias da Semana */}
       <div className="grid grid-cols-7 gap-1 text-center text-sm font-medium text-gray-600">
-        {["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"].map((day) => (
+        {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(day => (
           <div key={day} className="p-2">
             {day}
           </div>
@@ -140,37 +155,42 @@ export function CustomCalendar({
             <button
               key={index}
               onClick={() => handleDayClick(date)}
-              disabled={status === "disabled" || status === "outside"}
-              className={cn("p-2 text-sm rounded-lg transition-all duration-200 hover:scale-105 relative", {
-                // Data selecionada
-                "bg-gradient-to-r from-green-500 to-green-600 text-white font-bold shadow-lg": status === "selected",
+              disabled={status === 'disabled' || status === 'outside'}
+              className={cn(
+                'p-2 text-sm rounded-lg transition-all duration-200 hover:scale-105 relative',
+                {
+                  // Data selecionada
+                  'bg-gradient-to-r from-green-500 to-green-600 text-white font-bold shadow-lg':
+                    status === 'selected',
 
-                // Data de hoje
-                "bg-blue-100 text-blue-700 font-semibold ring-2 ring-blue-300":
-                  status === "today" && status !== "selected",
+                  // Data de hoje
+                  'bg-blue-100 text-blue-700 font-semibold ring-2 ring-blue-300':
+                    status === 'today' && status !== 'selected',
 
-                // Datas disponíveis
-                "hover:bg-green-50 hover:text-green-700 text-gray-700": status === "available",
+                  // Datas disponíveis
+                  'hover:bg-green-50 hover:text-green-700 text-gray-700':
+                    status === 'available',
 
-                // Datas indisponíveis
-                "text-gray-400 cursor-not-allowed": status === "unavailable",
+                  // Datas indisponíveis
+                  'text-gray-400 cursor-not-allowed': status === 'unavailable',
 
-                // Datas desabilitadas
-                "text-gray-300 cursor-not-allowed": status === "disabled",
+                  // Datas desabilitadas
+                  'text-gray-300 cursor-not-allowed': status === 'disabled',
 
-                // Datas fora do mês
-                "text-gray-300 cursor-not-allowed": status === "outside",
-              })}
+                  // Datas fora do mês
+                  'text-gray-300 cursor-not-allowed': status === 'outside',
+                }
+              )}
             >
-              {format(date, "d")}
+              {format(date, 'd')}
 
               {/* Indicador de disponibilidade */}
-              {showAvailabilityIndicator && status === "available" && (
+              {showAvailabilityIndicator && status === 'available' && (
                 <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-green-400 rounded-full"></div>
               )}
 
               {/* Indicador de hoje */}
-              {status === "today" && status !== "selected" && (
+              {status === 'today' && status !== 'selected' && (
                 <div className="absolute top-0 right-0 w-2 h-2 bg-blue-500 rounded-full"></div>
               )}
             </button>

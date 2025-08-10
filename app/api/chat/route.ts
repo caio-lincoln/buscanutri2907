@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from "@google/generative-ai"
+import { GoogleGenerativeAI } from '@google/generative-ai'
 
 export async function POST(req: Request) {
   try {
@@ -6,7 +6,7 @@ export async function POST(req: Request) {
 
     // Inicializar o cliente do Gemini
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" })
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
 
     // Configurar o prompt do sistema
     const systemPrompt = `🤖 IDENTIDADE DA ASSISTENTE
@@ -92,9 +92,13 @@ IMPORTANTE: Você pode usar formatação de texto para melhorar a legibilidade d
 
     // Converter mensagens para o formato do Gemini
     const lastMessage = messages[messages.length - 1]
-    const conversationHistory = messages.slice(0, -1).map((msg: any) => 
-      `${msg.role === "user" ? "Usuário" : "Iris"}: ${msg.content}`
-    ).join("\n")
+    const conversationHistory = messages
+      .slice(0, -1)
+      .map(
+        (msg: any) =>
+          `${msg.role === 'user' ? 'Usuário' : 'Iris'}: ${msg.content}`
+      )
+      .join('\n')
 
     const fullPrompt = `${systemPrompt}
 
@@ -116,37 +120,34 @@ Iris:`
           for await (const chunk of result.stream) {
             const chunkText = chunk.text()
             if (chunkText) {
-              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ content: chunkText })}\n\n`))
+              controller.enqueue(
+                encoder.encode(
+                  `data: ${JSON.stringify({ content: chunkText })}\n\n`
+                )
+              )
             }
           }
-          controller.enqueue(encoder.encode("data: [DONE]\n\n"))
+          controller.enqueue(encoder.encode('data: [DONE]\n\n'))
           controller.close()
         } catch (error) {
-          console.error("Erro no streaming:", error)
+          // Streaming error - silent error handling
           controller.error(error)
         }
-      }
+      },
     })
 
     return new Response(stream, {
       headers: {
-        "Content-Type": "text/plain; charset=utf-8",
-        "Cache-Control": "no-cache",
-        "Connection": "keep-alive",
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Cache-Control': 'no-cache',
+        Connection: 'keep-alive',
       },
     })
-
   } catch (error) {
-    console.error("❌ Erro na API do chat:", error)
-    return new Response(
-      JSON.stringify({
-        error: "Desculpe, estou com dificuldades técnicas no momento. Tente novamente em alguns instantes.",
-      }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      },
+    // Chat API error - silent error handling
+    return NextResponse.json(
+      { error: 'Erro interno do servidor' },
+      { status: 500 }
     )
   }
 }
-

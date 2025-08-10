@@ -9,21 +9,21 @@ interface RGValidationResult {
 
 // Função para validar RG
 export function validateRG(rg: string): RGValidationResult {
-  if (!rg || typeof rg !== "string") {
+  if (!rg || typeof rg !== 'string') {
     return {
       isValid: false,
-      message: "RG é obrigatório",
+      message: 'RG é obrigatório',
     }
   }
 
   // Remove caracteres não alfanuméricos
-  const cleanRG = rg.replace(/[^a-zA-Z0-9]/g, "").toUpperCase()
+  const cleanRG = rg.replace(/[^a-zA-Z0-9]/g, '').toUpperCase()
 
   // Verifica se tem pelo menos 7 caracteres (mínimo para RG)
   if (cleanRG.length < 7) {
     return {
       isValid: false,
-      message: "RG deve ter pelo menos 7 caracteres",
+      message: 'RG deve ter pelo menos 7 caracteres',
     }
   }
 
@@ -31,7 +31,7 @@ export function validateRG(rg: string): RGValidationResult {
   if (cleanRG.length > 12) {
     return {
       isValid: false,
-      message: "RG deve ter no máximo 12 caracteres",
+      message: 'RG deve ter no máximo 12 caracteres',
     }
   }
 
@@ -39,7 +39,7 @@ export function validateRG(rg: string): RGValidationResult {
   if (!/\d/.test(cleanRG)) {
     return {
       isValid: false,
-      message: "RG deve conter pelo menos um número",
+      message: 'RG deve conter pelo menos um número',
     }
   }
 
@@ -47,42 +47,42 @@ export function validateRG(rg: string): RGValidationResult {
   if (/^(.)\1+$/.test(cleanRG)) {
     return {
       isValid: false,
-      message: "RG inválido",
+      message: 'RG inválido',
     }
   }
 
   return {
     isValid: true,
-    message: "RG válido",
+    message: 'RG válido',
     formatted: formatRG(cleanRG),
   }
 }
 
 // Função para formatar RG
 export function formatRG(rg: string): string {
-  if (!rg) return ""
+  if (!rg) return ''
 
   // Remove caracteres especiais e converte para maiúsculo
-  const clean = rg.replace(/[^a-zA-Z0-9]/g, "").toUpperCase()
+  const clean = rg.replace(/[^a-zA-Z0-9]/g, '').toUpperCase()
 
   // Aplica formatação básica para RGs de São Paulo (XX.XXX.XXX-X)
   if (clean.length <= 2) {
     return clean
   } else if (clean.length <= 5) {
-    return clean.replace(/(\d{2})(\w{0,3})/, "$1.$2")
+    return clean.replace(/(\d{2})(\w{0,3})/, '$1.$2')
   } else if (clean.length <= 8) {
-    return clean.replace(/(\d{2})(\d{3})(\w{0,3})/, "$1.$2.$3")
+    return clean.replace(/(\d{2})(\d{3})(\w{0,3})/, '$1.$2.$3')
   } else {
-    return clean.replace(/(\d{2})(\d{3})(\d{3})(\w{0,1})/, "$1.$2.$3-$4")
+    return clean.replace(/(\d{2})(\d{3})(\d{3})(\w{0,1})/, '$1.$2.$3-$4')
   }
 }
 
 // Função para validar formato de RG
 export function validateRGFormat(rg: string): RGValidationResult {
-  if (!rg || typeof rg !== "string") {
+  if (!rg || typeof rg !== 'string') {
     return {
       isValid: false,
-      message: "RG é obrigatório",
+      message: 'RG é obrigatório',
     }
   }
 
@@ -93,7 +93,7 @@ export function validateRGFormat(rg: string): RGValidationResult {
   if (!trimmedRG) {
     return {
       isValid: false,
-      message: "RG é obrigatório",
+      message: 'RG é obrigatório',
     }
   }
 
@@ -102,13 +102,13 @@ export function validateRGFormat(rg: string): RGValidationResult {
 
 // Função para limpar RG (remover formatação)
 export function cleanRG(rg: string): string {
-  return rg.replace(/[^a-zA-Z0-9]/g, "").toUpperCase()
+  return rg.replace(/[^a-zA-Z0-9]/g, '').toUpperCase()
 }
 
 // Função para validar RG de São Paulo (com dígito verificador)
 export function validateRGSP(rg: string): RGValidationResult {
   const cleanRG = cleanRG(rg)
-  
+
   // RG de SP tem 9 dígitos (8 + 1 verificador)
   if (cleanRG.length !== 9) {
     return validateRG(rg) // Fallback para validação geral
@@ -133,26 +133,26 @@ export function validateRGSP(rg: string): RGValidationResult {
   let calculatedDigit: string
 
   if (remainder < 2) {
-    calculatedDigit = "0"
+    calculatedDigit = '0'
   } else {
     calculatedDigit = (11 - remainder).toString()
   }
 
   // O dígito verificador pode ser X quando o resultado é 10
-  if (calculatedDigit === "10") {
-    calculatedDigit = "X"
+  if (calculatedDigit === '10') {
+    calculatedDigit = 'X'
   }
 
   if (checkDigit !== calculatedDigit) {
     return {
       isValid: false,
-      message: "RG inválido (dígito verificador incorreto)",
+      message: 'RG inválido (dígito verificador incorreto)',
     }
   }
 
   return {
     isValid: true,
-    message: "RG válido",
+    message: 'RG válido',
     formatted: formatRG(cleanRG),
   }
 }

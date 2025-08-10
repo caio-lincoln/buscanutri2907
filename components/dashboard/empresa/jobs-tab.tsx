@@ -1,16 +1,28 @@
-"use client"
+'use client'
 
-import type React from "react"
+import type React from 'react'
 
-import { useState, useEffect } from "react"
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { useState, useEffect } from 'react'
+import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
 import {
   Plus,
   Search,
@@ -28,24 +40,28 @@ import {
   Building,
   Star,
   Loader2,
-} from "lucide-react"
+} from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { JobCandidatesModal } from "./job-candidates-modal"
-import { getCompanyJobs, createCompanyJob, type JobData } from "@/lib/company-data-service"
-import { useUser } from "@/hooks/use-user"
+} from '@/components/ui/dropdown-menu'
+import { JobCandidatesModal } from './job-candidates-modal'
+import {
+  getCompanyJobs,
+  createCompanyJob,
+  type JobData,
+} from '@/lib/company-data-service'
+import { useUser } from '@/hooks/use-user'
 
 export function JobsTab() {
   const { user } = useUser()
   const [jobs, setJobs] = useState<JobData[]>([])
   const [loading, setLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [statusFilter, setStatusFilter] = useState<string>("all")
+  const [searchTerm, setSearchTerm] = useState('')
+  const [statusFilter, setStatusFilter] = useState<string>('all')
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [selectedJob, setSelectedJob] = useState<JobData | null>(null)
   const [isViewModalOpen, setIsViewModalOpen] = useState(false)
@@ -54,13 +70,13 @@ export function JobsTab() {
   useEffect(() => {
     async function loadJobs() {
       if (!user?.companyProfile?.id) return
-      
+
       try {
         setLoading(true)
         const jobsData = await getCompanyJobs(user.companyProfile.id)
         setJobs(jobsData)
       } catch (error) {
-        console.error("Erro ao carregar vagas:", error)
+        // Silent error handling - error loading jobs
       } finally {
         setLoading(false)
       }
@@ -69,24 +85,24 @@ export function JobsTab() {
     loadJobs()
   }, [user?.companyProfile?.id])
 
-  const filteredJobs = jobs.filter((job) => {
+  const filteredJobs = jobs.filter(job => {
     const matchesSearch =
       job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       job.company.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesStatus = statusFilter === "all" || job.status === statusFilter
+    const matchesStatus = statusFilter === 'all' || job.status === statusFilter
     return matchesSearch && matchesStatus
   })
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "ativo":
-        return "bg-green-100 text-green-800 border-green-200"
-      case "pausado":
-        return "bg-yellow-100 text-yellow-800 border-yellow-200"
-      case "finalizado":
-        return "bg-red-100 text-red-800 border-red-200"
+      case 'ativo':
+        return 'bg-green-100 text-green-800 border-green-200'
+      case 'pausado':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200'
+      case 'finalizado':
+        return 'bg-red-100 text-red-800 border-red-200'
       default:
-        return "bg-gray-100 text-gray-800 border-gray-200"
+        return 'bg-gray-100 text-gray-800 border-gray-200'
     }
   }
 
@@ -101,14 +117,16 @@ export function JobsTab() {
   }
 
   const handleDeleteJob = (jobId: string) => {
-    setJobs(jobs.filter((job) => job.id !== jobId))
+    setJobs(jobs.filter(job => job.id !== jobId))
   }
 
   const handleToggleStatus = (jobId: string) => {
     setJobs(
-      jobs.map((job) =>
-        job.id === jobId ? { ...job, status: job.status === "ativo" ? "pausado" : "ativo" } : job,
-      ),
+      jobs.map(job =>
+        job.id === jobId
+          ? { ...job, status: job.status === 'ativo' ? 'pausado' : 'ativo' }
+          : job
+      )
     )
   }
 
@@ -138,7 +156,9 @@ export function JobsTab() {
       <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-[#1E1D40]">Gerenciar Vagas</h1>
-          <p className="text-gray-600">Publique e gerencie suas oportunidades de emprego</p>
+          <p className="text-gray-600">
+            Publique e gerencie suas oportunidades de emprego
+          </p>
         </div>
 
         <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
@@ -152,8 +172,8 @@ export function JobsTab() {
             <DialogHeader>
               <DialogTitle>Criar Nova Vaga</DialogTitle>
             </DialogHeader>
-            <CreateJobForm 
-              onClose={() => setIsCreateModalOpen(false)} 
+            <CreateJobForm
+              onClose={() => setIsCreateModalOpen(false)}
               onJobCreated={async () => {
                 if (user?.companyProfile?.id) {
                   const jobsData = await getCompanyJobs(user.companyProfile.id)
@@ -171,9 +191,11 @@ export function JobsTab() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-blue-600">Vagas Ativas</p>
+                <p className="text-sm font-medium text-blue-600">
+                  Vagas Ativas
+                </p>
                 <p className="text-3xl font-bold text-blue-700">
-                  {jobs.filter((job) => job.status === "ativo").length}
+                  {jobs.filter(job => job.status === 'ativo').length}
                 </p>
               </div>
               <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center">
@@ -187,7 +209,9 @@ export function JobsTab() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-green-600">Total de Candidaturas</p>
+                <p className="text-sm font-medium text-green-600">
+                  Total de Candidaturas
+                </p>
                 <p className="text-3xl font-bold text-green-700">
                   {jobs.reduce((sum, job) => sum + job.applicationsCount, 0)}
                 </p>
@@ -203,8 +227,12 @@ export function JobsTab() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-purple-600">Total de Vagas</p>
-                <p className="text-3xl font-bold text-purple-700">{jobs.length}</p>
+                <p className="text-sm font-medium text-purple-600">
+                  Total de Vagas
+                </p>
+                <p className="text-3xl font-bold text-purple-700">
+                  {jobs.length}
+                </p>
               </div>
               <div className="w-12 h-12 bg-purple-500 rounded-xl flex items-center justify-center">
                 <Eye className="h-6 w-6 text-white" />
@@ -217,9 +245,21 @@ export function JobsTab() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-orange-600">Taxa de Conversão</p>
+                <p className="text-sm font-medium text-orange-600">
+                  Taxa de Conversão
+                </p>
                 <p className="text-3xl font-bold text-orange-700">
-                  {jobs.length > 0 ? Math.round((jobs.reduce((sum, job) => sum + job.applicationsCount, 0) / jobs.length) * 100) / 100 : 0}%
+                  {jobs.length > 0
+                    ? Math.round(
+                        (jobs.reduce(
+                          (sum, job) => sum + job.applicationsCount,
+                          0
+                        ) /
+                          jobs.length) *
+                          100
+                      ) / 100
+                    : 0}
+                  %
                 </p>
               </div>
               <div className="w-12 h-12 bg-orange-500 rounded-xl flex items-center justify-center">
@@ -240,7 +280,7 @@ export function JobsTab() {
                 <Input
                   placeholder="Buscar vagas..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={e => setSearchTerm(e.target.value)}
                   className="pl-10"
                 />
               </div>
@@ -268,16 +308,17 @@ export function JobsTab() {
             <CardContent className="p-12 text-center">
               <Briefcase className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-gray-600 mb-2">
-                {jobs.length === 0 ? "Nenhuma vaga cadastrada" : "Nenhuma vaga encontrada"}
+                {jobs.length === 0
+                  ? 'Nenhuma vaga cadastrada'
+                  : 'Nenhuma vaga encontrada'}
               </h3>
               <p className="text-gray-500 mb-4">
-                {jobs.length === 0 
-                  ? "Comece criando sua primeira vaga de emprego."
-                  : "Tente ajustar os filtros para encontrar as vagas desejadas."
-                }
+                {jobs.length === 0
+                  ? 'Comece criando sua primeira vaga de emprego.'
+                  : 'Tente ajustar os filtros para encontrar as vagas desejadas.'}
               </p>
               {jobs.length === 0 && (
-                <Button 
+                <Button
                   onClick={() => setIsCreateModalOpen(true)}
                   className="bg-blue-600 hover:bg-blue-700"
                 >
@@ -288,14 +329,19 @@ export function JobsTab() {
             </CardContent>
           </Card>
         ) : (
-          filteredJobs.map((job) => (
-            <Card key={job.id} className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover-lift">
+          filteredJobs.map(job => (
+            <Card
+              key={job.id}
+              className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover-lift"
+            >
               <CardContent className="p-6">
                 <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
                   <div className="flex-1 space-y-3">
                     <div className="flex items-start justify-between">
                       <div>
-                        <h3 className="text-xl font-bold text-[#1E1D40] mb-2">{job.title}</h3>
+                        <h3 className="text-xl font-bold text-[#1E1D40] mb-2">
+                          {job.title}
+                        </h3>
                         <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
                           <div className="flex items-center gap-1">
                             <Building className="h-4 w-4" />
@@ -331,9 +377,11 @@ export function JobsTab() {
                             <Edit className="h-4 w-4 mr-2" />
                             Editar
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleToggleStatus(job.id)}>
+                          <DropdownMenuItem
+                            onClick={() => handleToggleStatus(job.id)}
+                          >
                             <Clock className="h-4 w-4 mr-2" />
-                            {job.status === "ativo" ? "Pausar" : "Ativar"}
+                            {job.status === 'ativo' ? 'Pausar' : 'Ativar'}
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
@@ -349,7 +397,11 @@ export function JobsTab() {
 
                     <div className="flex flex-wrap items-center gap-3">
                       <Badge className={getStatusColor(job.status)}>
-                        {job.status === "ativo" ? "Ativa" : job.status === "pausado" ? "Pausada" : "Finalizada"}
+                        {job.status === 'ativo'
+                          ? 'Ativa'
+                          : job.status === 'pausado'
+                            ? 'Pausada'
+                            : 'Finalizada'}
                       </Badge>
                     </div>
 
@@ -372,11 +424,19 @@ export function JobsTab() {
                   </div>
 
                   <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={() => handleViewJob(job)}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleViewJob(job)}
+                    >
                       <Eye className="h-4 w-4 mr-2" />
                       Ver Detalhes
                     </Button>
-                    <Button size="sm" className="bg-blue-600 hover:bg-blue-700" onClick={() => handleViewCandidates(job)}>
+                    <Button
+                      size="sm"
+                      className="bg-blue-600 hover:bg-blue-700"
+                      onClick={() => handleViewCandidates(job)}
+                    >
                       <Users className="h-4 w-4 mr-2" />
                       Ver Candidatos ({job.applicationsCount})
                     </Button>
@@ -397,7 +457,9 @@ export function JobsTab() {
           {selectedJob && (
             <div className="space-y-6">
               <div>
-                <h3 className="text-2xl font-bold text-[#1E1D40] mb-2">{selectedJob.title}</h3>
+                <h3 className="text-2xl font-bold text-[#1E1D40] mb-2">
+                  {selectedJob.title}
+                </h3>
                 <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 mb-4">
                   <div className="flex items-center gap-1">
                     <Building className="h-4 w-4" />
@@ -413,7 +475,11 @@ export function JobsTab() {
                   </div>
                 </div>
                 <Badge className={getStatusColor(selectedJob.status)}>
-                  {selectedJob.status === "ativo" ? "Ativa" : selectedJob.status === "pausado" ? "Pausada" : "Finalizada"}
+                  {selectedJob.status === 'ativo'
+                    ? 'Ativa'
+                    : selectedJob.status === 'pausado'
+                      ? 'Pausada'
+                      : 'Finalizada'}
                 </Badge>
               </div>
 
@@ -424,7 +490,9 @@ export function JobsTab() {
 
               {selectedJob.requirements.length > 0 && (
                 <div>
-                  <h4 className="font-semibold text-[#1E1D40] mb-2">Requisitos</h4>
+                  <h4 className="font-semibold text-[#1E1D40] mb-2">
+                    Requisitos
+                  </h4>
                   <ul className="list-disc list-inside space-y-1 text-gray-600">
                     {selectedJob.requirements.map((req, index) => (
                       <li key={index}>{req}</li>
@@ -435,7 +503,9 @@ export function JobsTab() {
 
               {selectedJob.benefits.length > 0 && (
                 <div>
-                  <h4 className="font-semibold text-[#1E1D40] mb-2">Benefícios</h4>
+                  <h4 className="font-semibold text-[#1E1D40] mb-2">
+                    Benefícios
+                  </h4>
                   <ul className="list-disc list-inside space-y-1 text-gray-600">
                     {selectedJob.benefits.map((benefit, index) => (
                       <li key={index}>{benefit}</li>
@@ -446,10 +516,12 @@ export function JobsTab() {
 
               <div className="flex gap-4 text-sm text-gray-600">
                 <div>
-                  <span className="font-medium">Candidaturas:</span> {selectedJob.applicationsCount}
+                  <span className="font-medium">Candidaturas:</span>{' '}
+                  {selectedJob.applicationsCount}
                 </div>
                 <div>
-                  <span className="font-medium">Criada em:</span> {formatDate(selectedJob.createdAt)}
+                  <span className="font-medium">Criada em:</span>{' '}
+                  {formatDate(selectedJob.createdAt)}
                 </div>
               </div>
             </div>
@@ -469,7 +541,13 @@ export function JobsTab() {
   )
 }
 
-function CreateJobForm({ onClose, onJobCreated }: { onClose: () => void; onJobCreated: () => void }) {
+function CreateJobForm({
+  onClose,
+  onJobCreated,
+}: {
+  onClose: () => void
+  onJobCreated: () => void
+}) {
   const { user } = useUser()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [formData, setFormData] = useState({
@@ -481,12 +559,12 @@ function CreateJobForm({ onClose, onJobCreated }: { onClose: () => void; onJobCr
     salaryMin: '',
     salaryMax: '',
     requirements: '',
-    benefits: ''
+    benefits: '',
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!user?.companyProfile?.id) {
       alert('Erro: Perfil da empresa não encontrado')
       return
@@ -506,10 +584,18 @@ function CreateJobForm({ onClose, onJobCreated }: { onClose: () => void; onJobCr
         location: formData.location,
         jobType: formData.jobType,
         level: formData.level,
-        salaryMin: formData.salaryMin ? parseFloat(formData.salaryMin) : undefined,
-        salaryMax: formData.salaryMax ? parseFloat(formData.salaryMax) : undefined,
-        requirements: formData.requirements ? formData.requirements.split('\n').filter(req => req.trim()) : [],
-        benefits: formData.benefits ? formData.benefits.split('\n').filter(benefit => benefit.trim()) : []
+        salaryMin: formData.salaryMin
+          ? parseFloat(formData.salaryMin)
+          : undefined,
+        salaryMax: formData.salaryMax
+          ? parseFloat(formData.salaryMax)
+          : undefined,
+        requirements: formData.requirements
+          ? formData.requirements.split('\n').filter(req => req.trim())
+          : [],
+        benefits: formData.benefits
+          ? formData.benefits.split('\n').filter(benefit => benefit.trim())
+          : [],
       }
 
       const result = await createCompanyJob(user.companyProfile.id, jobData)
@@ -522,7 +608,7 @@ function CreateJobForm({ onClose, onJobCreated }: { onClose: () => void; onJobCr
         alert(`Erro ao criar vaga: ${result.error}`)
       }
     } catch (error) {
-      console.error('Error creating job:', error)
+      // Silent error handling - error creating job
       alert('Erro interno. Tente novamente.')
     } finally {
       setIsSubmitting(false)
@@ -533,29 +619,38 @@ function CreateJobForm({ onClose, onJobCreated }: { onClose: () => void; onJobCr
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <Label htmlFor="title">Título da Vaga *</Label>
-        <Input 
-          id="title" 
-          placeholder="Ex: Nutricionista Clínico" 
+        <Input
+          id="title"
+          placeholder="Ex: Nutricionista Clínico"
           value={formData.title}
-          onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+          onChange={e =>
+            setFormData(prev => ({ ...prev, title: e.target.value }))
+          }
           required
         />
       </div>
-      
+
       <div className="grid grid-cols-2 gap-4">
         <div>
           <Label htmlFor="location">Localização *</Label>
-          <Input 
-            id="location" 
-            placeholder="Ex: São Paulo, SP" 
+          <Input
+            id="location"
+            placeholder="Ex: São Paulo, SP"
             value={formData.location}
-            onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
+            onChange={e =>
+              setFormData(prev => ({ ...prev, location: e.target.value }))
+            }
             required
           />
         </div>
         <div>
           <Label htmlFor="jobType">Tipo de Contrato</Label>
-          <Select value={formData.jobType} onValueChange={(value) => setFormData(prev => ({ ...prev, jobType: value }))}>
+          <Select
+            value={formData.jobType}
+            onValueChange={value =>
+              setFormData(prev => ({ ...prev, jobType: value }))
+            }
+          >
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
@@ -572,7 +667,12 @@ function CreateJobForm({ onClose, onJobCreated }: { onClose: () => void; onJobCr
       <div className="grid grid-cols-2 gap-4">
         <div>
           <Label htmlFor="level">Nível</Label>
-          <Select value={formData.level} onValueChange={(value) => setFormData(prev => ({ ...prev, level: value }))}>
+          <Select
+            value={formData.level}
+            onValueChange={value =>
+              setFormData(prev => ({ ...prev, level: value }))
+            }
+          >
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
@@ -587,17 +687,21 @@ function CreateJobForm({ onClose, onJobCreated }: { onClose: () => void; onJobCr
         <div>
           <Label>Salário (opcional)</Label>
           <div className="grid grid-cols-2 gap-2">
-            <Input 
-              placeholder="Mín" 
+            <Input
+              placeholder="Mín"
               type="number"
               value={formData.salaryMin}
-              onChange={(e) => setFormData(prev => ({ ...prev, salaryMin: e.target.value }))}
+              onChange={e =>
+                setFormData(prev => ({ ...prev, salaryMin: e.target.value }))
+              }
             />
-            <Input 
-              placeholder="Máx" 
+            <Input
+              placeholder="Máx"
               type="number"
               value={formData.salaryMax}
-              onChange={(e) => setFormData(prev => ({ ...prev, salaryMax: e.target.value }))}
+              onChange={e =>
+                setFormData(prev => ({ ...prev, salaryMax: e.target.value }))
+              }
             />
           </div>
         </div>
@@ -605,11 +709,13 @@ function CreateJobForm({ onClose, onJobCreated }: { onClose: () => void; onJobCr
 
       <div>
         <Label htmlFor="description">Descrição *</Label>
-        <Textarea 
-          id="description" 
-          placeholder="Descreva a vaga, responsabilidades e o que a empresa oferece..." 
+        <Textarea
+          id="description"
+          placeholder="Descreva a vaga, responsabilidades e o que a empresa oferece..."
           value={formData.description}
-          onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+          onChange={e =>
+            setFormData(prev => ({ ...prev, description: e.target.value }))
+          }
           rows={4}
           required
         />
@@ -617,28 +723,37 @@ function CreateJobForm({ onClose, onJobCreated }: { onClose: () => void; onJobCr
 
       <div>
         <Label htmlFor="requirements">Requisitos (um por linha)</Label>
-        <Textarea 
-          id="requirements" 
-          placeholder="Ex:&#10;Graduação em Nutrição&#10;CRN ativo&#10;Experiência em atendimento clínico" 
+        <Textarea
+          id="requirements"
+          placeholder="Ex:&#10;Graduação em Nutrição&#10;CRN ativo&#10;Experiência em atendimento clínico"
           value={formData.requirements}
-          onChange={(e) => setFormData(prev => ({ ...prev, requirements: e.target.value }))}
+          onChange={e =>
+            setFormData(prev => ({ ...prev, requirements: e.target.value }))
+          }
           rows={3}
         />
       </div>
 
       <div>
         <Label htmlFor="benefits">Benefícios (um por linha)</Label>
-        <Textarea 
-          id="benefits" 
-          placeholder="Ex:&#10;Vale alimentação&#10;Plano de saúde&#10;Horário flexível" 
+        <Textarea
+          id="benefits"
+          placeholder="Ex:&#10;Vale alimentação&#10;Plano de saúde&#10;Horário flexível"
           value={formData.benefits}
-          onChange={(e) => setFormData(prev => ({ ...prev, benefits: e.target.value }))}
+          onChange={e =>
+            setFormData(prev => ({ ...prev, benefits: e.target.value }))
+          }
           rows={3}
         />
       </div>
 
       <div className="flex gap-2 justify-end">
-        <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onClose}
+          disabled={isSubmitting}
+        >
           Cancelar
         </Button>
         <Button type="submit" disabled={isSubmitting}>

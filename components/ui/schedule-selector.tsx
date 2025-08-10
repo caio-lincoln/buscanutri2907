@@ -1,11 +1,17 @@
-"use client"
+'use client'
 
-import React, { useState, useEffect, useCallback, useRef } from "react"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Trash2, Plus } from "lucide-react"
+import React, { useState, useEffect, useCallback, useRef } from 'react'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import { Trash2, Plus } from 'lucide-react'
 
 interface TimeSlot {
   start: string
@@ -23,21 +29,25 @@ interface ScheduleSelectorProps {
 }
 
 const DAYS_OF_WEEK = [
-  { key: "monday", label: "Segunda-feira" },
-  { key: "tuesday", label: "Terça-feira" },
-  { key: "wednesday", label: "Quarta-feira" },
-  { key: "thursday", label: "Quinta-feira" },
-  { key: "friday", label: "Sexta-feira" },
-  { key: "saturday", label: "Sábado" },
-  { key: "sunday", label: "Domingo" },
+  { key: 'monday', label: 'Segunda-feira' },
+  { key: 'tuesday', label: 'Terça-feira' },
+  { key: 'wednesday', label: 'Quarta-feira' },
+  { key: 'thursday', label: 'Quinta-feira' },
+  { key: 'friday', label: 'Sexta-feira' },
+  { key: 'saturday', label: 'Sábado' },
+  { key: 'sunday', label: 'Domingo' },
 ]
 
 const HOURS = Array.from({ length: 24 }, (_, i) => {
-  const hour = i.toString().padStart(2, "0")
+  const hour = i.toString().padStart(2, '0')
   return { value: `${hour}:00`, label: `${hour}:00` }
 })
 
-export function ScheduleSelector({ value, onChange, placeholder }: ScheduleSelectorProps) {
+export function ScheduleSelector({
+  value,
+  onChange,
+  placeholder,
+}: ScheduleSelectorProps) {
   const [schedule, setSchedule] = useState<DaySchedule>({})
   const isInitializing = useRef(true)
 
@@ -59,17 +69,20 @@ export function ScheduleSelector({ value, onChange, placeholder }: ScheduleSelec
   }, [value])
 
   // Função para atualizar o schedule e notificar o pai
-  const updateSchedule = useCallback((newSchedule: DaySchedule) => {
-    setSchedule(newSchedule)
-    if (!isInitializing.current) {
-      onChange(JSON.stringify(newSchedule))
-    }
-  }, [onChange])
+  const updateSchedule = useCallback(
+    (newSchedule: DaySchedule) => {
+      setSchedule(newSchedule)
+      if (!isInitializing.current) {
+        onChange(JSON.stringify(newSchedule))
+      }
+    },
+    [onChange]
+  )
 
   const addTimeSlot = (dayKey: string) => {
     const newSchedule = {
       ...schedule,
-      [dayKey]: [...(schedule[dayKey] || []), { start: "08:00", end: "17:00" }]
+      [dayKey]: [...(schedule[dayKey] || []), { start: '08:00', end: '17:00' }],
     }
     updateSchedule(newSchedule)
   }
@@ -77,30 +90,43 @@ export function ScheduleSelector({ value, onChange, placeholder }: ScheduleSelec
   const removeTimeSlot = (dayKey: string, index: number) => {
     const newSchedule = {
       ...schedule,
-      [dayKey]: schedule[dayKey]?.filter((_, i) => i !== index) || []
+      [dayKey]: schedule[dayKey]?.filter((_, i) => i !== index) || [],
     }
     updateSchedule(newSchedule)
   }
 
-  const updateTimeSlot = (dayKey: string, index: number, field: "start" | "end", value: string) => {
+  const updateTimeSlot = (
+    dayKey: string,
+    index: number,
+    field: 'start' | 'end',
+    value: string
+  ) => {
     const newSchedule = {
       ...schedule,
-      [dayKey]: schedule[dayKey]?.map((slot, i) => 
-        i === index ? { ...slot, [field]: value } : slot
-      ) || []
+      [dayKey]:
+        schedule[dayKey]?.map((slot, i) =>
+          i === index ? { ...slot, [field]: value } : slot
+        ) || [],
     }
     updateSchedule(newSchedule)
   }
 
   const formatScheduleDisplay = () => {
-    const activeDays = Object.entries(schedule).filter(([_, slots]) => Array.isArray(slots) && slots.length > 0)
-    if (activeDays.length === 0) return "Nenhum horário configurado"
-    
-    return activeDays.map(([dayKey, slots]) => {
-      const dayLabel = DAYS_OF_WEEK.find(d => d.key === dayKey)?.label || dayKey
-      const timesText = Array.isArray(slots) ? slots.map(slot => `${slot.start}-${slot.end}`).join(", ") : ""
-      return `${dayLabel}: ${timesText}`
-    }).join(" | ")
+    const activeDays = Object.entries(schedule).filter(
+      ([_, slots]) => Array.isArray(slots) && slots.length > 0
+    )
+    if (activeDays.length === 0) return 'Nenhum horário configurado'
+
+    return activeDays
+      .map(([dayKey, slots]) => {
+        const dayLabel =
+          DAYS_OF_WEEK.find(d => d.key === dayKey)?.label || dayKey
+        const timesText = Array.isArray(slots)
+          ? slots.map(slot => `${slot.start}-${slot.end}`).join(', ')
+          : ''
+        return `${dayLabel}: ${timesText}`
+      })
+      .join(' | ')
   }
 
   return (
@@ -108,7 +134,7 @@ export function ScheduleSelector({ value, onChange, placeholder }: ScheduleSelec
       <div className="text-sm text-gray-600 p-3 bg-gray-50 rounded-md">
         <strong>Horários configurados:</strong> {formatScheduleDisplay()}
       </div>
-      
+
       <div className="space-y-4">
         {DAYS_OF_WEEK.map(day => (
           <Card key={day.key} className="border border-gray-200">
@@ -126,14 +152,16 @@ export function ScheduleSelector({ value, onChange, placeholder }: ScheduleSelec
                   Adicionar Horário
                 </Button>
               </div>
-              
+
               <div className="space-y-2">
                 {schedule[day.key]?.map((slot, index) => (
                   <div key={index} className="flex items-center gap-2">
                     <div className="flex items-center gap-2 flex-1">
                       <Select
                         value={slot.start}
-                        onValueChange={(value) => updateTimeSlot(day.key, index, "start", value)}
+                        onValueChange={value =>
+                          updateTimeSlot(day.key, index, 'start', value)
+                        }
                       >
                         <SelectTrigger className="w-24">
                           <SelectValue />
@@ -146,12 +174,14 @@ export function ScheduleSelector({ value, onChange, placeholder }: ScheduleSelec
                           ))}
                         </SelectContent>
                       </Select>
-                      
+
                       <span className="text-sm text-gray-500">até</span>
-                      
+
                       <Select
                         value={slot.end}
-                        onValueChange={(value) => updateTimeSlot(day.key, index, "end", value)}
+                        onValueChange={value =>
+                          updateTimeSlot(day.key, index, 'end', value)
+                        }
                       >
                         <SelectTrigger className="w-24">
                           <SelectValue />
@@ -165,7 +195,7 @@ export function ScheduleSelector({ value, onChange, placeholder }: ScheduleSelec
                         </SelectContent>
                       </Select>
                     </div>
-                    
+
                     <Button
                       type="button"
                       variant="outline"

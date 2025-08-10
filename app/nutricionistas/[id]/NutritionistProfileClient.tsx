@@ -1,12 +1,12 @@
-"use client"
-import { notFound } from "next/navigation"
-import Link from "next/link"
-import Image from "next/image"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
-import { Progress } from "@/components/ui/progress"
+'use client'
+import { notFound } from 'next/navigation'
+import Link from 'next/link'
+import Image from 'next/image'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Separator } from '@/components/ui/separator'
+import { Progress } from '@/components/ui/progress'
 import {
   Star,
   MapPin,
@@ -32,16 +32,23 @@ import {
   Menu,
   X,
   Eye,
-} from "lucide-react"
-import { useState, useEffect } from "react"
-import type { NutritionistProfile } from "@/lib/supabase" // Importa a interface real
-import { useRealtimeProfileViews } from "@/hooks/use-realtime-profile-views"
-import { generateImageVariants, selectBestCoverVariant, selectBestAvatarVariant, generateSrcSet, generateSizes } from "@/lib/image-variants"
+} from 'lucide-react'
+import { useState, useEffect } from 'react'
+import type { NutritionistProfile } from '@/lib/supabase' // Importa a interface real
+import { useRealtimeProfileViews } from '@/hooks/use-realtime-profile-views'
+import {
+  generateImageVariants,
+  selectBestCoverVariant,
+  selectBestAvatarVariant,
+  generateSrcSet,
+  generateSizes,
+} from '@/lib/image-variants'
+import { normalizeLanguages, logNormalizationEvent } from '@/lib/structured-data-utils'
 
 // Garante que o valor retornado seja sempre um array
 function toArray(value: unknown): string[] {
   if (Array.isArray(value)) return value
-  if (typeof value === "string" && value.trim() !== "") {
+  if (typeof value === 'string' && value.trim() !== '') {
     try {
       // Tenta tratar string JSON ('["A","B"]')
       const parsed = JSON.parse(value)
@@ -51,9 +58,47 @@ function toArray(value: unknown): string[] {
     }
     // Fallback: separa por vírgulas
     return value
-      .split(",")
-      .map((v) => v.trim())
+      .split(',')
+      .map(v => v.trim())
       .filter(Boolean)
+  }
+  return []
+}
+
+// Função específica para processar idiomas com múltiplos escapes
+function processLanguages(value: unknown): string[] {
+  if (Array.isArray(value)) return value
+  if (typeof value === 'string' && value.trim() !== '') {
+    let processedValue = value
+    
+    // Remove múltiplas camadas de escape e caracteres desnecessários
+    // Procura por padrões como "Português" e "Inglês" na string
+    const languageMatches = processedValue.match(/(?:Português|Inglês|Espanhol|Francês|Alemão|Italiano|Japonês|Chinês|Coreano|Árabe)/g)
+    
+    if (languageMatches && languageMatches.length > 0) {
+      // Remove duplicatas e retorna apenas os idiomas encontrados
+      return [...new Set(languageMatches)]
+    }
+    
+    // Se não encontrou padrões específicos, tenta o processamento normal
+    try {
+      // Remove escapes excessivos
+      let cleaned = processedValue
+      while (cleaned.includes('\\"') || cleaned.includes('\\\\')) {
+        cleaned = cleaned.replace(/\\"/g, '"').replace(/\\\\/g, '\\')
+      }
+      
+      // Tenta fazer parse do JSON limpo
+      const parsed = JSON.parse(cleaned)
+      if (Array.isArray(parsed)) return parsed
+    } catch {
+      // Se falhar, tenta separar por vírgulas
+      return processedValue
+        .split(',')
+        .map(v => v.trim())
+        .filter(Boolean)
+        .filter(v => v.length > 0 && v.length < 50) // Remove strings muito longas ou vazias
+    }
   }
   return []
 }
@@ -62,12 +107,14 @@ interface NutritionistProfileClientProps {
   nutritionist: NutritionistProfile
 }
 
-export default function NutritionistProfilePageClient({ nutritionist }: NutritionistProfileClientProps) {
+export default function NutritionistProfilePageClient({
+  nutritionist,
+}: NutritionistProfileClientProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const { viewStats, recordView } = useRealtimeProfileViews(nutritionist.id, {
     totalViews: nutritionist.total_views || 0,
     uniqueViews: nutritionist.unique_views || 0,
-    lastViewAt: nutritionist.last_view_at || null
+    lastViewAt: nutritionist.last_view_at || null,
   })
 
   if (!nutritionist) {
@@ -80,147 +127,115 @@ export default function NutritionistProfilePageClient({ nutritionist }: Nutritio
   }, [recordView])
 
   // Formatações para exibição, usando dados reais ou placeholders
-  const formattedName = nutritionist.full_name || "Nutricionista Desconhecido"
-  const formattedSpecialty = nutritionist.specialties?.[0] || "Nutrição"
-  const formattedLocation = nutritionist.address || "Localização não informada"
-  const formattedRating = nutritionist.rating?.toFixed(1) || "0.0"
+  const formattedName = nutritionist.full_name || 'Nutricionista Desconhecido'
+  const formattedSpecialty = nutritionist.specialties?.[0] || 'Nutrição'
+  const formattedLocation = nutritionist.address || 'Localização não informada'
+  const formattedRating = nutritionist.rating?.toFixed(1) || '0.0'
   const formattedReviews = nutritionist.total_reviews || 0
   const formattedExperience = nutritionist.experience_years || 0
   const formattedPatients = 0 // Placeholder, pois não está diretamente na interface
   const formattedPrice = nutritionist.consultation_price || 0
   // Gerar variantes de imagem otimizadas
   const avatarVariants = generateImageVariants(
-    nutritionist?.profile_image_url, 
-    'avatar', 
+    nutritionist?.profile_image_url,
+    'avatar',
     nutritionist?.updated_at
   )
   const coverVariants = generateImageVariants(
-    nutritionist?.cover_image_url, 
-    'cover', 
+    nutritionist?.cover_image_url,
+    'cover',
     nutritionist?.updated_at
   )
-  
-  const formattedImage = selectBestAvatarVariant(avatarVariants, 160)
-  const formattedCoverImage = selectBestCoverVariant(coverVariants)
-  const formattedBio = nutritionist.bio || "Sem biografia disponível."
-  const formattedFullBio = nutritionist.bio || "Sem biografia disponível."
-  const formattedEducation = nutritionist.education || "Formação não informada."
-  const formattedCrn = nutritionist.crn || "CRN não informado."
-  const formattedPhone = nutritionist.phone || "Telefone não informado."
-  const formattedEmail = nutritionist.email || "Email não informado." // Assumindo que email pode vir do perfil ou ser um placeholder
-  const formattedWebsite = nutritionist.website || ""
-  const formattedOnlineConsultation = nutritionist.service_online_available || false
+
+  // Use medium variants by default to avoid hydration mismatch
+  // Client-side optimization can happen after hydration
+  const formattedImage = avatarVariants.medium
+  const formattedCoverImage = coverVariants.md
+  const formattedBio = nutritionist.bio || 'Sem biografia disponível.'
+  const formattedFullBio = nutritionist.bio || 'Sem biografia disponível.'
+  const formattedEducation = nutritionist.education || 'Formação não informada.'
+  const formattedCrn = nutritionist.crn || 'CRN não informado.'
+  const formattedPhone = nutritionist.phone || 'Telefone não informado.'
+  const formattedEmail = nutritionist.email || 'Email não informado.' // Assumindo que email pode vir do perfil ou ser um placeholder
+  const formattedWebsite = nutritionist.website || ''
+  const formattedOnlineConsultation =
+    nutritionist.service_online_available || false
   const formattedAddress = nutritionist.address || formattedLocation
-  
+
   // Campos individuais para horários de trabalho
   const formattedWorkingHours = {
-    monday: nutritionist.monday_hours || "Fechado",
-    tuesday: nutritionist.tuesday_hours || "Fechado", 
-    wednesday: nutritionist.wednesday_hours || "Fechado",
-    thursday: nutritionist.thursday_hours || "Fechado",
-    friday: nutritionist.friday_hours || "Fechado",
-    saturday: nutritionist.saturday_hours || "Fechado",
-    sunday: nutritionist.sunday_hours || "Fechado"
+    monday: nutritionist.monday_hours || 'Fechado',
+    tuesday: nutritionist.tuesday_hours || 'Fechado',
+    wednesday: nutritionist.wednesday_hours || 'Fechado',
+    thursday: nutritionist.thursday_hours || 'Fechado',
+    friday: nutritionist.friday_hours || 'Fechado',
+    saturday: nutritionist.saturday_hours || 'Fechado',
+    sunday: nutritionist.sunday_hours || 'Fechado',
   }
 
   // Campos individuais para redes sociais
   const formattedSocialMedia = {
-    instagram: nutritionist.instagram_username || "",
-    linkedin: nutritionist.linkedin_username || "",
-    facebook: nutritionist.facebook_username || "",
-    youtube: nutritionist.youtube_channel || "",
-    tiktok: nutritionist.tiktok_username || "",
-    website: nutritionist.website_url || ""
+    instagram: nutritionist.instagram_username || '',
+    linkedin: nutritionist.linkedin_username || '',
+    facebook: nutritionist.facebook_username || '',
+    youtube: nutritionist.youtube_channel || '',
+    tiktok: nutritionist.tiktok_username || '',
+    website: nutritionist.website_url || '',
   }
 
   // Campos individuais para serviços (usando os novos campos)
   const formattedServices = [
-    ...(nutritionist.service_consultation_price ? [{
-      name: "Consulta Nutricional",
-      price: nutritionist.service_consultation_price,
-      description: "Consulta completa com avaliação nutricional"
-    }] : []),
-    ...(nutritionist.service_followup_price ? [{
-      name: "Consulta de Retorno", 
-      price: nutritionist.service_followup_price,
-      description: "Acompanhamento e ajustes no plano alimentar"
-    }] : []),
-    ...(nutritionist.service_meal_plan_price ? [{
-      name: "Plano Alimentar",
-      price: nutritionist.service_meal_plan_price, 
-      description: "Elaboração de plano alimentar personalizado"
-    }] : [])
+    ...(nutritionist.service_consultation_price
+      ? [
+          {
+            name: 'Consulta Nutricional',
+            price: nutritionist.service_consultation_price,
+            description: 'Consulta completa com avaliação nutricional',
+          },
+        ]
+      : []),
+    ...(nutritionist.service_followup_price
+      ? [
+          {
+            name: 'Consulta de Retorno',
+            price: nutritionist.service_followup_price,
+            description: 'Acompanhamento e ajustes no plano alimentar',
+          },
+        ]
+      : []),
+    ...(nutritionist.service_meal_plan_price
+      ? [
+          {
+            name: 'Plano Alimentar',
+            price: nutritionist.service_meal_plan_price,
+            description: 'Elaboração de plano alimentar personalizado',
+          },
+        ]
+      : []),
   ]
 
   const formattedSpecializations = toArray(nutritionist.specialties)
   const formattedAvailableTimes = toArray(nutritionist.available_times)
-  const formattedLanguages = toArray(nutritionist.languages)
+  
+  const languageResult = normalizeLanguages(nutritionist.languages)
+  
+  // Log eventos de normalização para telemetria
+  if (languageResult.wasCorrupted) {
+    logNormalizationEvent('languages', languageResult, { 
+      context: 'nutritionist-profile-client',
+      nutritionistId: nutritionist.id 
+    })
+  }
+  
+  const formattedLanguages = languageResult.data
   const formattedCertifications = toArray(nutritionist.certifications)
   const formattedAchievements = toArray(nutritionist.achievements)
-  
+
   // Testimonials removidos - campo JSON não existe mais
   const formattedTestimonials: any[] = []
 
-  // Structured Data para SEO
-  const structuredData = {
-    "@context": "https://schema.org",
-    "@type": "Person",
-    name: formattedName,
-    jobTitle: "Nutricionista",
-    description: formattedFullBio,
-    image: formattedImage,
-    address: {
-      "@type": "PostalAddress",
-      streetAddress: formattedAddress,
-      addressLocality: nutritionist.address?.split(",")[0]?.trim() || "", // Tenta extrair cidade do endereço
-      addressRegion: nutritionist.address?.split(",").pop()?.trim().split(" ")[0]?.trim() || "", // Tenta extrair estado do endereço
-    },
-    telephone: formattedPhone,
-    email: formattedEmail,
-    url: formattedWebsite,
-    aggregateRating: {
-      "@type": "AggregateRating",
-      ratingValue: formattedRating,
-      reviewCount: formattedReviews,
-      bestRating: 5,
-      worstRating: 1,
-    },
-    offers: formattedServices.map((service) => ({
-      "@type": "Offer",
-      name: service.name,
-      description: service.description || "",
-      price: service.price,
-      priceCurrency: "BRL",
-    })),
-    knowsAbout: formattedSpecializations,
-    alumniOf: {
-      "@type": "Organization",
-      name: formattedEducation.split(" - ")[0] || "Instituição de Ensino", // Tenta extrair o nome da instituição
-    },
-    hasCredential: {
-      "@type": "EducationalOccupationalCredential",
-      credentialCategory: formattedCrn,
-    },
-    review: formattedTestimonials?.map((testimonial) => ({
-      "@type": "Review",
-      author: {
-        "@type": "Person",
-        name: testimonial.name,
-      },
-      reviewRating: {
-        "@type": "Rating",
-        ratingValue: testimonial.rating,
-        bestRating: 5,
-      },
-      reviewBody: testimonial.comment,
-      datePublished: testimonial.date,
-    })),
-  }
-
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
-
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
         {/* Header */}
         <header className="sticky top-0 z-50 w-full bg-white/95 backdrop-blur-md border-b border-gray-100">
@@ -268,16 +283,26 @@ export default function NutritionistProfilePageClient({ nutritionist }: Nutritio
 
             <div className="flex items-center gap-3">
               <Link href="/login">
-                <Button variant="ghost" className="hidden md:flex text-[#1E1D40] hover:text-[#4AB0D9]">
+                <Button
+                  variant="ghost"
+                  className="hidden md:flex text-[#1E1D40] hover:text-[#4AB0D9]"
+                >
                   Entrar
                 </Button>
               </Link>
               <Link href="/cadastro?tipo=paciente">
-                <Button className="bg-[#4AB0D9] hover:bg-[#4AB0D9]/90 text-white">Cadastrar</Button>
+                <Button className="bg-[#4AB0D9] hover:bg-[#4AB0D9]/90 text-white">
+                  Cadastrar
+                </Button>
               </Link>
 
               {/* Mobile Menu Button */}
-              <Button variant="ghost" size="sm" className="md:hidden p-2" onClick={() => setMobileMenuOpen(true)}>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="md:hidden p-2"
+                onClick={() => setMobileMenuOpen(true)}
+              >
                 <Menu className="h-5 w-5" />
               </Button>
             </div>
@@ -286,18 +311,32 @@ export default function NutritionistProfilePageClient({ nutritionist }: Nutritio
 
         {/* Mobile Menu Overlay */}
         {mobileMenuOpen && (
-          <div className="fixed inset-0 z-60 bg-black/50 md:hidden" onClick={() => setMobileMenuOpen(false)} />
+          <div
+            className="fixed inset-0 z-60 bg-black/50 md:hidden"
+            onClick={() => setMobileMenuOpen(false)}
+          />
         )}
 
         {/* Mobile Menu */}
         <div
           className={`fixed top-0 right-0 z-70 h-full w-80 bg-white transform transition-transform duration-300 md:hidden ${
-            mobileMenuOpen ? "translate-x-0" : "translate-x-full"
+            mobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
           }`}
         >
           <div className="flex items-center justify-between p-4 border-b">
-            <Image src="/logo-busca-nutri.png" alt="Busca Nutri" width={120} height={24} className="h-5 w-auto" />
-            <Button variant="ghost" size="sm" onClick={() => setMobileMenuOpen(false)} className="p-2">
+            <Image
+              src="/logo-busca-nutri.png"
+              alt="Busca Nutri"
+              width={120}
+              height={24}
+              className="h-5 w-auto"
+            />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setMobileMenuOpen(false)}
+              className="p-2"
+            >
               <X className="h-5 w-5" />
             </Button>
           </div>
@@ -306,7 +345,9 @@ export default function NutritionistProfilePageClient({ nutritionist }: Nutritio
             <div className="flex-1 overflow-y-auto p-4">
               <div className="space-y-6">
                 <div>
-                  <h3 className="font-semibold text-[#1E1D40] mb-3">Navegação</h3>
+                  <h3 className="font-semibold text-[#1E1D40] mb-3">
+                    Navegação
+                  </h3>
                   <div className="space-y-2 ml-4">
                     <Link
                       href="/nutricionistas"
@@ -341,8 +382,13 @@ export default function NutritionistProfilePageClient({ nutritionist }: Nutritio
                     Entrar
                   </Button>
                 </Link>
-                <Link href="/cadastro?tipo=paciente" onClick={() => setMobileMenuOpen(false)}>
-                  <Button className="w-full bg-[#4AB0D9] hover:bg-[#4AB0D9]/90 text-white">Cadastrar</Button>
+                <Link
+                  href="/cadastro?tipo=paciente"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <Button className="w-full bg-[#4AB0D9] hover:bg-[#4AB0D9]/90 text-white">
+                    Cadastrar
+                  </Button>
                 </Link>
               </div>
             </div>
@@ -365,7 +411,7 @@ export default function NutritionistProfilePageClient({ nutritionist }: Nutritio
               />
               {/* Overlay sutil para contraste */}
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-              
+
               {/* Informações sobrepostas */}
               <div className="absolute bottom-6 left-6 text-white z-10">
                 <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-2 drop-shadow-lg">
@@ -405,10 +451,16 @@ export default function NutritionistProfilePageClient({ nutritionist }: Nutritio
                     <div className="flex items-center gap-3 mb-2">
                       <div className="flex items-center gap-1">
                         <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
-                        <span className="text-xl font-bold">{formattedRating}</span>
-                        <span className="text-[#1E1D40]/70">({formattedReviews} avaliações)</span>
+                        <span className="text-xl font-bold">
+                          {formattedRating}
+                        </span>
+                        <span className="text-[#1E1D40]/70">
+                          ({formattedReviews} avaliações)
+                        </span>
                       </div>
-                      <Badge className="bg-green-100 text-green-800">Verificado</Badge>
+                      <Badge className="bg-green-100 text-green-800">
+                        Verificado
+                      </Badge>
                     </div>
                     <div className="flex flex-wrap items-center gap-4 text-sm text-[#1E1D40]/70">
                       <div className="flex items-center gap-1">
@@ -433,7 +485,9 @@ export default function NutritionistProfilePageClient({ nutritionist }: Nutritio
                   </div>
 
                   <div className="text-right">
-                    <div className="text-3xl font-bold text-[#4AB0D9] mb-1">R$ {formattedPrice}</div>
+                    <div className="text-3xl font-bold text-[#4AB0D9] mb-1">
+                      R$ {formattedPrice}
+                    </div>
                     <p className="text-sm text-[#1E1D40]/70">a partir de</p>
                   </div>
                 </div>
@@ -444,12 +498,19 @@ export default function NutritionistProfilePageClient({ nutritionist }: Nutritio
           {/* Quick Actions */}
           <div className="flex flex-wrap gap-4 mb-8">
             <Link href={`/dashboard/paciente/agendar/${nutritionist.id}`}>
-              <Button size="lg" className="bg-[#4AB0D9] hover:bg-[#4AB0D9]/90 text-white">
+              <Button
+                size="lg"
+                className="bg-[#4AB0D9] hover:bg-[#4AB0D9]/90 text-white"
+              >
                 <Calendar className="h-5 w-5 mr-2" />
                 Agendar Consulta
               </Button>
             </Link>
-            <Button variant="outline" size="lg" className="border-[#4AB0D9] text-[#4AB0D9] bg-transparent">
+            <Button
+              variant="outline"
+              size="lg"
+              className="border-[#4AB0D9] text-[#4AB0D9] bg-transparent"
+            >
               <MessageSquare className="h-5 w-5 mr-2" />
               Enviar Mensagem
             </Button>
@@ -477,7 +538,9 @@ export default function NutritionistProfilePageClient({ nutritionist }: Nutritio
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-[#1E1D40]/80 leading-relaxed text-lg">{formattedFullBio}</p>
+                  <p className="text-[#1E1D40]/80 leading-relaxed text-lg">
+                    {formattedFullBio}
+                  </p>
                 </CardContent>
               </Card>
 
@@ -496,19 +559,33 @@ export default function NutritionistProfilePageClient({ nutritionist }: Nutritio
                         const badge = badgeData.badge
                         if (!badge) return null
                         return (
-                          <div key={index} className="flex items-center gap-4 p-4 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl border border-yellow-200">
+                          <div
+                            key={index}
+                            className="flex items-center gap-4 p-4 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl border border-yellow-200"
+                          >
                             <div className="w-12 h-12 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center text-white text-xl font-bold shadow-lg">
                               {badge.icon_url ? (
-                                <img src={badge.icon_url} alt={badge.name} className="w-8 h-8 object-contain" />
+                                <img
+                                  src={badge.icon_url}
+                                  alt={badge.name}
+                                  className="w-8 h-8 object-contain"
+                                />
                               ) : (
                                 <Award className="h-6 w-6" />
                               )}
                             </div>
                             <div className="flex-1">
-                              <h4 className="font-bold text-[#1E1D40] text-lg">{badge.name}</h4>
-                              <p className="text-[#1E1D40]/70 text-sm">{badge.description}</p>
+                              <h4 className="font-bold text-[#1E1D40] text-lg">
+                                {badge.name}
+                              </h4>
+                              <p className="text-[#1E1D40]/70 text-sm">
+                                {badge.description}
+                              </p>
                               <p className="text-xs text-[#1E1D40]/50 mt-1">
-                                Conquistada em {new Date(badgeData.awarded_at).toLocaleDateString("pt-BR")}
+                                Conquistada em{' '}
+                                {new Date(
+                                  badgeData.awarded_at
+                                ).toLocaleDateString('pt-BR')}
                               </p>
                             </div>
                           </div>
@@ -531,13 +608,20 @@ export default function NutritionistProfilePageClient({ nutritionist }: Nutritio
                   <div className="grid md:grid-cols-2 gap-3">
                     {formattedSpecializations.length > 0 ? (
                       formattedSpecializations.map((spec, index) => (
-                        <div key={index} className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg">
+                        <div
+                          key={index}
+                          className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg"
+                        >
                           <CheckCircle className="h-5 w-5 text-[#4AB0D9] flex-shrink-0" />
-                          <span className="font-medium text-[#1E1D40]">{spec}</span>
+                          <span className="font-medium text-[#1E1D40]">
+                            {spec}
+                          </span>
                         </div>
                       ))
                     ) : (
-                      <p className="text-[#1E1D40]/70">Nenhuma especialização informada.</p>
+                      <p className="text-[#1E1D40]/70">
+                        Nenhuma especialização informada.
+                      </p>
                     )}
                   </div>
                 </CardContent>
@@ -557,8 +641,12 @@ export default function NutritionistProfilePageClient({ nutritionist }: Nutritio
                       <BookOpen className="h-4 w-4" />
                       Formação Acadêmica
                     </h4>
-                    <p className="text-[#1E1D40]/80 text-lg">{formattedEducation}</p>
-                    <p className="text-sm text-[#1E1D40]/70 mt-1 font-medium">{formattedCrn}</p>
+                    <p className="text-[#1E1D40]/80 text-lg">
+                      {formattedEducation}
+                    </p>
+                    <p className="text-sm text-[#1E1D40]/70 mt-1 font-medium">
+                      {formattedCrn}
+                    </p>
                   </div>
 
                   {formattedCertifications.length > 0 && (
@@ -569,7 +657,10 @@ export default function NutritionistProfilePageClient({ nutritionist }: Nutritio
                       </h4>
                       <div className="space-y-2">
                         {formattedCertifications.map((cert, index) => (
-                          <div key={index} className="flex items-start gap-3 p-3 bg-green-50 rounded-lg">
+                          <div
+                            key={index}
+                            className="flex items-start gap-3 p-3 bg-green-50 rounded-lg"
+                          >
                             <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
                             <span className="text-[#1E1D40]/80">{cert}</span>
                           </div>
@@ -592,9 +683,14 @@ export default function NutritionistProfilePageClient({ nutritionist }: Nutritio
                   <CardContent>
                     <div className="grid md:grid-cols-2 gap-4">
                       {formattedAchievements.map((achievement, index) => (
-                        <div key={index} className="flex items-center gap-3 p-4 bg-yellow-50 rounded-lg">
+                        <div
+                          key={index}
+                          className="flex items-center gap-3 p-4 bg-yellow-50 rounded-lg"
+                        >
                           <Award className="h-6 w-6 text-yellow-500 flex-shrink-0" />
-                          <span className="font-medium text-[#1E1D40]">{achievement}</span>
+                          <span className="font-medium text-[#1E1D40]">
+                            {achievement}
+                          </span>
                         </div>
                       ))}
                     </div>
@@ -621,40 +717,61 @@ export default function NutritionistProfilePageClient({ nutritionist }: Nutritio
                           <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                             <div className="flex-1">
                               <div className="flex items-center gap-3 mb-3">
-                                <h4 className="text-xl font-bold text-[#1E1D40]">{service.name}</h4>
-                                <Badge variant="outline" className="text-[#4AB0D9] border-[#4AB0D9]">
+                                <h4 className="text-xl font-bold text-[#1E1D40]">
+                                  {service.name}
+                                </h4>
+                                <Badge
+                                  variant="outline"
+                                  className="text-[#4AB0D9] border-[#4AB0D9]"
+                                >
                                   <Clock className="h-3 w-3 mr-1" />
                                   {service.duration}
                                 </Badge>
                               </div>
-                              <p className="text-[#1E1D40]/80 mb-4">{service.description || "Sem descrição."}</p>
+                              <p className="text-[#1E1D40]/80 mb-4">
+                                {service.description || 'Sem descrição.'}
+                              </p>
 
-                              {service.includes && service.includes.length > 0 && (
-                                <div>
-                                  <h5 className="font-semibold text-[#1E1D40] mb-2">Inclui:</h5>
-                                  <ul className="space-y-1">
-                                    {service.includes.map((item, idx) => (
-                                      <li key={idx} className="flex items-center gap-2 text-sm text-[#1E1D40]/70">
-                                        <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
-                                        {item}
-                                      </li>
-                                    ))}
-                                  </ul>
-                                </div>
-                              )}
+                              {service.includes &&
+                                service.includes.length > 0 && (
+                                  <div>
+                                    <h5 className="font-semibold text-[#1E1D40] mb-2">
+                                      Inclui:
+                                    </h5>
+                                    <ul className="space-y-1">
+                                      {service.includes.map((item, idx) => (
+                                        <li
+                                          key={idx}
+                                          className="flex items-center gap-2 text-sm text-[#1E1D40]/70"
+                                        >
+                                          <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
+                                          {item}
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                )}
                             </div>
 
                             <div className="text-center md:text-right">
-                              <div className="text-3xl font-bold text-[#4AB0D9] mb-2">R$ {service.price}</div>
-                              <Link href={`/dashboard/paciente/agendar/${nutritionist.id}?service=${index}`}>
-                                <Button className="bg-[#4AB0D9] hover:bg-[#4AB0D9]/90 text-white">Agendar</Button>
+                              <div className="text-3xl font-bold text-[#4AB0D9] mb-2">
+                                R$ {service.price}
+                              </div>
+                              <Link
+                                href={`/dashboard/paciente/agendar/${nutritionist.id}?service=${index}`}
+                              >
+                                <Button className="bg-[#4AB0D9] hover:bg-[#4AB0D9]/90 text-white">
+                                  Agendar
+                                </Button>
                               </Link>
                             </div>
                           </div>
                         </div>
                       ))
                     ) : (
-                      <p className="text-[#1E1D40]/70">Nenhum serviço informado.</p>
+                      <p className="text-[#1E1D40]/70">
+                        Nenhum serviço informado.
+                      </p>
                     )}
                   </div>
                 </CardContent>
@@ -679,16 +796,27 @@ export default function NutritionistProfilePageClient({ nutritionist }: Nutritio
                             </div>
                             <div className="flex-1">
                               <div className="flex items-center gap-2 mb-2">
-                                <h5 className="font-semibold text-[#1E1D40]">{testimonial.name}</h5>
+                                <h5 className="font-semibold text-[#1E1D40]">
+                                  {testimonial.name}
+                                </h5>
                                 <div className="flex items-center gap-1">
-                                  {[...Array(testimonial.rating)].map((_, i) => (
-                                    <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                                  ))}
+                                  {[...Array(testimonial.rating)].map(
+                                    (_, i) => (
+                                      <Star
+                                        key={i}
+                                        className="h-4 w-4 fill-yellow-400 text-yellow-400"
+                                      />
+                                    )
+                                  )}
                                 </div>
                               </div>
-                              <p className="text-[#1E1D40]/80 italic mb-2">"{testimonial.comment}"</p>
+                              <p className="text-[#1E1D40]/80 italic mb-2">
+                                "{testimonial.comment}"
+                              </p>
                               <p className="text-xs text-[#1E1D40]/60">
-                                {new Date(testimonial.date).toLocaleDateString("pt-BR")}
+                                {new Date(testimonial.date).toLocaleDateString(
+                                  'pt-BR'
+                                )}
                               </p>
                             </div>
                           </div>
@@ -713,28 +841,36 @@ export default function NutritionistProfilePageClient({ nutritionist }: Nutritio
                       <Award className="h-5 w-5 text-[#4AB0D9]" />
                       <span className="text-sm font-medium">Experiência</span>
                     </div>
-                    <span className="font-bold text-lg">{formattedExperience} anos</span>
+                    <span className="font-bold text-lg">
+                      {formattedExperience} anos
+                    </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Users className="h-5 w-5 text-[#4AB0D9]" />
                       <span className="text-sm font-medium">Pacientes</span>
                     </div>
-                    <span className="font-bold text-lg">{formattedPatients}+</span>
+                    <span className="font-bold text-lg">
+                      {formattedPatients}+
+                    </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Star className="h-5 w-5 text-[#4AB0D9]" />
                       <span className="text-sm font-medium">Avaliação</span>
                     </div>
-                    <span className="font-bold text-lg">{formattedRating}/5.0</span>
+                    <span className="font-bold text-lg">
+                      {formattedRating}/5.0
+                    </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <MessageSquare className="h-5 w-5 text-[#4AB0D9]" />
                       <span className="text-sm font-medium">Avaliações</span>
                     </div>
-                    <span className="font-bold text-lg">{formattedReviews}</span>
+                    <span className="font-bold text-lg">
+                      {formattedReviews}
+                    </span>
                   </div>
 
                   {/* Progress Bar para Rating */}
@@ -745,7 +881,10 @@ export default function NutritionistProfilePageClient({ nutritionist }: Nutritio
                         {Math.round(Number.parseFloat(formattedRating) * 20)}%
                       </span>
                     </div>
-                    <Progress value={Number.parseFloat(formattedRating) * 20} className="h-2" />
+                    <Progress
+                      value={Number.parseFloat(formattedRating) * 20}
+                      className="h-2"
+                    />
                   </div>
                 </CardContent>
               </Card>
@@ -762,16 +901,24 @@ export default function NutritionistProfilePageClient({ nutritionist }: Nutritio
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Eye className="h-5 w-5 text-[#4AB0D9]" />
-                      <span className="text-sm font-medium">Total de Visualizações</span>
+                      <span className="text-sm font-medium">
+                        Total de Visualizações
+                      </span>
                     </div>
-                    <span className="font-bold text-lg">{viewStats.totalViews}</span>
+                    <span className="font-bold text-lg">
+                      {viewStats.totalViews}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Users className="h-5 w-5 text-[#4AB0D9]" />
-                      <span className="text-sm font-medium">Visitantes Únicos</span>
+                      <span className="text-sm font-medium">
+                        Visitantes Únicos
+                      </span>
                     </div>
-                    <span className="font-bold text-lg">{viewStats.uniqueViews}</span>
+                    <span className="font-bold text-lg">
+                      {viewStats.uniqueViews}
+                    </span>
                   </div>
                   {viewStats.lastViewAt && (
                     <div className="pt-2 border-t">
@@ -780,13 +927,16 @@ export default function NutritionistProfilePageClient({ nutritionist }: Nutritio
                         <span>Última visualização:</span>
                       </div>
                       <span className="text-sm font-medium">
-                        {new Date(viewStats.lastViewAt).toLocaleDateString('pt-BR', {
-                          day: '2-digit',
-                          month: '2-digit',
-                          year: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
+                        {new Date(viewStats.lastViewAt).toLocaleDateString(
+                          'pt-BR',
+                          {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          }
+                        )}
                       </span>
                     </div>
                   )}
@@ -796,7 +946,9 @@ export default function NutritionistProfilePageClient({ nutritionist }: Nutritio
               {/* Informações de Contato */}
               <Card className="shadow-lg border-0">
                 <CardHeader>
-                  <CardTitle className="text-xl">Informações de Contato</CardTitle>
+                  <CardTitle className="text-xl">
+                    Informações de Contato
+                  </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex items-center gap-3 text-sm">
@@ -827,7 +979,9 @@ export default function NutritionistProfilePageClient({ nutritionist }: Nutritio
                   {formattedOnlineConsultation && (
                     <div className="flex items-center gap-3 text-sm">
                       <Video className="h-5 w-5 text-green-500 flex-shrink-0" />
-                      <span className="text-green-600 font-medium">Consultas online disponíveis</span>
+                      <span className="text-green-600 font-medium">
+                        Consultas online disponíveis
+                      </span>
                     </div>
                   )}
                 </CardContent>
@@ -837,24 +991,39 @@ export default function NutritionistProfilePageClient({ nutritionist }: Nutritio
               {Object.keys(formattedWorkingHours).length > 0 && (
                 <Card className="shadow-lg border-0">
                   <CardHeader>
-                    <CardTitle className="text-xl">Horários de Atendimento</CardTitle>
+                    <CardTitle className="text-xl">
+                      Horários de Atendimento
+                    </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-2">
-                      {Object.entries(formattedWorkingHours).map(([day, hours]) => (
-                        <div key={day} className="flex items-center justify-between text-sm">
-                          <span className="font-medium capitalize">
-                            {day === "monday" && "Segunda"}
-                            {day === "tuesday" && "Terça"}
-                            {day === "wednesday" && "Quarta"}
-                            {day === "thursday" && "Quinta"}
-                            {day === "friday" && "Sexta"}
-                            {day === "saturday" && "Sábado"}
-                            {day === "sunday" && "Domingo"}
-                          </span>
-                          <span className={hours === "Fechado" ? "text-red-500" : "text-[#1E1D40]/70"}>{hours}</span>
-                        </div>
-                      ))}
+                      {Object.entries(formattedWorkingHours).map(
+                        ([day, hours]) => (
+                          <div
+                            key={day}
+                            className="flex items-center justify-between text-sm"
+                          >
+                            <span className="font-medium capitalize">
+                              {day === 'monday' && 'Segunda'}
+                              {day === 'tuesday' && 'Terça'}
+                              {day === 'wednesday' && 'Quarta'}
+                              {day === 'thursday' && 'Quinta'}
+                              {day === 'friday' && 'Sexta'}
+                              {day === 'saturday' && 'Sábado'}
+                              {day === 'sunday' && 'Domingo'}
+                            </span>
+                            <span
+                              className={
+                                hours === 'Fechado'
+                                  ? 'text-red-500'
+                                  : 'text-[#1E1D40]/70'
+                              }
+                            >
+                              {hours}
+                            </span>
+                          </div>
+                        )
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -894,7 +1063,11 @@ export default function NutritionistProfilePageClient({ nutritionist }: Nutritio
                   <CardContent>
                     <div className="flex flex-wrap gap-2">
                       {formattedLanguages.map((language, index) => (
-                        <Badge key={index} variant="outline" className="text-[#4AB0D9] border-[#4AB0D9]">
+                        <Badge
+                          key={index}
+                          variant="outline"
+                          className="text-[#4AB0D9] border-[#4AB0D9]"
+                        >
                           {language}
                         </Badge>
                       ))}
@@ -904,7 +1077,8 @@ export default function NutritionistProfilePageClient({ nutritionist }: Nutritio
               )}
 
               {/* Redes Sociais */}
-              {(formattedSocialMedia.instagram || formattedSocialMedia.linkedin) && (
+              {(formattedSocialMedia.instagram ||
+                formattedSocialMedia.linkedin) && (
                 <Card className="shadow-lg border-0">
                   <CardHeader>
                     <CardTitle className="text-xl">Redes Sociais</CardTitle>
@@ -912,13 +1086,15 @@ export default function NutritionistProfilePageClient({ nutritionist }: Nutritio
                   <CardContent className="space-y-3">
                     {formattedSocialMedia.instagram && (
                       <a
-                        href={`https://instagram.com/${formattedSocialMedia.instagram.replace("@", "")}`}
+                        href={`https://instagram.com/${formattedSocialMedia.instagram.replace('@', '')}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center gap-3 text-sm hover:text-[#4AB0D9] transition-colors"
                       >
                         <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
-                          <span className="text-white text-xs font-bold">IG</span>
+                          <span className="text-white text-xs font-bold">
+                            IG
+                          </span>
                         </div>
                         <span>{formattedSocialMedia.instagram}</span>
                       </a>
@@ -931,7 +1107,9 @@ export default function NutritionistProfilePageClient({ nutritionist }: Nutritio
                         className="flex items-center gap-3 text-sm hover:text-[#4AB0D9] transition-colors"
                       >
                         <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                          <span className="text-white text-xs font-bold">in</span>
+                          <span className="text-white text-xs font-bold">
+                            in
+                          </span>
                         </div>
                         <span>LinkedIn</span>
                       </a>
@@ -943,16 +1121,25 @@ export default function NutritionistProfilePageClient({ nutritionist }: Nutritio
               {/* CTA Final */}
               <Card className="bg-gradient-to-br from-[#4AB0D9]/10 to-[#4AB0D9]/5 border-[#4AB0D9]/20 shadow-lg">
                 <CardContent className="p-6 text-center">
-                  <h3 className="text-xl font-bold text-[#1E1D40] mb-2">Pronto para transformar sua saúde?</h3>
-                  <p className="text-[#1E1D40]/70 mb-6">Agende sua consulta e inicie sua jornada rumo ao bem-estar</p>
+                  <h3 className="text-xl font-bold text-[#1E1D40] mb-2">
+                    Pronto para transformar sua saúde?
+                  </h3>
+                  <p className="text-[#1E1D40]/70 mb-6">
+                    Agende sua consulta e inicie sua jornada rumo ao bem-estar
+                  </p>
                   <div className="space-y-3">
-                    <Link href={`/dashboard/paciente/agendar/${nutritionist.id}`}>
+                    <Link
+                      href={`/dashboard/paciente/agendar/${nutritionist.id}`}
+                    >
                       <Button className="w-full bg-[#4AB0D9] hover:bg-[#4AB0D9]/90 text-white text-lg py-3">
                         <Calendar className="h-5 w-5 mr-2" />
                         Agendar Consulta
                       </Button>
                     </Link>
-                    <Button variant="outline" className="w-full border-[#4AB0D9] text-[#4AB0D9] bg-transparent">
+                    <Button
+                      variant="outline"
+                      className="w-full border-[#4AB0D9] text-[#4AB0D9] bg-transparent"
+                    >
                       <MessageSquare className="h-5 w-5 mr-2" />
                       Enviar Mensagem
                     </Button>

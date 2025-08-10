@@ -11,23 +11,25 @@ export default function TestUploadDebug() {
 
   useEffect(() => {
     const supabase = createSupabaseClient()
-    
+
     // Verificar sessão atual
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
     })
 
     // Escutar mudanças na autenticação
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session)
-      }
-    )
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      setSession(session)
+    })
 
     return () => subscription.unsubscribe()
   }, [])
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const file = event.target.files?.[0]
     if (!file || !session) return
 
@@ -35,25 +37,19 @@ export default function TestUploadDebug() {
     setResult('')
 
     try {
-      console.log('Iniciando upload com:', {
-        fileName: file.name,
-        fileSize: file.size,
-        fileType: file.type,
-        sessionUserId: session.user.id,
-        sessionEmail: session.user.email
-      })
+      // Silent upload initialization
 
       const uploadResult = await uploadBlogImage(file, session.user.id)
-      
-      console.log('Resultado do upload:', uploadResult)
-      
+
+      // Silent upload result processing
+
       if (uploadResult.success) {
         setResult(`Upload realizado com sucesso! URL: ${uploadResult.url}`)
       } else {
         setResult(`Erro no upload: ${uploadResult.error}`)
       }
     } catch (error) {
-      console.error('Erro no upload:', error)
+      // Silent error handling for upload
       setResult(`Erro inesperado: ${error}`)
     } finally {
       setUploading(false)
@@ -64,7 +60,9 @@ export default function TestUploadDebug() {
     return (
       <div className="p-8">
         <h1 className="text-2xl font-bold mb-4">Teste de Upload - Debug</h1>
-        <p className="text-red-600">Usuário não autenticado. Faça login primeiro.</p>
+        <p className="text-red-600">
+          Usuário não autenticado. Faça login primeiro.
+        </p>
       </div>
     )
   }
@@ -72,12 +70,19 @@ export default function TestUploadDebug() {
   return (
     <div className="p-8">
       <h1 className="text-2xl font-bold mb-4">Teste de Upload - Debug</h1>
-      
+
       <div className="mb-6 p-4 bg-gray-100 rounded">
         <h2 className="font-semibold mb-2">Informações da Sessão:</h2>
-        <p><strong>User ID:</strong> {session.user.id}</p>
-        <p><strong>Email:</strong> {session.user.email}</p>
-        <p><strong>Token presente:</strong> {session.access_token ? 'Sim' : 'Não'}</p>
+        <p>
+          <strong>User ID:</strong> {session.user.id}
+        </p>
+        <p>
+          <strong>Email:</strong> {session.user.email}
+        </p>
+        <p>
+          <strong>Token presente:</strong>{' '}
+          {session.access_token ? 'Sim' : 'Não'}
+        </p>
       </div>
 
       <div className="mb-4">

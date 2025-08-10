@@ -1,6 +1,7 @@
 # Configuração Completa do Banco de Dados
 
-Este documento explica como configurar todas as tabelas necessárias no Supabase para resolver erros de relacionamento e garantir o funcionamento completo da aplicação.
+Este documento explica como configurar todas as tabelas necessárias no Supabase para resolver erros
+de relacionamento e garantir o funcionamento completo da aplicação.
 
 ## Problemas Resolvidos
 
@@ -11,7 +12,9 @@ Este documento explica como configurar todas as tabelas necessárias no Supabase
 
 ## Problema Original
 
-O erro `PGRST200` indica que não foi encontrado um relacionamento de chave estrangeira entre as tabelas `nutritionist_badges` e `badges` no esquema `public`. Isso acontece porque essas tabelas ainda não foram criadas no banco de dados.
+O erro `PGRST200` indica que não foi encontrado um relacionamento de chave estrangeira entre as
+tabelas `nutritionist_badges` e `badges` no esquema `public`. Isso acontece porque essas tabelas
+ainda não foram criadas no banco de dados.
 
 ## Solução
 
@@ -33,6 +36,7 @@ supabase db push
 ## Estrutura das Tabelas
 
 ### Tabela `badges`
+
 - `id`: UUID (chave primária)
 - `name`: Nome da insígnia
 - `description`: Descrição da insígnia
@@ -43,6 +47,7 @@ supabase db push
 - `created_at`, `updated_at`: Timestamps
 
 ### Tabela `nutritionist_badges`
+
 - `id`: UUID (chave primária)
 - `nutritionist_id`: Referência para `nutritionist_profiles`
 - `badge_id`: Referência para `badges`
@@ -95,7 +100,7 @@ Para atribuir badges a nutricionistas, use o SQL Editor:
 ```sql
 -- Exemplo: Atribuir badge "Nutricionista Verificado" a um nutricionista
 INSERT INTO nutritionist_badges (nutritionist_id, badge_id)
-SELECT 
+SELECT
     np.id as nutritionist_id,
     b.id as badge_id
 FROM nutritionist_profiles np
@@ -107,13 +112,19 @@ WHERE np.email = 'email@nutricionista.com'
 ## Troubleshooting
 
 ### Erro de Permissão
-Se você receber erros de permissão, certifique-se de estar usando uma conta com privilégios de administrador no Supabase.
+
+Se você receber erros de permissão, certifique-se de estar usando uma conta com privilégios de
+administrador no Supabase.
 
 ### Tabelas Já Existem
-Se as tabelas já existirem, o script usará `CREATE TABLE IF NOT EXISTS` e `ON CONFLICT DO NOTHING` para evitar erros.
+
+Se as tabelas já existirem, o script usará `CREATE TABLE IF NOT EXISTS` e `ON CONFLICT DO NOTHING`
+para evitar erros.
 
 ### RLS (Row Level Security)
+
 As políticas de segurança estão configuradas para:
+
 - Permitir leitura pública das badges
 - Restringir modificações apenas a administradores
 

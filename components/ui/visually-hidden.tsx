@@ -1,7 +1,7 @@
-"use client"
+'use client'
 
-import * as React from "react"
-import { cn } from "@/lib/utils"
+import * as React from 'react'
+import { cn } from '@/lib/utils'
 
 const VisuallyHidden = React.forwardRef<
   HTMLSpanElement,
@@ -10,12 +10,12 @@ const VisuallyHidden = React.forwardRef<
   <span
     ref={ref}
     className={cn(
-      "absolute w-px h-px p-0 -m-px overflow-hidden whitespace-nowrap border-0",
+      'absolute w-px h-px p-0 -m-px overflow-hidden whitespace-nowrap border-0',
       className
     )}
     {...props}
   />
 ))
-VisuallyHidden.displayName = "VisuallyHidden"
+VisuallyHidden.displayName = 'VisuallyHidden'
 
 export { VisuallyHidden }

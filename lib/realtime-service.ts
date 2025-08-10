@@ -1,12 +1,12 @@
-import { supabase } from "./supabase"
-import type { RealtimeChannel } from "@supabase/supabase-js"
+import { supabase } from './supabase'
+import type { RealtimeChannel } from '@supabase/supabase-js'
 
 export interface RealtimeMessage {
   id: string
   consultation_id: string
   sender_id: string
   message: string
-  message_type: "text" | "file" | "image" | "system"
+  message_type: 'text' | 'file' | 'image' | 'system'
   file_url?: string
   file_name?: string
   file_size?: number
@@ -21,7 +21,13 @@ export interface RealtimeNote {
   author_id: string
   title: string
   content: string
-  category: "symptoms" | "diagnosis" | "treatment" | "followup" | "general" | "prescription"
+  category:
+    | 'symptoms'
+    | 'diagnosis'
+    | 'treatment'
+    | 'followup'
+    | 'general'
+    | 'prescription'
   is_private: boolean
   created_at: string
   updated_at: string
@@ -47,7 +53,10 @@ export class RealtimeService {
   public onMessageReceived?: (message: RealtimeMessage) => void
   public onNoteAdded?: (note: RealtimeNote) => void
   public onNotificationReceived?: (notification: RealtimeNotification) => void
-  public onParticipantStatusChanged?: (userId: string, status: "joined" | "left") => void
+  public onParticipantStatusChanged?: (
+    userId: string,
+    status: 'joined' | 'left'
+  ) => void
   public onTypingStatusChanged?: (userId: string, isTyping: boolean) => void
 
   constructor(userId: string) {
@@ -56,7 +65,7 @@ export class RealtimeService {
 
   async subscribeToConsultation(consultationId: string): Promise<void> {
     try {
-      console.log(`🔔 Inscrevendo-se na consulta: ${consultationId}`)
+      // Silent logging: Inscrevendo-se na consulta
 
       const channelName = `consultation_${consultationId}`
       const channel = supabase.channel(channelName)
@@ -114,72 +123,72 @@ export class RealtimeService {
       // )
 
       // Escutar presença (quem está online)
-      channel.on("presence", { event: "sync" }, () => {
+      channel.on('presence', { event: 'sync' }, () => {
         const state = channel.presenceState()
-        console.log("👥 Presença sincronizada:", state)
+        // Silent logging: Presença sincronizada
       })
 
-      channel.on("presence", { event: "join" }, ({ key, newPresences }) => {
-        console.log("👋 Usuário entrou:", key, newPresences)
-        this.onParticipantStatusChanged?.(key, "joined")
+      channel.on('presence', { event: 'join' }, ({ key, newPresences }) => {
+        // Silent logging: Usuário entrou
+        this.onParticipantStatusChanged?.(key, 'joined')
       })
 
-      channel.on("presence", { event: "leave" }, ({ key, leftPresences }) => {
-        console.log("👋 Usuário saiu:", key, leftPresences)
-        this.onParticipantStatusChanged?.(key, "left")
+      channel.on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
+        // Silent logging: Usuário saiu
+        this.onParticipantStatusChanged?.(key, 'left')
       })
 
       // Escutar eventos de digitação
-      channel.on("broadcast", { event: "typing" }, ({ payload }) => {
+      channel.on('broadcast', { event: 'typing' }, ({ payload }) => {
         if (payload.userId !== this.userId) {
           this.onTypingStatusChanged?.(payload.userId, payload.isTyping)
         }
       })
 
-      await channel.subscribe(async (status) => {
-        if (status === "SUBSCRIBED") {
+      await channel.subscribe(async status => {
+        if (status === 'SUBSCRIBED') {
           // Registrar presença
           await channel.track({
             user_id: this.userId,
             online_at: new Date().toISOString(),
           })
-          console.log(`✅ Inscrito na consulta: ${consultationId}`)
+          // Silent logging: Inscrito na consulta
         }
       })
 
       this.channels.set(consultationId, channel)
     } catch (error) {
-      console.error("❌ Erro ao inscrever-se na consulta:", error)
+      // Silent error handling: Erro ao inscrever-se na consulta
       throw error
     }
   }
 
   async subscribeToNotifications(): Promise<void> {
     try {
-      console.log("🔔 Inscrevendo-se em notificações")
+      // Silent logging: Inscrevendo-se em notificações
 
       const channel = supabase.channel(`notifications_${this.userId}`)
 
       channel.on(
-        "postgres_changes",
+        'postgres_changes',
         {
-          event: "INSERT",
-          schema: "public",
-          table: "realtime_notifications",
+          event: 'INSERT',
+          schema: 'public',
+          table: 'realtime_notifications',
           filter: `user_id=eq.${this.userId}`,
         },
-        (payload) => {
+        payload => {
           const notification = payload.new as RealtimeNotification
           this.onNotificationReceived?.(notification)
-        },
+        }
       )
 
       await channel.subscribe()
-      this.channels.set("notifications", channel)
+      this.channels.set('notifications', channel)
 
-      console.log("✅ Inscrito em notificações")
+      // Silent logging: Inscrito em notificações
     } catch (error) {
-      console.error("❌ Erro ao inscrever-se em notificações:", error)
+      // Silent error handling: Erro ao inscrever-se em notificações
       throw error
     }
   }
@@ -187,15 +196,15 @@ export class RealtimeService {
   async sendMessage(
     consultationId: string,
     message: string,
-    messageType: RealtimeMessage["message_type"] = "text",
+    messageType: RealtimeMessage['message_type'] = 'text',
     fileUrl?: string,
     fileName?: string,
-    fileSize?: number,
+    fileSize?: number
   ): Promise<RealtimeMessage | null> {
     // TELEMEDICINA TEMPORARIAMENTE DESABILITADA
-    console.log("⚠️ Funcionalidade de telemedicina temporariamente desabilitada")
+    // Silent logging: Funcionalidade de telemedicina temporariamente desabilitada
     return null
-    
+
     // try {
     //   const { data, error } = await supabase
     //     .from("telemedicine_consultation_messages")
@@ -225,13 +234,13 @@ export class RealtimeService {
     consultationId: string,
     title: string,
     content: string,
-    category: RealtimeNote["category"] = "general",
-    isPrivate = false,
+    category: RealtimeNote['category'] = 'general',
+    isPrivate = false
   ): Promise<RealtimeNote | null> {
     // TELEMEDICINA TEMPORARIAMENTE DESABILITADA
-    console.log("⚠️ Funcionalidade de telemedicina temporariamente desabilitada")
+    // Silent logging: Funcionalidade de telemedicina temporariamente desabilitada
     return null
-    
+
     // try {
     //   const { data, error } = await supabase
     //     .from("telemedicine_consultation_notes")
@@ -256,11 +265,15 @@ export class RealtimeService {
     // }
   }
 
-  async updateNote(noteId: string, title: string, content: string): Promise<RealtimeNote | null> {
+  async updateNote(
+    noteId: string,
+    title: string,
+    content: string
+  ): Promise<RealtimeNote | null> {
     // TELEMEDICINA TEMPORARIAMENTE DESABILITADA
-    console.log("⚠️ Funcionalidade de telemedicina temporariamente desabilitada")
+    // Silent logging: Funcionalidade de telemedicina temporariamente desabilitada
     return null
-    
+
     // try {
     //   const { data, error } = await supabase
     //     .from("telemedicine_consultation_notes")
@@ -286,9 +299,9 @@ export class RealtimeService {
 
   async markMessageAsRead(messageId: string): Promise<void> {
     // TELEMEDICINA TEMPORARIAMENTE DESABILITADA
-    console.log("⚠️ Funcionalidade de telemedicina temporariamente desabilitada")
+    // Silent logging: Funcionalidade de telemedicina temporariamente desabilitada
     return
-    
+
     // try {
     //   const { error } = await supabase
     //     .from("telemedicine_consultation_messages")
@@ -304,24 +317,27 @@ export class RealtimeService {
   async markNotificationAsRead(notificationId: string): Promise<void> {
     try {
       const { error } = await supabase
-        .from("realtime_notifications")
+        .from('realtime_notifications')
         .update({ read: true })
-        .eq("id", notificationId)
-        .eq("user_id", this.userId)
+        .eq('id', notificationId)
+        .eq('user_id', this.userId)
 
       if (error) throw error
     } catch (error) {
-      console.error("❌ Erro ao marcar notificação como lida:", error)
+      // Silent error handling: Erro ao marcar notificação como lida
     }
   }
 
-  async sendTypingStatus(consultationId: string, isTyping: boolean): Promise<void> {
+  async sendTypingStatus(
+    consultationId: string,
+    isTyping: boolean
+  ): Promise<void> {
     try {
       const channel = this.channels.get(consultationId)
       if (channel) {
         await channel.send({
-          type: "broadcast",
-          event: "typing",
+          type: 'broadcast',
+          event: 'typing',
           payload: {
             userId: this.userId,
             isTyping,
@@ -329,15 +345,15 @@ export class RealtimeService {
         })
       }
     } catch (error) {
-      console.error("❌ Erro ao enviar status de digitação:", error)
+      // Silent error handling: Erro ao enviar status de digitação
     }
   }
 
   async loadMessages(consultationId: string): Promise<RealtimeMessage[]> {
     // TELEMEDICINA TEMPORARIAMENTE DESABILITADA
-    console.log("⚠️ Funcionalidade de telemedicina temporariamente desabilitada")
+    // Silent logging: Funcionalidade de telemedicina temporariamente desabilitada
     return []
-    
+
     // try {
     //   const { data, error } = await supabase
     //     .from("telemedicine_consultation_messages")
@@ -356,9 +372,9 @@ export class RealtimeService {
 
   async loadNotes(consultationId: string): Promise<RealtimeNote[]> {
     // TELEMEDICINA TEMPORARIAMENTE DESABILITADA
-    console.log("⚠️ Funcionalidade de telemedicina temporariamente desabilitada")
+    // Silent logging: Funcionalidade de telemedicina temporariamente desabilitada
     return []
-    
+
     // try {
     //   const { data, error } = await supabase
     //     .from("telemedicine_consultation_notes")
@@ -378,17 +394,17 @@ export class RealtimeService {
   async loadNotifications(): Promise<RealtimeNotification[]> {
     try {
       const { data, error } = await supabase
-        .from("realtime_notifications")
-        .select("*")
-        .eq("user_id", this.userId)
-        .order("created_at", { ascending: false })
+        .from('realtime_notifications')
+        .select('*')
+        .eq('user_id', this.userId)
+        .order('created_at', { ascending: false })
         .limit(50)
 
       if (error) throw error
 
       return data || []
     } catch (error) {
-      console.error("❌ Erro ao carregar notificações:", error)
+      // Silent error handling: Erro ao carregar notificações
       return []
     }
   }
@@ -399,39 +415,39 @@ export class RealtimeService {
       if (channel) {
         await channel.unsubscribe()
         this.channels.delete(consultationId)
-        console.log(`✅ Desinscrito da consulta: ${consultationId}`)
+        // Silent logging: Desinscrito da consulta
       }
     } catch (error) {
-      console.error("❌ Erro ao desinscrever-se da consulta:", error)
+      // Silent error handling: Erro ao desinscrever-se da consulta
     }
   }
 
   async unsubscribeFromNotifications(): Promise<void> {
     try {
-      const channel = this.channels.get("notifications")
+      const channel = this.channels.get('notifications')
       if (channel) {
         await channel.unsubscribe()
-        this.channels.delete("notifications")
-        console.log("✅ Desinscrito das notificações")
+        this.channels.delete('notifications')
+        // Silent logging: Desinscrito das notificações
       }
     } catch (error) {
-      console.error("❌ Erro ao desinscrever-se das notificações:", error)
+      // Silent error handling: Erro ao desinscrever-se das notificações
     }
   }
 
   async cleanup(): Promise<void> {
     try {
-      console.log("🧹 Limpando RealtimeService...")
+      // Silent logging: Limpando RealtimeService
 
       for (const [key, channel] of this.channels) {
         await channel.unsubscribe()
-        console.log(`✅ Canal ${key} desinscrito`)
+        // Silent logging: Canal desinscrito
       }
 
       this.channels.clear()
-      console.log("✅ RealtimeService limpo")
+      // Silent logging: RealtimeService limpo
     } catch (error) {
-      console.error("❌ Erro ao limpar RealtimeService:", error)
+      // Silent error handling: Erro ao limpar RealtimeService
     }
   }
 
@@ -442,11 +458,11 @@ export class RealtimeService {
     title: string,
     message: string,
     notificationType: string,
-    data?: any,
+    data?: any
   ): Promise<RealtimeNotification | null> {
     try {
       const { data: notification, error } = await supabase
-        .from("realtime_notifications")
+        .from('realtime_notifications')
         .insert({
           user_id: userId,
           consultation_id: consultationId,
@@ -461,10 +477,10 @@ export class RealtimeService {
 
       if (error) throw error
 
-      console.log("✅ Notificação enviada:", notification)
+      // Silent logging: Notificação enviada
       return notification as RealtimeNotification
     } catch (error) {
-      console.error("❌ Erro ao enviar notificação:", error)
+      // Silent error handling: Erro ao enviar notificação
       return null
     }
   }

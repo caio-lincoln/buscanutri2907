@@ -1,14 +1,23 @@
-"use client"
+'use client'
 
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Briefcase, MapPin, DollarSign, Clock, ArrowRight, Building, Calendar, Eye } from "lucide-react"
-import { createSupabaseClient } from "@/lib/supabase"
-import { useAuth } from "@/contexts/auth-context"
-import { toast } from "sonner"
-import Image from "next/image"
+import { useState, useEffect } from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import {
+  Briefcase,
+  MapPin,
+  DollarSign,
+  Clock,
+  ArrowRight,
+  Building,
+  Calendar,
+  Eye,
+} from 'lucide-react'
+import { createSupabaseClient } from '@/lib/supabase'
+import { useAuth } from '@/contexts/auth-context'
+import { toast } from 'sonner'
+import Image from 'next/image'
 
 interface JobApplication {
   id: string
@@ -77,7 +86,7 @@ export function ApplicationsTab() {
         .single()
 
       if (profileError) {
-        console.error('Erro ao buscar perfil do nutricionista:', profileError)
+        // Silent error handling - error fetching nutritionist profile
         toast.error('Erro ao carregar perfil do nutricionista')
         return
       }
@@ -88,9 +97,11 @@ export function ApplicationsTab() {
       }
 
       // Buscar candidaturas do nutricionista
-      const { data: applicationsData, error: applicationsError } = await supabase
-        .from('job_applications')
-        .select(`
+      const { data: applicationsData, error: applicationsError } =
+        await supabase
+          .from('job_applications')
+          .select(
+            `
           id,
           status,
           applied_at,
@@ -109,41 +120,49 @@ export function ApplicationsTab() {
               logo_url
             )
           )
-        `)
-        .eq('candidate_id', nutritionistProfile.id)
-        .order('applied_at', { ascending: false })
+        `
+          )
+          .eq('candidate_id', nutritionistProfile.id)
+          .order('applied_at', { ascending: false })
 
       if (applicationsError) {
-        console.error('Erro ao buscar candidaturas:', applicationsError)
+        // Silent error handling - error fetching applications
         toast.error('Erro ao carregar candidaturas')
         return
       }
 
       // Transformar os dados do Supabase para o formato correto
-      const transformedApplications: JobApplication[] = (applicationsData || []).map((app: any) => ({
+      const transformedApplications: JobApplication[] = (
+        applicationsData || []
+      ).map((app: any) => ({
         id: app.id,
         status: app.status,
         applied_at: app.applied_at,
         cover_letter: app.cover_letter,
-        job_postings: app.job_postings ? {
-          id: app.job_postings.id,
-          title: app.job_postings.title,
-          description: app.job_postings.description,
-          location: app.job_postings.location,
-          job_type: app.job_postings.job_type,
-          salary_min: app.job_postings.salary_min,
-          salary_max: app.job_postings.salary_max,
-          created_at: app.job_postings.created_at,
-          company_profiles: app.job_postings.company_profiles ? {
-            company_name: app.job_postings.company_profiles.company_name,
-            logo_url: app.job_postings.company_profiles.logo_url
-          } : null
-        } : null
+        job_postings: app.job_postings
+          ? {
+              id: app.job_postings.id,
+              title: app.job_postings.title,
+              description: app.job_postings.description,
+              location: app.job_postings.location,
+              job_type: app.job_postings.job_type,
+              salary_min: app.job_postings.salary_min,
+              salary_max: app.job_postings.salary_max,
+              created_at: app.job_postings.created_at,
+              company_profiles: app.job_postings.company_profiles
+                ? {
+                    company_name:
+                      app.job_postings.company_profiles.company_name,
+                    logo_url: app.job_postings.company_profiles.logo_url,
+                  }
+                : null,
+            }
+          : null,
       }))
 
       setApplications(transformedApplications)
     } catch (error) {
-      console.error('Erro ao carregar candidaturas:', error)
+      // Silent error handling - error loading applications
       toast.error('Erro ao carregar candidaturas')
     } finally {
       setLoading(false)
@@ -151,11 +170,12 @@ export function ApplicationsTab() {
   }
 
   const formatSalary = (min?: number, max?: number) => {
-    if (!min && !max) return "A combinar"
-    if (min && max) return `R$ ${min.toLocaleString()} - R$ ${max.toLocaleString()}`
+    if (!min && !max) return 'A combinar'
+    if (min && max)
+      return `R$ ${min.toLocaleString()} - R$ ${max.toLocaleString()}`
     if (min) return `A partir de R$ ${min.toLocaleString()}`
     if (max) return `Até R$ ${max.toLocaleString()}`
-    return "A combinar"
+    return 'A combinar'
   }
 
   const formatDate = (dateString: string) => {
@@ -165,20 +185,48 @@ export function ApplicationsTab() {
       month: '2-digit',
       year: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     })
   }
 
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'pendente':
-        return <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">Pendente</Badge>
+        return (
+          <Badge
+            variant="outline"
+            className="bg-yellow-50 text-yellow-700 border-yellow-200"
+          >
+            Pendente
+          </Badge>
+        )
       case 'em_analise':
-        return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">Em Análise</Badge>
+        return (
+          <Badge
+            variant="outline"
+            className="bg-blue-50 text-blue-700 border-blue-200"
+          >
+            Em Análise
+          </Badge>
+        )
       case 'aprovado':
-        return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Aprovado</Badge>
+        return (
+          <Badge
+            variant="outline"
+            className="bg-green-50 text-green-700 border-green-200"
+          >
+            Aprovado
+          </Badge>
+        )
       case 'rejeitado':
-        return <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">Rejeitado</Badge>
+        return (
+          <Badge
+            variant="outline"
+            className="bg-red-50 text-red-700 border-red-200"
+          >
+            Rejeitado
+          </Badge>
+        )
       default:
         return <Badge variant="outline">{status}</Badge>
     }
@@ -204,8 +252,12 @@ export function ApplicationsTab() {
       <div className="space-y-8">
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl lg:text-4xl font-bold text-[#1E1D40] mb-2">Minhas Candidaturas</h1>
-            <p className="text-gray-600">Acompanhe o status das suas candidaturas às vagas.</p>
+            <h1 className="text-3xl lg:text-4xl font-bold text-[#1E1D40] mb-2">
+              Minhas Candidaturas
+            </h1>
+            <p className="text-gray-600">
+              Acompanhe o status das suas candidaturas às vagas.
+            </p>
           </div>
         </div>
         <div className="flex items-center justify-center py-12">
@@ -219,12 +271,17 @@ export function ApplicationsTab() {
     <div className="space-y-8">
       <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl lg:text-4xl font-bold text-[#1E1D40] mb-2">Minhas Candidaturas</h1>
-          <p className="text-gray-600">Acompanhe o status das suas candidaturas às vagas.</p>
+          <h1 className="text-3xl lg:text-4xl font-bold text-[#1E1D40] mb-2">
+            Minhas Candidaturas
+          </h1>
+          <p className="text-gray-600">
+            Acompanhe o status das suas candidaturas às vagas.
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <Badge variant="outline" className="bg-blue-50 text-blue-700">
-            {applications.length} candidatura{applications.length !== 1 ? 's' : ''}
+            {applications.length} candidatura
+            {applications.length !== 1 ? 's' : ''}
           </Badge>
         </div>
       </div>
@@ -234,11 +291,16 @@ export function ApplicationsTab() {
           <div className="w-16 h-16 bg-[#1E1D40]/10 rounded-full flex items-center justify-center mx-auto mb-4">
             <Briefcase className="h-8 w-8 text-[#1E1D40]" />
           </div>
-          <h3 className="text-lg font-semibold text-[#1E1D40] mb-2">Nenhuma candidatura encontrada</h3>
-          <p className="text-[#1E1D40]/70 mb-6">Você ainda não se candidatou a nenhuma vaga. Explore as oportunidades disponíveis!</p>
-          <Button 
+          <h3 className="text-lg font-semibold text-[#1E1D40] mb-2">
+            Nenhuma candidatura encontrada
+          </h3>
+          <p className="text-[#1E1D40]/70 mb-6">
+            Você ainda não se candidatou a nenhuma vaga. Explore as
+            oportunidades disponíveis!
+          </p>
+          <Button
             className="bg-[#4AB0D9] hover:bg-[#4AB0D9]/90 text-white"
-            onClick={() => window.location.href = '/vagas'}
+            onClick={() => (window.location.href = '/vagas')}
           >
             <Briefcase className="h-4 w-4 mr-2" />
             Ver Vagas Disponíveis
@@ -246,21 +308,24 @@ export function ApplicationsTab() {
         </div>
       ) : (
         <div className="space-y-6">
-          {applications.map((application) => {
+          {applications.map(application => {
             const jobPosting = application.job_postings
             const companyProfile = jobPosting?.company_profiles
-            
+
             if (!jobPosting) return null
-            
+
             return (
-              <Card key={application.id} className="border-0 shadow-lg hover:shadow-xl transition-all duration-300">
+              <Card
+                key={application.id}
+                className="border-0 shadow-lg hover:shadow-xl transition-all duration-300"
+              >
                 <CardHeader className="flex flex-row items-start justify-between pb-4">
                   <div className="flex items-start gap-4 flex-1">
                     <div className="w-12 h-12 bg-[#1E1D40] rounded-lg flex items-center justify-center flex-shrink-0">
                       {companyProfile?.logo_url ? (
                         <Image
                           src={companyProfile.logo_url}
-                          alt={companyProfile.company_name || "Logo da empresa"}
+                          alt={companyProfile.company_name || 'Logo da empresa'}
                           width={48}
                           height={48}
                           className="rounded-lg object-cover"
@@ -275,7 +340,7 @@ export function ApplicationsTab() {
                         {jobPosting.title}
                       </CardTitle>
                       <p className="text-gray-700 font-medium mb-2">
-                        {companyProfile?.company_name || "Empresa confidencial"}
+                        {companyProfile?.company_name || 'Empresa confidencial'}
                       </p>
                       <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
                         <div className="flex items-center gap-1">
@@ -284,51 +349,70 @@ export function ApplicationsTab() {
                         </div>
                         <div className="flex items-center gap-1">
                           <DollarSign className="h-4 w-4" />
-                          <span>{formatSalary(jobPosting.salary_min, jobPosting.salary_max)}</span>
+                          <span>
+                            {formatSalary(
+                              jobPosting.salary_min,
+                              jobPosting.salary_max
+                            )}
+                          </span>
                         </div>
-                        <Badge variant="secondary" className="bg-blue-100 text-blue-700">
+                        <Badge
+                          variant="secondary"
+                          className="bg-blue-100 text-blue-700"
+                        >
                           {jobPosting.job_type}
                         </Badge>
                       </div>
                     </div>
                   </div>
-                <div className="flex flex-col items-end gap-2">
-                  {getStatusBadge(application.status)}
-                  <span className="text-xs text-gray-500 flex items-center gap-1">
-                    <Calendar className="h-3 w-3" />
-                    {formatDate(application.applied_at)}
-                  </span>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <p className="text-sm text-gray-600 mb-2">Status da candidatura:</p>
-                  <p className="text-sm text-gray-800">{getStatusDescription(application.status)}</p>
-                </div>
-                
-                {application.cover_letter && (
-                  <div className="bg-blue-50 rounded-lg p-4">
-                    <p className="text-sm font-medium text-blue-900 mb-2">Carta de apresentação:</p>
-                    <p className="text-sm text-blue-800 line-clamp-3">{application.cover_letter}</p>
+                  <div className="flex flex-col items-end gap-2">
+                    {getStatusBadge(application.status)}
+                    <span className="text-xs text-gray-500 flex items-center gap-1">
+                      <Calendar className="h-3 w-3" />
+                      {formatDate(application.applied_at)}
+                    </span>
                   </div>
-                )}
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <p className="text-sm text-gray-600 mb-2">
+                      Status da candidatura:
+                    </p>
+                    <p className="text-sm text-gray-800">
+                      {getStatusDescription(application.status)}
+                    </p>
+                  </div>
 
-                <div className="flex justify-between items-center pt-2">
-                  <span className="text-xs text-gray-500 flex items-center gap-1">
-                    <Clock className="h-3 w-3" />
-                    Candidatura enviada em {formatDate(application.applied_at)}
-                  </span>
-                  <Button 
-                    variant="ghost" 
-                    className="text-blue-600 hover:bg-blue-50"
-                    onClick={() => window.open(`/vagas/${jobPosting.id}`, '_blank')}
-                  >
-                    <Eye className="h-3 w-3 mr-1" />
-                    Ver Vaga
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+                  {application.cover_letter && (
+                    <div className="bg-blue-50 rounded-lg p-4">
+                      <p className="text-sm font-medium text-blue-900 mb-2">
+                        Carta de apresentação:
+                      </p>
+                      <p className="text-sm text-blue-800 line-clamp-3">
+                        {application.cover_letter}
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="flex justify-between items-center pt-2">
+                    <span className="text-xs text-gray-500 flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      Candidatura enviada em{' '}
+                      {formatDate(application.applied_at)}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      className="text-blue-600 hover:bg-blue-50"
+                      onClick={() =>
+                        window.open(`/vagas/${jobPosting.id}`, '_blank')
+                      }
+                    >
+                      <Eye className="h-3 w-3 mr-1" />
+                      Ver Vaga
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
             )
           })}
         </div>

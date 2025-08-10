@@ -1,10 +1,10 @@
-"use client"
+'use client'
 
-import type React from "react"
+import type React from 'react'
 
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
+import { useState, useEffect } from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import {
   Users,
   Briefcase,
@@ -16,13 +16,17 @@ import {
   LineChart,
   PieChart,
   Loader2,
-} from "lucide-react"
-import type { DateRange } from "react-day-picker"
-import { format, subDays } from "date-fns"
-import { Calendar } from "@/components/ui/calendar"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { cn } from "@/lib/utils"
-import { getReportMetrics, type ReportMetric } from "@/lib/admin-data-service"
+} from 'lucide-react'
+import type { DateRange } from 'react-day-picker'
+import { format, subDays } from 'date-fns'
+import { Calendar } from '@/components/ui/calendar'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
+import { cn } from '@/lib/utils'
+import { getReportMetrics, type ReportMetric } from '@/lib/admin-data-service'
 
 interface MetricDisplay {
   title: string
@@ -47,7 +51,7 @@ export function ReportsTab() {
         const metricsData = await getReportMetrics()
         setMetrics(metricsData)
       } catch (error) {
-        console.error('Error loading metrics:', error)
+        // Silent error handling: Error loading metrics
       } finally {
         setLoading(false)
       }
@@ -69,7 +73,9 @@ export function ReportsTab() {
     }
   }
 
-  const getMetricIcon = (type: string): React.ComponentType<{ className?: string }> => {
+  const getMetricIcon = (
+    type: string
+  ): React.ComponentType<{ className?: string }> => {
     switch (type) {
       case 'users':
         return Users
@@ -104,18 +110,20 @@ export function ReportsTab() {
     value: formatMetricValue(metric),
     icon: getMetricIcon(metric.type),
     color: getMetricColor(metric.type),
-    description: `${metric.change > 0 ? '+' : ''}${metric.change}% ${metric.period}`
+    description: `${metric.change > 0 ? '+' : ''}${metric.change}% ${metric.period}`,
   }))
 
   const handleDownloadReport = (type: string) => {
-    console.log(`Downloading ${type} report for date range:`, dateRange)
+    // Download report logic would go here
     alert(`Baixando relatório de ${type} para o período selecionado.`)
   }
 
   if (loading) {
     return (
       <div className="space-y-6">
-        <h2 className="text-3xl font-bold text-[#1E1D40]">Relatórios e Analytics</h2>
+        <h2 className="text-3xl font-bold text-[#1E1D40]">
+          Relatórios e Analytics
+        </h2>
         <Card className="border-0 shadow-lg">
           <CardContent className="flex items-center justify-center py-12">
             <div className="flex items-center gap-2 text-gray-500">
@@ -130,11 +138,15 @@ export function ReportsTab() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-3xl font-bold text-[#1E1D40]">Relatórios e Analytics</h2>
+      <h2 className="text-3xl font-bold text-[#1E1D40]">
+        Relatórios e Analytics
+      </h2>
 
       <Card className="border-0 shadow-lg">
         <CardHeader className="pb-4">
-          <CardTitle className="text-xl font-semibold text-[#1E1D40]">Visão Geral dos Relatórios</CardTitle>
+          <CardTitle className="text-xl font-semibold text-[#1E1D40]">
+            Visão Geral dos Relatórios
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -145,19 +157,20 @@ export function ReportsTab() {
                 <PopoverTrigger asChild>
                   <Button
                     id="date"
-                    variant={"outline"}
+                    variant={'outline'}
                     className={cn(
-                      "w-[240px] justify-start text-left font-normal",
-                      !dateRange && "text-muted-foreground",
+                      'w-[240px] justify-start text-left font-normal',
+                      !dateRange && 'text-muted-foreground'
                     )}
                   >
                     {dateRange?.from ? (
                       dateRange.to ? (
                         <>
-                          {format(dateRange.from, "LLL dd, y")} - {format(dateRange.to, "LLL dd, y")}
+                          {format(dateRange.from, 'LLL dd, y')} -{' '}
+                          {format(dateRange.to, 'LLL dd, y')}
                         </>
                       ) : (
-                        format(dateRange.from, "LLL dd, y")
+                        format(dateRange.from, 'LLL dd, y')
                       )
                     ) : (
                       <span>Selecione uma data</span>
@@ -185,7 +198,10 @@ export function ReportsTab() {
             {displayMetrics.map((metric, i) => {
               const IconComponent = metric.icon
               return (
-                <Card key={i} className="border-0 shadow-md bg-white/80 backdrop-blur-sm">
+                <Card
+                  key={i}
+                  className="border-0 shadow-md bg-white/80 backdrop-blur-sm"
+                >
                   <CardContent className="p-6 flex items-center gap-4">
                     <div
                       className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-md bg-gradient-to-br from-${metric.color}-500 to-${metric.color}-600`}
@@ -193,9 +209,15 @@ export function ReportsTab() {
                       <IconComponent className="h-6 w-6 text-white" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-gray-600">{metric.title}</p>
-                      <h3 className="text-2xl font-bold text-[#1E1D40]">{metric.value}</h3>
-                      <p className="text-xs text-gray-500">{metric.description}</p>
+                      <p className="text-sm font-medium text-gray-600">
+                        {metric.title}
+                      </p>
+                      <h3 className="text-2xl font-bold text-[#1E1D40]">
+                        {metric.value}
+                      </h3>
+                      <p className="text-xs text-gray-500">
+                        {metric.description}
+                      </p>
                     </div>
                   </CardContent>
                 </Card>
@@ -207,7 +229,8 @@ export function ReportsTab() {
             <Card className="border-0 shadow-md bg-white/80 backdrop-blur-sm">
               <CardHeader className="pb-4">
                 <CardTitle className="text-lg font-semibold text-[#1E1D40] flex items-center gap-2">
-                  <BarChart className="h-5 w-5 text-gray-600" /> Crescimento de Usuários
+                  <BarChart className="h-5 w-5 text-gray-600" /> Crescimento de
+                  Usuários
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -218,7 +241,7 @@ export function ReportsTab() {
                   variant="outline"
                   size="sm"
                   className="mt-4 w-full bg-transparent"
-                  onClick={() => handleDownloadReport("users-growth")}
+                  onClick={() => handleDownloadReport('users-growth')}
                 >
                   <Download className="h-4 w-4 mr-2" /> Baixar Dados
                 </Button>
@@ -239,7 +262,7 @@ export function ReportsTab() {
                   variant="outline"
                   size="sm"
                   className="mt-4 w-full bg-transparent"
-                  onClick={() => handleDownloadReport("monthly-revenue")}
+                  onClick={() => handleDownloadReport('monthly-revenue')}
                 >
                   <Download className="h-4 w-4 mr-2" /> Baixar Dados
                 </Button>
@@ -249,7 +272,8 @@ export function ReportsTab() {
             <Card className="border-0 shadow-md bg-white/80 backdrop-blur-sm">
               <CardHeader className="pb-4">
                 <CardTitle className="text-lg font-semibold text-[#1E1D40] flex items-center gap-2">
-                  <PieChart className="h-5 w-5 text-gray-600" /> Distribuição de Usuários por Tipo
+                  <PieChart className="h-5 w-5 text-gray-600" /> Distribuição de
+                  Usuários por Tipo
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -260,7 +284,7 @@ export function ReportsTab() {
                   variant="outline"
                   size="sm"
                   className="mt-4 w-full bg-transparent"
-                  onClick={() => handleDownloadReport("user-distribution")}
+                  onClick={() => handleDownloadReport('user-distribution')}
                 >
                   <Download className="h-4 w-4 mr-2" /> Baixar Dados
                 </Button>
@@ -270,7 +294,8 @@ export function ReportsTab() {
             <Card className="border-0 shadow-md bg-white/80 backdrop-blur-sm">
               <CardHeader className="pb-4">
                 <CardTitle className="text-lg font-semibold text-[#1E1D40] flex items-center gap-2">
-                  <Briefcase className="h-5 w-5 text-gray-600" /> Tendências de Consultas
+                  <Briefcase className="h-5 w-5 text-gray-600" /> Tendências de
+                  Consultas
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -281,7 +306,7 @@ export function ReportsTab() {
                   variant="outline"
                   size="sm"
                   className="mt-4 w-full bg-transparent"
-                  onClick={() => handleDownloadReport("consultation-trends")}
+                  onClick={() => handleDownloadReport('consultation-trends')}
                 >
                   <Download className="h-4 w-4 mr-2" /> Baixar Dados
                 </Button>

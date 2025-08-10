@@ -4,11 +4,14 @@ import { config } from 'dotenv'
 // Carregar variáveis de ambiente
 config({ path: '.env.local' })
 
-const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseUrl =
+  process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
 if (!supabaseUrl || !supabaseServiceKey) {
-  console.error('❌ Variáveis de ambiente SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY são obrigatórias')
+  console.error(
+    '❌ Variáveis de ambiente SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY são obrigatórias'
+  )
   process.exit(1)
 }
 
@@ -16,24 +19,24 @@ if (!supabaseUrl || !supabaseServiceKey) {
 const supabase = createClient(supabaseUrl, supabaseServiceKey, {
   auth: {
     autoRefreshToken: false,
-    persistSession: false
-  }
+    persistSession: false,
+  },
 })
 
 async function recreateForumTables() {
   try {
     console.log('🔧 Recriando tabelas do fórum completamente...')
-    
+
     // 1. Primeiro, vamos dropar as tabelas existentes para recriar corretamente
     console.log('\n🗑️  Removendo tabelas existentes...')
-    
+
     const dropCommands = [
       'DROP TABLE IF EXISTS public.forum_question_likes CASCADE;',
       'DROP TABLE IF EXISTS public.forum_answer_likes CASCADE;',
       'DROP TABLE IF EXISTS public.forum_answers CASCADE;',
-      'DROP TABLE IF EXISTS public.forum_questions CASCADE;'
+      'DROP TABLE IF EXISTS public.forum_questions CASCADE;',
     ]
-    
+
     for (const command of dropCommands) {
       try {
         const { error } = await supabase.rpc('exec_sql', { sql: command })
@@ -44,10 +47,10 @@ async function recreateForumTables() {
         console.log(`⚠️  Comando alternativo: ${command}`)
       }
     }
-    
+
     // 2. Recriar todas as tabelas com a estrutura correta
     console.log('\n🏗️  Criando tabelas com estrutura correta...')
-    
+
     const createTablesSQL = `
       -- Criar tabela forum_questions
       CREATE TABLE public.forum_questions (
@@ -118,7 +121,7 @@ async function recreateForumTables() {
       ALTER TABLE public.forum_question_likes ENABLE ROW LEVEL SECURITY;
       ALTER TABLE public.forum_answer_likes ENABLE ROW LEVEL SECURITY;
     `
-    
+
     try {
       const { error } = await supabase.rpc('exec_sql', { sql: createTablesSQL })
       if (error && !error.message.includes('exec_sql')) {
@@ -129,19 +132,21 @@ async function recreateForumTables() {
     } catch (e) {
       console.log('⚠️  Erro ao executar SQL de criação')
     }
-    
+
     // 3. Verificar se as tabelas foram criadas corretamente
     console.log('\n🔍 Verificando tabelas criadas...')
-    
-    const tables = ['forum_questions', 'forum_answers', 'forum_question_likes', 'forum_answer_likes']
-    
+
+    const tables = [
+      'forum_questions',
+      'forum_answers',
+      'forum_question_likes',
+      'forum_answer_likes',
+    ]
+
     for (const table of tables) {
       try {
-        const { data, error } = await supabase
-          .from(table)
-          .select('*')
-          .limit(1)
-        
+        const { data, error } = await supabase.from(table).select('*').limit(1)
+
         if (error) {
           console.log(`❌ ${table}: ${error.message}`)
         } else {
@@ -151,9 +156,8 @@ async function recreateForumTables() {
         console.log(`❌ ${table}: Erro na verificação`)
       }
     }
-    
+
     console.log('\n🎉 Recriação das tabelas concluída!')
-    
   } catch (error) {
     console.error('❌ Erro durante a recriação:', error)
   }

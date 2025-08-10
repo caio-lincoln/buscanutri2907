@@ -1,5 +1,5 @@
-import Link from "next/link"
-import { Mail, Phone, Globe, Instagram, MapPin } from "lucide-react"
+import Link from 'next/link'
+import { Mail, Phone, Globe, Instagram, MapPin } from 'lucide-react'
 
 export function Footer() {
   return (
@@ -11,8 +11,9 @@ export function Footer() {
           <div className="space-y-6">
             <div className="text-2xl font-bold">buscaNutri</div>
             <p className="text-white/70 text-sm leading-relaxed">
-              Conectando nutricionistas e transformando vidas através da tecnologia e colaboração. A plataforma que
-              revoluciona o cuidado nutricional.
+              Conectando nutricionistas e transformando vidas através da
+              tecnologia e colaboração. A plataforma que revoluciona o cuidado
+              nutricional.
             </p>
           </div>
 
@@ -21,17 +22,26 @@ export function Footer() {
             <h3 className="font-semibold text-lg">Plataforma</h3>
             <ul className="space-y-3 text-sm">
               <li>
-                <Link href="/nutricionistas" className="text-white/70 hover:text-[#4AB0D9] transition-colors">
+                <Link
+                  href="/nutricionistas"
+                  className="text-white/70 hover:text-[#4AB0D9] transition-colors"
+                >
                   Nutricionistas
                 </Link>
               </li>
               <li>
-                <Link href="/vagas" className="text-white/70 hover:text-[#4AB0D9] transition-colors">
+                <Link
+                  href="/vagas"
+                  className="text-white/70 hover:text-[#4AB0D9] transition-colors"
+                >
                   Vagas
                 </Link>
               </li>
               <li>
-                <Link href="/cadastro" className="text-white/70 hover:text-[#4AB0D9] transition-colors">
+                <Link
+                  href="/cadastro"
+                  className="text-white/70 hover:text-[#4AB0D9] transition-colors"
+                >
                   Cadastro
                 </Link>
               </li>
@@ -43,22 +53,34 @@ export function Footer() {
             <h3 className="font-semibold text-lg">Suporte</h3>
             <ul className="space-y-3 text-sm">
               <li>
-                <Link href="/central-ajuda" className="text-white/70 hover:text-[#4AB0D9] transition-colors">
+                <Link
+                  href="/central-ajuda"
+                  className="text-white/70 hover:text-[#4AB0D9] transition-colors"
+                >
                   Central de Ajuda
                 </Link>
               </li>
               <li>
-                <Link href="/contato" className="text-white/70 hover:text-[#4AB0D9] transition-colors">
+                <Link
+                  href="/contato"
+                  className="text-white/70 hover:text-[#4AB0D9] transition-colors"
+                >
                   Contato
                 </Link>
               </li>
               <li>
-                <Link href="/blog" className="text-white/70 hover:text-[#4AB0D9] transition-colors">
+                <Link
+                  href="/blog"
+                  className="text-white/70 hover:text-[#4AB0D9] transition-colors"
+                >
                   Blog
                 </Link>
               </li>
               <li>
-                <Link href="/faq" className="text-white/70 hover:text-[#4AB0D9] transition-colors">
+                <Link
+                  href="/faq"
+                  className="text-white/70 hover:text-[#4AB0D9] transition-colors"
+                >
                   Perguntas & Respostas
                 </Link>
               </li>
@@ -97,17 +119,30 @@ export function Footer() {
         <div className="border-t border-white/10 py-8">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="text-center md:text-left">
-              <div className="text-white/50 text-sm">© 2025 Busca Nutri. Todos os direitos reservados.</div>
-              <div className="text-white/40 text-xs mt-1">CNPJ: 57.370.073/0001-92</div>
+              <div className="text-white/50 text-sm">
+                © 2025 Busca Nutri. Todos os direitos reservados.
+              </div>
+              <div className="text-white/40 text-xs mt-1">
+                CNPJ: 57.370.073/0001-92
+              </div>
             </div>
             <div className="flex gap-6 text-sm">
-              <Link href="/termos" className="text-white/50 hover:text-[#4AB0D9] transition-colors">
+              <Link
+                href="/termos"
+                className="text-white/50 hover:text-[#4AB0D9] transition-colors"
+              >
                 Termos de Uso
               </Link>
-              <Link href="/privacidade" className="text-white/50 hover:text-[#4AB0D9] transition-colors">
+              <Link
+                href="/privacidade"
+                className="text-white/50 hover:text-[#4AB0D9] transition-colors"
+              >
                 Política de Privacidade
               </Link>
-              <Link href="/cookies" className="text-white/50 hover:text-[#4AB0D9] transition-colors">
+              <Link
+                href="/cookies"
+                className="text-white/50 hover:text-[#4AB0D9] transition-colors"
+              >
                 Cookies
               </Link>
             </div>

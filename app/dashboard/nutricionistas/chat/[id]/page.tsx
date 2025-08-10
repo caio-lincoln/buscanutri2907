@@ -1,31 +1,46 @@
-"use client"
+'use client'
 
-import { useState, useEffect, useRef } from "react"
-import { useParams, useRouter } from "next/navigation"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, Send, Paperclip, ImageIcon, Phone, Video, MoreVertical } from "lucide-react"
-import { getUserProfile } from "@/lib/auth"
-import { useAuth } from "@/contexts/auth-context"
-import { getChatMessages, sendChatMessage, type ChatMessage, type ChatConversation } from "@/lib/chat-forum-service"
-import { supabase } from "@/lib/supabase"
-import { toast } from "@/components/ui/use-toast"
-import { format } from "date-fns"
-import { ptBR } from "date-fns/locale"
-import Link from "next/link"
-import { DashboardSidebar, getMenuItems } from "@/components/dashboard-sidebar"
-import { useDashboardStats } from "@/hooks/use-dashboard-stats"
+import { useState, useEffect, useRef } from 'react'
+import { useParams, useRouter } from 'next/navigation'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Badge } from '@/components/ui/badge'
+import {
+  ArrowLeft,
+  Send,
+  Paperclip,
+  ImageIcon,
+  Phone,
+  Video,
+  MoreVertical,
+} from 'lucide-react'
+import { getUserProfile } from '@/lib/auth'
+import { useAuth } from '@/contexts/auth-context'
+import {
+  getChatMessages,
+  sendChatMessage,
+  type ChatMessage,
+  type ChatConversation,
+} from '@/lib/chat-forum-service'
+import { supabase } from '@/lib/supabase'
+import { toast } from '@/components/ui/use-toast'
+import { format } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
+import Link from 'next/link'
+import { DashboardSidebar, getMenuItems } from '@/components/dashboard-sidebar'
+import { useDashboardStats } from '@/hooks/use-dashboard-stats'
 
 export default function NutritionistChatPage() {
   const { user, loading: authLoading, signOut } = useAuth()
   const [userProfile, setUserProfile] = useState<any>(null)
-  const [conversation, setConversation] = useState<ChatConversation | null>(null)
+  const [conversation, setConversation] = useState<ChatConversation | null>(
+    null
+  )
   const [messages, setMessages] = useState<ChatMessage[]>([])
-  const [newMessage, setNewMessage] = useState("")
+  const [newMessage, setNewMessage] = useState('')
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
@@ -36,11 +51,11 @@ export default function NutritionistChatPage() {
 
   // Dashboard stats
   const { stats, loading: statsLoading } = useDashboardStats({
-    userType: "nutricionista",
-    userId: user?.id || "",
-    enabled: !!user?.id
+    userType: 'nutricionista',
+    userId: user?.id || '',
+    enabled: !!user?.id,
   })
-  const menuItems = getMenuItems("nutricionista", stats)
+  const menuItems = getMenuItems('nutricionista', stats)
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -70,19 +85,20 @@ export default function NutritionistChatPage() {
       setUserProfile(profile)
 
       // Get conversation details
-      const { data: conversationData, error: conversationError } = await supabase
-        .from('chat_conversations')
-        .select('*')
-        .eq('id', conversationId)
-        .eq('nutritionist_id', user.id)
-        .single()
+      const { data: conversationData, error: conversationError } =
+        await supabase
+          .from('chat_conversations')
+          .select('*')
+          .eq('id', conversationId)
+          .eq('nutritionist_id', user.id)
+          .single()
 
       if (conversationError) {
-        console.error('Error fetching conversation:', conversationError)
+        // Error fetching conversation
         toast({
-          title: "Erro",
-          description: "Conversa não encontrada ou acesso negado.",
-          variant: "destructive"
+          title: 'Erro',
+          description: 'Conversa não encontrada ou acesso negado.',
+          variant: 'destructive',
         })
         router.push('/dashboard/nutricionistas')
         return
@@ -98,20 +114,24 @@ export default function NutritionistChatPage() {
       // Enrich conversation data with patient profile
       const enrichedConversation = {
         ...conversationData,
-        patient_profiles: patientProfile
+        patient_profiles: patientProfile,
       }
 
       setConversation(enrichedConversation)
 
       // Load messages
-      const chatMessages = await getChatMessages(conversationId, user.id, 'nutritionist')
+      const chatMessages = await getChatMessages(
+        conversationId,
+        user.id,
+        'nutritionist'
+      )
       setMessages(chatMessages)
     } catch (error) {
-      console.error('Error loading chat data:', error)
+      // Error loading chat data
       toast({
-        title: "Erro",
-        description: "Erro ao carregar dados do chat.",
-        variant: "destructive"
+        title: 'Erro',
+        description: 'Erro ao carregar dados do chat.',
+        variant: 'destructive',
       })
     } finally {
       setLoading(false)
@@ -127,9 +147,9 @@ export default function NutritionistChatPage() {
           event: 'INSERT',
           schema: 'public',
           table: 'chat_messages',
-          filter: `conversation_id=eq.${conversationId}`
+          filter: `conversation_id=eq.${conversationId}`,
         },
-        (payload) => {
+        payload => {
           const newMessage = payload.new as ChatMessage
           setMessages(prev => [...prev, newMessage])
         }
@@ -142,7 +162,7 @@ export default function NutritionistChatPage() {
   }
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
   const handleSendMessage = async () => {
@@ -150,15 +170,20 @@ export default function NutritionistChatPage() {
 
     try {
       setSending(true)
-      const message = await sendChatMessage(conversationId, user.id, 'nutritionist', newMessage.trim())
+      const message = await sendChatMessage(
+        conversationId,
+        user.id,
+        'nutritionist',
+        newMessage.trim()
+      )
       setMessages(prev => [...prev, message])
-      setNewMessage("")
+      setNewMessage('')
     } catch (error) {
-      console.error('Error sending message:', error)
+      // Error sending message
       toast({
-        title: "Erro",
-        description: "Erro ao enviar mensagem.",
-        variant: "destructive"
+        title: 'Erro',
+        description: 'Erro ao enviar mensagem.',
+        variant: 'destructive',
       })
     } finally {
       setSending(false)
@@ -175,9 +200,9 @@ export default function NutritionistChatPage() {
   const handleSignOut = async () => {
     try {
       await signOut()
-      router.push("/")
+      router.push('/')
     } catch (error) {
-      console.error("Error signing out:", error)
+      // Error signing out
     }
   }
 
@@ -210,8 +235,8 @@ export default function NutritionistChatPage() {
   return (
     <DashboardSidebar
       userType="nutricionista"
-      userName={userProfile?.full_name || "Nutricionista"}
-      userAvatar={userProfile?.profile_image_url || "/placeholder.svg"}
+      userName={userProfile?.full_name || 'Nutricionista'}
+      userAvatar={userProfile?.profile_image_url || '/placeholder.svg'}
       menuItems={menuItems}
       activeItem="chat"
       onItemClick={() => {}}
@@ -229,24 +254,22 @@ export default function NutritionistChatPage() {
                     Voltar
                   </Button>
                 </Link>
-              
-              <div className="flex items-center gap-3">
-                <Avatar className="h-10 w-10">
-                  <AvatarImage src={patient?.profile_image_url || ''} />
-                  <AvatarFallback>
-                    {patient?.full_name?.charAt(0) || "P"}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <h1 className="font-semibold text-gray-900">
-                    {patient?.full_name || "Paciente"}
-                  </h1>
-                  <span className="text-sm text-gray-500">
-                    Paciente
-                  </span>
+
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-10 w-10">
+                    <AvatarImage src={patient?.profile_image_url || ''} />
+                    <AvatarFallback>
+                      {patient?.full_name?.charAt(0) || 'P'}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <h1 className="font-semibold text-gray-900">
+                      {patient?.full_name || 'Paciente'}
+                    </h1>
+                    <span className="text-sm text-gray-500">Paciente</span>
+                  </div>
                 </div>
               </div>
-            </div>
 
               <div className="flex items-center gap-2">
                 <Button variant="outline" size="sm">
@@ -269,12 +292,13 @@ export default function NutritionistChatPage() {
           <CardContent className="flex-1 p-0">
             <ScrollArea className="h-full p-4" ref={scrollAreaRef}>
               <div className="space-y-4">
-                {messages.map((message) => {
-                  const isFromNutritionist = message.sender_type === 'nutritionist'
-                  const senderName = isFromNutritionist 
-                    ? userProfile?.full_name || "Você"
-                    : patient?.full_name || "Paciente"
-                  
+                {messages.map(message => {
+                  const isFromNutritionist =
+                    message.sender_type === 'nutritionist'
+                  const senderName = isFromNutritionist
+                    ? userProfile?.full_name || 'Você'
+                    : patient?.full_name || 'Paciente'
+
                   return (
                     <div
                       key={message.id}
@@ -284,12 +308,14 @@ export default function NutritionistChatPage() {
                         <Avatar className="h-8 w-8 mt-1">
                           <AvatarImage src={patient?.profile_image_url || ''} />
                           <AvatarFallback className="text-xs">
-                            {patient?.full_name?.charAt(0) || "P"}
+                            {patient?.full_name?.charAt(0) || 'P'}
                           </AvatarFallback>
                         </Avatar>
                       )}
-                      
-                      <div className={`max-w-[70%] ${isFromNutritionist ? 'order-first' : ''}`}>
+
+                      <div
+                        className={`max-w-[70%] ${isFromNutritionist ? 'order-first' : ''}`}
+                      >
                         <div
                           className={`rounded-lg px-4 py-2 ${
                             isFromNutritionist
@@ -297,20 +323,28 @@ export default function NutritionistChatPage() {
                               : 'bg-gray-100 text-gray-900'
                           }`}
                         >
-                          <p className="text-sm whitespace-pre-wrap">{message.message_text}</p>
+                          <p className="text-sm whitespace-pre-wrap">
+                            {message.message_text}
+                          </p>
                         </div>
-                        <p className={`text-xs text-gray-500 mt-1 ${
-                          isFromNutritionist ? 'text-right' : 'text-left'
-                        }`}>
-                          {format(new Date(message.created_at), "HH:mm", { locale: ptBR })}
+                        <p
+                          className={`text-xs text-gray-500 mt-1 ${
+                            isFromNutritionist ? 'text-right' : 'text-left'
+                          }`}
+                        >
+                          {format(new Date(message.created_at), 'HH:mm', {
+                            locale: ptBR,
+                          })}
                         </p>
                       </div>
-                      
+
                       {isFromNutritionist && (
                         <Avatar className="h-8 w-8 mt-1">
-                          <AvatarImage src={userProfile?.profile_image_url || ''} />
+                          <AvatarImage
+                            src={userProfile?.profile_image_url || ''}
+                          />
                           <AvatarFallback className="text-xs">
-                            {userProfile?.full_name?.charAt(0) || "N"}
+                            {userProfile?.full_name?.charAt(0) || 'N'}
                           </AvatarFallback>
                         </Avatar>
                       )}
@@ -334,14 +368,14 @@ export default function NutritionistChatPage() {
               <div className="flex-1">
                 <Input
                   value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
+                  onChange={e => setNewMessage(e.target.value)}
                   onKeyPress={handleKeyPress}
                   placeholder="Digite sua mensagem..."
                   disabled={sending}
                   className="resize-none"
                 />
               </div>
-              <Button 
+              <Button
                 onClick={handleSendMessage}
                 disabled={!newMessage.trim() || sending}
                 className="mb-2"

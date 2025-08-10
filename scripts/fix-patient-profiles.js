@@ -1,35 +1,37 @@
-const { createClient } = require('@supabase/supabase-js');
-require('dotenv').config({ path: '.env.local' });
+const { createClient } = require('@supabase/supabase-js')
+require('dotenv').config({ path: '.env.local' })
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
 if (!supabaseUrl || !supabaseServiceKey) {
-  console.error('❌ Variáveis de ambiente do Supabase não encontradas');
-  process.exit(1);
+  console.error('❌ Variáveis de ambiente do Supabase não encontradas')
+  process.exit(1)
 }
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey, {
   auth: {
     autoRefreshToken: false,
-    persistSession: false
-  }
-});
+    persistSession: false,
+  },
+})
 
 async function fixPatientProfilesRLS() {
-  console.log('🔧 Iniciando correção das políticas RLS para patient_profiles...');
+  console.log(
+    '🔧 Iniciando correção das políticas RLS para patient_profiles...'
+  )
 
   try {
     // 1. Verificar se a tabela existe
-    console.log('📋 Verificando estrutura da tabela patient_profiles...');
+    console.log('📋 Verificando estrutura da tabela patient_profiles...')
     const { data: tableInfo, error: tableError } = await supabase
       .from('information_schema.tables')
       .select('table_name')
       .eq('table_name', 'patient_profiles')
-      .eq('table_schema', 'public');
+      .eq('table_schema', 'public')
 
     if (tableError) {
-      console.log('⚠️ Tabela patient_profiles não existe, criando...');
+      console.log('⚠️ Tabela patient_profiles não existe, criando...')
     }
 
     // 2. Executar script de correção
@@ -130,15 +132,17 @@ async function fixPatientProfilesRLS() {
           BEFORE UPDATE ON public.patient_profiles
           FOR EACH ROW
           EXECUTE FUNCTION public.update_updated_at_column();
-    `;
+    `
 
-    console.log('🔄 Executando script de correção...');
-    const { error: scriptError } = await supabase.rpc('exec_sql', { sql: fixScript });
+    console.log('🔄 Executando script de correção...')
+    const { error: scriptError } = await supabase.rpc('exec_sql', {
+      sql: fixScript,
+    })
 
     if (scriptError) {
       // Tentar executar usando uma abordagem diferente
-      console.log('⚠️ Tentando abordagem alternativa...');
-      
+      console.log('⚠️ Tentando abordagem alternativa...')
+
       // Executar comandos individualmente
       const commands = [
         `CREATE TABLE IF NOT EXISTS public.patient_profiles (
@@ -161,48 +165,50 @@ async function fixPatientProfilesRLS() {
           updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
           UNIQUE(user_id)
         )`,
-        `ALTER TABLE public.patient_profiles ENABLE ROW LEVEL SECURITY`
-      ];
+        `ALTER TABLE public.patient_profiles ENABLE ROW LEVEL SECURITY`,
+      ]
 
       for (const command of commands) {
         try {
-          await supabase.rpc('exec_sql', { sql: command });
-          console.log('✅ Comando executado com sucesso');
+          await supabase.rpc('exec_sql', { sql: command })
+          console.log('✅ Comando executado com sucesso')
         } catch (err) {
-          console.log(`⚠️ Erro no comando: ${err.message}`);
+          console.log(`⚠️ Erro no comando: ${err.message}`)
         }
       }
     }
 
     // 3. Verificar políticas atuais
-    console.log('📋 Verificando políticas RLS atuais...');
+    console.log('📋 Verificando políticas RLS atuais...')
     const { data: policies, error: policiesError } = await supabase
       .from('pg_policies')
       .select('*')
-      .eq('tablename', 'patient_profiles');
+      .eq('tablename', 'patient_profiles')
 
     if (!policiesError && policies) {
-      console.log(`📊 Encontradas ${policies.length} políticas RLS para patient_profiles`);
+      console.log(
+        `📊 Encontradas ${policies.length} políticas RLS para patient_profiles`
+      )
       policies.forEach(policy => {
-        console.log(`  - ${policy.policyname}: ${policy.cmd}`);
-      });
+        console.log(`  - ${policy.policyname}: ${policy.cmd}`)
+      })
     }
 
     // 4. Testar criação de perfil
-    console.log('🧪 Testando criação de perfil de paciente...');
-    
+    console.log('🧪 Testando criação de perfil de paciente...')
+
     // Primeiro, vamos verificar se há usuários na tabela auth.users
     const { data: users, error: usersError } = await supabase
       .from('users')
       .select('id, email')
-      .limit(1);
+      .limit(1)
 
     if (usersError) {
-      console.log('⚠️ Erro ao buscar usuários:', usersError.message);
+      console.log('⚠️ Erro ao buscar usuários:', usersError.message)
     } else if (users && users.length > 0) {
-      const testUser = users[0];
-      console.log(`🔍 Testando com usuário: ${testUser.email}`);
-      
+      const testUser = users[0]
+      console.log(`🔍 Testando com usuário: ${testUser.email}`)
+
       // Tentar criar um perfil de teste
       const { data: profile, error: profileError } = await supabase
         .from('patient_profiles')
@@ -211,35 +217,34 @@ async function fixPatientProfilesRLS() {
           full_name: testUser.email.split('@')[0],
           email: testUser.email,
           created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         })
-        .select();
+        .select()
 
       if (profileError) {
-        console.log('❌ Erro ao criar perfil de teste:', profileError.message);
+        console.log('❌ Erro ao criar perfil de teste:', profileError.message)
       } else {
-        console.log('✅ Perfil de teste criado com sucesso!');
-        console.log('📋 Dados do perfil:', profile);
+        console.log('✅ Perfil de teste criado com sucesso!')
+        console.log('📋 Dados do perfil:', profile)
       }
     } else {
-      console.log('⚠️ Nenhum usuário encontrado para teste');
+      console.log('⚠️ Nenhum usuário encontrado para teste')
     }
 
-    console.log('✅ Correção das políticas RLS concluída!');
-
+    console.log('✅ Correção das políticas RLS concluída!')
   } catch (error) {
-    console.error('❌ Erro durante a correção:', error.message);
-    console.error('Stack trace:', error.stack);
+    console.error('❌ Erro durante a correção:', error.message)
+    console.error('Stack trace:', error.stack)
   }
 }
 
 // Executar a correção
 fixPatientProfilesRLS()
   .then(() => {
-    console.log('🎉 Script finalizado!');
-    process.exit(0);
+    console.log('🎉 Script finalizado!')
+    process.exit(0)
   })
-  .catch((error) => {
-    console.error('💥 Erro fatal:', error);
-    process.exit(1);
-  });
+  .catch(error => {
+    console.error('💥 Erro fatal:', error)
+    process.exit(1)
+  })

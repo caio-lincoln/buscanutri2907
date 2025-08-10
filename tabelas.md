@@ -1,35 +1,6 @@
-users
-nutritionist_profiles
-patient_profiles
-company_profiles
-specialties
-nutritionist_specialties
-locations
-posts
-post_likes
-post_comments
-forum_topics
-forum_replies
-courses
-profiles
-nutritionist_availability
-course_enrollments
-consultation_records
-appointments
-chat_conversations
-chat_messages
-forum_questions
-forum_answers
-forum_answer_likes
-forum_question_views
-companies
-patient_favorite_nutritionists
-notifications
-nutritionist_services
-reviews
-blog_questions
-blog_answers
-job_postings
-job_applications
-selection_processes
-company_stats
+users nutritionist_profiles patient_profiles company_profiles specialties nutritionist_specialties
+locations posts post_likes post_comments forum_topics forum_replies courses profiles
+nutritionist_availability course_enrollments consultation_records appointments chat_conversations
+chat_messages forum_questions forum_answers forum_answer_likes forum_question_views companies
+patient_favorite_nutritionists notifications nutritionist_services reviews blog_questions
+blog_answers job_postings job_applications selection_processes company_stats

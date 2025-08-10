@@ -1,7 +1,15 @@
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { ArrowLeft, Shield, Lock, Phone, Mail, MapPin, Clock } from "lucide-react"
+import Link from 'next/link'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  ArrowLeft,
+  Shield,
+  Lock,
+  Phone,
+  Mail,
+  MapPin,
+  Clock,
+} from 'lucide-react'
 
 export default function PrivacidadePage() {
   return (
@@ -11,14 +19,20 @@ export default function PrivacidadePage() {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <Link href="/" className="flex items-center gap-3">
-              <Button variant="ghost" size="sm" className="text-[#1E1D40] hover:text-[#4AB0D9]">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-[#1E1D40] hover:text-[#4AB0D9]"
+              >
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Voltar ao início
               </Button>
             </Link>
             <div className="flex items-center gap-2">
               <Shield className="h-5 w-5 text-[#4AB0D9]" />
-              <span className="font-semibold text-[#1E1D40]">Política de Privacidade</span>
+              <span className="font-semibold text-[#1E1D40]">
+                Política de Privacidade
+              </span>
             </div>
           </div>
         </div>
@@ -32,9 +46,12 @@ export default function PrivacidadePage() {
               <Lock className="h-4 w-4" />
               LGPD Compliance
             </div>
-            <h1 className="text-4xl md:text-5xl font-bold text-[#1E1D40] mb-4">Política de Privacidade</h1>
+            <h1 className="text-4xl md:text-5xl font-bold text-[#1E1D40] mb-4">
+              Política de Privacidade
+            </h1>
             <p className="text-xl text-[#1E1D40]/70 leading-relaxed">
-              Como coletamos, usamos e protegemos seus dados pessoais na Busca Nutri
+              Como coletamos, usamos e protegemos seus dados pessoais na Busca
+              Nutri
             </p>
             <div className="mt-6 text-sm text-[#1E1D40]/60">
               <p>
@@ -66,24 +83,36 @@ export default function PrivacidadePage() {
                     <p className="text-[#1E1D40]/70">57.370.073/0001-92</p>
                   </div>
                   <div>
-                    <strong className="text-[#1E1D40]">DPO (Encarregado):</strong>
-                    <p className="text-[#1E1D40]/70">Iris Patricia Carregosa da Silva</p>
+                    <strong className="text-[#1E1D40]">
+                      DPO (Encarregado):
+                    </strong>
+                    <p className="text-[#1E1D40]/70">
+                      Iris Patricia Carregosa da Silva
+                    </p>
                   </div>
                 </div>
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
                     <MapPin className="h-4 w-4 text-[#4AB0D9]" />
-                    <span className="text-[#1E1D40]/70">Aracaju, SE - Brasil</span>
+                    <span className="text-[#1E1D40]/70">
+                      Aracaju, SE - Brasil
+                    </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Phone className="h-4 w-4 text-[#4AB0D9]" />
-                    <a href="tel:+557999134938" className="text-[#4AB0D9] hover:underline">
+                    <a
+                      href="tel:+557999134938"
+                      className="text-[#4AB0D9] hover:underline"
+                    >
                       (79) 9 9813-4938
                     </a>
                   </div>
                   <div className="flex items-center gap-2">
                     <Mail className="h-4 w-4 text-[#4AB0D9]" />
-                    <a href="mailto:privacidade@buscanutri.com.br" className="text-[#4AB0D9] hover:underline">
+                    <a
+                      href="mailto:privacidade@buscanutri.com.br"
+                      className="text-[#4AB0D9] hover:underline"
+                    >
                       privacidade@buscanutri.com.br
                     </a>
                   </div>
@@ -101,13 +130,16 @@ export default function PrivacidadePage() {
               </CardHeader>
               <CardContent className="prose prose-gray max-w-none">
                 <p className="text-[#1E1D40]/80 leading-relaxed">
-                  A Busca Nutri (CNPJ: 57.370.073/0001-92) está comprometida com a proteção da privacidade e dos dados
-                  pessoais de seus usuários. Esta Política de Privacidade descreve como coletamos, usamos, armazenamos e
-                  protegemos suas informações pessoais.
+                  A Busca Nutri (CNPJ: 57.370.073/0001-92) está comprometida com
+                  a proteção da privacidade e dos dados pessoais de seus
+                  usuários. Esta Política de Privacidade descreve como
+                  coletamos, usamos, armazenamos e protegemos suas informações
+                  pessoais.
                 </p>
                 <p className="text-[#1E1D40]/80 leading-relaxed">
-                  Esta política está em conformidade com a Lei Geral de Proteção de Dados (LGPD - Lei nº 13.709/2018) e
-                  outras regulamentações aplicáveis de proteção de dados.
+                  Esta política está em conformidade com a Lei Geral de Proteção
+                  de Dados (LGPD - Lei nº 13.709/2018) e outras regulamentações
+                  aplicáveis de proteção de dados.
                 </p>
               </CardContent>
             </Card>
@@ -115,10 +147,14 @@ export default function PrivacidadePage() {
             {/* 2. Dados Coletados */}
             <Card className="border-[#F2E6D8] shadow-lg">
               <CardHeader>
-                <CardTitle className="text-[#1E1D40]">2. Dados Pessoais Coletados</CardTitle>
+                <CardTitle className="text-[#1E1D40]">
+                  2. Dados Pessoais Coletados
+                </CardTitle>
               </CardHeader>
               <CardContent className="prose prose-gray max-w-none">
-                <h4 className="font-semibold text-[#1E1D40] mb-3">2.1 Dados de Identificação</h4>
+                <h4 className="font-semibold text-[#1E1D40] mb-3">
+                  2.1 Dados de Identificação
+                </h4>
                 <ul className="list-disc pl-6 space-y-2 text-[#1E1D40]/80 mb-4">
                   <li>Nome completo</li>
                   <li>E-mail</li>
@@ -128,7 +164,9 @@ export default function PrivacidadePage() {
                   <li>Endereço</li>
                 </ul>
 
-                <h4 className="font-semibold text-[#1E1D40] mb-3">2.2 Dados Profissionais (Nutricionistas)</h4>
+                <h4 className="font-semibold text-[#1E1D40] mb-3">
+                  2.2 Dados Profissionais (Nutricionistas)
+                </h4>
                 <ul className="list-disc pl-6 space-y-2 text-[#1E1D40]/80 mb-4">
                   <li>Número do CRN (Conselho Regional de Nutricionistas)</li>
                   <li>Especialidades e certificações</li>
@@ -136,7 +174,9 @@ export default function PrivacidadePage() {
                   <li>Formação acadêmica</li>
                 </ul>
 
-                <h4 className="font-semibold text-[#1E1D40] mb-3">2.3 Dados de Uso</h4>
+                <h4 className="font-semibold text-[#1E1D40] mb-3">
+                  2.3 Dados de Uso
+                </h4>
                 <ul className="list-disc pl-6 space-y-2 text-[#1E1D40]/80">
                   <li>Logs de acesso e navegação</li>
                   <li>Endereço IP</li>
@@ -149,7 +189,9 @@ export default function PrivacidadePage() {
             {/* 3. Finalidades do Tratamento */}
             <Card className="border-[#F2E6D8] shadow-lg">
               <CardHeader>
-                <CardTitle className="text-[#1E1D40]">3. Finalidades do Tratamento</CardTitle>
+                <CardTitle className="text-[#1E1D40]">
+                  3. Finalidades do Tratamento
+                </CardTitle>
               </CardHeader>
               <CardContent className="prose prose-gray max-w-none">
                 <p className="text-[#1E1D40]/80 leading-relaxed mb-4">
@@ -171,24 +213,31 @@ export default function PrivacidadePage() {
             {/* 4. Base Legal */}
             <Card className="border-[#F2E6D8] shadow-lg">
               <CardHeader>
-                <CardTitle className="text-[#1E1D40]">4. Base Legal para o Tratamento</CardTitle>
+                <CardTitle className="text-[#1E1D40]">
+                  4. Base Legal para o Tratamento
+                </CardTitle>
               </CardHeader>
               <CardContent className="prose prose-gray max-w-none">
                 <p className="text-[#1E1D40]/80 leading-relaxed mb-4">
-                  O tratamento de seus dados pessoais é baseado nas seguintes hipóteses legais:
+                  O tratamento de seus dados pessoais é baseado nas seguintes
+                  hipóteses legais:
                 </p>
                 <ul className="list-disc pl-6 space-y-2 text-[#1E1D40]/80">
                   <li>
-                    <strong>Consentimento:</strong> Para comunicações de marketing e cookies não essenciais
+                    <strong>Consentimento:</strong> Para comunicações de
+                    marketing e cookies não essenciais
                   </li>
                   <li>
-                    <strong>Execução de contrato:</strong> Para prestação dos serviços da plataforma
+                    <strong>Execução de contrato:</strong> Para prestação dos
+                    serviços da plataforma
                   </li>
                   <li>
-                    <strong>Legítimo interesse:</strong> Para melhorias do serviço e prevenção de fraudes
+                    <strong>Legítimo interesse:</strong> Para melhorias do
+                    serviço e prevenção de fraudes
                   </li>
                   <li>
-                    <strong>Cumprimento de obrigação legal:</strong> Para atender exigências regulamentares
+                    <strong>Cumprimento de obrigação legal:</strong> Para
+                    atender exigências regulamentares
                   </li>
                 </ul>
               </CardContent>
@@ -197,20 +246,32 @@ export default function PrivacidadePage() {
             {/* 5. Compartilhamento de Dados */}
             <Card className="border-[#F2E6D8] shadow-lg">
               <CardHeader>
-                <CardTitle className="text-[#1E1D40]">5. Compartilhamento de Dados</CardTitle>
+                <CardTitle className="text-[#1E1D40]">
+                  5. Compartilhamento de Dados
+                </CardTitle>
               </CardHeader>
               <CardContent className="prose prose-gray max-w-none">
                 <p className="text-[#1E1D40]/80 leading-relaxed mb-4">
-                  Seus dados pessoais podem ser compartilhados nas seguintes situações:
+                  Seus dados pessoais podem ser compartilhados nas seguintes
+                  situações:
                 </p>
                 <ul className="list-disc pl-6 space-y-2 text-[#1E1D40]/80">
-                  <li>Com outros usuários da plataforma (conforme necessário para o serviço)</li>
-                  <li>Com prestadores de serviços terceirizados (processamento de pagamentos, hospedagem)</li>
+                  <li>
+                    Com outros usuários da plataforma (conforme necessário para
+                    o serviço)
+                  </li>
+                  <li>
+                    Com prestadores de serviços terceirizados (processamento de
+                    pagamentos, hospedagem)
+                  </li>
                   <li>Com autoridades competentes (quando exigido por lei)</li>
-                  <li>Em caso de fusão, aquisição ou venda de ativos da empresa</li>
+                  <li>
+                    Em caso de fusão, aquisição ou venda de ativos da empresa
+                  </li>
                 </ul>
                 <p className="text-[#1E1D40]/80 leading-relaxed mt-4">
-                  <strong>Importante:</strong> Nunca vendemos seus dados pessoais para terceiros.
+                  <strong>Importante:</strong> Nunca vendemos seus dados
+                  pessoais para terceiros.
                 </p>
               </CardContent>
             </Card>
@@ -218,11 +279,14 @@ export default function PrivacidadePage() {
             {/* 6. Segurança dos Dados */}
             <Card className="border-[#F2E6D8] shadow-lg">
               <CardHeader>
-                <CardTitle className="text-[#1E1D40]">6. Segurança dos Dados</CardTitle>
+                <CardTitle className="text-[#1E1D40]">
+                  6. Segurança dos Dados
+                </CardTitle>
               </CardHeader>
               <CardContent className="prose prose-gray max-w-none">
                 <p className="text-[#1E1D40]/80 leading-relaxed mb-4">
-                  Implementamos medidas técnicas e organizacionais para proteger seus dados:
+                  Implementamos medidas técnicas e organizacionais para proteger
+                  seus dados:
                 </p>
                 <ul className="list-disc pl-6 space-y-2 text-[#1E1D40]/80">
                   <li>Criptografia de dados em trânsito e em repouso</li>
@@ -238,7 +302,9 @@ export default function PrivacidadePage() {
             {/* 7. Retenção de Dados */}
             <Card className="border-[#F2E6D8] shadow-lg">
               <CardHeader>
-                <CardTitle className="text-[#1E1D40]">7. Retenção de Dados</CardTitle>
+                <CardTitle className="text-[#1E1D40]">
+                  7. Retenção de Dados
+                </CardTitle>
               </CardHeader>
               <CardContent className="prose prose-gray max-w-none">
                 <p className="text-[#1E1D40]/80 leading-relaxed mb-4">
@@ -246,19 +312,23 @@ export default function PrivacidadePage() {
                 </p>
                 <ul className="list-disc pl-6 space-y-2 text-[#1E1D40]/80">
                   <li>
-                    <strong>Dados de conta ativa:</strong> Enquanto a conta estiver ativa
+                    <strong>Dados de conta ativa:</strong> Enquanto a conta
+                    estiver ativa
                   </li>
                   <li>
-                    <strong>Dados de conta inativa:</strong> Até 2 anos após a última atividade
+                    <strong>Dados de conta inativa:</strong> Até 2 anos após a
+                    última atividade
                   </li>
                   <li>
-                    <strong>Dados financeiros:</strong> 5 anos (conforme legislação fiscal)
+                    <strong>Dados financeiros:</strong> 5 anos (conforme
+                    legislação fiscal)
                   </li>
                   <li>
                     <strong>Logs de segurança:</strong> 6 meses
                   </li>
                   <li>
-                    <strong>Dados para cumprimento legal:</strong> Conforme exigido por lei
+                    <strong>Dados para cumprimento legal:</strong> Conforme
+                    exigido por lei
                   </li>
                 </ul>
               </CardContent>
@@ -267,7 +337,9 @@ export default function PrivacidadePage() {
             {/* 8. Seus Direitos */}
             <Card className="border-[#F2E6D8] shadow-lg">
               <CardHeader>
-                <CardTitle className="text-[#1E1D40]">8. Seus Direitos como Titular dos Dados</CardTitle>
+                <CardTitle className="text-[#1E1D40]">
+                  8. Seus Direitos como Titular dos Dados
+                </CardTitle>
               </CardHeader>
               <CardContent className="prose prose-gray max-w-none">
                 <p className="text-[#1E1D40]/80 leading-relaxed mb-4">
@@ -278,22 +350,27 @@ export default function PrivacidadePage() {
                     <strong>Acesso:</strong> Saber quais dados temos sobre você
                   </li>
                   <li>
-                    <strong>Correção:</strong> Corrigir dados incompletos ou incorretos
+                    <strong>Correção:</strong> Corrigir dados incompletos ou
+                    incorretos
                   </li>
                   <li>
                     <strong>Exclusão:</strong> Solicitar a remoção de seus dados
                   </li>
                   <li>
-                    <strong>Portabilidade:</strong> Receber seus dados em formato estruturado
+                    <strong>Portabilidade:</strong> Receber seus dados em
+                    formato estruturado
                   </li>
                   <li>
-                    <strong>Oposição:</strong> Opor-se ao tratamento de seus dados
+                    <strong>Oposição:</strong> Opor-se ao tratamento de seus
+                    dados
                   </li>
                   <li>
-                    <strong>Revogação do consentimento:</strong> Retirar o consentimento a qualquer momento
+                    <strong>Revogação do consentimento:</strong> Retirar o
+                    consentimento a qualquer momento
                   </li>
                   <li>
-                    <strong>Informação:</strong> Saber com quem compartilhamos seus dados
+                    <strong>Informação:</strong> Saber com quem compartilhamos
+                    seus dados
                   </li>
                 </ul>
               </CardContent>
@@ -302,7 +379,9 @@ export default function PrivacidadePage() {
             {/* 9. Cookies */}
             <Card className="border-[#F2E6D8] shadow-lg">
               <CardHeader>
-                <CardTitle className="text-[#1E1D40]">9. Cookies e Tecnologias Similares</CardTitle>
+                <CardTitle className="text-[#1E1D40]">
+                  9. Cookies e Tecnologias Similares
+                </CardTitle>
               </CardHeader>
               <CardContent className="prose prose-gray max-w-none">
                 <p className="text-[#1E1D40]/80 leading-relaxed mb-4">
@@ -317,7 +396,10 @@ export default function PrivacidadePage() {
                 </ul>
                 <p className="text-[#1E1D40]/80 leading-relaxed mt-4">
                   Para mais informações, consulte nossa
-                  <Link href="/cookies" className="text-[#4AB0D9] hover:underline font-medium">
+                  <Link
+                    href="/cookies"
+                    className="text-[#4AB0D9] hover:underline font-medium"
+                  >
                     Política de Cookies
                   </Link>
                   .
@@ -328,16 +410,21 @@ export default function PrivacidadePage() {
             {/* 10. Transferência Internacional */}
             <Card className="border-[#F2E6D8] shadow-lg">
               <CardHeader>
-                <CardTitle className="text-[#1E1D40]">10. Transferência Internacional de Dados</CardTitle>
+                <CardTitle className="text-[#1E1D40]">
+                  10. Transferência Internacional de Dados
+                </CardTitle>
               </CardHeader>
               <CardContent className="prose prose-gray max-w-none">
                 <p className="text-[#1E1D40]/80 leading-relaxed">
-                  Alguns de nossos prestadores de serviços podem estar localizados fora do Brasil. Quando isso ocorre,
-                  garantimos que:
+                  Alguns de nossos prestadores de serviços podem estar
+                  localizados fora do Brasil. Quando isso ocorre, garantimos
+                  que:
                 </p>
                 <ul className="list-disc pl-6 space-y-2 text-[#1E1D40]/80 mt-4">
                   <li>O país de destino oferece grau de proteção adequado</li>
-                  <li>São implementadas salvaguardas contratuais apropriadas</li>
+                  <li>
+                    São implementadas salvaguardas contratuais apropriadas
+                  </li>
                   <li>Você é informado sobre essas transferências</li>
                   <li>Seus direitos continuam protegidos</li>
                 </ul>
@@ -347,15 +434,20 @@ export default function PrivacidadePage() {
             {/* 11. Alterações na Política */}
             <Card className="border-[#F2E6D8] shadow-lg">
               <CardHeader>
-                <CardTitle className="text-[#1E1D40]">11. Alterações nesta Política</CardTitle>
+                <CardTitle className="text-[#1E1D40]">
+                  11. Alterações nesta Política
+                </CardTitle>
               </CardHeader>
               <CardContent className="prose prose-gray max-w-none">
                 <p className="text-[#1E1D40]/80 leading-relaxed">
-                  Esta Política de Privacidade pode ser atualizada periodicamente. Quando isso acontecer:
+                  Esta Política de Privacidade pode ser atualizada
+                  periodicamente. Quando isso acontecer:
                 </p>
                 <ul className="list-disc pl-6 space-y-2 text-[#1E1D40]/80 mt-4">
                   <li>Publicaremos a nova versão em nossa plataforma</li>
-                  <li>Notificaremos você por e-mail sobre mudanças significativas</li>
+                  <li>
+                    Notificaremos você por e-mail sobre mudanças significativas
+                  </li>
                   <li>A data da última atualização será sempre indicada</li>
                   <li>Você terá a oportunidade de revisar as alterações</li>
                 </ul>
@@ -365,28 +457,41 @@ export default function PrivacidadePage() {
             {/* 12. Contato e DPO */}
             <Card className="border-[#4AB0D9]/20 shadow-lg bg-[#4AB0D9]/5">
               <CardHeader>
-                <CardTitle className="text-[#1E1D40]">12. Contato e Encarregado de Dados (DPO)</CardTitle>
+                <CardTitle className="text-[#1E1D40]">
+                  12. Contato e Encarregado de Dados (DPO)
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-[#1E1D40]/80 leading-relaxed mb-4">
-                  Para exercer seus direitos, esclarecer dúvidas ou fazer reclamações sobre o tratamento de seus dados
-                  pessoais, entre em contato conosco:
+                  Para exercer seus direitos, esclarecer dúvidas ou fazer
+                  reclamações sobre o tratamento de seus dados pessoais, entre
+                  em contato conosco:
                 </p>
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-3">
                     <div>
-                      <strong className="text-[#1E1D40]">Encarregado de Dados (DPO):</strong>
-                      <p className="text-[#1E1D40]/70">Iris Patricia Carregosa da Silva</p>
+                      <strong className="text-[#1E1D40]">
+                        Encarregado de Dados (DPO):
+                      </strong>
+                      <p className="text-[#1E1D40]/70">
+                        Iris Patricia Carregosa da Silva
+                      </p>
                     </div>
                     <div className="flex items-center gap-2">
                       <Mail className="h-4 w-4 text-[#4AB0D9]" />
-                      <a href="mailto:dpo@buscanutri.com.br" className="text-[#4AB0D9] hover:underline">
+                      <a
+                        href="mailto:dpo@buscanutri.com.br"
+                        className="text-[#4AB0D9] hover:underline"
+                      >
                         dpo@buscanutri.com.br
                       </a>
                     </div>
                     <div className="flex items-center gap-2">
                       <Mail className="h-4 w-4 text-[#4AB0D9]" />
-                      <a href="mailto:privacidade@buscanutri.com.br" className="text-[#4AB0D9] hover:underline">
+                      <a
+                        href="mailto:privacidade@buscanutri.com.br"
+                        className="text-[#4AB0D9] hover:underline"
+                      >
                         privacidade@buscanutri.com.br
                       </a>
                     </div>
@@ -394,24 +499,32 @@ export default function PrivacidadePage() {
                   <div className="space-y-3">
                     <div className="flex items-center gap-2">
                       <Phone className="h-4 w-4 text-[#4AB0D9]" />
-                      <a href="tel:+557999134938" className="text-[#4AB0D9] hover:underline">
+                      <a
+                        href="tel:+557999134938"
+                        className="text-[#4AB0D9] hover:underline"
+                      >
                         (79) 9 9813-4938
                       </a>
                     </div>
                     <div className="flex items-center gap-2">
                       <Clock className="h-4 w-4 text-[#4AB0D9]" />
-                      <span className="text-[#1E1D40]/70">Segunda a Sexta, 9h às 18h</span>
+                      <span className="text-[#1E1D40]/70">
+                        Segunda a Sexta, 9h às 18h
+                      </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <MapPin className="h-4 w-4 text-[#4AB0D9]" />
-                      <span className="text-[#1E1D40]/70">Aracaju, SE - Brasil</span>
+                      <span className="text-[#1E1D40]/70">
+                        Aracaju, SE - Brasil
+                      </span>
                     </div>
                   </div>
                 </div>
                 <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
                   <p className="text-blue-800 text-sm">
-                    <strong>Tempo de resposta:</strong> Responderemos às suas solicitações em até 15 dias úteis,
-                    conforme estabelecido pela LGPD.
+                    <strong>Tempo de resposta:</strong> Responderemos às suas
+                    solicitações em até 15 dias úteis, conforme estabelecido
+                    pela LGPD.
                   </p>
                 </div>
               </CardContent>
@@ -430,7 +543,9 @@ export default function PrivacidadePage() {
               </Button>
             </Link>
             <Link href="/cookies">
-              <Button className="bg-[#4AB0D9] hover:bg-[#4AB0D9]/90 text-white">Ver Política de Cookies</Button>
+              <Button className="bg-[#4AB0D9] hover:bg-[#4AB0D9]/90 text-white">
+                Ver Política de Cookies
+              </Button>
             </Link>
           </div>
         </div>
@@ -438,4 +553,3 @@ export default function PrivacidadePage() {
     </div>
   )
 }
-

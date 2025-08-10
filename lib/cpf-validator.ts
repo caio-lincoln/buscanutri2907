@@ -9,21 +9,21 @@ interface CPFValidationResult {
 
 // Função para validar CPF
 export function validateCPF(cpf: string): CPFValidationResult {
-  if (!cpf || typeof cpf !== "string") {
+  if (!cpf || typeof cpf !== 'string') {
     return {
       isValid: false,
-      message: "CPF é obrigatório",
+      message: 'CPF é obrigatório',
     }
   }
 
   // Remove caracteres não numéricos
-  const cleanCPF = cpf.replace(/\D/g, "")
+  const cleanCPF = cpf.replace(/\D/g, '')
 
   // Verifica se tem 11 dígitos
   if (cleanCPF.length !== 11) {
     return {
       isValid: false,
-      message: "CPF deve ter 11 dígitos",
+      message: 'CPF deve ter 11 dígitos',
     }
   }
 
@@ -31,7 +31,7 @@ export function validateCPF(cpf: string): CPFValidationResult {
   if (/^(\d)\1{10}$/.test(cleanCPF)) {
     return {
       isValid: false,
-      message: "CPF inválido",
+      message: 'CPF inválido',
     }
   }
 
@@ -45,7 +45,7 @@ export function validateCPF(cpf: string): CPFValidationResult {
   if (remainder !== parseInt(cleanCPF.charAt(9))) {
     return {
       isValid: false,
-      message: "CPF inválido",
+      message: 'CPF inválido',
     }
   }
 
@@ -59,42 +59,42 @@ export function validateCPF(cpf: string): CPFValidationResult {
   if (remainder !== parseInt(cleanCPF.charAt(10))) {
     return {
       isValid: false,
-      message: "CPF inválido",
+      message: 'CPF inválido',
     }
   }
 
   return {
     isValid: true,
-    message: "CPF válido",
+    message: 'CPF válido',
     formatted: formatCPF(cleanCPF),
   }
 }
 
 // Função para formatar CPF
 export function formatCPF(cpf: string): string {
-  if (!cpf) return ""
+  if (!cpf) return ''
 
   // Remove tudo que não é número
-  const clean = cpf.replace(/\D/g, "")
+  const clean = cpf.replace(/\D/g, '')
 
   // Aplica a máscara XXX.XXX.XXX-XX
   if (clean.length <= 3) {
     return clean
   } else if (clean.length <= 6) {
-    return clean.replace(/(\d{3})(\d{0,3})/, "$1.$2")
+    return clean.replace(/(\d{3})(\d{0,3})/, '$1.$2')
   } else if (clean.length <= 9) {
-    return clean.replace(/(\d{3})(\d{3})(\d{0,3})/, "$1.$2.$3")
+    return clean.replace(/(\d{3})(\d{3})(\d{0,3})/, '$1.$2.$3')
   } else {
-    return clean.replace(/(\d{3})(\d{3})(\d{3})(\d{0,2})/, "$1.$2.$3-$4")
+    return clean.replace(/(\d{3})(\d{3})(\d{3})(\d{0,2})/, '$1.$2.$3-$4')
   }
 }
 
 // Função para validar formato de CPF
 export function validateCPFFormat(cpf: string): CPFValidationResult {
-  if (!cpf || typeof cpf !== "string") {
+  if (!cpf || typeof cpf !== 'string') {
     return {
       isValid: false,
-      message: "CPF é obrigatório",
+      message: 'CPF é obrigatório',
     }
   }
 
@@ -106,7 +106,7 @@ export function validateCPFFormat(cpf: string): CPFValidationResult {
   if (!cpfRegex.test(trimmedCPF)) {
     return {
       isValid: false,
-      message: "Formato de CPF inválido. Use XXX.XXX.XXX-XX",
+      message: 'Formato de CPF inválido. Use XXX.XXX.XXX-XX',
     }
   }
 
@@ -115,5 +115,5 @@ export function validateCPFFormat(cpf: string): CPFValidationResult {
 
 // Função para limpar CPF (remover formatação)
 export function cleanCPF(cpf: string): string {
-  return cpf.replace(/\D/g, "")
+  return cpf.replace(/\D/g, '')
 }

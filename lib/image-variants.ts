@@ -5,27 +5,27 @@
 
 export interface ImageVariants {
   cover: {
-    lg: string    // 2000w
-    md: string    // 1400w  
-    sm: string    // 800w
+    lg: string // 2000w
+    md: string // 1400w
+    sm: string // 800w
   }
   avatar: {
-    large: string   // 512px
-    medium: string  // 256px
-    small: string   // 96px
+    large: string // 512px
+    medium: string // 256px
+    small: string // 96px
   }
 }
 
 export interface ImageVariantConfig {
   cover: {
-    lg: { width: 2000; height: 625 }    // 16:5 ratio
-    md: { width: 1400; height: 437 }    // 16:5 ratio
-    sm: { width: 800; height: 250 }     // 16:5 ratio
+    lg: { width: 2000; height: 625 } // 16:5 ratio
+    md: { width: 1400; height: 437 } // 16:5 ratio
+    sm: { width: 800; height: 250 } // 16:5 ratio
   }
   avatar: {
-    large: { width: 512; height: 512 }   // 1:1 ratio
-    medium: { width: 256; height: 256 }  // 1:1 ratio
-    small: { width: 96; height: 96 }     // 1:1 ratio
+    large: { width: 512; height: 512 } // 1:1 ratio
+    medium: { width: 256; height: 256 } // 1:1 ratio
+    small: { width: 96; height: 96 } // 1:1 ratio
   }
 }
 
@@ -47,35 +47,36 @@ export function generateImageVariants(
       return {
         lg: '/placeholder.svg?height=625&width=2000&text=Capa',
         md: '/placeholder.svg?height=437&width=1400&text=Capa',
-        sm: '/placeholder.svg?height=250&width=800&text=Capa'
+        sm: '/placeholder.svg?height=250&width=800&text=Capa',
       }
     } else {
       return {
         large: '/placeholder.svg?height=512&width=512&text=Avatar',
         medium: '/placeholder.svg?height=256&width=256&text=Avatar',
-        small: '/placeholder.svg?height=96&width=96&text=Avatar'
+        small: '/placeholder.svg?height=96&width=96&text=Avatar',
       }
     }
   }
 
   // Adiciona versionamento para cache busting
-  const versionParam = updatedAt ? `?v=${new Date(updatedAt).getTime()}` : ''
-  
+  // Use a consistent hash instead of timestamp to avoid hydration mismatch
+  const versionParam = updatedAt ? `?v=${updatedAt.replace(/[^0-9]/g, '').slice(-8)}` : ''
+
   // Se a URL já contém parâmetros de transformação (ex: Supabase Transform)
   const hasTransformParams = originalUrl.includes('transform=')
   const baseUrl = hasTransformParams ? originalUrl.split('?')[0] : originalUrl
-  
+
   if (type === 'cover') {
     return {
       lg: `${baseUrl}?width=2000&height=625&resize=cover&quality=85${versionParam ? '&' + versionParam.slice(1) : ''}`,
       md: `${baseUrl}?width=1400&height=437&resize=cover&quality=85${versionParam ? '&' + versionParam.slice(1) : ''}`,
-      sm: `${baseUrl}?width=800&height=250&resize=cover&quality=85${versionParam ? '&' + versionParam.slice(1) : ''}`
+      sm: `${baseUrl}?width=800&height=250&resize=cover&quality=85${versionParam ? '&' + versionParam.slice(1) : ''}`,
     }
   } else {
     return {
       large: `${baseUrl}?width=512&height=512&resize=cover&quality=90${versionParam ? '&' + versionParam.slice(1) : ''}`,
       medium: `${baseUrl}?width=256&height=256&resize=cover&quality=90${versionParam ? '&' + versionParam.slice(1) : ''}`,
-      small: `${baseUrl}?width=96&height=96&resize=cover&quality=90${versionParam ? '&' + versionParam.slice(1) : ''}`
+      small: `${baseUrl}?width=96&height=96&resize=cover&quality=90${versionParam ? '&' + versionParam.slice(1) : ''}`,
     }
   }
 }
@@ -90,7 +91,8 @@ export function selectBestAvatarVariant(
   variants: ImageVariants['avatar'],
   targetSize: number = 256
 ): string {
-  const pixelRatio = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1
+  const pixelRatio =
+    typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1
   const effectiveSize = targetSize * pixelRatio
 
   if (effectiveSize <= 96) {
@@ -112,7 +114,8 @@ export function selectBestCoverVariant(
   variants: ImageVariants['cover'],
   viewportWidth?: number
 ): string {
-  const width = viewportWidth || (typeof window !== 'undefined' ? window.innerWidth : 1200)
+  const width =
+    viewportWidth || (typeof window !== 'undefined' ? window.innerWidth : 1200)
 
   if (width <= 768) {
     return variants.sm

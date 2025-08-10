@@ -1,10 +1,10 @@
-import { nutritionistAddressService } from "./nutritionist-address-service"
+import { nutritionistAddressService } from './nutritionist-address-service'
 
 export interface AddressData {
   id?: string
   nutritionist_id?: string
-  type: "in_person" | "teleconsultation"
-  status: "active" | "inactive"
+  type: 'in_person' | 'teleconsultation'
+  status: 'active' | 'inactive'
   is_main: boolean
   country: string
   state: string
@@ -35,14 +35,14 @@ export async function saveNutritionistAddresses(
     for (const address of addresses) {
       const addressData = {
         ...address,
-        nutritionist_id: nutritionistId
+        nutritionist_id: nutritionistId,
       }
-      
+
       await nutritionistAddressService.createAddress(addressData)
     }
   } catch (error) {
-    console.error("Error saving nutritionist addresses:", error)
-    throw new Error("Erro ao salvar endereços do nutricionista")
+    // Silent error handling: Error saving nutritionist addresses
+    throw new Error('Erro ao salvar endereços do nutricionista')
   }
 }
 
@@ -51,23 +51,23 @@ export async function saveNutritionistAddresses(
  */
 export function getAddressDisplayText(address: AddressData): string {
   const parts = []
-  
+
   if (address.street) {
     parts.push(address.street)
     if (address.number) {
       parts[parts.length - 1] += `, ${address.number}`
     }
   }
-  
+
   if (address.neighborhood) {
     parts.push(address.neighborhood)
   }
-  
+
   parts.push(`${address.city}/${address.state}`)
-  
+
   if (address.zip_code) {
     parts.push(`CEP: ${address.zip_code}`)
   }
-  
-  return parts.join(" - ")
+
+  return parts.join(' - ')
 }

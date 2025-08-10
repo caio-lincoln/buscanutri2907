@@ -1,6 +1,6 @@
-"use client"
+'use client'
 
-import { useState, useEffect } from "react"
+import { useState, useEffect } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -8,17 +8,23 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
-import { Label } from "@/components/ui/label"
-import { Input } from "@/components/ui/input"
-import { Send } from "lucide-react"
-import { toast } from "@/components/ui/use-toast"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/textarea'
+import { Label } from '@/components/ui/label'
+import { Input } from '@/components/ui/input'
+import { Send } from 'lucide-react'
+import { toast } from '@/components/ui/use-toast'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
-import { type ForumQuestion, createForumQuestion } from "@/lib/forum-data"
-import { getCurrentUser } from "@/lib/auth"
+import { type ForumQuestion, createForumQuestion } from '@/lib/forum-data'
+import { getCurrentUser } from '@/lib/auth'
 
 interface QuestionModalProps {
   open: boolean
@@ -26,27 +32,31 @@ interface QuestionModalProps {
   onQuestionPosted?: (question: ForumQuestion) => void
 }
 
-export function QuestionModal({ open, onOpenChange, onQuestionPosted }: QuestionModalProps) {
-  const [questionTitle, setQuestionTitle] = useState("")
-  const [questionContent, setQuestionContent] = useState("")
-  const [questionCategory, setQuestionCategory] = useState("")
+export function QuestionModal({
+  open,
+  onOpenChange,
+  onQuestionPosted,
+}: QuestionModalProps) {
+  const [questionTitle, setQuestionTitle] = useState('')
+  const [questionContent, setQuestionContent] = useState('')
+  const [questionCategory, setQuestionCategory] = useState('')
   const [userType, setUserType] = useState<string | null>(null)
 
   const specialtiesOptions = [
-    { value: "suplementos", label: "Suplementos" },
-    { value: "exercicios", label: "Exercícios" }, 
-    { value: "dieta", label: "Dieta" },
-    { value: "saude", label: "Saúde" },
-    { value: "nutricao", label: "Nutrição" },
+    { value: 'suplementos', label: 'Suplementos' },
+    { value: 'exercicios', label: 'Exercícios' },
+    { value: 'dieta', label: 'Dieta' },
+    { value: 'saude', label: 'Saúde' },
+    { value: 'nutricao', label: 'Nutrição' },
   ]
 
   useEffect(() => {
     // Reset form fields when modal opens
     if (open) {
-      setQuestionTitle("")
-      setQuestionContent("")
-      setQuestionCategory("")
-      
+      setQuestionTitle('')
+      setQuestionContent('')
+      setQuestionCategory('')
+
       // Detectar tipo de usuário
       const detectUserType = async () => {
         try {
@@ -55,20 +65,25 @@ export function QuestionModal({ open, onOpenChange, onQuestionPosted }: Question
             setUserType(user.user_type)
           }
         } catch (error) {
-          console.error("Erro ao detectar tipo de usuário:", error)
+          // Silent error handling - user type detection error
         }
       }
-      
+
       detectUserType()
     }
   }, [open])
 
   const handlePostQuestion = async () => {
-    if (!questionTitle.trim() || !questionContent.trim() || !questionCategory.trim()) {
+    if (
+      !questionTitle.trim() ||
+      !questionContent.trim() ||
+      !questionCategory.trim()
+    ) {
       toast({
-        title: "Campos obrigatórios",
-        description: "Por favor, preencha o título, a pergunta e a especialidade.",
-        variant: "destructive",
+        title: 'Campos obrigatórios',
+        description:
+          'Por favor, preencha o título, a pergunta e a especialidade.',
+        variant: 'destructive',
       })
       return
     }
@@ -77,9 +92,9 @@ export function QuestionModal({ open, onOpenChange, onQuestionPosted }: Question
       const user = await getCurrentUser()
       if (!user) {
         toast({
-          title: "Erro de autenticação",
-          description: "Você precisa estar logado para fazer uma pergunta.",
-          variant: "destructive",
+          title: 'Erro de autenticação',
+          description: 'Você precisa estar logado para fazer uma pergunta.',
+          variant: 'destructive',
         })
         return
       }
@@ -91,24 +106,28 @@ export function QuestionModal({ open, onOpenChange, onQuestionPosted }: Question
         user.id,
         questionCategory
       )
-      
+
       if (addedQuestion) {
         onQuestionPosted?.(addedQuestion)
-        toast({ title: "Pergunta publicada!", description: "Sua pergunta foi enviada para a comunidade." })
+        toast({
+          title: 'Pergunta publicada!',
+          description: 'Sua pergunta foi enviada para a comunidade.',
+        })
         onOpenChange(false) // Close modal after posting
       } else {
         toast({
-          title: "Erro ao publicar",
-          description: "Não foi possível publicar sua pergunta. Tente novamente.",
-          variant: "destructive",
+          title: 'Erro ao publicar',
+          description:
+            'Não foi possível publicar sua pergunta. Tente novamente.',
+          variant: 'destructive',
         })
       }
     } catch (error) {
-      console.error("Erro ao publicar pergunta:", error)
+      // Silent error handling - question posting error
       toast({
-        title: "Erro ao publicar",
-        description: "Não foi possível publicar sua pergunta. Tente novamente.",
-        variant: "destructive",
+        title: 'Erro ao publicar',
+        description: 'Não foi possível publicar sua pergunta. Tente novamente.',
+        variant: 'destructive',
       })
     }
   }
@@ -119,10 +138,9 @@ export function QuestionModal({ open, onOpenChange, onQuestionPosted }: Question
         <DialogHeader>
           <DialogTitle>Fazer uma Nova Pergunta</DialogTitle>
           <DialogDescription>
-            {userType === 'nutricionista' 
-              ? "Faça uma pergunta para outros nutricionistas da comunidade Busca Nutri."
-              : "Descreva sua dúvida para a comunidade Busca Nutri."
-            }
+            {userType === 'nutricionista'
+              ? 'Faça uma pergunta para outros nutricionistas da comunidade Busca Nutri.'
+              : 'Descreva sua dúvida para a comunidade Busca Nutri.'}
           </DialogDescription>
           {userType === 'nutricionista' && (
             <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
@@ -133,26 +151,33 @@ export function QuestionModal({ open, onOpenChange, onQuestionPosted }: Question
                 </span>
               </div>
               <p className="text-xs text-blue-600 mt-1">
-                Esta pergunta será visível apenas para outros nutricionistas da plataforma.
+                Esta pergunta será visível apenas para outros nutricionistas da
+                plataforma.
               </p>
             </div>
           )}
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div>
-            <Label htmlFor="newQuestionTitle" className="text-sm font-medium text-gray-700">
+            <Label
+              htmlFor="newQuestionTitle"
+              className="text-sm font-medium text-gray-700"
+            >
               Título
             </Label>
             <Input
               id="newQuestionTitle"
               placeholder="Ex: Dúvida sobre atendimento online..."
               value={questionTitle}
-              onChange={(e) => setQuestionTitle(e.target.value)}
+              onChange={e => setQuestionTitle(e.target.value)}
               className="mt-1"
             />
           </div>
           <div>
-            <Label htmlFor="newQuestionContent" className="text-sm font-medium text-gray-700">
+            <Label
+              htmlFor="newQuestionContent"
+              className="text-sm font-medium text-gray-700"
+            >
               Sua Pergunta
             </Label>
             <Textarea
@@ -160,18 +185,21 @@ export function QuestionModal({ open, onOpenChange, onQuestionPosted }: Question
               placeholder="Descreva sua dúvida ou tópico aqui..."
               rows={4}
               value={questionContent}
-              onChange={(e) => setQuestionContent(e.target.value)}
+              onChange={e => setQuestionContent(e.target.value)}
               className="mt-1"
             />
           </div>
           <div>
             <Label htmlFor="newQuestionCategory">Especialidade</Label>
-            <Select value={questionCategory} onValueChange={setQuestionCategory}>
+            <Select
+              value={questionCategory}
+              onValueChange={setQuestionCategory}
+            >
               <SelectTrigger id="newQuestionCategory">
                 <SelectValue placeholder="Selecione uma especialidade" />
               </SelectTrigger>
               <SelectContent>
-                {specialtiesOptions.map((specialty) => (
+                {specialtiesOptions.map(specialty => (
                   <SelectItem key={specialty.value} value={specialty.value}>
                     {specialty.label}
                   </SelectItem>
@@ -183,7 +211,11 @@ export function QuestionModal({ open, onOpenChange, onQuestionPosted }: Question
         <DialogFooter>
           <Button
             onClick={handlePostQuestion}
-            disabled={!questionTitle.trim() || !questionContent.trim() || !questionCategory.trim()}
+            disabled={
+              !questionTitle.trim() ||
+              !questionContent.trim() ||
+              !questionCategory.trim()
+            }
           >
             <Send className="h-4 w-4 mr-2" />
             Publicar Pergunta

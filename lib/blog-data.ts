@@ -1,6 +1,6 @@
-import { v4 as uuidv4 } from "uuid"
-import { getNutritionistBadges, type NutritionistBadge } from "./badge-service" // Importar o serviço de insígnias
-import { createSupabaseClient } from "./supabase"
+import { v4 as uuidv4 } from 'uuid'
+import { getNutritionistBadges, type NutritionistBadge } from './badge-service' // Importar o serviço de insígnias
+import { createSupabaseClient } from './supabase'
 
 // Criar cliente Supabase que mantém a sessão do usuário
 const supabase = createSupabaseClient()
@@ -21,68 +21,74 @@ export interface BlogPost {
   readTime: string // Ex: "5 min de leitura"
   views: number
   featured: boolean
+  centerImage?: boolean // Centralizar imagem de capa
   badges?: NutritionistBadge[] // Adicionar badges ao tipo
 }
 
 export const blogCategories = [
-  "Alimentação Infantil",
-  "Emagrecimento",
-  "Receitas Saudáveis",
-  "Nutrição Esportiva",
-  "Saúde Digestiva",
-  "Doenças Crônicas",
-  "Vegetarianismo/Veganismo",
-  "Bem-Estar",
+  'Alimentação Infantil',
+  'Emagrecimento',
+  'Receitas Saudáveis',
+  'Nutrição Esportiva',
+  'Saúde Digestiva',
+  'Doenças Crônicas',
+  'Vegetarianismo/Veganismo',
+  'Bem-Estar',
 ]
 
 // Função para buscar todos os posts do blog, incluindo as insígnias do autor
 export async function getAllBlogPosts(): Promise<BlogPost[]> {
   try {
     const { data: posts, error } = await supabase
-      .from("blog_posts")
-      .select(`
+      .from('blog_posts')
+      .select(
+        `
         *,
         nutritionist_profiles!inner(
           full_name,
           bio,
           profile_image_url
         )
-      `)
-      .eq("published", true)
-      .order("created_at", { ascending: false })
+      `
+      )
+      .eq('published', true)
+      .order('created_at', { ascending: false })
 
     if (error) {
-      console.error("Erro ao buscar posts do blog:", error)
+      // Silent error handling: Error fetching blog posts
       return []
     }
 
     const postsWithBadges = await Promise.all(
-      (posts || []).map(async (post) => {
+      (posts || []).map(async post => {
         const badges = await getNutritionistBadges(post.author_id)
         return {
           id: post.id,
           title: post.title,
-          excerpt: post.excerpt || "",
+          excerpt: post.excerpt || '',
           content: post.content,
-          image: post.image_url || "/placeholder.svg?height=400&width=800",
-          author: post.nutritionist_profiles?.full_name || "Autor Desconhecido",
+          image: post.image_url || '/placeholder.svg?height=400&width=800',
+          author: post.nutritionist_profiles?.full_name || 'Autor Desconhecido',
           authorId: post.author_id,
-          authorBio: post.nutritionist_profiles?.bio || "",
-          authorImage: post.nutritionist_profiles?.profile_image_url || "/placeholder.svg?height=100&width=100",
-          date: new Date(post.created_at).toISOString().split("T")[0],
+          authorBio: post.nutritionist_profiles?.bio || '',
+          authorImage:
+            post.nutritionist_profiles?.profile_image_url ||
+            '/placeholder.svg?height=100&width=100',
+          date: new Date(post.created_at).toISOString().split('T')[0],
           category: post.category,
           tags: post.tags || [],
-          readTime: post.read_time || "5 min de leitura",
+          readTime: post.read_time || '5 min de leitura',
           views: post.views || 0,
           featured: post.featured || false,
-          badges: badges.map((nb) => nb.badge)
+          centerImage: post.center_image || false,
+          badges: badges.map(nb => nb.badge),
         } as BlogPost
       })
     )
 
     return postsWithBadges
   } catch (error) {
-    console.error("Erro ao buscar posts do blog:", error)
+    // Silent error handling: Error fetching blog posts
     return []
   }
 }
@@ -91,129 +97,146 @@ export async function getAllBlogPosts(): Promise<BlogPost[]> {
 export async function getBlogPostById(id: string): Promise<BlogPost | null> {
   try {
     const { data: post, error } = await supabase
-      .from("blog_posts")
-      .select(`
+      .from('blog_posts')
+      .select(
+        `
         *,
         nutritionist_profiles!inner(
           full_name,
           bio,
           profile_image_url
         )
-      `)
-      .eq("id", id)
-      .eq("published", true)
+      `
+      )
+      .eq('id', id)
+      .eq('published', true)
       .single()
 
     if (error || !post) {
-      console.error("Erro ao buscar post do blog:", error)
+      // Silent error handling: Error fetching blog post
       return null
     }
 
     const badges = await getNutritionistBadges(post.author_id)
-    
+
     // Incrementar visualizações
     await supabase
-      .from("blog_posts")
+      .from('blog_posts')
       .update({ views: (post.views || 0) + 1 })
-      .eq("id", id)
+      .eq('id', id)
 
     return {
       id: post.id,
       title: post.title,
-      excerpt: post.excerpt || "",
+      excerpt: post.excerpt || '',
       content: post.content,
-      image: post.image_url || "/placeholder.svg?height=400&width=800",
-      author: post.nutritionist_profiles?.full_name || "Autor Desconhecido",
+      image: post.image_url || '/placeholder.svg?height=400&width=800',
+      author: post.nutritionist_profiles?.full_name || 'Autor Desconhecido',
       authorId: post.author_id,
-      authorBio: post.nutritionist_profiles?.bio || "",
-      authorImage: post.nutritionist_profiles?.profile_image_url || "/placeholder.svg?height=100&width=100",
-      date: new Date(post.created_at).toISOString().split("T")[0],
+      authorBio: post.nutritionist_profiles?.bio || '',
+      authorImage:
+        post.nutritionist_profiles?.profile_image_url ||
+        '/placeholder.svg?height=100&width=100',
+      date: new Date(post.created_at).toISOString().split('T')[0],
       category: post.category,
       tags: post.tags || [],
-      readTime: post.read_time || "5 min de leitura",
+      readTime: post.read_time || '5 min de leitura',
       views: (post.views || 0) + 1,
       featured: post.featured || false,
-      badges: badges.map((nb) => nb.badge)
+      centerImage: post.center_image || false,
+      badges: badges.map(nb => nb.badge),
     } as BlogPost
   } catch (error) {
-    console.error("Erro ao buscar post do blog:", error)
+    // Silent error handling: Error fetching blog post
     return null
   }
 }
 
 // Função para buscar posts por autor, incluindo as insígnias do autor
-export async function getBlogPostsByAuthor(authorId: string): Promise<BlogPost[]> {
+export async function getBlogPostsByAuthor(
+  authorId: string
+): Promise<BlogPost[]> {
   try {
     const { data: posts, error } = await supabase
-      .from("blog_posts")
-      .select(`
+      .from('blog_posts')
+      .select(
+        `
         *,
         nutritionist_profiles!inner(
           full_name,
           bio,
           profile_image_url
         )
-      `)
-      .eq("author_id", authorId)
-      .order("created_at", { ascending: false })
+      `
+      )
+      .eq('author_id', authorId)
+      .order('created_at', { ascending: false })
 
     if (error) {
-      console.error("Erro ao buscar posts do autor:", error)
+      // Silent error handling: Error fetching posts by author
       return []
     }
 
     const postsWithBadges = await Promise.all(
-      (posts || []).map(async (post) => {
+      (posts || []).map(async post => {
         const badges = await getNutritionistBadges(post.author_id)
         return {
           id: post.id,
           title: post.title,
-          excerpt: post.excerpt || "",
+          excerpt: post.excerpt || '',
           content: post.content,
-          image: post.image_url || "/placeholder.svg?height=400&width=800",
-          author: post.nutritionist_profiles?.full_name || "Autor Desconhecido",
+          image: post.image_url || '/placeholder.svg?height=400&width=800',
+          author: post.nutritionist_profiles?.full_name || 'Autor Desconhecido',
           authorId: post.author_id,
-          authorBio: post.nutritionist_profiles?.bio || "",
-          authorImage: post.nutritionist_profiles?.profile_image_url || "/placeholder.svg?height=100&width=100",
-          date: new Date(post.created_at).toISOString().split("T")[0],
+          authorBio: post.nutritionist_profiles?.bio || '',
+          authorImage:
+            post.nutritionist_profiles?.profile_image_url ||
+            '/placeholder.svg?height=100&width=100',
+          date: new Date(post.created_at).toISOString().split('T')[0],
           category: post.category,
           tags: post.tags || [],
-          readTime: post.read_time || "5 min de leitura",
+          readTime: post.read_time || '5 min de leitura',
           views: post.views || 0,
           featured: post.featured || false,
-          badges: badges.map((nb) => nb.badge)
+          centerImage: post.center_image || false,
+          badges: badges.map(nb => nb.badge),
         } as BlogPost
       })
     )
 
     return postsWithBadges
   } catch (error) {
-    console.error("Erro ao buscar posts do autor:", error)
+    // Silent error handling: Error fetching posts by author
     return []
   }
 }
 
 // Função para adicionar um novo post
-export async function addBlogPost(newPostData: Omit<BlogPost, "id" | "date" | "views" | "badges">): Promise<BlogPost | null> {
+export async function addBlogPost(
+  newPostData: Omit<BlogPost, 'id' | 'date' | 'views' | 'badges'>
+): Promise<BlogPost | null> {
   try {
     // Verificar se o usuário está autenticado
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser()
+
     if (authError || !user) {
-      console.error("Usuário não autenticado:", authError)
-      throw new Error("Usuário não autenticado")
+      // Silent error handling: User not authenticated
+      throw new Error('Usuário não autenticado')
     }
 
-    console.log("Usuário autenticado:", user.id, "Tentando criar post para author_id:", newPostData.authorId)
+    // Silent logging: User authenticated and attempting to create post
 
     // Verificar se o usuário autenticado é o mesmo que está tentando criar o post
     if (user.id !== newPostData.authorId) {
-      console.error("Usuário não autorizado a criar post para outro autor")
-      throw new Error("Não autorizado")
+      // Silent error handling: User not authorized to create post for another author
+      throw new Error('Não autorizado')
     }
 
     const { data: post, error } = await supabase
-      .from("blog_posts")
+      .from('blog_posts')
       .insert({
         title: newPostData.title,
         excerpt: newPostData.excerpt,
@@ -224,45 +247,49 @@ export async function addBlogPost(newPostData: Omit<BlogPost, "id" | "date" | "v
         tags: newPostData.tags,
         read_time: newPostData.readTime,
         featured: newPostData.featured,
-        published: true
+        center_image: newPostData.centerImage || false,
+        published: true,
       })
       .select()
       .single()
 
     if (error || !post) {
-      console.error("Erro ao adicionar post:", error)
+      // Silent error handling: Error adding post
       return null
     }
 
     return {
       id: post.id,
       title: post.title,
-      excerpt: post.excerpt || "",
+      excerpt: post.excerpt || '',
       content: post.content,
-      image: post.image_url || "/placeholder.svg?height=400&width=800",
+      image: post.image_url || '/placeholder.svg?height=400&width=800',
       author: newPostData.author,
       authorId: post.author_id,
       authorBio: newPostData.authorBio,
       authorImage: newPostData.authorImage,
-      date: new Date(post.created_at).toISOString().split("T")[0],
+      date: new Date(post.created_at).toISOString().split('T')[0],
       category: post.category,
       tags: post.tags || [],
-      readTime: post.read_time || "5 min de leitura",
+      readTime: post.read_time || '5 min de leitura',
       views: 0,
       featured: post.featured || false,
-      badges: []
+      centerImage: post.center_image || false,
+      badges: [],
     } as BlogPost
   } catch (error) {
-    console.error("Erro ao adicionar post:", error)
+    // Silent error handling: Error adding post
     return null
   }
 }
 
 // Função para atualizar um post existente
-export async function updateBlogPost(updatedPost: BlogPost): Promise<BlogPost | null> {
+export async function updateBlogPost(
+  updatedPost: BlogPost
+): Promise<BlogPost | null> {
   try {
     const { data: post, error } = await supabase
-      .from("blog_posts")
+      .from('blog_posts')
       .update({
         title: updatedPost.title,
         excerpt: updatedPost.excerpt,
@@ -272,94 +299,103 @@ export async function updateBlogPost(updatedPost: BlogPost): Promise<BlogPost | 
         tags: updatedPost.tags,
         read_time: updatedPost.readTime,
         featured: updatedPost.featured,
-        updated_at: new Date().toISOString()
+        center_image: updatedPost.centerImage || false,
+        updated_at: new Date().toISOString(),
       })
-      .eq("id", updatedPost.id)
+      .eq('id', updatedPost.id)
       .select()
       .single()
 
     if (error || !post) {
-      console.error("Erro ao atualizar post:", error)
+      // Silent error handling: Error updating post
       return null
     }
 
     return {
       ...updatedPost,
-      date: new Date(post.updated_at || post.created_at).toISOString().split("T")[0]
+      date: new Date(post.updated_at || post.created_at)
+        .toISOString()
+        .split('T')[0],
     }
   } catch (error) {
-    console.error("Erro ao atualizar post:", error)
+    // Silent error handling: Error updating post
     return null
   }
 }
 
 // Função para deletar um post
-export async function deleteBlogPost(id: string, authenticatedSupabase?: any): Promise<boolean> {
-  console.log("🗑️ Iniciando deleteBlogPost para ID:", id)
-  
+export async function deleteBlogPost(
+  id: string,
+  authenticatedSupabase?: any
+): Promise<boolean> {
+  // Silent logging: Starting deleteBlogPost for ID
+
   try {
     // Usar o cliente autenticado se fornecido, senão usar o padrão
     const clientToUse = authenticatedSupabase || supabase
-    
+
     // Verificar se o usuário está autenticado
-    console.log("🔐 Verificando autenticação...")
-    const { data: { user }, error: authError } = await clientToUse.auth.getUser()
-    
+    // Silent logging: Checking authentication
+    const {
+      data: { user },
+      error: authError,
+    } = await clientToUse.auth.getUser()
+
     if (authError || !user) {
-      console.error("❌ Usuário não autenticado:", authError)
+      // Silent error handling: User not authenticated
       return false
     }
-    
-    console.log("✅ Usuário autenticado:", user.id)
+
+    // Silent logging: User authenticated
 
     // Primeiro, verificar se o post existe e se o usuário é o autor
-    console.log("🔍 Buscando post para verificar autorização...")
+    // Silent logging: Searching post to verify authorization
     const { data: post, error: fetchError } = await clientToUse
-      .from("blog_posts")
-      .select("author_id, title")
-      .eq("id", id)
+      .from('blog_posts')
+      .select('author_id, title')
+      .eq('id', id)
       .single()
 
     if (fetchError || !post) {
-      console.error("❌ Post não encontrado:", fetchError)
+      // Silent error handling: Post not found
       return false
     }
-    
-    console.log("📄 Post encontrado:", { id, title: post.title, author_id: post.author_id })
+
+    // Silent logging: Post found
 
     // Verificar se o usuário autenticado é o autor do post
     if (post.author_id !== user.id) {
-      console.error("❌ Usuário não autorizado a deletar este post. Author:", post.author_id, "User:", user.id)
+      // Silent error handling: User not authorized to delete this post
       return false
     }
-    
-    console.log("✅ Autorização confirmada. Procedendo com a exclusão...")
+
+    // Silent logging: Authorization confirmed, proceeding with deletion
 
     // Deletar o post
-    console.log("🗑️ Executando DELETE no Supabase...")
+    // Silent logging: Executing DELETE on Supabase
     const { data: deletedData, error } = await clientToUse
-      .from("blog_posts")
+      .from('blog_posts')
       .delete()
-      .eq("id", id)
-      .eq("author_id", user.id) // Dupla verificação de segurança
+      .eq('id', id)
+      .eq('author_id', user.id) // Dupla verificação de segurança
       .select() // Retorna os dados deletados
 
     if (error) {
-      console.error("❌ Erro ao deletar post:", error)
+      // Silent error handling: Error deleting post
       return false
     }
 
-    console.log("✅ Resposta do DELETE:", deletedData)
-    
+    // Silent logging: DELETE response
+
     if (!deletedData || deletedData.length === 0) {
-      console.error("⚠️ Nenhum registro foi deletado. Possível problema com RLS ou condições.")
+      // Silent error handling: No record was deleted, possible RLS or condition issue
       return false
     }
 
-    console.log("🎉 Post deletado com sucesso:", id)
+    // Silent logging: Post deleted successfully
     return true
   } catch (error) {
-    console.error("💥 Erro inesperado ao deletar post:", error)
+    // Silent error handling: Unexpected error deleting post
     return false
   }
 }

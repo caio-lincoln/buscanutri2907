@@ -1,5 +1,5 @@
-import { supabase } from "./supabase"
-import { ForumAuthor, ForumReply } from "./forum-data"
+import { supabase } from './supabase'
+import { ForumAuthor, ForumReply } from './forum-data'
 
 // Chat interfaces
 export interface ChatConversation {
@@ -7,7 +7,7 @@ export interface ChatConversation {
   patient_id: string
   nutritionist_id: string
   appointment_id?: string
-  status: "active" | "closed"
+  status: 'active' | 'closed'
   closed_by?: string
   closure_reason?: string
   closed_at?: string
@@ -26,7 +26,7 @@ export interface ChatConversation {
   }
   last_message?: {
     message_text: string
-    sender_type: "patient" | "nutritionist"
+    sender_type: 'patient' | 'nutritionist'
     created_at: string
   }
 }
@@ -35,9 +35,9 @@ export interface ChatMessage {
   id: string
   conversation_id: string
   sender_id: string
-  sender_type: "patient" | "nutritionist"
+  sender_type: 'patient' | 'nutritionist'
   message_text: string
-  message_type: "text" | "image" | "file"
+  message_type: 'text' | 'image' | 'file'
   file_url?: string
   file_name?: string
   is_read: boolean
@@ -94,16 +94,18 @@ export interface ForumAnswer {
 }
 
 // Chat functions
-export async function getPatientChatConversations(patientUserId: string): Promise<ChatConversation[]> {
+export async function getPatientChatConversations(
+  patientUserId: string
+): Promise<ChatConversation[]> {
   try {
     const { data: conversations, error } = await supabase
-      .from("chat_conversations")
-      .select("*")
-      .eq("patient_id", patientUserId)
-      .order("last_message_at", { ascending: false, nullsFirst: false })
+      .from('chat_conversations')
+      .select('*')
+      .eq('patient_id', patientUserId)
+      .order('last_message_at', { ascending: false, nullsFirst: false })
 
     if (error) {
-      console.error("Error fetching patient chat conversations:", error)
+      // Silent error handling: Error fetching patient chat conversations
       return []
     }
 
@@ -112,62 +114,71 @@ export async function getPatientChatConversations(patientUserId: string): Promis
     }
 
     // Buscar perfis dos nutricionistas separadamente
-    const nutritionistIds = [...new Set(conversations.map(c => c.nutritionist_id).filter(Boolean))]
+    const nutritionistIds = [
+      ...new Set(conversations.map(c => c.nutritionist_id).filter(Boolean)),
+    ]
     let nutritionistProfiles: any[] = []
-    
+
     if (nutritionistIds.length > 0) {
       const { data: profiles } = await supabase
-        .from("nutritionist_profiles")
-        .select("user_id, full_name, profile_image_url, crn, is_verified")
-        .in("user_id", nutritionistIds)
-      
+        .from('nutritionist_profiles')
+        .select('user_id, full_name, profile_image_url, crn, is_verified')
+        .in('user_id', nutritionistIds)
+
       nutritionistProfiles = profiles || []
     }
 
     // Buscar últimas mensagens separadamente
     const conversationIds = conversations.map(c => c.id)
     let lastMessages: any[] = []
-    
+
     if (conversationIds.length > 0) {
       const { data: messages } = await supabase
-        .from("chat_messages")
-        .select("conversation_id, message_text, sender_type, created_at")
-        .in("conversation_id", conversationIds)
-        .order("created_at", { ascending: false })
-      
+        .from('chat_messages')
+        .select('conversation_id, message_text, sender_type, created_at')
+        .in('conversation_id', conversationIds)
+        .order('created_at', { ascending: false })
+
       lastMessages = messages || []
     }
 
     // Combinar os dados
     const result = conversations.map((conv: any) => {
-      const nutritionistProfile = nutritionistProfiles.find(np => np.user_id === conv.nutritionist_id)
-      const conversationMessages = lastMessages.filter(msg => msg.conversation_id === conv.id)
-      const lastMessage = conversationMessages.length > 0 ? conversationMessages[0] : null
-      
+      const nutritionistProfile = nutritionistProfiles.find(
+        np => np.user_id === conv.nutritionist_id
+      )
+      const conversationMessages = lastMessages.filter(
+        msg => msg.conversation_id === conv.id
+      )
+      const lastMessage =
+        conversationMessages.length > 0 ? conversationMessages[0] : null
+
       return {
         ...conv,
         nutritionist_profiles: nutritionistProfile || null,
-        last_message: lastMessage
+        last_message: lastMessage,
       }
     })
 
     return result
   } catch (error) {
-    console.error("Error in getPatientChatConversations:", error)
+    // Silent error handling: Error in getPatientChatConversations
     return []
   }
 }
 
-export async function getNutritionistChatConversations(nutritionistUserId: string): Promise<ChatConversation[]> {
+export async function getNutritionistChatConversations(
+  nutritionistUserId: string
+): Promise<ChatConversation[]> {
   try {
     const { data: conversations, error } = await supabase
-      .from("chat_conversations")
-      .select("*")
-      .eq("nutritionist_id", nutritionistUserId)
-      .order("last_message_at", { ascending: false, nullsFirst: false })
+      .from('chat_conversations')
+      .select('*')
+      .eq('nutritionist_id', nutritionistUserId)
+      .order('last_message_at', { ascending: false, nullsFirst: false })
 
     if (error) {
-      console.error("Error fetching nutritionist chat conversations:", error)
+      // Silent error handling: Error fetching nutritionist chat conversations
       return []
     }
 
@@ -176,82 +187,95 @@ export async function getNutritionistChatConversations(nutritionistUserId: strin
     }
 
     // Buscar perfis dos pacientes separadamente
-    const patientIds = [...new Set(conversations.map(c => c.patient_id).filter(Boolean))]
+    const patientIds = [
+      ...new Set(conversations.map(c => c.patient_id).filter(Boolean)),
+    ]
     let patientProfiles: any[] = []
-    
+
     if (patientIds.length > 0) {
       const { data: profiles } = await supabase
-        .from("patient_profiles")
-        .select("user_id, full_name, profile_image_url")
-        .in("user_id", patientIds)
-      
+        .from('patient_profiles')
+        .select('user_id, full_name, profile_image_url')
+        .in('user_id', patientIds)
+
       patientProfiles = profiles || []
     }
 
     // Buscar últimas mensagens separadamente
     const conversationIds = conversations.map(c => c.id)
     let lastMessages: any[] = []
-    
+
     if (conversationIds.length > 0) {
       const { data: messages } = await supabase
-        .from("chat_messages")
-        .select("conversation_id, message_text, sender_type, created_at")
-        .in("conversation_id", conversationIds)
-        .order("created_at", { ascending: false })
-      
+        .from('chat_messages')
+        .select('conversation_id, message_text, sender_type, created_at')
+        .in('conversation_id', conversationIds)
+        .order('created_at', { ascending: false })
+
       lastMessages = messages || []
     }
 
     // Combinar os dados
     const result = conversations.map((conv: any) => {
-      const patientProfile = patientProfiles.find(pp => pp.user_id === conv.patient_id)
-      const conversationMessages = lastMessages.filter(msg => msg.conversation_id === conv.id)
-      const lastMessage = conversationMessages.length > 0 ? conversationMessages[0] : null
-      
+      const patientProfile = patientProfiles.find(
+        pp => pp.user_id === conv.patient_id
+      )
+      const conversationMessages = lastMessages.filter(
+        msg => msg.conversation_id === conv.id
+      )
+      const lastMessage =
+        conversationMessages.length > 0 ? conversationMessages[0] : null
+
       return {
         ...conv,
         patient_profiles: patientProfile || null,
-        last_message: lastMessage
+        last_message: lastMessage,
       }
     })
 
     return result
   } catch (error) {
-    console.error("Error in getNutritionistChatConversations:", error)
+    // Silent error handling: Error in getNutritionistChatConversations
     return []
   }
 }
 
-export async function getChatMessages(conversationId: string, userId: string, userType: "patient" | "nutritionist"): Promise<ChatMessage[]> {
+export async function getChatMessages(
+  conversationId: string,
+  userId: string,
+  userType: 'patient' | 'nutritionist'
+): Promise<ChatMessage[]> {
   try {
     const { data, error } = await supabase
-      .from("chat_messages")
-      .select(`
+      .from('chat_messages')
+      .select(
+        `
         *,
-        sender_profile:${userType === "patient" ? "nutritionist_profiles" : "patient_profiles"}!chat_messages_sender_id_fkey (
+        sender_profile:${userType === 'patient' ? 'nutritionist_profiles' : 'patient_profiles'}!chat_messages_sender_id_fkey (
           full_name,
           profile_image_url
         )
-      `)
-      .eq("conversation_id", conversationId)
-      .order("created_at", { ascending: true })
+      `
+      )
+      .eq('conversation_id', conversationId)
+      .order('created_at', { ascending: true })
 
     if (error) {
-      console.error("Error fetching chat messages:", error)
+      // Silent error handling: Error fetching chat messages
       return []
     }
 
     // Mark messages as read
     await supabase
-      .from("chat_messages")
+      .from('chat_messages')
       .update({ is_read: true, read_at: new Date().toISOString() })
-      .eq("conversation_id", conversationId)
-      .neq("sender_id", userId)
-      .eq("is_read", false)
+      .eq('conversation_id', conversationId)
+      .neq('sender_id', userId)
+      .eq('is_read', false)
 
     return data || []
   } catch (error) {
-    console.error("Error in getChatMessages:", error)
+    // Silent error handling: Error in getChatMessages
     return []
   }
 }
@@ -259,15 +283,15 @@ export async function getChatMessages(conversationId: string, userId: string, us
 export async function sendChatMessage(
   conversationId: string,
   userId: string,
-  userType: "patient" | "nutritionist",
+  userType: 'patient' | 'nutritionist',
   messageText: string,
-  messageType: "text" | "image" | "file" = "text",
+  messageType: 'text' | 'image' | 'file' = 'text',
   fileUrl?: string,
   fileName?: string
 ): Promise<ChatMessage> {
   try {
     const { data, error } = await supabase
-      .from("chat_messages")
+      .from('chat_messages')
       .insert({
         conversation_id: conversationId,
         sender_id: userId,
@@ -276,25 +300,25 @@ export async function sendChatMessage(
         message_type: messageType,
         file_url: fileUrl,
         file_name: fileName,
-        is_read: false
+        is_read: false,
       })
       .select()
       .single()
 
     if (error) {
-      console.error("Error sending chat message:", error)
+      // Silent error handling: Error sending chat message
       throw error
     }
 
     // Update conversation last_message_at
     await supabase
-      .from("chat_conversations")
+      .from('chat_conversations')
       .update({ last_message_at: new Date().toISOString() })
-      .eq("id", conversationId)
+      .eq('id', conversationId)
 
     return data
   } catch (error) {
-    console.error("Error in sendChatMessage:", error)
+    // Silent error handling: Error in sendChatMessage
     throw error
   }
 }
@@ -307,11 +331,11 @@ export async function createChatConversation(
   try {
     // Check if conversation already exists
     const { data: existingConversation } = await supabase
-      .from("chat_conversations")
-      .select("*")
-      .eq("patient_id", patientUserId)
-      .eq("nutritionist_id", nutritionistId)
-      .eq("status", "active")
+      .from('chat_conversations')
+      .select('*')
+      .eq('patient_id', patientUserId)
+      .eq('nutritionist_id', nutritionistId)
+      .eq('status', 'active')
       .single()
 
     if (existingConversation) {
@@ -320,24 +344,24 @@ export async function createChatConversation(
 
     // Create new conversation
     const { data, error } = await supabase
-      .from("chat_conversations")
+      .from('chat_conversations')
       .insert({
         patient_id: patientUserId,
         nutritionist_id: nutritionistId,
         appointment_id: appointmentId,
-        status: "active"
+        status: 'active',
       })
-      .select("*")
+      .select('*')
       .single()
 
     if (error) {
-      console.error("Error creating chat conversation:", error)
+      // Silent error handling: Error creating chat conversation
       throw error
     }
 
     return data
   } catch (error) {
-    console.error("Error in createChatConversation:", error)
+    // Silent error handling: Error in createChatConversation
     throw error
   }
 }
@@ -346,36 +370,45 @@ export async function createChatConversation(
 // Função para buscar perguntas do fórum
 export async function getForumQuestions(): Promise<ForumQuestion[]> {
   try {
-    const { data, error } = await supabase.rpc("get_forum_questions_with_profiles")
+    const { data, error } = await supabase.rpc(
+      'get_forum_questions_with_profiles'
+    )
 
     if (error) {
-      console.error("Error fetching forum questions:", error)
+      // Silent error handling: Error fetching forum questions
       return []
     }
 
     return data || []
   } catch (error) {
-    console.error("Error in getForumQuestions:", error)
+    // Silent error handling: Error in getForumQuestions
     return []
   }
 }
 
 // Função para buscar perguntas do fórum específicas do paciente
-export async function getPatientForumQuestions(patientId: string): Promise<ForumQuestion[]> {
+export async function getPatientForumQuestions(
+  patientId: string
+): Promise<ForumQuestion[]> {
   try {
-    const { data, error } = await supabase.rpc("get_forum_questions_with_profiles")
+    const { data, error } = await supabase.rpc(
+      'get_forum_questions_with_profiles'
+    )
 
     if (error) {
-      console.error("Error fetching patient forum questions:", error)
+      // Silent error handling: Error fetching patient forum questions
       return []
     }
 
     // Filtrar por paciente no lado do cliente
-    const filteredData = data?.filter((question: ForumQuestion) => question.author_id === patientId) || []
-    
+    const filteredData =
+      data?.filter(
+        (question: ForumQuestion) => question.author_id === patientId
+      ) || []
+
     return filteredData
   } catch (error) {
-    console.error("Error in getPatientForumQuestions:", error)
+    // Silent error handling: Error in getPatientForumQuestions
     return []
   }
 }
@@ -389,16 +422,16 @@ export async function createForumQuestion(
   try {
     // First determine user type and get appropriate profile ID
     const { data: user } = await supabase
-      .from("users")
-      .select("user_type")
-      .eq("id", userId)
+      .from('users')
+      .select('user_type')
+      .eq('id', userId)
       .single()
 
     if (!user) {
-      throw new Error("User not found")
+      throw new Error('User not found')
     }
 
-    let insertData: any = {
+    const insertData: any = {
       author_id: userId,
       title: title.trim(),
       content: content.trim(),
@@ -407,95 +440,99 @@ export async function createForumQuestion(
       answers_count: 0,
       likes_count: 0,
       is_answered: false,
-      last_activity_at: new Date().toISOString()
+      last_activity_at: new Date().toISOString(),
     }
 
     // Get profile ID based on user type
-    if (user.user_type === "paciente") {
+    if (user.user_type === 'paciente') {
       const { data: patientProfile } = await supabase
-        .from("patient_profiles")
-        .select("id")
-        .eq("user_id", userId)
+        .from('patient_profiles')
+        .select('id')
+        .eq('user_id', userId)
         .single()
-      
+
       if (patientProfile) {
         insertData.patient_id = patientProfile.id
       }
-    } else if (user.user_type === "nutricionista") {
+    } else if (user.user_type === 'nutricionista') {
       const { data: nutritionistProfile } = await supabase
-        .from("nutritionist_profiles")
-        .select("id")
-        .eq("user_id", userId)
+        .from('nutritionist_profiles')
+        .select('id')
+        .eq('user_id', userId)
         .single()
-      
+
       if (nutritionistProfile) {
         insertData.nutritionist_id = nutritionistProfile.id
       }
     }
 
     const { data, error } = await supabase
-      .from("forum_questions")
+      .from('forum_questions')
       .insert(insertData)
-      .select("*")
+      .select('*')
       .single()
 
     if (error) {
-      console.error("Error creating forum question:", error)
+      // Silent error handling: Error creating forum question
       throw error
     }
 
     // Get the author profile separately (still needed for return data)
     const { data: authorProfile } = await supabase
-      .from("user_profiles")
-      .select("full_name, profile_image_url, user_type, crn, is_verified")
-      .eq("user_id", userId)
+      .from('user_profiles')
+      .select('full_name, profile_image_url, user_type, crn, is_verified')
+      .eq('user_id', userId)
       .single()
 
     return {
       ...data,
-      author_profile: authorProfile
+      author_profile: authorProfile,
     }
   } catch (error) {
-    console.error("Error in createForumQuestion:", error)
+    // Silent error handling: Error in createForumQuestion
     throw error
   }
 }
 
-export async function incrementForumQuestionViews(questionId: string): Promise<void> {
+export async function incrementForumQuestionViews(
+  questionId: string
+): Promise<void> {
   try {
     // First get current views count
     const { data: question } = await supabase
-      .from("forum_questions")
-      .select("views")
-      .eq("id", questionId)
+      .from('forum_questions')
+      .select('views')
+      .eq('id', questionId)
       .single()
 
     if (question) {
       const { error } = await supabase
-        .from("forum_questions")
-        .update({ 
+        .from('forum_questions')
+        .update({
           views: question.views + 1,
-          last_activity_at: new Date().toISOString()
+          last_activity_at: new Date().toISOString(),
         })
-        .eq("id", questionId)
+        .eq('id', questionId)
 
       if (error) {
-        console.error("Error incrementing forum question views:", error)
+        // Silent error handling: Error incrementing forum question views
       }
     }
   } catch (error) {
-    console.error("Error in incrementForumQuestionViews:", error)
+    // Silent error handling: Error in incrementForumQuestionViews
   }
 }
 
-export async function getForumQuestionById(questionId: string): Promise<ForumQuestion | null> {
+export async function getForumQuestionById(
+  questionId: string
+): Promise<ForumQuestion | null> {
   try {
     const { data, error } = await supabase
-      .rpc("get_forum_question_with_answers", { question_id: questionId })
+      .rpc('get_forum_question_with_answers', { question_id: questionId })
       .single()
 
     if (error) {
-      console.error("Error fetching forum question:", error)
+      // Silent error handling: Error fetching forum question
       return null
     }
 
@@ -506,71 +543,82 @@ export async function getForumQuestionById(questionId: string): Promise<ForumQue
     // Converter os dados da função RPC para o formato ForumQuestion
     const author: ForumAuthor = {
       id: data.patient_id,
-      name: data.author_profile?.full_name || "Usuário Anônimo",
-      userType: "paciente",
-      avatar: data.author_profile?.profile_image_url || "/placeholder.svg?height=40&width=40",
+      name: data.author_profile?.full_name || 'Usuário Anônimo',
+      userType: 'paciente',
+      avatar:
+        data.author_profile?.profile_image_url ||
+        '/placeholder.svg?height=40&width=40',
       credentials: undefined,
       isVerified: false,
     }
 
-    const replies: ForumReply[] = (data.forum_answers || []).map((answer: any) => ({
-      id: answer.id,
-      content: answer.content,
-      author: {
-        id: answer.nutritionist_id,
-        name: answer.author_profile?.full_name || "Usuário Anônimo",
-        userType: "nutricionista",
-        avatar: answer.author_profile?.profile_image_url || "/placeholder.svg?height=40&width=40",
-        credentials: answer.author_profile?.crn ? `CRN ${answer.author_profile.crn}` : undefined,
-        isVerified: answer.author_profile?.is_verified || false,
-      },
-      timestamp: new Date(answer.created_at).toLocaleString("pt-BR"),
-      likes: answer.likes_count || 0,
-      isBestAnswer: answer.is_best_answer || false
-    }))
+    const replies: ForumReply[] = (data.forum_answers || []).map(
+      (answer: any) => ({
+        id: answer.id,
+        content: answer.content,
+        author: {
+          id: answer.nutritionist_id,
+          name: answer.author_profile?.full_name || 'Usuário Anônimo',
+          userType: 'nutricionista',
+          avatar:
+            answer.author_profile?.profile_image_url ||
+            '/placeholder.svg?height=40&width=40',
+          credentials: answer.author_profile?.crn
+            ? `CRN ${answer.author_profile.crn}`
+            : undefined,
+          isVerified: answer.author_profile?.is_verified || false,
+        },
+        timestamp: new Date(answer.created_at).toLocaleString('pt-BR'),
+        likes: answer.likes_count || 0,
+        isBestAnswer: answer.is_best_answer || false,
+      })
+    )
 
     const question: ForumQuestion = {
       id: data.id,
       title: data.title,
       content: data.content,
       author,
-      timestamp: new Date(data.created_at).toLocaleString("pt-BR"),
+      timestamp: new Date(data.created_at).toLocaleString('pt-BR'),
       likes: data.likes_count || 0,
       repliesCount: data.answers_count || 0,
       views: data.views_count || 0,
       tags: data.tags || [],
-      category: data.category || "",
+      category: data.category || '',
       replies,
-      isBestAnswerSelected: data.is_answered || false
+      isBestAnswerSelected: data.is_answered || false,
     }
 
     return question
   } catch (error) {
-    console.error("Error in getForumQuestionById:", error)
+    // Silent error handling: Error in getForumQuestionById
     return null
   }
 }
 
-export async function likeForumQuestion(questionId: string, userId: string): Promise<boolean> {
+export async function likeForumQuestion(
+  questionId: string,
+  userId: string
+): Promise<boolean> {
   try {
     // Check if user already liked this question
     const { data: existingLike } = await supabase
-      .from("forum_question_likes")
-      .select("id")
-      .eq("question_id", questionId)
-      .eq("user_id", userId)
+      .from('forum_question_likes')
+      .select('id')
+      .eq('question_id', questionId)
+      .eq('user_id', userId)
       .single()
 
     if (existingLike) {
       // Unlike
       const { error: deleteError } = await supabase
-        .from("forum_question_likes")
+        .from('forum_question_likes')
         .delete()
-        .eq("question_id", questionId)
-        .eq("user_id", userId)
+        .eq('question_id', questionId)
+        .eq('user_id', userId)
 
       if (deleteError) {
-        console.error("Error removing like from forum question:", deleteError)
+        // Silent error handling: Error removing like from forum question
         return false
       }
 
@@ -578,45 +626,48 @@ export async function likeForumQuestion(questionId: string, userId: string): Pro
     } else {
       // Like
       const { error: insertError } = await supabase
-        .from("forum_question_likes")
+        .from('forum_question_likes')
         .insert({
           question_id: questionId,
-          user_id: userId
+          user_id: userId,
         })
 
       if (insertError) {
-        console.error("Error liking forum question:", insertError)
+        // Silent error handling: Error liking forum question
         return false
       }
 
       return true
     }
   } catch (error) {
-    console.error("Error in likeForumQuestion:", error)
+    // Silent error handling: Error in likeForumQuestion
     return false
   }
 }
 
-export async function likeForumAnswer(answerId: string, userId: string): Promise<boolean> {
+export async function likeForumAnswer(
+  answerId: string,
+  userId: string
+): Promise<boolean> {
   try {
     // Check if user already liked this answer
     const { data: existingLike } = await supabase
-      .from("forum_answer_likes")
-      .select("id")
-      .eq("answer_id", answerId)
-      .eq("user_id", userId)
+      .from('forum_answer_likes')
+      .select('id')
+      .eq('answer_id', answerId)
+      .eq('user_id', userId)
       .single()
 
     if (existingLike) {
       // Unlike
       const { error: deleteError } = await supabase
-        .from("forum_answer_likes")
+        .from('forum_answer_likes')
         .delete()
-        .eq("answer_id", answerId)
-        .eq("user_id", userId)
+        .eq('answer_id', answerId)
+        .eq('user_id', userId)
 
       if (deleteError) {
-        console.error("Error removing like from forum answer:", deleteError)
+        // Silent error handling: Error removing like from forum answer
         return false
       }
 
@@ -624,63 +675,67 @@ export async function likeForumAnswer(answerId: string, userId: string): Promise
     } else {
       // Like
       const { error: insertError } = await supabase
-        .from("forum_answer_likes")
+        .from('forum_answer_likes')
         .insert({
           answer_id: answerId,
-          user_id: userId
+          user_id: userId,
         })
 
       if (insertError) {
-        console.error("Error liking forum answer:", insertError)
+        // Silent error handling: Error liking forum answer
         return false
       }
 
       return true
     }
   } catch (error) {
-    console.error("Error in likeForumAnswer:", error)
+    // Silent error handling: Error in likeForumAnswer
     return false
   }
 }
 
-export async function selectBestAnswer(questionId: string, answerId: string, userId: string): Promise<boolean> {
+export async function selectBestAnswer(
+  questionId: string,
+  answerId: string,
+  userId: string
+): Promise<boolean> {
   try {
     // Verify that the user is the question author
     const { data: question } = await supabase
-      .from("forum_questions")
-      .select("author_id")
-      .eq("id", questionId)
+      .from('forum_questions')
+      .select('author_id')
+      .eq('id', questionId)
       .single()
 
     if (!question || question.author_id !== userId) {
-      console.error("User is not authorized to select best answer")
+      // Silent error handling: User is not authorized to select best answer
       return false
     }
 
     // Update question with best answer and mark as answered
     const { error } = await supabase
-      .from("forum_questions")
-      .update({ 
+      .from('forum_questions')
+      .update({
         best_answer_id: answerId,
         is_answered: true,
-        last_activity_at: new Date().toISOString()
+        last_activity_at: new Date().toISOString(),
       })
-      .eq("id", questionId)
+      .eq('id', questionId)
 
     if (error) {
-      console.error("Error selecting best answer:", error)
+      // Silent error handling: Error selecting best answer
       return false
     }
 
     // Mark the answer as accepted
     await supabase
-      .from("forum_answers")
+      .from('forum_answers')
       .update({ is_accepted: true })
-      .eq("id", answerId)
+      .eq('id', answerId)
 
     return true
   } catch (error) {
-    console.error("Error in selectBestAnswer:", error)
+    // Silent error handling: Error in selectBestAnswer
     return false
   }
 }
@@ -693,70 +748,70 @@ export async function createForumAnswer(
   try {
     // First determine user type and get appropriate profile ID
     const { data: user } = await supabase
-      .from("users")
-      .select("user_type")
-      .eq("id", userId)
+      .from('users')
+      .select('user_type')
+      .eq('id', userId)
       .single()
 
     if (!user) {
-      console.error("User not found")
+      // Silent error handling: User not found
       return null
     }
 
-    let insertData: any = {
+    const insertData: any = {
       question_id: questionId,
       author_id: userId,
       content: content.trim(),
       is_accepted: false,
-      likes_count: 0
+      likes_count: 0,
     }
 
     // Get profile ID based on user type (only nutritionists can answer)
-    if (user.user_type === "nutricionista") {
+    if (user.user_type === 'nutricionista') {
       const { data: nutritionistProfile } = await supabase
-        .from("nutritionist_profiles")
-        .select("id")
-        .eq("user_id", userId)
+        .from('nutritionist_profiles')
+        .select('id')
+        .eq('user_id', userId)
         .single()
-      
+
       if (nutritionistProfile) {
         insertData.nutritionist_id = nutritionistProfile.id
       }
     } else {
-      console.error("Only nutritionists can create forum answers")
+      // Silent error handling: Only nutritionists can create forum answers
       return null
     }
 
     const { data, error } = await supabase
-      .from("forum_answers")
+      .from('forum_answers')
       .insert(insertData)
-      .select("*")
+      .select('*')
       .single()
 
     if (error) {
-      console.error("Error creating forum answer:", error)
+      // Silent error handling: Error creating forum answer
       return null
     }
 
     // Get the author profile separately (still needed for return data)
     const { data: authorProfile } = await supabase
-      .from("user_profiles")
-      .select("full_name, profile_image_url, user_type, crn, is_verified")
-      .eq("user_id", userId)
+      .from('user_profiles')
+      .select('full_name, profile_image_url, user_type, crn, is_verified')
+      .eq('user_id', userId)
       .single()
 
     // Update question"s last activity
     await supabase
-      .from("forum_questions")
+      .from('forum_questions')
       .update({ last_activity_at: new Date().toISOString() })
-      .eq("id", questionId)
+      .eq('id', questionId)
 
     return {
       ...data,
-      author_profile: authorProfile
+      author_profile: authorProfile,
     }
   } catch (error) {
-    console.error("Error in createForumAnswer:", error)
+    // Silent error handling: Error in createForumAnswer
     return null
   }
 }

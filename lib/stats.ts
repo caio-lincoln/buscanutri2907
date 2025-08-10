@@ -1,4 +1,4 @@
-import { createSupabaseClient } from "@/lib/supabase"
+import { createSupabaseClient } from '@/lib/supabase'
 
 export interface PlatformStats {
   totalNutricionistas: number
@@ -31,32 +31,32 @@ export async function getPlatformStats(): Promise<PlatformStats> {
       totalNutricionistas: data.totalNutricionistas || 0,
       totalPacientes: data.totalPacientes || 0,
       averageRating: data.averageRating || 0,
-      totalAvaliacoes: data.totalAvaliacoes || 0
+      totalAvaliacoes: data.totalAvaliacoes || 0,
     }
 
     // Atualizar cache
     statsCache = {
       data: stats,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     }
 
     return stats
   } catch (error) {
-    console.error("Erro ao buscar estatísticas:", error)
-    
+    // Silent error handling: Error fetching platform statistics
+
     // Retornar valores padrão em caso de erro
     const defaultStats: PlatformStats = {
       totalNutricionistas: 0,
       totalPacientes: 0,
       averageRating: 0,
-      totalAvaliacoes: 0
+      totalAvaliacoes: 0,
     }
 
     // Se não há cache, usar valores padrão
     if (!statsCache) {
       statsCache = {
         data: defaultStats,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       }
     }
 
@@ -72,5 +72,5 @@ export function formatNumber(num: number): string {
 }
 
 export function formatRating(rating: number): string {
-  return rating > 0 ? rating.toFixed(1) : "0.0"
+  return rating > 0 ? rating.toFixed(1) : '0.0'
 }

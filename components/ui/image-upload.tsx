@@ -1,4 +1,4 @@
-"use client"
+'use client'
 
 import React, { useState, useRef } from 'react'
 import Image from 'next/image'
@@ -21,8 +21,8 @@ export function ImageUpload({
   onImageRemoved,
   currentImageUrl,
   userId,
-  className = "",
-  disabled = false
+  className = '',
+  disabled = false,
 }: ImageUploadProps) {
   const [isUploading, setIsUploading] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
@@ -37,7 +37,7 @@ export function ImageUpload({
 
     try {
       const result: UploadResult = await uploadBlogImage(file, userId)
-      
+
       if (result.success && result.url) {
         onImageUploaded(result.url)
       } else {
@@ -45,7 +45,7 @@ export function ImageUpload({
       }
     } catch (error) {
       setUploadError('Erro inesperado ao fazer upload')
-      console.error('Erro no upload:', error)
+      // Silent error handling: Upload error
     } finally {
       setIsUploading(false)
     }
@@ -61,9 +61,9 @@ export function ImageUpload({
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault()
     e.stopPropagation()
-    if (e.type === "dragenter" || e.type === "dragover") {
+    if (e.type === 'dragenter' || e.type === 'dragover') {
       setDragActive(true)
-    } else if (e.type === "dragleave") {
+    } else if (e.type === 'dragleave') {
       setDragActive(false)
     }
   }
@@ -105,8 +105,12 @@ export function ImageUpload({
               fill
               className="object-cover"
               key={currentImageUrl} // Force re-render when URL changes
-              onLoad={() => console.log('Imagem carregada:', currentImageUrl)}
-              onError={(e) => console.error('Erro ao carregar imagem:', currentImageUrl, e)}
+              onLoad={() => {
+                // Silent operation: Image loaded successfully
+              }}
+              onError={e => {
+                // Silent error handling: Error loading image
+              }}
             />
             {!disabled && (
               <Button
@@ -156,7 +160,12 @@ export function ImageUpload({
                     PNG, JPG, WebP ou GIF até 5MB
                   </p>
                 </div>
-                <Button type="button" variant="outline" size="sm" disabled={disabled}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={disabled}
+                >
                   <Upload className="h-4 w-4 mr-2" />
                   Selecionar Imagem
                 </Button>

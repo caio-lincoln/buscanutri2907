@@ -1,4 +1,4 @@
-"use client"
+'use client'
 
 import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -23,7 +23,7 @@ export function SupabaseTest() {
       setDebugInfo({
         url: process.env.NEXT_PUBLIC_SUPABASE_URL,
         hasKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-        keyLength: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.length || 0
+        keyLength: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.length || 0,
       })
 
       // Teste simples de conexão
@@ -75,7 +75,7 @@ export function SupabaseTest() {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
-          <Button 
+          <Button
             onClick={testConnection}
             disabled={isLoading}
             className="w-full"
@@ -83,8 +83,8 @@ export function SupabaseTest() {
           >
             {isLoading ? 'Testando...' : 'Testar Blog Posts'}
           </Button>
-          
-          <Button 
+
+          <Button
             onClick={testBlogViews}
             disabled={isLoading}
             variant="outline"
@@ -97,7 +97,9 @@ export function SupabaseTest() {
 
         {debugInfo && (
           <div className="p-3 bg-blue-50 rounded-lg">
-            <Badge variant="secondary" className="mb-2">Debug Info</Badge>
+            <Badge variant="secondary" className="mb-2">
+              Debug Info
+            </Badge>
             <pre className="text-xs text-blue-800 overflow-auto">
               {JSON.stringify(debugInfo, null, 2)}
             </pre>
@@ -106,14 +108,18 @@ export function SupabaseTest() {
 
         {error && (
           <div className="p-3 bg-red-50 rounded-lg">
-            <Badge variant="destructive" className="mb-2">Erro</Badge>
+            <Badge variant="destructive" className="mb-2">
+              Erro
+            </Badge>
             <p className="text-sm text-red-600">{error}</p>
           </div>
         )}
 
         {result && (
           <div className="p-3 bg-green-50 rounded-lg">
-            <Badge variant="default" className="mb-2">Sucesso</Badge>
+            <Badge variant="default" className="mb-2">
+              Sucesso
+            </Badge>
             <pre className="text-xs text-green-800 overflow-auto">
               {JSON.stringify(result, null, 2)}
             </pre>

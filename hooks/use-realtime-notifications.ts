@@ -1,17 +1,17 @@
-"use client"
+'use client'
 
-import { useState, useEffect, useCallback } from "react"
-import { createSupabaseClient } from "@/lib/supabase"
-import { 
-  getUserNotifications, 
-  markNotificationAsRead, 
+import { useState, useEffect, useCallback } from 'react'
+import { createSupabaseClient } from '@/lib/supabase'
+import {
+  getUserNotifications,
+  markNotificationAsRead,
   markAllNotificationsAsRead,
   getUnreadNotificationsCount,
   deleteNotification as deleteNotificationService,
-  type NotificationData 
-} from "@/lib/notifications-service"
-import { useUser } from "@/hooks/use-user"
-import { RealtimeChannel } from "@supabase/supabase-js"
+  type NotificationData,
+} from '@/lib/notifications-service'
+import { useUser } from '@/hooks/use-user'
+import { RealtimeChannel } from '@supabase/supabase-js'
 
 export interface RealtimeNotification {
   id: string
@@ -33,36 +33,47 @@ export function useRealtimeNotifications() {
   const supabase = createSupabaseClient()
 
   // Função para mapear tipos do banco para tipos da interface
-  const mapNotificationType = useCallback((dbType: string): "info" | "success" | "warning" | "error" => {
-    switch (dbType) {
-      case "appointment":
-        return "success"
-      case "message":
-        return "info"
-      case "forum":
-        return "info"
-      case "reminder":
-        return "warning"
-      case "system":
-        return "error"
-      default:
-        return "info"
-    }
-  }, [])
+  const mapNotificationType = useCallback(
+    (dbType: string): 'info' | 'success' | 'warning' | 'error' => {
+      switch (dbType) {
+        case 'appointment':
+          return 'success'
+        case 'message':
+          return 'info'
+        case 'forum':
+          return 'info'
+        case 'reminder':
+          return 'warning'
+        case 'system':
+          return 'error'
+        default:
+          return 'info'
+      }
+    },
+    []
+  )
 
   // Converter notificação do banco para o formato da interface
-  const convertNotification = useCallback((dbNotification: RealtimeNotification): NotificationData => ({
-    id: dbNotification.id,
-    title: dbNotification.title,
-    message: dbNotification.message || '',
-    type: mapNotificationType(dbNotification.notification_type || 'info'),
-    originalType: dbNotification.notification_type as "message" | "appointment" | "forum" | "reminder" | "system",
-    read: dbNotification.read,
-    createdAt: dbNotification.created_at,
-    userId: dbNotification.user_id,
-    actionUrl: undefined,
-    metadata: dbNotification.data
-  }), [mapNotificationType])
+  const convertNotification = useCallback(
+    (dbNotification: RealtimeNotification): NotificationData => ({
+      id: dbNotification.id,
+      title: dbNotification.title,
+      message: dbNotification.message || '',
+      type: mapNotificationType(dbNotification.notification_type || 'info'),
+      originalType: dbNotification.notification_type as
+        | 'message'
+        | 'appointment'
+        | 'forum'
+        | 'reminder'
+        | 'system',
+      read: dbNotification.read,
+      createdAt: dbNotification.created_at,
+      userId: dbNotification.user_id,
+      actionUrl: undefined,
+      metadata: dbNotification.data,
+    }),
+    [mapNotificationType]
+  )
 
   // Carregar notificações iniciais
   const loadNotifications = useCallback(async () => {
@@ -72,9 +83,9 @@ export function useRealtimeNotifications() {
       setLoading(true)
       const [notificationsData, unreadCountData] = await Promise.all([
         getUserNotifications(user.id, 50),
-        getUnreadNotificationsCount(user.id)
+        getUnreadNotificationsCount(user.id),
       ])
-      
+
       setNotifications(notificationsData)
       setUnreadCount(unreadCountData)
     } catch (error) {
@@ -89,9 +100,9 @@ export function useRealtimeNotifications() {
     try {
       const success = await markNotificationAsRead(notificationId)
       if (success) {
-        setNotifications(prev => 
-          prev.map(notification => 
-            notification.id === notificationId 
+        setNotifications(prev =>
+          prev.map(notification =>
+            notification.id === notificationId
               ? { ...notification, read: true }
               : notification
           )
@@ -110,7 +121,7 @@ export function useRealtimeNotifications() {
     try {
       const success = await markAllNotificationsAsRead(user.id)
       if (success) {
-        setNotifications(prev => 
+        setNotifications(prev =>
           prev.map(notification => ({ ...notification, read: true }))
         )
         setUnreadCount(0)
@@ -124,7 +135,7 @@ export function useRealtimeNotifications() {
     try {
       const success = await deleteNotificationService(notificationId)
       if (success) {
-        setNotifications(prev => 
+        setNotifications(prev =>
           prev.filter(notification => notification.id !== notificationId)
         )
       }
@@ -149,21 +160,26 @@ export function useRealtimeNotifications() {
           event: 'INSERT',
           schema: 'public',
           table: 'realtime_notifications',
-          filter: `user_id=eq.${user.id}`
+          filter: `user_id=eq.${user.id}`,
         },
-        (payload) => {
+        payload => {
           console.log('Nova notificação recebida:', payload)
-          const newNotification = convertNotification(payload.new as RealtimeNotification)
-          
+          const newNotification = convertNotification(
+            payload.new as RealtimeNotification
+          )
+
           setNotifications(prev => [newNotification, ...prev])
           setUnreadCount(prev => prev + 1)
-          
+
           // Mostrar notificação do navegador se permitido
-          if ('Notification' in window && Notification.permission === 'granted') {
+          if (
+            'Notification' in window &&
+            Notification.permission === 'granted'
+          ) {
             new Notification(newNotification.title, {
               body: newNotification.message,
               icon: '/favicon.ico',
-              tag: newNotification.id
+              tag: newNotification.id,
             })
           }
         }
@@ -174,25 +190,27 @@ export function useRealtimeNotifications() {
           event: 'UPDATE',
           schema: 'public',
           table: 'realtime_notifications',
-          filter: `user_id=eq.${user.id}`
+          filter: `user_id=eq.${user.id}`,
         },
-        (payload) => {
+        payload => {
           console.log('Notificação atualizada:', payload)
-          const updatedNotification = convertNotification(payload.new as RealtimeNotification)
-          
-          setNotifications(prev => 
-            prev.map(notification => 
-              notification.id === updatedNotification.id 
-                ? updatedNotification 
+          const updatedNotification = convertNotification(
+            payload.new as RealtimeNotification
+          )
+
+          setNotifications(prev =>
+            prev.map(notification =>
+              notification.id === updatedNotification.id
+                ? updatedNotification
                 : notification
             )
           )
-          
+
           // Atualizar contador se mudou o status de lida
           if (payload.old && payload.new) {
             const oldRead = (payload.old as RealtimeNotification).read
             const newRead = (payload.new as RealtimeNotification).read
-            
+
             if (!oldRead && newRead) {
               setUnreadCount(prev => Math.max(0, prev - 1))
             } else if (oldRead && !newRead) {
@@ -207,15 +225,17 @@ export function useRealtimeNotifications() {
           event: 'DELETE',
           schema: 'public',
           table: 'realtime_notifications',
-          filter: `user_id=eq.${user.id}`
+          filter: `user_id=eq.${user.id}`,
         },
-        (payload) => {
+        payload => {
           console.log('Notificação deletada:', payload)
           const deletedId = (payload.old as RealtimeNotification).id
           const wasUnread = !(payload.old as RealtimeNotification).read
-          
-          setNotifications(prev => prev.filter(notification => notification.id !== deletedId))
-          
+
+          setNotifications(prev =>
+            prev.filter(notification => notification.id !== deletedId)
+          )
+
           if (wasUnread) {
             setUnreadCount(prev => Math.max(0, prev - 1))
           }
@@ -253,6 +273,6 @@ export function useRealtimeNotifications() {
     markAsRead,
     markAllAsRead,
     deleteNotification,
-    refetch: loadNotifications
+    refetch: loadNotifications,
   }
 }

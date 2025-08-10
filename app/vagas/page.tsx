@@ -1,16 +1,27 @@
-"use client"
+'use client'
 
-import { useState, useEffect, useCallback } from "react"
-import Link from "next/link"
-import Image from "next/image"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Search, MapPin, Filter, ArrowLeft, Building, Clock, DollarSign, Briefcase, Users, Plus } from "lucide-react"
-import { supabase } from "@/lib/supabase"
-import { JobDetailsModal } from "@/components/job-details-modal"
-import { useAuth } from "@/contexts/auth-context"
+import { useState, useEffect, useCallback } from 'react'
+import Link from 'next/link'
+import Image from 'next/image'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import {
+  Search,
+  MapPin,
+  Filter,
+  ArrowLeft,
+  Building,
+  Clock,
+  DollarSign,
+  Briefcase,
+  Users,
+  Plus,
+} from 'lucide-react'
+import { supabase } from '@/lib/supabase'
+import { JobDetailsModal } from '@/components/job-details-modal'
+import { useAuth } from '@/contexts/auth-context'
 
 interface JobPosting {
   id: string
@@ -21,9 +32,9 @@ interface JobPosting {
   salary_min?: number
   salary_max?: number
   location: string
-  job_type: "CLT" | "PJ" | "Estágio" | "Freelancer"
-  level: "Estagiário" | "Júnior" | "Pleno" | "Sênior" | "Gerente"
-  status: "ativa" | "pausada" | "fechada"
+  job_type: 'CLT' | 'PJ' | 'Estágio' | 'Freelancer'
+  level: 'Estagiário' | 'Júnior' | 'Pleno' | 'Sênior' | 'Gerente'
+  status: 'ativa' | 'pausada' | 'fechada'
   applications_count: number
   created_at: string
   company_id: string
@@ -38,9 +49,9 @@ export default function VagasPage() {
   const [jobs, setJobs] = useState<JobPosting[]>([])
   const [filteredJobs, setFilteredJobs] = useState<JobPosting[]>([])
   const [loading, setLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [locationFilter, setLocationFilter] = useState("")
-  const [levelFilter, setLevelFilter] = useState("")
+  const [searchTerm, setSearchTerm] = useState('')
+  const [locationFilter, setLocationFilter] = useState('')
+  const [levelFilter, setLevelFilter] = useState('')
   const [showFilters, setShowFilters] = useState(false)
   const [selectedJob, setSelectedJob] = useState<JobPosting | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -50,19 +61,25 @@ export default function VagasPage() {
 
     if (searchTerm) {
       filtered = filtered.filter(
-        (job) =>
+        job =>
           job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (job.company_profiles?.company_name?.toLowerCase() ?? "").includes(searchTerm.toLowerCase()) ||
-          job.description.toLowerCase().includes(searchTerm.toLowerCase()),
+          (job.company_profiles?.company_name?.toLowerCase() ?? '').includes(
+            searchTerm.toLowerCase()
+          ) ||
+          job.description.toLowerCase().includes(searchTerm.toLowerCase())
       )
     }
 
     if (locationFilter) {
-      filtered = filtered.filter((job) => job.location.toLowerCase().includes(locationFilter.toLowerCase()))
+      filtered = filtered.filter(job =>
+        job.location.toLowerCase().includes(locationFilter.toLowerCase())
+      )
     }
 
     if (levelFilter) {
-      filtered = filtered.filter((job) => job.level.toLowerCase() === levelFilter.toLowerCase())
+      filtered = filtered.filter(
+        job => job.level.toLowerCase() === levelFilter.toLowerCase()
+      )
     }
 
     setFilteredJobs(filtered)
@@ -80,8 +97,9 @@ export default function VagasPage() {
     try {
       // Buscar vagas ativas da tabela job_postings com join para company_profiles
       const { data, error } = await supabase
-        .from("job_postings")
-        .select(`
+        .from('job_postings')
+        .select(
+          `
           id,
           title,
           description,
@@ -99,33 +117,34 @@ export default function VagasPage() {
             company_name,
             logo_url
           )
-        `)
-        .eq("status", "ativa")
-        .order("created_at", { ascending: false })
+        `
+        )
+        .eq('status', 'ativa')
+        .order('created_at', { ascending: false })
 
       if (error) {
-        console.error("Erro ao carregar vagas:", error)
+        // Error loading jobs - handled silently
         throw error
       }
 
       // Contar candidaturas para cada vaga
       const jobsWithApplicationCount = await Promise.all(
-        (data || []).map(async (job) => {
+        (data || []).map(async job => {
           const { count } = await supabase
-            .from("job_applications")
-            .select("*", { count: "exact", head: true })
-            .eq("job_id", job.id)
+            .from('job_applications')
+            .select('*', { count: 'exact', head: true })
+            .eq('job_id', job.id)
 
           return {
             ...job,
             applications_count: count || 0,
           }
-        }),
+        })
       )
 
       setJobs(jobsWithApplicationCount)
     } catch (error) {
-      console.error("Error loading jobs:", error)
+      // Error loading jobs - handled silently
       // Em caso de erro, mostrar dados mock para demonstração
       setJobs([])
     } finally {
@@ -134,52 +153,52 @@ export default function VagasPage() {
   }
 
   const clearFilters = () => {
-    setSearchTerm("")
-    setLocationFilter("")
-    setLevelFilter("")
+    setSearchTerm('')
+    setLocationFilter('')
+    setLevelFilter('')
   }
 
   const handleApply = async (jobId: string) => {
     try {
       if (!user) {
-        alert("Para se candidatar, você precisa estar logado.")
+        alert('Para se candidatar, você precisa estar logado.')
         return
       }
 
       // Verificar se o usuário é nutricionista
-      if (user.user_type !== "nutricionista") {
-        alert("Apenas nutricionistas podem se candidatar às vagas.")
+      if (user.user_type !== 'nutricionista') {
+        alert('Apenas nutricionistas podem se candidatar às vagas.')
         return
       }
 
       // Verificar se já se candidatou
       const { data: existingApplication } = await supabase
-        .from("job_applications")
-        .select("id")
-        .eq("job_id", jobId)
-        .eq("candidate_id", user.id)
+        .from('job_applications')
+        .select('id')
+        .eq('job_id', jobId)
+        .eq('candidate_id', user.id)
         .single()
 
       if (existingApplication) {
-        alert("Você já se candidatou a esta vaga!")
+        alert('Você já se candidatou a esta vaga!')
         return
       }
 
       // Criar candidatura na tabela job_applications
-      const { error } = await supabase.from("job_applications").insert({
+      const { error } = await supabase.from('job_applications').insert({
         job_id: jobId,
         candidate_id: user.id,
-        status: "pendente",
+        status: 'pendente',
         applied_at: new Date().toISOString(),
       })
 
       if (error) throw error
 
-      alert("Candidatura enviada com sucesso!")
+      alert('Candidatura enviada com sucesso!')
       loadJobs() // Recarregar para atualizar contador
     } catch (error) {
-      console.error("Error applying to job:", error)
-      alert("Erro ao enviar candidatura. Tente novamente.")
+      // Error applying to job - handled silently
+      alert('Erro ao enviar candidatura. Tente novamente.')
     }
   }
 
@@ -190,7 +209,7 @@ export default function VagasPage() {
 
   const truncateText = (text: string, maxLength: number) => {
     if (text.length <= maxLength) return text
-    return text.substring(0, maxLength) + "..."
+    return text.substring(0, maxLength) + '...'
   }
 
   if (loading) {
@@ -227,7 +246,10 @@ export default function VagasPage() {
             >
               Nutricionistas
             </Link>
-            <Link href="/vagas" className="text-sm font-medium text-[#1E1D40] relative">
+            <Link
+              href="/vagas"
+              className="text-sm font-medium text-[#1E1D40] relative"
+            >
               Vagas
               <span className="absolute -bottom-1 left-0 w-full h-0.5 bg-[#1E1D40]"></span>
             </Link>
@@ -235,12 +257,17 @@ export default function VagasPage() {
 
           <div className="flex items-center gap-3">
             <Link href="/login">
-              <Button variant="ghost" className="hidden md:flex text-[#1E1D40] hover:text-[#4AB0D9]">
+              <Button
+                variant="ghost"
+                className="hidden md:flex text-[#1E1D40] hover:text-[#4AB0D9]"
+              >
                 Entrar
               </Button>
             </Link>
             <Link href="/cadastro">
-              <Button className="bg-[#4AB0D9] hover:bg-[#4AB0D9]/90 text-white">Cadastrar</Button>
+              <Button className="bg-[#4AB0D9] hover:bg-[#4AB0D9]/90 text-white">
+                Cadastrar
+              </Button>
             </Link>
           </div>
         </div>
@@ -256,11 +283,15 @@ export default function VagasPage() {
             <ArrowLeft className="h-4 w-4" />
             Voltar ao início
           </Link>
-          <h1 className="text-3xl md:text-4xl font-bold text-[#1E1D40] mb-2">Oportunidades de Emprego</h1>
-          <p className="text-lg text-[#1E1D40]/70 mb-2">Encontre a vaga ideal para sua carreira em nutrição</p>
+          <h1 className="text-3xl md:text-4xl font-bold text-[#1E1D40] mb-2">
+            Oportunidades de Emprego
+          </h1>
+          <p className="text-lg text-[#1E1D40]/70 mb-2">
+            Encontre a vaga ideal para sua carreira em nutrição
+          </p>
           <div className="flex items-center gap-2 text-sm text-orange-600">
             <span>!</span>
-                <span>Faça login para ver salários e nomes das empresas</span>
+            <span>Faça login para ver salários e nomes das empresas</span>
           </div>
         </div>
 
@@ -270,11 +301,15 @@ export default function VagasPage() {
             <Input
               placeholder="Buscar por cargo ou palavra-chave..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={e => setSearchTerm(e.target.value)}
               className="h-12"
             />
           </div>
-          <Button variant="outline" onClick={() => setShowFilters(!showFilters)} className="h-12 px-6">
+          <Button
+            variant="outline"
+            onClick={() => setShowFilters(!showFilters)}
+            className="h-12 px-6"
+          >
             <Filter className="h-4 w-4 mr-2" />
             Filtros
           </Button>
@@ -290,18 +325,22 @@ export default function VagasPage() {
             <CardContent className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="text-sm font-medium text-[#1E1D40] mb-2 block">Região</label>
+                  <label className="text-sm font-medium text-[#1E1D40] mb-2 block">
+                    Região
+                  </label>
                   <Input
                     placeholder="Cidade, Estado"
                     value={locationFilter}
-                    onChange={(e) => setLocationFilter(e.target.value)}
+                    onChange={e => setLocationFilter(e.target.value)}
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-[#1E1D40] mb-2 block">Nível da Vaga</label>
+                  <label className="text-sm font-medium text-[#1E1D40] mb-2 block">
+                    Nível da Vaga
+                  </label>
                   <select
                     value={levelFilter}
-                    onChange={(e) => setLevelFilter(e.target.value)}
+                    onChange={e => setLevelFilter(e.target.value)}
                     className="w-full h-10 px-3 border border-gray-300 rounded-md"
                   >
                     <option value="">Todos os níveis</option>
@@ -313,7 +352,11 @@ export default function VagasPage() {
                   </select>
                 </div>
                 <div className="flex items-end">
-                  <Button variant="outline" onClick={clearFilters} className="w-full bg-transparent">
+                  <Button
+                    variant="outline"
+                    onClick={clearFilters}
+                    className="w-full bg-transparent"
+                  >
                     Limpar Filtros
                   </Button>
                 </div>
@@ -324,22 +367,32 @@ export default function VagasPage() {
 
         {/* Results */}
         <div className="mb-6 text-center">
-          <p className="text-[#1E1D40]/70">{filteredJobs.length} vaga(s) encontrada(s) • Página 1 de 1</p>
+          <p className="text-[#1E1D40]/70">
+            {filteredJobs.length} vaga(s) encontrada(s) • Página 1 de 1
+          </p>
         </div>
 
         {/* Jobs Grid - Centralizado e Enquadrado 3x3 */}
         <div className="max-w-6xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 place-items-center">
-            {filteredJobs.map((job) => (
-              <Card key={job.id} className="w-full max-w-sm hover:shadow-lg transition-shadow flex flex-col h-[520px]">
+            {filteredJobs.map(job => (
+              <Card
+                key={job.id}
+                className="w-full max-w-sm hover:shadow-lg transition-shadow flex flex-col h-[520px]"
+              >
                 {/* Header fixo */}
                 <CardHeader className="pb-3 flex-shrink-0">
                   <div className="flex items-start justify-between mb-3">
                     <div className="w-10 h-10 bg-[#1E1D40] rounded-lg flex items-center justify-center flex-shrink-0">
                       {job.company_profiles?.logo_url ? (
                         <Image
-                          src={job.company_profiles.logo_url || "/placeholder.svg"}
-                          alt={job.company_profiles.company_name ?? "Logo da empresa"}
+                          src={
+                            job.company_profiles.logo_url || '/placeholder.svg'
+                          }
+                          alt={
+                            job.company_profiles.company_name ??
+                            'Logo da empresa'
+                          }
                           width={40}
                           height={40}
                           className="rounded-lg object-cover"
@@ -359,7 +412,8 @@ export default function VagasPage() {
                       <span className="line-clamp-2">{job.title}</span>
                     </CardTitle>
                     <p className="text-sm text-orange-600 font-medium truncate">
-                      {job.company_profiles?.company_name ?? "Empresa confidencial"}
+                      {job.company_profiles?.company_name ??
+                        'Empresa confidencial'}
                     </p>
                   </div>
                 </CardHeader>
@@ -371,15 +425,21 @@ export default function VagasPage() {
                     <div className="space-y-2 text-sm">
                       <div className="flex items-center gap-2">
                         <MapPin className="h-4 w-4 text-[#1E1D40]/70 flex-shrink-0" />
-                        <span className="text-[#1E1D40]/70 truncate">{job.location}</span>
+                        <span className="text-[#1E1D40]/70 truncate">
+                          {job.location}
+                        </span>
                       </div>
                       <div className="flex items-center gap-2">
                         <DollarSign className="h-4 w-4 text-[#1E1D40]/70 flex-shrink-0" />
-                        <span className="text-orange-600 font-medium text-xs">Faça login para ver</span>
+                        <span className="text-orange-600 font-medium text-xs">
+                          Faça login para ver
+                        </span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Briefcase className="h-4 w-4 text-[#1E1D40]/70 flex-shrink-0" />
-                        <span className="text-[#1E1D40]/70">{job.job_type}</span>
+                        <span className="text-[#1E1D40]/70">
+                          {job.job_type}
+                        </span>
                       </div>
                     </div>
 
@@ -387,12 +447,19 @@ export default function VagasPage() {
                     {job.benefits && job.benefits.length > 0 && (
                       <div className="flex flex-wrap gap-1">
                         {job.benefits.slice(0, 2).map((benefit, index) => (
-                          <Badge key={index} variant="secondary" className="text-xs px-2 py-1">
+                          <Badge
+                            key={index}
+                            variant="secondary"
+                            className="text-xs px-2 py-1"
+                          >
                             {truncateText(benefit, 12)}
                           </Badge>
                         ))}
                         {job.benefits.length > 2 && (
-                          <Badge variant="secondary" className="text-xs px-2 py-1">
+                          <Badge
+                            variant="secondary"
+                            className="text-xs px-2 py-1"
+                          >
                             +{job.benefits.length - 2}
                           </Badge>
                         )}
@@ -401,7 +468,9 @@ export default function VagasPage() {
 
                     {/* Description */}
                     <div className="h-16 overflow-hidden">
-                      <p className="text-sm text-[#1E1D40]/80 leading-relaxed line-clamp-3">{job.description}</p>
+                      <p className="text-sm text-[#1E1D40]/80 leading-relaxed line-clamp-3">
+                        {job.description}
+                      </p>
                     </div>
 
                     {/* Stats */}
@@ -412,7 +481,10 @@ export default function VagasPage() {
                       </div>
                       <div className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
-                        <span>Publicada em {new Date(job.created_at).toLocaleDateString("pt-BR")}</span>
+                        <span>
+                          Publicada em{' '}
+                          {new Date(job.created_at).toLocaleDateString('pt-BR')}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -444,8 +516,12 @@ export default function VagasPage() {
             <div className="w-16 h-16 bg-[#1E1D40]/10 rounded-full flex items-center justify-center mx-auto mb-4">
               <Briefcase className="h-8 w-8 text-[#1E1D40]" />
             </div>
-            <h3 className="text-lg font-semibold text-[#1E1D40] mb-2">Nenhuma vaga encontrada</h3>
-            <p className="text-[#1E1D40]/70 mb-4">Tente ajustar os filtros ou buscar por outros termos</p>
+            <h3 className="text-lg font-semibold text-[#1E1D40] mb-2">
+              Nenhuma vaga encontrada
+            </h3>
+            <p className="text-[#1E1D40]/70 mb-4">
+              Tente ajustar os filtros ou buscar por outros termos
+            </p>
             <Button variant="outline" onClick={clearFilters}>
               Limpar Filtros
             </Button>
@@ -467,4 +543,3 @@ export default function VagasPage() {
     </div>
   )
 }
-

@@ -1,4 +1,4 @@
-import { createSupabaseClient } from "./supabase"
+import { createSupabaseClient } from './supabase'
 
 const supabase = createSupabaseClient()
 
@@ -34,43 +34,47 @@ export interface ContentEngagementStats {
 /**
  * Busca estatísticas de engajamento de conteúdo para um nutricionista
  */
-export async function getContentEngagementStats(nutritionistId: string): Promise<ContentEngagementStats> {
+export async function getContentEngagementStats(
+  nutritionistId: string
+): Promise<ContentEngagementStats> {
   try {
     // Buscar posts do blog do nutricionista
     const { data: blogPosts, error: blogError } = await supabase
-      .from("blog_posts")
-      .select("id, title, views, created_at, tags")
-      .eq("author_id", nutritionistId)
-      .order("views", { ascending: false })
+      .from('blog_posts')
+      .select('id, title, views, created_at, tags')
+      .eq('author_id', nutritionistId)
+      .order('views', { ascending: false })
 
     if (blogError) {
-      console.error("Erro ao buscar posts do blog:", blogError)
+      // Silent error handling: Error fetching blog posts
       throw blogError
     }
 
     // Buscar respostas do fórum do nutricionista
     const { data: forumAnswers, error: forumAnswersError } = await supabase
-      .from("forum_answers")
-      .select("id, question_id, likes_count, created_at")
-      .eq("author_id", nutritionistId)
+      .from('forum_answers')
+      .select('id, question_id, likes_count, created_at')
+      .eq('author_id', nutritionistId)
 
     if (forumAnswersError) {
-      console.error("Erro ao buscar respostas do fórum:", forumAnswersError)
+      // Silent error handling: Error fetching forum answers
     }
 
     // Buscar perguntas respondidas pelo nutricionista (para estatísticas)
     const questionIds = forumAnswers?.map(answer => answer.question_id) || []
     let forumQuestions: any[] = []
-    
+
     if (questionIds.length > 0) {
       const { data: questions, error: questionsError } = await supabase
-        .from("forum_questions")
-        .select("id, title, views, answers_count, likes_count, created_at, is_answered")
-        .in("id", questionIds)
-        .order("views", { ascending: false })
+        .from('forum_questions')
+        .select(
+          'id, title, views, answers_count, likes_count, created_at, is_answered'
+        )
+        .in('id', questionIds)
+        .order('views', { ascending: false })
 
       if (questionsError) {
-        console.error("Erro ao buscar perguntas do fórum:", questionsError)
+        // Silent error handling: Error fetching forum questions
       } else {
         forumQuestions = questions || []
       }
@@ -78,15 +82,20 @@ export async function getContentEngagementStats(nutritionistId: string): Promise
 
     // Calcular estatísticas
     const totalBlogPosts = blogPosts?.length || 0
-    const totalBlogViews = blogPosts?.reduce((sum, post) => sum + (post.views || 0), 0) || 0
+    const totalBlogViews =
+      blogPosts?.reduce((sum, post) => sum + (post.views || 0), 0) || 0
     const totalForumAnswers = forumAnswers?.length || 0
     const totalForumQuestions = forumQuestions.length
-    const totalForumViews = forumQuestions.reduce((sum, question) => sum + (question.views || 0), 0)
+    const totalForumViews = forumQuestions.reduce(
+      (sum, question) => sum + (question.views || 0),
+      0
+    )
 
     // Calcular taxa de engajamento média (views + answers)
     const totalEngagement = totalBlogViews + totalForumViews + totalForumAnswers
     const totalContent = totalBlogPosts + totalForumQuestions
-    const averageEngagementRate = totalContent > 0 ? Math.round(totalEngagement / totalContent) : 0
+    const averageEngagementRate =
+      totalContent > 0 ? Math.round(totalEngagement / totalContent) : 0
 
     // Top 5 posts do blog
     const topBlogPosts: BlogEngagement[] = (blogPosts || [])
@@ -96,7 +105,7 @@ export async function getContentEngagementStats(nutritionistId: string): Promise
         title: post.title,
         views: post.views || 0,
         created_at: post.created_at,
-        tags: post.tags || []
+        tags: post.tags || [],
       }))
 
     // Top 5 perguntas do fórum respondidas
@@ -109,7 +118,7 @@ export async function getContentEngagementStats(nutritionistId: string): Promise
         views: question.views || 0,
         likes_count: question.likes_count || 0,
         created_at: question.created_at,
-        is_answered: question.is_answered || false
+        is_answered: question.is_answered || false,
       }))
 
     return {
@@ -120,11 +129,10 @@ export async function getContentEngagementStats(nutritionistId: string): Promise
       totalForumViews,
       averageEngagementRate,
       topBlogPosts,
-      topForumQuestions
+      topForumQuestions,
     }
-
   } catch (error) {
-    console.error("Erro ao buscar estatísticas de engajamento:", error)
+    // Silent error handling: Error fetching engagement statistics
     return {
       totalBlogPosts: 0,
       totalBlogViews: 0,
@@ -133,7 +141,7 @@ export async function getContentEngagementStats(nutritionistId: string): Promise
       totalForumViews: 0,
       averageEngagementRate: 0,
       topBlogPosts: [],
-      topForumQuestions: []
+      topForumQuestions: [],
     }
   }
 }
@@ -141,16 +149,18 @@ export async function getContentEngagementStats(nutritionistId: string): Promise
 /**
  * Busca dados detalhados de um post específico do blog
  */
-export async function getBlogPostDetails(postId: string): Promise<BlogEngagement | null> {
+export async function getBlogPostDetails(
+  postId: string
+): Promise<BlogEngagement | null> {
   try {
     const { data: post, error } = await supabase
-      .from("blog_posts")
-      .select("id, title, views, created_at, tags")
-      .eq("id", postId)
+      .from('blog_posts')
+      .select('id, title, views, created_at, tags')
+      .eq('id', postId)
       .single()
 
     if (error) {
-      console.error("Erro ao buscar detalhes do post:", error)
+      // Silent error handling: Error fetching post details
       return null
     }
 
@@ -159,10 +169,10 @@ export async function getBlogPostDetails(postId: string): Promise<BlogEngagement
       title: post.title,
       views: post.views || 0,
       created_at: post.created_at,
-      tags: post.tags || []
+      tags: post.tags || [],
     }
   } catch (error) {
-    console.error("Erro ao buscar detalhes do post:", error)
+    // Silent error handling: Error fetching post details
     return null
   }
 }
@@ -170,16 +180,20 @@ export async function getBlogPostDetails(postId: string): Promise<BlogEngagement
 /**
  * Busca dados detalhados de uma pergunta específica do fórum
  */
-export async function getForumQuestionDetails(questionId: string): Promise<ForumEngagement | null> {
+export async function getForumQuestionDetails(
+  questionId: string
+): Promise<ForumEngagement | null> {
   try {
     const { data: question, error } = await supabase
-      .from("forum_questions")
-      .select("id, title, views, answers_count, likes_count, created_at, is_answered")
-      .eq("id", questionId)
+      .from('forum_questions')
+      .select(
+        'id, title, views, answers_count, likes_count, created_at, is_answered'
+      )
+      .eq('id', questionId)
       .single()
 
     if (error) {
-      console.error("Erro ao buscar detalhes da pergunta:", error)
+      // Silent error handling: Error fetching question details
       return null
     }
 
@@ -190,10 +204,10 @@ export async function getForumQuestionDetails(questionId: string): Promise<Forum
       views: question.views || 0,
       likes_count: question.likes_count || 0,
       created_at: question.created_at,
-      is_answered: question.is_answered || false
+      is_answered: question.is_answered || false,
     }
   } catch (error) {
-    console.error("Erro ao buscar detalhes da pergunta:", error)
+    // Silent error handling: Error fetching question details
     return null
   }
 }

@@ -1,4 +1,4 @@
-import { supabase } from "./supabase"
+import { supabase } from './supabase'
 
 export interface Rating {
   id: string
@@ -31,7 +31,7 @@ export async function createRating(
   comment?: string
 ): Promise<Rating> {
   const { data, error } = await supabase
-    .from("consultation_ratings")
+    .from('consultation_ratings')
     .insert({
       consultation_id: consultationId,
       patient_id: patientId,
@@ -43,7 +43,7 @@ export async function createRating(
     .single()
 
   if (error) {
-    console.error("Erro ao criar avaliação:", error)
+    // Silent error handling: Error creating rating
     throw error
   }
 
@@ -54,15 +54,17 @@ export async function createRating(
 }
 
 // Buscar avaliação de uma consulta específica
-export async function getRatingByConsultation(consultationId: string): Promise<Rating | null> {
+export async function getRatingByConsultation(
+  consultationId: string
+): Promise<Rating | null> {
   const { data, error } = await supabase
-    .from("consultation_ratings")
-    .select("*")
-    .eq("consultation_id", consultationId)
+    .from('consultation_ratings')
+    .select('*')
+    .eq('consultation_id', consultationId)
     .single()
 
-  if (error && error.code !== "PGRST116") {
-    console.error("Erro ao buscar avaliação:", error)
+  if (error && error.code !== 'PGRST116') {
+    // Silent error handling: Error fetching rating
     throw error
   }
 
@@ -76,14 +78,14 @@ export async function getNutritionistRatings(
   offset = 0
 ): Promise<Rating[]> {
   const { data, error } = await supabase
-    .from("consultation_ratings")
-    .select("*")
-    .eq("nutritionist_id", nutritionistId)
-    .order("created_at", { ascending: false })
+    .from('consultation_ratings')
+    .select('*')
+    .eq('nutritionist_id', nutritionistId)
+    .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1)
 
   if (error) {
-    console.error("Erro ao buscar avaliações do nutricionista:", error)
+    // Silent error handling: Error fetching nutritionist ratings
     throw error
   }
 
@@ -91,14 +93,16 @@ export async function getNutritionistRatings(
 }
 
 // Buscar estatísticas de avaliação de um nutricionista
-export async function getNutritionistRatingStats(nutritionistId: string): Promise<RatingStats> {
+export async function getNutritionistRatingStats(
+  nutritionistId: string
+): Promise<RatingStats> {
   const { data, error } = await supabase
-    .from("consultation_ratings")
-    .select("rating")
-    .eq("nutritionist_id", nutritionistId)
+    .from('consultation_ratings')
+    .select('rating')
+    .eq('nutritionist_id', nutritionistId)
 
   if (error) {
-    console.error("Erro ao buscar estatísticas de avaliação:", error)
+    // Silent error handling: Error fetching rating statistics
     throw error
   }
 
@@ -110,12 +114,13 @@ export async function getNutritionistRatingStats(nutritionistId: string): Promis
     }
   }
 
-  const ratings = data.map((r) => r.rating)
-  const averageRating = ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length
+  const ratings = data.map(r => r.rating)
+  const averageRating =
+    ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length
   const totalReviews = ratings.length
 
   const ratingDistribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
-  ratings.forEach((rating) => {
+  ratings.forEach(rating => {
     ratingDistribution[rating as keyof typeof ratingDistribution]++
   })
 
@@ -127,31 +132,37 @@ export async function getNutritionistRatingStats(nutritionistId: string): Promis
 }
 
 // Atualizar rating do nutricionista na tabela nutritionist_profiles
-export async function updateNutritionistRating(nutritionistId: string): Promise<void> {
+export async function updateNutritionistRating(
+  nutritionistId: string
+): Promise<void> {
   const stats = await getNutritionistRatingStats(nutritionistId)
 
   const { error } = await supabase
-    .from("nutritionist_profiles")
+    .from('nutritionist_profiles')
     .update({
       rating: stats.averageRating,
       total_reviews: stats.totalReviews,
     })
-    .eq("user_id", nutritionistId)
+    .eq('user_id', nutritionistId)
 
   if (error) {
-    console.error("Erro ao atualizar rating do nutricionista:", error)
+    // Silent error handling: Error updating nutritionist rating
     throw error
   }
 }
 
 // Verificar se uma consulta pode ser avaliada
-export async function canRateConsultation(consultationId: string): Promise<boolean> {
+export async function canRateConsultation(
+  consultationId: string
+): Promise<boolean> {
   // Função removida - não há mais consultas de telemedicina
   return false
 }
 
 // Buscar consultas que podem ser avaliadas por um paciente
-export async function getConsultationsToRate(patientId: string): Promise<any[]> {
+export async function getConsultationsToRate(
+  patientId: string
+): Promise<any[]> {
   // Função removida - não há mais consultas de telemedicina
   return []
 }

@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server"
-import { createClient } from "@supabase/supabase-js"
+import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -8,9 +8,9 @@ export async function GET(request: NextRequest) {
   try {
     // Verificar variáveis de ambiente
     if (!supabaseUrl || !supabaseServiceKey) {
-      console.error("❌ Variáveis de ambiente do Supabase não configuradas")
+      // Supabase environment variables not configured - silent error handling
       return NextResponse.json(
-        { error: "Configuração do servidor incompleta" },
+        { error: 'Configuração do servidor incompleta' },
         { status: 500 }
       )
     }
@@ -25,87 +25,80 @@ export async function GET(request: NextRequest) {
 
     // Extrair parâmetros da URL
     const { searchParams } = new URL(request.url)
-    const userId = searchParams.get("userId")
-    const accessToken = searchParams.get("accessToken")
-    const documentType = searchParams.get("documentType") // 'crn_proof', 'certificate', ou null para todos
+    const userId = searchParams.get('userId')
+    const accessToken = searchParams.get('accessToken')
+    const documentType = searchParams.get('documentType') // 'crn_proof', 'certificate', ou null para todos
 
-    console.log("📄 Buscando documentos:", { userId, documentType })
+    // Searching documents - silent operation
 
     // Validações básicas
     if (!userId || !accessToken) {
       return NextResponse.json(
-        { error: "userId e accessToken são obrigatórios" },
+        { error: 'userId e accessToken são obrigatórios' },
         { status: 400 }
       )
     }
 
     // Validar access token
-    const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken)
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser(accessToken)
     if (authError || !user || user.id !== userId) {
-      console.error("❌ Erro de autenticação:", authError)
+      // Authentication error - silent error handling
       return NextResponse.json(
-        { error: "Token de acesso inválido" },
+        { error: 'Token de acesso inválido' },
         { status: 401 }
       )
     }
 
     // Verificar se o usuário é nutricionista
     const { data: userData, error: userError } = await supabase
-      .from("users")
-      .select("user_type")
-      .eq("id", userId)
+      .from('users')
+      .select('user_type')
+      .eq('id', userId)
       .single()
 
-    if (userError || userData?.user_type !== "nutricionista") {
-      console.error("❌ Usuário não é nutricionista:", userError)
+    if (userError || userData?.user_type !== 'nutricionista') {
+      // User is not a nutritionist - silent error handling
       return NextResponse.json(
-        { error: "Apenas nutricionistas podem acessar documentos" },
+        { error: 'Apenas nutricionistas podem acessar documentos' },
         { status: 403 }
       )
     }
 
     // Construir query
     let query = supabase
-      .from("nutritionist_documents")
-      .select("*")
-      .eq("nutritionist_id", userId)
-      .order("created_at", { ascending: false })
+      .from('nutritionist_documents')
+      .select('*')
+      .eq('nutritionist_id', userId)
+      .order('created_at', { ascending: false })
 
     // Filtrar por tipo se especificado
     if (documentType) {
-      query = query.eq("document_type", documentType)
+      query = query.eq('document_type', documentType)
     }
 
     // Executar query
     const { data: documents, error: docsError } = await query
 
     if (docsError) {
-      console.error("❌ Erro ao buscar documentos:", docsError)
+      // Error fetching documents - silent error handling
       return NextResponse.json(
-        { error: "Erro ao buscar documentos" },
+        { error: 'Erro ao buscar documentos' },
         { status: 500 }
       )
     }
 
-    console.log(`✅ Encontrados ${documents?.length || 0} documentos`)
-
-    // Separar documentos por tipo para facilitar o uso no frontend
-    const crnProof = documents?.find(doc => doc.document_type === "crn_proof") || null
-    const certificates = documents?.filter(doc => doc.document_type === "certificate") || []
-
+    // Found documents - silent operation
     return NextResponse.json({
       success: true,
-      data: {
-        crnProof,
-        certificates,
-        all: documents || []
-      }
+      documents: documents || [],
     })
-
   } catch (error) {
-    console.error("💥 Erro ao buscar documentos:", error)
+    // Error fetching documents - silent error handling
     return NextResponse.json(
-      { error: "Erro interno do servidor" },
+      { error: 'Erro interno do servidor' },
       { status: 500 }
     )
   }

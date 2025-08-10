@@ -1,25 +1,25 @@
-"use client"
+'use client'
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { 
-  Trash2, 
-  Search, 
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import {
+  Trash2,
+  Search,
   ArrowLeft,
   Database,
   AlertTriangle,
   CheckCircle,
   Users,
   MessageSquare,
-  Heart
-} from "lucide-react"
-import { getCurrentUser } from "@/lib/auth"
-import { supabase } from "@/lib/supabase"
-import { ForumCleanupModal } from "@/components/forum-cleanup-modal"
+  Heart,
+} from 'lucide-react'
+import { getCurrentUser } from '@/lib/auth'
+import { supabase } from '@/lib/supabase'
+import { ForumCleanupModal } from '@/components/forum-cleanup-modal'
 
 interface ForumStats {
   totalQuestions: number
@@ -41,7 +41,7 @@ export default function ForumAdminPage() {
     const loadData = async () => {
       try {
         setLoading(true)
-        
+
         const user = await getCurrentUser()
         setCurrentUser(user)
 
@@ -52,7 +52,7 @@ export default function ForumAdminPage() {
 
         await loadStats()
       } catch (error) {
-        console.error("Erro ao carregar dados:", error)
+        // Error loading data - handled silently
       } finally {
         setLoading(false)
       }
@@ -67,7 +67,7 @@ export default function ForumAdminPage() {
       const [questionsResult, answersResult, likesResult] = await Promise.all([
         supabase.from('forum_questions').select('id', { count: 'exact' }),
         supabase.from('forum_answers').select('id', { count: 'exact' }),
-        supabase.from('forum_question_likes').select('id', { count: 'exact' })
+        supabase.from('forum_question_likes').select('id', { count: 'exact' }),
       ])
 
       // Get orphan questions (without valid author)
@@ -162,10 +162,10 @@ export default function ForumAdminPage() {
         totalLikes: (questionsResult.count || 0) + (answersResult.count || 0),
         orphanQuestions: orphanQuestions?.length || 0,
         orphanAnswers: orphanAnswersCount,
-        orphanLikes: orphanLikesCount
+        orphanLikes: orphanLikesCount,
       })
     } catch (error) {
-      console.error("Erro ao carregar estatísticas:", error)
+      // Error loading statistics - handled silently
     }
   }
 
@@ -191,8 +191,12 @@ export default function ForumAdminPage() {
       <div className="min-h-screen bg-gray-50">
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
-            <p className="text-red-600 mb-4">Acesso negado. Apenas nutricionistas podem acessar esta página.</p>
-            <Button onClick={() => router.push('/dashboard/nutricionistas/forum')}>
+            <p className="text-red-600 mb-4">
+              Acesso negado. Apenas nutricionistas podem acessar esta página.
+            </p>
+            <Button
+              onClick={() => router.push('/dashboard/nutricionistas/forum')}
+            >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Voltar ao Fórum
             </Button>
@@ -217,7 +221,9 @@ export default function ForumAdminPage() {
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Voltar ao Fórum
               </Button>
-              <h1 className="text-2xl font-bold text-gray-900">Administração do Fórum</h1>
+              <h1 className="text-2xl font-bold text-gray-900">
+                Administração do Fórum
+              </h1>
             </div>
           </div>
 
@@ -225,11 +231,15 @@ export default function ForumAdminPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total de Perguntas</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Total de Perguntas
+                </CardTitle>
                 <MessageSquare className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats?.totalQuestions || 0}</div>
+                <div className="text-2xl font-bold">
+                  {stats?.totalQuestions || 0}
+                </div>
                 <p className="text-xs text-muted-foreground">
                   Perguntas no fórum
                 </p>
@@ -238,11 +248,15 @@ export default function ForumAdminPage() {
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total de Respostas</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Total de Respostas
+                </CardTitle>
                 <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats?.totalAnswers || 0}</div>
+                <div className="text-2xl font-bold">
+                  {stats?.totalAnswers || 0}
+                </div>
                 <p className="text-xs text-muted-foreground">
                   Respostas de nutricionistas
                 </p>
@@ -251,11 +265,15 @@ export default function ForumAdminPage() {
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total de Curtidas</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Total de Curtidas
+                </CardTitle>
                 <Heart className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats?.totalLikes || 0}</div>
+                <div className="text-2xl font-bold">
+                  {stats?.totalLikes || 0}
+                </div>
                 <p className="text-xs text-muted-foreground">
                   Curtidas em perguntas e respostas
                 </p>
@@ -276,7 +294,9 @@ export default function ForumAdminPage() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="flex items-center justify-between p-4 bg-red-50 border border-red-200 rounded-lg">
                     <div>
-                      <p className="text-sm font-medium text-red-800">Perguntas Órfãs</p>
+                      <p className="text-sm font-medium text-red-800">
+                        Perguntas Órfãs
+                      </p>
                       <p className="text-xs text-red-600">Sem autor válido</p>
                     </div>
                     <div className="text-2xl font-bold text-red-700">
@@ -286,8 +306,12 @@ export default function ForumAdminPage() {
 
                   <div className="flex items-center justify-between p-4 bg-orange-50 border border-orange-200 rounded-lg">
                     <div>
-                      <p className="text-sm font-medium text-orange-800">Respostas Órfãs</p>
-                      <p className="text-xs text-orange-600">Sem pergunta ou autor válido</p>
+                      <p className="text-sm font-medium text-orange-800">
+                        Respostas Órfãs
+                      </p>
+                      <p className="text-xs text-orange-600">
+                        Sem pergunta ou autor válido
+                      </p>
                     </div>
                     <div className="text-2xl font-bold text-orange-700">
                       {stats?.orphanAnswers || 0}
@@ -296,8 +320,12 @@ export default function ForumAdminPage() {
 
                   <div className="flex items-center justify-between p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
                     <div>
-                      <p className="text-sm font-medium text-yellow-800">Curtidas Órfãs</p>
-                      <p className="text-xs text-yellow-600">Sem item ou usuário válido</p>
+                      <p className="text-sm font-medium text-yellow-800">
+                        Curtidas Órfãs
+                      </p>
+                      <p className="text-xs text-yellow-600">
+                        Sem item ou usuário válido
+                      </p>
                     </div>
                     <div className="text-2xl font-bold text-yellow-700">
                       {stats?.orphanLikes || 0}
@@ -307,7 +335,10 @@ export default function ForumAdminPage() {
 
                 <div className="flex items-center justify-between pt-4 border-t">
                   <div className="flex items-center gap-2">
-                    {(stats?.orphanQuestions || 0) + (stats?.orphanAnswers || 0) + (stats?.orphanLikes || 0) === 0 ? (
+                    {(stats?.orphanQuestions || 0) +
+                      (stats?.orphanAnswers || 0) +
+                      (stats?.orphanLikes || 0) ===
+                    0 ? (
                       <>
                         <CheckCircle className="h-5 w-5 text-green-600" />
                         <span className="text-green-700 font-medium">
@@ -318,7 +349,10 @@ export default function ForumAdminPage() {
                       <>
                         <AlertTriangle className="h-5 w-5 text-orange-600" />
                         <span className="text-orange-700 font-medium">
-                          {(stats?.orphanQuestions || 0) + (stats?.orphanAnswers || 0) + (stats?.orphanLikes || 0)} itens órfãos encontrados
+                          {(stats?.orphanQuestions || 0) +
+                            (stats?.orphanAnswers || 0) +
+                            (stats?.orphanLikes || 0)}{' '}
+                          itens órfãos encontrados
                         </span>
                       </>
                     )}
@@ -326,7 +360,12 @@ export default function ForumAdminPage() {
 
                   <Button
                     onClick={() => setCleanupModalOpen(true)}
-                    disabled={(stats?.orphanQuestions || 0) + (stats?.orphanAnswers || 0) + (stats?.orphanLikes || 0) === 0}
+                    disabled={
+                      (stats?.orphanQuestions || 0) +
+                        (stats?.orphanAnswers || 0) +
+                        (stats?.orphanLikes || 0) ===
+                      0
+                    }
                     className="bg-orange-600 hover:bg-orange-700"
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
@@ -345,16 +384,22 @@ export default function ForumAdminPage() {
             <CardContent>
               <div className="space-y-3 text-sm text-gray-600">
                 <p>
-                  <strong>Dados Órfãos:</strong> São registros no banco de dados que perderam suas referências válidas, 
-                  como perguntas sem autor, respostas sem pergunta associada, ou curtidas de itens que não existem mais.
+                  <strong>Dados Órfãos:</strong> São registros no banco de dados
+                  que perderam suas referências válidas, como perguntas sem
+                  autor, respostas sem pergunta associada, ou curtidas de itens
+                  que não existem mais.
                 </p>
                 <p>
-                  <strong>Limpeza Automática:</strong> A função de limpeza remove apenas dados órfãos, preservando 
-                  todas as informações válidas. Esta operação é segura e não afeta o funcionamento normal do fórum.
+                  <strong>Limpeza Automática:</strong> A função de limpeza
+                  remove apenas dados órfãos, preservando todas as informações
+                  válidas. Esta operação é segura e não afeta o funcionamento
+                  normal do fórum.
                 </p>
                 <p>
-                  <strong>Edição e Exclusão:</strong> Nutricionistas podem editar e excluir suas próprias postagens 
-                  diretamente nas páginas do fórum usando os menus de ações (⋮) ao lado de cada postagem.
+                  <strong>Edição e Exclusão:</strong> Nutricionistas podem
+                  editar e excluir suas próprias postagens diretamente nas
+                  páginas do fórum usando os menus de ações (⋮) ao lado de cada
+                  postagem.
                 </p>
               </div>
             </CardContent>

@@ -1,8 +1,8 @@
-"use client"
+'use client'
 
-import { useState, useEffect } from "react"
-import { getCurrentUser, getUserProfile } from "@/lib/auth"
-import type { User } from "@supabase/supabase-js"
+import { useState, useEffect } from 'react'
+import { getCurrentUser, getUserProfile } from '@/lib/auth'
+import type { User } from '@supabase/supabase-js'
 
 interface ExtendedUser extends User {
   companyProfile?: any
@@ -19,29 +19,38 @@ export function useUser() {
       try {
         const currentUser = await getCurrentUser()
         if (currentUser) {
-          let extendedUser: ExtendedUser = currentUser
+          const extendedUser: ExtendedUser = currentUser
 
           // Carregar perfil específico baseado no tipo de usuário
-          if (currentUser.user_type === "empresa") {
+          if (currentUser.user_type === 'empresa') {
             try {
-              const { data: companyProfile } = await getUserProfile(currentUser.id, "empresa")
+              const { data: companyProfile } = await getUserProfile(
+                currentUser.id,
+                'empresa'
+              )
               extendedUser.companyProfile = companyProfile
             } catch (error) {
-              console.error("Erro ao carregar perfil da empresa:", error)
+              // Error loading company profile - silently handled
             }
-          } else if (currentUser.user_type === "nutricionista") {
+          } else if (currentUser.user_type === 'nutricionista') {
             try {
-              const { data: nutritionistProfile } = await getUserProfile(currentUser.id, "nutricionista")
+              const { data: nutritionistProfile } = await getUserProfile(
+                currentUser.id,
+                'nutricionista'
+              )
               extendedUser.nutritionistProfile = nutritionistProfile
             } catch (error) {
-              console.error("Erro ao carregar perfil do nutricionista:", error)
+              // Error loading nutritionist profile - silently handled
             }
-          } else if (currentUser.user_type === "paciente") {
+          } else if (currentUser.user_type === 'paciente') {
             try {
-              const { data: patientProfile } = await getUserProfile(currentUser.id, "paciente")
+              const { data: patientProfile } = await getUserProfile(
+                currentUser.id,
+                'paciente'
+              )
               extendedUser.patientProfile = patientProfile
             } catch (error) {
-              console.error("Erro ao carregar perfil do paciente:", error)
+              // Error loading patient profile - silently handled
             }
           }
 
@@ -50,7 +59,7 @@ export function useUser() {
           setUser(null)
         }
       } catch (error) {
-        console.error("Erro ao carregar usuário:", error)
+        // Error loading user - silently handled
         setUser(null)
       } finally {
         setLoading(false)

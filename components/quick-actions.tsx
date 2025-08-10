@@ -1,10 +1,17 @@
-"use client"
+'use client'
 
-import type React from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Calendar, MessageCircle, Search, Heart, BookOpen, Settings } from "lucide-react"
-import { cn } from "@/lib/utils"
+import type React from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import {
+  Calendar,
+  MessageCircle,
+  Search,
+  Heart,
+  BookOpen,
+  Settings,
+} from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 interface QuickAction {
   id: string
@@ -17,154 +24,157 @@ interface QuickAction {
 }
 
 interface QuickActionsProps {
-  userType?: "paciente" | "nutricionista" | "empresa" | "admin"
+  userType?: 'paciente' | 'nutricionista' | 'empresa' | 'admin'
   className?: string
 }
 
 const quickActionsData = {
   paciente: [
     {
-      id: "agendar",
-      title: "Agendar Consulta",
-      description: "Marque uma consulta com um nutricionista",
+      id: 'agendar',
+      title: 'Agendar Consulta',
+      description: 'Marque uma consulta com um nutricionista',
       icon: Calendar,
-      color: "from-blue-500 to-blue-600",
-      href: "/dashboard/paciente/agendamento"
+      color: 'from-blue-500 to-blue-600',
+      href: '/dashboard/paciente/agendamento',
     },
     {
-      id: "buscar",
-      title: "Buscar Nutricionistas",
-      description: "Encontre o profissional ideal para você",
+      id: 'buscar',
+      title: 'Buscar Nutricionistas',
+      description: 'Encontre o profissional ideal para você',
       icon: Search,
-      color: "from-green-500 to-green-600",
-      href: "/dashboard/paciente/nutricionistas"
+      color: 'from-green-500 to-green-600',
+      href: '/dashboard/paciente/nutricionistas',
     },
     {
-      id: "chat",
-      title: "Chat com IrisBot",
-      description: "Tire suas dúvidas sobre nutrição",
+      id: 'chat',
+      title: 'Chat com IrisBot',
+      description: 'Tire suas dúvidas sobre nutrição',
       icon: MessageCircle,
-      color: "from-purple-500 to-purple-600",
-      href: "/dashboard/paciente/chat"
+      color: 'from-purple-500 to-purple-600',
+      href: '/dashboard/paciente/chat',
     },
     {
-      id: "favoritos",
-      title: "Meus Favoritos",
-      description: "Veja seus nutricionistas favoritos",
+      id: 'favoritos',
+      title: 'Meus Favoritos',
+      description: 'Veja seus nutricionistas favoritos',
       icon: Heart,
-      color: "from-red-500 to-red-600",
-      href: "/dashboard/paciente/favoritos"
-    }
+      color: 'from-red-500 to-red-600',
+      href: '/dashboard/paciente/favoritos',
+    },
   ],
   nutricionista: [
     {
-      id: "agenda",
-      title: "Minha Agenda",
-      description: "Gerencie seus horários e consultas",
+      id: 'agenda',
+      title: 'Minha Agenda',
+      description: 'Gerencie seus horários e consultas',
       icon: Calendar,
-      color: "from-blue-500 to-blue-600",
-      href: "/dashboard/nutricionista/agenda"
+      color: 'from-blue-500 to-blue-600',
+      href: '/dashboard/nutricionista/agenda',
     },
     {
-      id: "pacientes",
-      title: "Meus Pacientes",
-      description: "Acompanhe o progresso dos pacientes",
+      id: 'pacientes',
+      title: 'Meus Pacientes',
+      description: 'Acompanhe o progresso dos pacientes',
       icon: Search,
-      color: "from-green-500 to-green-600",
-      href: "/dashboard/nutricionista/pacientes"
+      color: 'from-green-500 to-green-600',
+      href: '/dashboard/nutricionista/pacientes',
     },
     {
-      id: "chat",
-      title: "Chat com Pacientes",
-      description: "Converse com seus pacientes",
+      id: 'chat',
+      title: 'Chat com Pacientes',
+      description: 'Converse com seus pacientes',
       icon: MessageCircle,
-      color: "from-purple-500 to-purple-600",
-      href: "/dashboard/nutricionista/chat"
+      color: 'from-purple-500 to-purple-600',
+      href: '/dashboard/nutricionista/chat',
     },
     {
-      id: "recursos",
-      title: "Recursos Educativos",
-      description: "Acesse materiais e cursos",
+      id: 'recursos',
+      title: 'Recursos Educativos',
+      description: 'Acesse materiais e cursos',
       icon: BookOpen,
-      color: "from-orange-500 to-orange-600",
-      href: "/dashboard/nutricionista/recursos"
-    }
+      color: 'from-orange-500 to-orange-600',
+      href: '/dashboard/nutricionista/recursos',
+    },
   ],
   empresa: [
     {
-      id: "buscar",
-      title: "Buscar Nutricionistas",
-      description: "Encontre profissionais para sua equipe",
+      id: 'buscar',
+      title: 'Buscar Nutricionistas',
+      description: 'Encontre profissionais para sua equipe',
       icon: Search,
-      color: "from-blue-500 to-blue-600",
-      href: "/dashboard/empresa/nutricionistas"
+      color: 'from-blue-500 to-blue-600',
+      href: '/dashboard/empresa/nutricionistas',
     },
     {
-      id: "candidatos",
-      title: "Gerenciar Candidatos",
-      description: "Acompanhe processos seletivos",
+      id: 'candidatos',
+      title: 'Gerenciar Candidatos',
+      description: 'Acompanhe processos seletivos',
       icon: Calendar,
-      color: "from-green-500 to-green-600",
-      href: "/dashboard/empresa/candidatos"
+      color: 'from-green-500 to-green-600',
+      href: '/dashboard/empresa/candidatos',
     },
     {
-      id: "chat",
-      title: "Chat Corporativo",
-      description: "Converse com nutricionistas",
+      id: 'chat',
+      title: 'Chat Corporativo',
+      description: 'Converse com nutricionistas',
       icon: MessageCircle,
-      color: "from-purple-500 to-purple-600",
-      href: "/dashboard/empresa/chat"
+      color: 'from-purple-500 to-purple-600',
+      href: '/dashboard/empresa/chat',
     },
     {
-      id: "configuracoes",
-      title: "Configurações",
-      description: "Gerencie perfil da empresa",
+      id: 'configuracoes',
+      title: 'Configurações',
+      description: 'Gerencie perfil da empresa',
       icon: Settings,
-      color: "from-gray-500 to-gray-600",
-      href: "/dashboard/empresa/configuracoes"
-    }
+      color: 'from-gray-500 to-gray-600',
+      href: '/dashboard/empresa/configuracoes',
+    },
   ],
   admin: [
     {
-      id: "usuarios",
-      title: "Gerenciar Usuários",
-      description: "Administre usuários da plataforma",
+      id: 'usuarios',
+      title: 'Gerenciar Usuários',
+      description: 'Administre usuários da plataforma',
       icon: Search,
-      color: "from-blue-500 to-blue-600",
-      href: "/dashboard/admin/usuarios"
+      color: 'from-blue-500 to-blue-600',
+      href: '/dashboard/admin/usuarios',
     },
     {
-      id: "relatorios",
-      title: "Relatórios",
-      description: "Visualize métricas e estatísticas",
+      id: 'relatorios',
+      title: 'Relatórios',
+      description: 'Visualize métricas e estatísticas',
       icon: BookOpen,
-      color: "from-green-500 to-green-600",
-      href: "/dashboard/admin/relatorios"
+      color: 'from-green-500 to-green-600',
+      href: '/dashboard/admin/relatorios',
     },
     {
-      id: "configuracoes",
-      title: "Configurações",
-      description: "Gerencie configurações do sistema",
+      id: 'configuracoes',
+      title: 'Configurações',
+      description: 'Gerencie configurações do sistema',
       icon: Settings,
-      color: "from-purple-500 to-purple-600",
-      href: "/dashboard/admin/configuracoes"
+      color: 'from-purple-500 to-purple-600',
+      href: '/dashboard/admin/configuracoes',
     },
     {
-      id: "suporte",
-      title: "Suporte",
-      description: "Gerencie tickets de suporte",
+      id: 'suporte',
+      title: 'Suporte',
+      description: 'Gerencie tickets de suporte',
       icon: MessageCircle,
-      color: "from-orange-500 to-orange-600",
-      href: "/dashboard/admin/suporte"
-    }
-  ]
+      color: 'from-orange-500 to-orange-600',
+      href: '/dashboard/admin/suporte',
+    },
+  ],
 }
 
-export function QuickActions({ userType = "paciente", className }: QuickActionsProps) {
+export function QuickActions({
+  userType = 'paciente',
+  className,
+}: QuickActionsProps) {
   const actions = quickActionsData[userType] || quickActionsData.paciente
 
   return (
-    <Card className={cn("shadow-lg border-0", className)}>
+    <Card className={cn('shadow-lg border-0', className)}>
       <CardHeader>
         <CardTitle className="text-lg font-semibold text-[#1E1D40]">
           Ações Rápidas
@@ -172,7 +182,7 @@ export function QuickActions({ userType = "paciente", className }: QuickActionsP
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {actions.map((action) => (
+          {actions.map(action => (
             <Button
               key={action.id}
               variant="outline"
@@ -185,7 +195,7 @@ export function QuickActions({ userType = "paciente", className }: QuickActionsP
                   <div className="flex items-center gap-3 w-full">
                     <div
                       className={cn(
-                        "w-10 h-10 bg-gradient-to-br rounded-lg flex items-center justify-center shadow-sm",
+                        'w-10 h-10 bg-gradient-to-br rounded-lg flex items-center justify-center shadow-sm',
                         action.color
                       )}
                     >
@@ -205,7 +215,7 @@ export function QuickActions({ userType = "paciente", className }: QuickActionsP
                 <div className="flex items-center gap-3 w-full">
                   <div
                     className={cn(
-                      "w-10 h-10 bg-gradient-to-br rounded-lg flex items-center justify-center shadow-sm",
+                      'w-10 h-10 bg-gradient-to-br rounded-lg flex items-center justify-center shadow-sm',
                       action.color
                     )}
                   >

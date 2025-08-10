@@ -1,9 +1,9 @@
-"use client"
+'use client'
 
-import { useState, useEffect, useCallback } from "react"
-import { createSupabaseClient } from "@/lib/supabase"
-import { profileViewsService } from "@/lib/profile-views-service"
-import { RealtimeChannel } from "@supabase/supabase-js"
+import { useState, useEffect, useCallback } from 'react'
+import { createSupabaseClient } from '@/lib/supabase'
+import { profileViewsService } from '@/lib/profile-views-service'
+import { RealtimeChannel } from '@supabase/supabase-js'
 
 export interface ProfileViewStats {
   totalViews: number
@@ -11,12 +11,15 @@ export interface ProfileViewStats {
   lastViewAt: string | null
 }
 
-export function useRealtimeProfileViews(nutritionistId: string, initialStats?: ProfileViewStats) {
+export function useRealtimeProfileViews(
+  nutritionistId: string,
+  initialStats?: ProfileViewStats
+) {
   const [viewStats, setViewStats] = useState<ProfileViewStats>(
     initialStats || {
       totalViews: 0,
       uniqueViews: 0,
-      lastViewAt: null
+      lastViewAt: null,
     }
   )
   const [loading, setLoading] = useState(true)
@@ -34,7 +37,7 @@ export function useRealtimeProfileViews(nutritionistId: string, initialStats?: P
         setViewStats({
           totalViews: stats.total_views,
           uniqueViews: stats.unique_views,
-          lastViewAt: stats.last_view_at
+          lastViewAt: stats.last_view_at,
         })
       }
     } catch (error) {
@@ -52,7 +55,7 @@ export function useRealtimeProfileViews(nutritionistId: string, initialStats?: P
         setViewStats({
           totalViews: stats.total_views,
           uniqueViews: stats.unique_views,
-          lastViewAt: stats.last_view_at
+          lastViewAt: stats.last_view_at,
         })
       }
     } catch (error) {
@@ -76,19 +79,23 @@ export function useRealtimeProfileViews(nutritionistId: string, initialStats?: P
           event: 'INSERT',
           schema: 'public',
           table: 'profile_views',
-          filter: `nutritionist_id=eq.${nutritionistId}`
+          filter: `nutritionist_id=eq.${nutritionistId}`,
         },
-        (payload) => {
+        payload => {
           console.log('Nova visualização registrada:', payload)
           // Atualizar estatísticas quando uma nova visualização é inserida
           handleNewView()
         }
       )
-      .subscribe((status) => {
+      .subscribe(status => {
         if (status === 'SUBSCRIBED') {
-          console.log(`✅ Inscrito em atualizações de visualização para nutricionista: ${nutritionistId}`)
+          console.log(
+            `✅ Inscrito em atualizações de visualização para nutricionista: ${nutritionistId}`
+          )
         } else if (status === 'CHANNEL_ERROR') {
-          console.error('❌ Erro ao inscrever-se em atualizações de visualização')
+          console.error(
+            '❌ Erro ao inscrever-se em atualizações de visualização'
+          )
         }
       })
 
@@ -98,7 +105,9 @@ export function useRealtimeProfileViews(nutritionistId: string, initialStats?: P
     return () => {
       if (realtimeChannel) {
         realtimeChannel.unsubscribe()
-        console.log(`🔌 Desconectado das atualizações de visualização para nutricionista: ${nutritionistId}`)
+        console.log(
+          `🔌 Desconectado das atualizações de visualização para nutricionista: ${nutritionistId}`
+        )
       }
     }
   }, [nutritionistId, loadViewStats, handleNewView, supabase])
@@ -119,6 +128,6 @@ export function useRealtimeProfileViews(nutritionistId: string, initialStats?: P
     viewStats,
     loading,
     recordView,
-    refreshStats: loadViewStats
+    refreshStats: loadViewStats,
   }
 }

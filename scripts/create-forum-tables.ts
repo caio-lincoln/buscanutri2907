@@ -32,7 +32,7 @@ async function createForumTables() {
           updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
           last_activity_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
         );
-      `
+      `,
     })
 
     if (questionsError) {
@@ -55,7 +55,7 @@ async function createForumTables() {
           created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
           updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
         );
-      `
+      `,
     })
 
     if (answersError) {
@@ -75,11 +75,14 @@ async function createForumTables() {
           created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
           UNIQUE(question_id, user_id)
         );
-      `
+      `,
     })
 
     if (questionLikesError) {
-      console.error('❌ Erro ao criar forum_question_likes:', questionLikesError)
+      console.error(
+        '❌ Erro ao criar forum_question_likes:',
+        questionLikesError
+      )
     } else {
       console.log('✅ Tabela forum_question_likes criada')
     }
@@ -95,7 +98,7 @@ async function createForumTables() {
           created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
           UNIQUE(answer_id, user_id)
         );
-      `
+      `,
     })
 
     if (answerLikesError) {
@@ -105,7 +108,6 @@ async function createForumTables() {
     }
 
     console.log('🎉 Tabelas do fórum criadas com sucesso!')
-
   } catch (error) {
     console.error('❌ Erro geral:', error)
   }

@@ -1,30 +1,60 @@
-"use client"
+'use client'
 
-import type React from "react"
+import type React from 'react'
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import Link from "next/link"
-import Image from "next/image"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Checkbox } from "@/components/ui/checkbox"
-import { ArrowLeft, Eye, EyeOff, Loader2, AlertCircle, CheckCircle, Clock, Building, Shield, ShieldCheck, ShieldAlert } from "lucide-react"
-import { signUp } from "@/lib/auth"
-import { toast } from "@/components/ui/use-toast"
-import ConsultationPricingConfig from "./components/ConsultationPricingConfig"
-import AddressManagement from "./components/AddressManagement"
-import { NutritionistDocumentsUpload } from "@/components/ui/nutritionist-documents-upload"
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import Image from 'next/image'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Checkbox } from '@/components/ui/checkbox'
+import {
+  ArrowLeft,
+  Eye,
+  EyeOff,
+  Loader2,
+  AlertCircle,
+  CheckCircle,
+  Clock,
+  Building,
+  Shield,
+  ShieldCheck,
+  ShieldAlert,
+} from 'lucide-react'
+import { signUp } from '@/lib/auth'
+import { toast } from '@/components/ui/use-toast'
+import ConsultationPricingConfig from './components/ConsultationPricingConfig'
+import AddressManagement from './components/AddressManagement'
+import { NutritionistDocumentsUpload } from '@/components/ui/nutritionist-documents-upload'
+import { SpecialtySelector } from '@/components/ui/specialty-selector'
 
-import { validateCRNFormat, validateCRNWithAPI, formatCRN } from "@/lib/crn-validator"
-import { validateCNPJFormat, validateCNPJWithAPI, formatCNPJ } from "@/lib/cnpj-validator"
-import { saveNutritionistAddresses, type AddressData } from "@/lib/address-utils"
+import {
+  validateCRNFormat,
+  validateCRNWithAPI,
+  formatCRN,
+} from '@/lib/crn-validator'
+import {
+  validateCNPJFormat,
+  validateCNPJWithAPI,
+  formatCNPJ,
+} from '@/lib/cnpj-validator'
+import {
+  saveNutritionistAddresses,
+  type AddressData,
+} from '@/lib/address-utils'
 
 // Tipos para validação de senha
-type PasswordStrength = "weak" | "medium" | "strong"
+type PasswordStrength = 'weak' | 'medium' | 'strong'
 
 interface PasswordValidation {
   strength: PasswordStrength
@@ -52,11 +82,14 @@ interface Certificate {
 
 export default function CadastroPage() {
   const [showPassword, setShowPassword] = useState(false)
-  const [userType, setUserType] = useState("paciente")
+  const [userType, setUserType] = useState('paciente')
   const [acceptTerms, setAcceptTerms] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [acceptsCorporatePlans, setAcceptsCorporatePlans] = useState<boolean | null>(null)
-  const [error, setError] = useState("")
+  const [acceptsCorporatePlans, setAcceptsCorporatePlans] = useState<
+    boolean | null
+  >(null)
+  const [aceitaCupons, setAceitaCupons] = useState(false)
+  const [error, setError] = useState('')
   const [addresses, setAddresses] = useState<AddressData[]>([])
   const [pricingConfig, setPricingConfig] = useState({
     inPerson: {
@@ -64,47 +97,50 @@ export default function CadastroPage() {
       pricingType: 'combined' as 'combined' | 'separate',
       combinedPrice: '',
       consultationPrice: '',
-      followupPrice: ''
+      followupPrice: '',
     },
     online: {
       enabled: false,
       pricingType: 'combined' as 'combined' | 'separate',
       combinedPrice: '',
       consultationPrice: '',
-      followupPrice: ''
-    }
-  })
-  
-  // Estados para validação de senha
-  const [password, setPassword] = useState("")
-  const [passwordValidation, setPasswordValidation] = useState<PasswordValidation>({
-    strength: "weak",
-    score: 0,
-    message: "",
-    requirements: {
-      length: false,
-      uppercase: false,
-      lowercase: false,
-      number: false,
-      special: false
-    }
+      followupPrice: '',
+    },
   })
 
+  // Estados para validação de senha
+  const [password, setPassword] = useState('')
+  const [passwordValidation, setPasswordValidation] =
+    useState<PasswordValidation>({
+      strength: 'weak',
+      score: 0,
+      message: '',
+      requirements: {
+        length: false,
+        uppercase: false,
+        lowercase: false,
+        number: false,
+        special: false,
+      },
+    })
 
   // Estados para validação de CRN
-  const [crnValue, setCrnValue] = useState("")
+  const [crnValue, setCrnValue] = useState('')
   const [crnValidation, setCrnValidation] = useState<{
-    status: "idle" | "validating" | "valid" | "invalid"
+    status: 'idle' | 'validating' | 'valid' | 'invalid'
     message: string
   }>({
-    status: "idle",
-    message: ""
+    status: 'idle',
+    message: '',
   })
 
   // Estados para documentos de nutricionistas
   const [crnProofFile, setCrnProofFile] = useState<File | null>(null)
   const [certificates, setCertificates] = useState<Certificate[]>([])
   const [documentsUploading, setDocumentsUploading] = useState(false)
+
+  // Estado para especialidades
+  const [selectedSpecialties, setSelectedSpecialties] = useState<string[]>([])
 
   // Função para validar força da senha
   const validatePasswordStrength = (password: string): PasswordValidation => {
@@ -113,30 +149,30 @@ export default function CadastroPage() {
       uppercase: /[A-Z]/.test(password),
       lowercase: /[a-z]/.test(password),
       number: /\d/.test(password),
-      special: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)
+      special: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password),
     }
 
     const score = Object.values(requirements).filter(Boolean).length
-    
-    let strength: PasswordStrength = "weak"
-    let message = ""
+
+    let strength: PasswordStrength = 'weak'
+    let message = ''
 
     if (score < 3) {
-      strength = "weak"
-      message = "Senha fraca - Adicione mais caracteres"
+      strength = 'weak'
+      message = 'Senha fraca - Adicione mais caracteres'
     } else if (score < 5) {
-      strength = "medium"
-      message = "Senha média - Quase lá!"
+      strength = 'medium'
+      message = 'Senha média - Quase lá!'
     } else {
-      strength = "strong"
-      message = "Senha forte - Excelente!"
+      strength = 'strong'
+      message = 'Senha forte - Excelente!'
     }
 
     return {
       strength,
       score,
       message,
-      requirements
+      requirements,
     }
   }
 
@@ -147,79 +183,87 @@ export default function CadastroPage() {
   }
 
   // Estados para validação de CNPJ
-  const [cnpjValue, setCnpjValue] = useState("")
+  const [cnpjValue, setCnpjValue] = useState('')
   const [cnpjValidation, setCnpjValidation] = useState<{
-    status: "idle" | "validating" | "valid" | "invalid"
+    status: 'idle' | 'validating' | 'valid' | 'invalid'
     message: string
     companyData?: any
-  }>({ status: "idle", message: "" })
+  }>({ status: 'idle', message: '' })
 
   const router = useRouter()
 
   // Função para upload de documentos
-  const uploadNutritionistDocuments = async (userId: string, accessToken: string) => {
+  const uploadNutritionistDocuments = async (
+    userId: string,
+    accessToken: string
+  ) => {
     if (!crnProofFile) {
-      throw new Error("Comprovante de CRN é obrigatório")
+      throw new Error('Comprovante de CRN é obrigatório')
     }
 
     setDocumentsUploading(true)
-    
+
     try {
       // Upload do comprovante de CRN
-      console.log("📄 Fazendo upload do comprovante de CRN...")
+      // Uploading CRN proof document
       const crnFormData = new FormData()
-      crnFormData.append("file", crnProofFile)
-      crnFormData.append("documentType", "crn_proof")
-      crnFormData.append("userId", userId)
-      crnFormData.append("accessToken", accessToken)
+      crnFormData.append('file', crnProofFile)
+      crnFormData.append('documentType', 'crn_proof')
+      crnFormData.append('userId', userId)
+      crnFormData.append('accessToken', accessToken)
 
-      const crnResponse = await fetch("/api/upload-nutritionist-document", {
-        method: "POST",
+      const crnResponse = await fetch('/api/upload-nutritionist-document', {
+        method: 'POST',
         body: crnFormData,
       })
 
       if (!crnResponse.ok) {
         const errorData = await crnResponse.json()
-        throw new Error(errorData.error || "Erro ao fazer upload do comprovante de CRN")
+        throw new Error(
+          errorData.error || 'Erro ao fazer upload do comprovante de CRN'
+        )
       }
 
-      console.log("✅ Comprovante de CRN enviado com sucesso")
+      // CRN proof uploaded successfully
 
       // Upload dos certificados (se houver)
       for (const certificate of certificates) {
         if (certificate.title.trim() && certificate.file) {
-          console.log(`📄 Fazendo upload do certificado: ${certificate.title}`)
-          
-          const certFormData = new FormData()
-          certFormData.append("file", certificate.file)
-          certFormData.append("documentType", "certificate")
-          certFormData.append("title", certificate.title.trim())
-          certFormData.append("userId", userId)
-          certFormData.append("accessToken", accessToken)
+          // Uploading certificate document
 
-          const certResponse = await fetch("/api/upload-nutritionist-document", {
-            method: "POST",
-            body: certFormData,
-          })
+          const certFormData = new FormData()
+          certFormData.append('file', certificate.file)
+          certFormData.append('documentType', 'certificate')
+          certFormData.append('title', certificate.title.trim())
+          certFormData.append('userId', userId)
+          certFormData.append('accessToken', accessToken)
+
+          const certResponse = await fetch(
+            '/api/upload-nutritionist-document',
+            {
+              method: 'POST',
+              body: certFormData,
+            }
+          )
 
           if (!certResponse.ok) {
             const errorData = await certResponse.json()
-            console.error(`❌ Erro ao fazer upload do certificado ${certificate.title}:`, errorData.error)
+            // Error uploading certificate - not failing registration
             // Não falha o cadastro por causa dos certificados, apenas loga o erro
             toast({
-              title: "⚠️ Aviso",
+              title: '⚠️ Aviso',
               description: `Erro ao fazer upload do certificado "${certificate.title}". Você pode adicioná-lo depois no seu perfil.`,
-              variant: "default",
+              variant: 'default',
             })
           } else {
-            console.log(`✅ Certificado "${certificate.title}" enviado com sucesso`)
+            // Certificate uploaded successfully
           }
         }
       }
 
-      console.log("✅ Todos os documentos foram processados")
+      // All documents processed successfully
     } catch (error) {
-      console.error("💥 Erro no upload de documentos:", error)
+      // Error during document upload
       throw error
     } finally {
       setDocumentsUploading(false)
@@ -232,7 +276,7 @@ export default function CadastroPage() {
     setCrnValue(formatted)
 
     if (!formatted || formatted.length < 6) {
-      setCrnValidation({ status: "idle", message: "" })
+      setCrnValidation({ status: 'idle', message: '' })
       return
     }
 
@@ -241,25 +285,25 @@ export default function CadastroPage() {
 
     if (!formatValidation.isValid) {
       setCrnValidation({
-        status: "invalid",
+        status: 'invalid',
         message: formatValidation.message,
       })
       return
     }
 
     // Se formato está correto, valida via API
-    setCrnValidation({ status: "validating", message: "Validando CRN..." })
+    setCrnValidation({ status: 'validating', message: 'Validando CRN...' })
 
     try {
       const apiValidation = await validateCRNWithAPI(formatted)
       setCrnValidation({
-        status: apiValidation.isValid ? "valid" : "invalid",
+        status: apiValidation.isValid ? 'valid' : 'invalid',
         message: apiValidation.message,
       })
     } catch (error) {
       setCrnValidation({
-        status: "invalid",
-        message: "Erro ao validar CRN. Tente novamente.",
+        status: 'invalid',
+        message: 'Erro ao validar CRN. Tente novamente.',
       })
     }
   }
@@ -269,8 +313,8 @@ export default function CadastroPage() {
     const formatted = formatCNPJ(value)
     setCnpjValue(formatted)
 
-    if (!formatted || formatted.replace(/\D/g, "").length < 14) {
-      setCnpjValidation({ status: "idle", message: "" })
+    if (!formatted || formatted.replace(/\D/g, '').length < 14) {
+      setCnpjValidation({ status: 'idle', message: '' })
       return
     }
 
@@ -279,48 +323,51 @@ export default function CadastroPage() {
 
     if (!formatValidation.isValid) {
       setCnpjValidation({
-        status: "invalid",
+        status: 'invalid',
         message: formatValidation.message,
       })
       return
     }
 
     // Se formato está correto, valida via API
-    setCnpjValidation({ status: "validating", message: "Consultando Receita Federal..." })
+    setCnpjValidation({
+      status: 'validating',
+      message: 'Consultando Receita Federal...',
+    })
 
     try {
       const apiValidation = await validateCNPJWithAPI(formatted)
       setCnpjValidation({
-        status: apiValidation.isValid ? "valid" : "invalid",
+        status: apiValidation.isValid ? 'valid' : 'invalid',
         message: apiValidation.message,
         companyData: apiValidation.companyData,
       })
     } catch (error) {
       setCnpjValidation({
-        status: "invalid",
-        message: "Erro ao validar CNPJ. Tente novamente.",
+        status: 'invalid',
+        message: 'Erro ao validar CNPJ. Tente novamente.',
       })
     }
   }
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    setError("")
+    setError('')
 
     if (!acceptTerms) {
-      setError("Você deve aceitar os termos de uso para continuar")
+      setError('Você deve aceitar os termos de uso para continuar')
       return
     }
 
     // Validação específica para nutricionista
-    if (userType === "nutricionista") {
-      if (crnValidation.status !== "valid") {
-        setError("CRN deve ser validado antes de continuar")
+    if (userType === 'nutricionista') {
+      if (crnValidation.status !== 'valid') {
+        setError('CRN deve ser validado antes de continuar')
         return
       }
-      
+
       if (!crnProofFile) {
-        setError("Comprovante de CRN é obrigatório")
+        setError('Comprovante de CRN é obrigatório')
         return
       }
 
@@ -331,16 +378,16 @@ export default function CadastroPage() {
           return
         }
         if (!cert.title.trim() && cert.file) {
-          setError("Certificado com arquivo precisa de um título")
+          setError('Certificado com arquivo precisa de um título')
           return
         }
       }
     }
 
     // Validação específica para empresa
-    if (userType === "empresa") {
-      if (cnpjValidation.status !== "valid") {
-        setError("CNPJ deve ser validado antes de continuar")
+    if (userType === 'empresa') {
+      if (cnpjValidation.status !== 'valid') {
+        setError('CNPJ deve ser validado antes de continuar')
         return
       }
     }
@@ -349,38 +396,47 @@ export default function CadastroPage() {
 
     try {
       const formData = new FormData(e.currentTarget)
-      const email = formData.get("email") as string
-      const password = formData.get("password") as string
+      const email = formData.get('email') as string
+      const password = formData.get('password') as string
 
       // Validações básicas
       if (!email || !password) {
-        throw new Error("Email e senha são obrigatórios")
+        throw new Error('Email e senha são obrigatórios')
       }
 
       const passwordValidation = validatePasswordStrength(password)
-      
-      if (passwordValidation.strength === "weak" || !passwordValidation.requirements.length) {
-        throw new Error("A senha deve ter pelo menos 8 caracteres, incluindo letras maiúsculas, minúsculas, números e caracteres especiais.")
+
+      if (
+        passwordValidation.strength === 'weak' ||
+        !passwordValidation.requirements.length
+      ) {
+        throw new Error(
+          'A senha deve ter pelo menos 8 caracteres, incluindo letras maiúsculas, minúsculas, números e caracteres especiais.'
+        )
       }
 
       let additionalData: any = {}
 
-      if (userType === "nutricionista") {
-        const full_name = formData.get("full_name") as string
-        const phone = formData.get("phone") as string
+      if (userType === 'nutricionista') {
+        const full_name = formData.get('full_name') as string
+        const phone = formData.get('phone') as string
 
         if (!full_name || !crnValue) {
-          throw new Error("Nome completo e CRN são obrigatórios")
+          throw new Error('Nome completo e CRN são obrigatórios')
         }
 
         if (acceptsCorporatePlans === null) {
-          throw new Error("Por favor, responda se aceita atender em planos corporativos")
+          throw new Error(
+            'Por favor, responda se aceita atender em planos corporativos'
+          )
         }
 
         // Converter preços para números
         const parsePrice = (price: string) => {
           if (!price) return null
-          const numericValue = parseFloat(price.replace(/[^\d,]/g, '').replace(',', '.'))
+          const numericValue = parseFloat(
+            price.replace(/[^\d,]/g, '').replace(',', '.')
+          )
           return isNaN(numericValue) ? null : numericValue
         }
 
@@ -389,39 +445,66 @@ export default function CadastroPage() {
           crn: crnValue, // Usa o valor formatado e validado
           phone,
           accepts_corporate_plans: acceptsCorporatePlans,
-          in_person_pricing_type: pricingConfig.inPerson.enabled ? pricingConfig.inPerson.pricingType : null,
-          online_pricing_type: pricingConfig.online.enabled ? pricingConfig.online.pricingType : null,
-          in_person_combined_price: pricingConfig.inPerson.enabled && pricingConfig.inPerson.pricingType === 'combined' 
-            ? parsePrice(pricingConfig.inPerson.combinedPrice) : null,
-          online_combined_price: pricingConfig.online.enabled && pricingConfig.online.pricingType === 'combined' 
-            ? parsePrice(pricingConfig.online.combinedPrice) : null,
-          in_person_consultation_price: pricingConfig.inPerson.enabled && pricingConfig.inPerson.pricingType === 'separate' 
-            ? parsePrice(pricingConfig.inPerson.consultationPrice) : null,
-          in_person_followup_price: pricingConfig.inPerson.enabled && pricingConfig.inPerson.pricingType === 'separate' 
-            ? parsePrice(pricingConfig.inPerson.followupPrice) : null,
-          online_consultation_price: pricingConfig.online.enabled && pricingConfig.online.pricingType === 'separate' 
-            ? parsePrice(pricingConfig.online.consultationPrice) : null,
-          online_followup_price: pricingConfig.online.enabled && pricingConfig.online.pricingType === 'separate' 
-            ? parsePrice(pricingConfig.online.followupPrice) : null,
+          in_person_pricing_type: pricingConfig.inPerson.enabled
+            ? pricingConfig.inPerson.pricingType
+            : null,
+          online_pricing_type: pricingConfig.online.enabled
+            ? pricingConfig.online.pricingType
+            : null,
+          in_person_combined_price:
+            pricingConfig.inPerson.enabled &&
+            pricingConfig.inPerson.pricingType === 'combined'
+              ? parsePrice(pricingConfig.inPerson.combinedPrice)
+              : null,
+          online_combined_price:
+            pricingConfig.online.enabled &&
+            pricingConfig.online.pricingType === 'combined'
+              ? parsePrice(pricingConfig.online.combinedPrice)
+              : null,
+          in_person_consultation_price:
+            pricingConfig.inPerson.enabled &&
+            pricingConfig.inPerson.pricingType === 'separate'
+              ? parsePrice(pricingConfig.inPerson.consultationPrice)
+              : null,
+          in_person_followup_price:
+            pricingConfig.inPerson.enabled &&
+            pricingConfig.inPerson.pricingType === 'separate'
+              ? parsePrice(pricingConfig.inPerson.followupPrice)
+              : null,
+          online_consultation_price:
+            pricingConfig.online.enabled &&
+            pricingConfig.online.pricingType === 'separate'
+              ? parsePrice(pricingConfig.online.consultationPrice)
+              : null,
+          online_followup_price:
+            pricingConfig.online.enabled &&
+            pricingConfig.online.pricingType === 'separate'
+              ? parsePrice(pricingConfig.online.followupPrice)
+              : null,
+          aceita_cupons: aceitaCupons,
         }
-      } else if (userType === "paciente") {
-        const full_name = formData.get("full_name") as string
-        const birth_date = formData.get("birth_date") as string
-        const phone = formData.get("phone") as string
+      } else if (userType === 'paciente') {
+        const full_name = formData.get('full_name') as string
+        const birth_date = formData.get('birth_date') as string
+        const phone = formData.get('phone') as string
 
         if (!full_name) {
-          throw new Error("Nome completo é obrigatório")
+          throw new Error('Nome completo é obrigatório')
         }
 
         additionalData = { full_name, birth_date, phone }
-      } else if (userType === "empresa") {
-        const company_name = formData.get("company_name") as string
-        const responsible_name = formData.get("responsible_name") as string
-        const responsible_position = formData.get("responsible_position") as string
-        const phone = formData.get("phone") as string
+      } else if (userType === 'empresa') {
+        const company_name = formData.get('company_name') as string
+        const responsible_name = formData.get('responsible_name') as string
+        const responsible_position = formData.get(
+          'responsible_position'
+        ) as string
+        const phone = formData.get('phone') as string
 
         if (!company_name || !cnpjValue || !responsible_name) {
-          throw new Error("Nome da empresa, CNPJ e nome do responsável são obrigatórios")
+          throw new Error(
+            'Nome da empresa, CNPJ e nome do responsável são obrigatórios'
+          )
         }
 
         additionalData = {
@@ -439,65 +522,121 @@ export default function CadastroPage() {
         }
       }
 
-      console.log("🚀 Dados do cadastro:", { email, userType, additionalData })
+      // Processing registration data
 
-      const { data, error: signUpError } = await signUp(email, password, userType as any, additionalData)
+      const { data, error: signUpError } = await signUp(
+        email,
+        password,
+        userType as any,
+        additionalData
+      )
 
       if (signUpError) {
         throw new Error(signUpError)
       }
 
       // Salvar endereços para nutricionistas
-      if (userType === "nutricionista" && data?.user?.id && addresses.length > 0) {
+      if (
+        userType === 'nutricionista' &&
+        data?.user?.id &&
+        addresses.length > 0
+      ) {
         try {
           await saveNutritionistAddresses(data.user.id, addresses)
-          console.log("✅ Endereços salvos com sucesso")
+          // Addresses saved successfully
         } catch (addressError) {
-          console.error("❌ Erro ao salvar endereços:", addressError)
+          // Error saving addresses
           // Não falha o cadastro por causa dos endereços, apenas loga o erro
           toast({
-            title: "⚠️ Aviso",
-            description: "Cadastro realizado, mas houve um problema ao salvar os endereços. Você pode adicioná-los depois no seu perfil.",
-            variant: "default",
+            title: '⚠️ Aviso',
+            description:
+              'Cadastro realizado, mas houve um problema ao salvar os endereços. Você pode adicioná-los depois no seu perfil.',
+            variant: 'default',
           })
         }
       }
 
       // Upload de documentos para nutricionistas
-      if (userType === "nutricionista" && data?.user?.id && data?.session?.access_token) {
+      if (
+        userType === 'nutricionista' &&
+        data?.user?.id &&
+        data?.session?.access_token
+      ) {
         try {
-          await uploadNutritionistDocuments(data.user.id, data.session.access_token)
-          console.log("✅ Documentos enviados com sucesso")
+          await uploadNutritionistDocuments(
+            data.user.id,
+            data.session.access_token
+          )
+          // Documents uploaded successfully
         } catch (documentError) {
-          console.error("❌ Erro ao fazer upload dos documentos:", documentError)
+          // Error uploading documents
           // Falha o cadastro se não conseguir fazer upload do comprovante de CRN
-          throw new Error("Erro ao fazer upload dos documentos obrigatórios. Tente novamente.")
+          throw new Error(
+            'Erro ao fazer upload dos documentos obrigatórios. Tente novamente.'
+          )
+        }
+      }
+
+      // Salvar especialidades para nutricionistas
+      if (
+        userType === 'nutricionista' &&
+        data?.user?.id &&
+        selectedSpecialties.length > 0
+      ) {
+        try {
+          const response = await fetch('/api/nutritionist-specialties', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${data?.session?.access_token}`,
+            },
+            body: JSON.stringify({
+              nutritionist_id: data.user.id,
+              specialty_ids: selectedSpecialties,
+            }),
+          })
+
+          if (!response.ok) {
+            throw new Error('Erro ao salvar especialidades')
+          }
+
+          // Specialties saved successfully
+        } catch (specialtyError) {
+          // Error saving specialties
+          // Não falha o cadastro por causa das especialidades, apenas loga o erro
+          toast({
+            title: '⚠️ Aviso',
+            description:
+              'Cadastro realizado, mas houve um problema ao salvar as especialidades. Você pode adicioná-las depois no seu perfil.',
+            variant: 'default',
+          })
         }
       }
 
       toast({
-        title: "✅ Cadastro realizado com sucesso!",
-        description: "Bem-vindo ao Busca Nutri",
+        title: '✅ Cadastro realizado com sucesso!',
+        description: 'Bem-vindo ao Busca Nutri',
       })
 
       // Aguardar antes de redirecionar
       setTimeout(() => {
-        if (userType === "nutricionista") {
-          router.push("/dashboard/nutricionistas")
-        } else if (userType === "paciente") {
-          router.push("/dashboard/paciente")
-        } else if (userType === "empresa") {
-          router.push("/dashboard/empresa")
+        if (userType === 'nutricionista') {
+          router.push('/dashboard/nutricionistas')
+        } else if (userType === 'paciente') {
+          router.push('/dashboard/paciente')
+        } else if (userType === 'empresa') {
+          router.push('/dashboard/empresa')
         }
       }, 2000)
     } catch (error: any) {
-      console.error("💥 Erro no cadastro:", error)
-      const errorMessage = error.message || "Erro desconhecido. Tente novamente."
+      // Registration error
+      const errorMessage =
+        error.message || 'Erro desconhecido. Tente novamente.'
       setError(errorMessage)
       toast({
-        title: "❌ Erro no cadastro",
+        title: '❌ Erro no cadastro',
         description: errorMessage,
-        variant: "destructive",
+        variant: 'destructive',
       })
     } finally {
       setLoading(false)
@@ -507,11 +646,11 @@ export default function CadastroPage() {
   // Função para renderizar ícone de validação CRN
   const renderCRNValidationIcon = () => {
     switch (crnValidation.status) {
-      case "validating":
+      case 'validating':
         return <Clock className="h-4 w-4 text-yellow-500 animate-pulse" />
-      case "valid":
+      case 'valid':
         return <CheckCircle className="h-4 w-4 text-green-500" />
-      case "invalid":
+      case 'invalid':
         return <AlertCircle className="h-4 w-4 text-red-500" />
       default:
         return null
@@ -521,11 +660,11 @@ export default function CadastroPage() {
   // Função para renderizar ícone de validação CNPJ
   const renderCNPJValidationIcon = () => {
     switch (cnpjValidation.status) {
-      case "validating":
+      case 'validating':
         return <Clock className="h-4 w-4 text-yellow-500 animate-pulse" />
-      case "valid":
+      case 'valid':
         return <CheckCircle className="h-4 w-4 text-green-500" />
-      case "invalid":
+      case 'invalid':
         return <AlertCircle className="h-4 w-4 text-red-500" />
       default:
         return null
@@ -535,13 +674,13 @@ export default function CadastroPage() {
   // Função para renderizar ícone de força da senha
   const renderPasswordStrengthIcon = () => {
     if (!password) return null
-    
+
     switch (passwordValidation.strength) {
-      case "weak":
+      case 'weak':
         return <ShieldAlert className="h-4 w-4 text-red-500" />
-      case "medium":
+      case 'medium':
         return <Shield className="h-4 w-4 text-yellow-500" />
-      case "strong":
+      case 'strong':
         return <ShieldCheck className="h-4 w-4 text-green-500" />
       default:
         return null
@@ -562,14 +701,22 @@ export default function CadastroPage() {
               className="h-8 w-auto mx-auto"
             />
           </Link>
-          <h1 className="text-2xl font-bold text-[#1E1D40] mb-2">Crie sua conta</h1>
-          <p className="text-[#1E1D40]/70">Junte-se à maior comunidade de nutrição do Brasil</p>
+          <h1 className="text-2xl font-bold text-[#1E1D40] mb-2">
+            Crie sua conta
+          </h1>
+          <p className="text-[#1E1D40]/70">
+            Junte-se à maior comunidade de nutrição do Brasil
+          </p>
         </div>
 
         <Card className="border-0 shadow-xl">
           <CardHeader className="space-y-1 pb-4">
-            <CardTitle className="text-xl text-center text-[#1E1D40]">Cadastro</CardTitle>
-            <CardDescription className="text-center">Escolha seu tipo de usuário e complete o cadastro</CardDescription>
+            <CardTitle className="text-xl text-center text-[#1E1D40]">
+              Cadastro
+            </CardTitle>
+            <CardDescription className="text-center">
+              Escolha seu tipo de usuário e complete o cadastro
+            </CardDescription>
           </CardHeader>
           <CardContent>
             {error && (
@@ -579,7 +726,11 @@ export default function CadastroPage() {
               </div>
             )}
 
-            <Tabs value={userType} onValueChange={setUserType} className="w-full">
+            <Tabs
+              value={userType}
+              onValueChange={setUserType}
+              className="w-full"
+            >
               <TabsList className="grid w-full grid-cols-3 mb-6">
                 <TabsTrigger value="paciente" className="text-xs">
                   Paciente
@@ -607,7 +758,12 @@ export default function CadastroPage() {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="birth_date">Data de nascimento</Label>
-                      <Input id="birth_date" name="birth_date" type="date" className="h-11" />
+                      <Input
+                        id="birth_date"
+                        name="birth_date"
+                        type="date"
+                        className="h-11"
+                      />
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
@@ -624,7 +780,12 @@ export default function CadastroPage() {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="phone">Telefone</Label>
-                      <Input id="phone" name="phone" placeholder="(11) 99999-9999" className="h-11" />
+                      <Input
+                        id="phone"
+                        name="phone"
+                        placeholder="(11) 99999-9999"
+                        className="h-11"
+                      />
                     </div>
                   </div>
                 </TabsContent>
@@ -656,7 +817,12 @@ export default function CadastroPage() {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="phone">Telefone</Label>
-                      <Input id="phone" name="phone" placeholder="(11) 99999-9999" className="h-11" />
+                      <Input
+                        id="phone"
+                        name="phone"
+                        placeholder="(11) 99999-9999"
+                        className="h-11"
+                      />
                     </div>
                   </div>
 
@@ -667,17 +833,26 @@ export default function CadastroPage() {
                         Aceita atender no modo corporativo?
                       </Label>
                       <p className="text-sm text-gray-600 leading-relaxed">
-                        O plano corporativo é uma opção de atendimento nutricional para empresas, onde os funcionários podem receber orientação nutricional, consultas individuais, palestras e relatórios básicos. O valor do plano é determinado pela quantidade de funcionários da empresa. Ao aceitar atender no modo corporativo, você concorda em fornecer serviços de nutrição para empresas que desejam promover a saúde e o bem-estar de seus funcionários.
+                        O plano corporativo é uma opção de atendimento
+                        nutricional para empresas, onde os funcionários podem
+                        receber orientação nutricional, consultas individuais,
+                        palestras e relatórios básicos. O valor do plano é
+                        determinado pela quantidade de funcionários da empresa.
+                        Ao aceitar atender no modo corporativo, você concorda em
+                        fornecer serviços de nutrição para empresas que desejam
+                        promover a saúde e o bem-estar de seus funcionários.
                       </p>
                     </div>
                     <div className="flex gap-4">
                       <Button
                         type="button"
-                        variant={acceptsCorporatePlans === true ? "default" : "outline"}
+                        variant={
+                          acceptsCorporatePlans === true ? 'default' : 'outline'
+                        }
                         className={`flex-1 h-11 ${
-                          acceptsCorporatePlans === true 
-                            ? "bg-[#4AB0D9] hover:bg-[#4AB0D9]/90 text-white" 
-                            : "border-[#4AB0D9] text-[#4AB0D9] hover:bg-[#4AB0D9]/10"
+                          acceptsCorporatePlans === true
+                            ? 'bg-[#4AB0D9] hover:bg-[#4AB0D9]/90 text-white'
+                            : 'border-[#4AB0D9] text-[#4AB0D9] hover:bg-[#4AB0D9]/10'
                         }`}
                         onClick={() => setAcceptsCorporatePlans(true)}
                       >
@@ -685,11 +860,15 @@ export default function CadastroPage() {
                       </Button>
                       <Button
                         type="button"
-                        variant={acceptsCorporatePlans === false ? "default" : "outline"}
+                        variant={
+                          acceptsCorporatePlans === false
+                            ? 'default'
+                            : 'outline'
+                        }
                         className={`flex-1 h-11 ${
-                          acceptsCorporatePlans === false 
-                            ? "bg-gray-600 hover:bg-gray-700 text-white" 
-                            : "border-gray-400 text-gray-600 hover:bg-gray-50"
+                          acceptsCorporatePlans === false
+                            ? 'bg-gray-600 hover:bg-gray-700 text-white'
+                            : 'border-gray-400 text-gray-600 hover:bg-gray-50'
                         }`}
                         onClick={() => setAcceptsCorporatePlans(false)}
                       >
@@ -718,6 +897,49 @@ export default function CadastroPage() {
                     isRequired={true}
                     disabled={loading || documentsUploading}
                   />
+
+                  {/* Seleção de Especialidades */}
+                  <div className="space-y-2">
+                    <Label className="text-base font-medium">
+                      Especialidades
+                    </Label>
+                    <p className="text-sm text-gray-600">
+                      Selecione suas áreas de especialização (máximo 5)
+                    </p>
+                    <SpecialtySelector
+                      selectedSpecialties={selectedSpecialties}
+                      onSpecialtiesChange={setSelectedSpecialties}
+                      maxSelections={5}
+                    />
+                  </div>
+
+                  {/* Consentimento para Cupons de Desconto */}
+                  <div className="space-y-3 p-4 bg-green-50 border border-green-200 rounded-lg">
+                    <div className="flex items-start space-x-3">
+                      <input
+                        type="checkbox"
+                        id="aceita_cupons"
+                        checked={aceitaCupons}
+                        onChange={(e) => setAceitaCupons(e.target.checked)}
+                        className="mt-1 h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                        aria-describedby="aceita_cupons_description"
+                      />
+                      <div className="flex-1">
+                        <Label 
+                          htmlFor="aceita_cupons" 
+                          className="text-sm font-medium text-gray-900 cursor-pointer"
+                        >
+                          Aceito disponibilizar cupons de desconto para pacientes em promoções da plataforma.
+                        </Label>
+                        <p 
+                          id="aceita_cupons_description"
+                          className="text-xs text-gray-600 mt-1 leading-relaxed"
+                        >
+                          Campanhas e prêmios para os primeiros pacientes que se cadastrarem na plataforma serão realizadas, onde disponibilizamos cupons de 10% desconto na consulta online.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 </TabsContent>
 
                 <TabsContent value="empresa" className="space-y-4 mt-0">
@@ -741,7 +963,7 @@ export default function CadastroPage() {
                           placeholder="00.000.000/0000-00"
                           className="h-11 pr-10"
                           value={cnpjValue}
-                          onChange={(e) => handleCNPJChange(e.target.value)}
+                          onChange={e => handleCNPJChange(e.target.value)}
                           required
                         />
                         <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
@@ -751,43 +973,51 @@ export default function CadastroPage() {
                       {cnpjValidation.message && (
                         <p
                           className={`text-xs mt-1 ${
-                            cnpjValidation.status === "valid"
-                              ? "text-green-600"
-                              : cnpjValidation.status === "invalid"
-                                ? "text-red-600"
-                                : "text-yellow-600"
+                            cnpjValidation.status === 'valid'
+                              ? 'text-green-600'
+                              : cnpjValidation.status === 'invalid'
+                                ? 'text-red-600'
+                                : 'text-yellow-600'
                           }`}
                         >
                           {cnpjValidation.message}
                         </p>
                       )}
-                      {cnpjValidation.companyData && cnpjValidation.status === "valid" && (
-                        <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-xs">
-                          <div className="flex items-center gap-1 text-green-700 font-medium">
-                            <Building className="h-3 w-3" />
-                            Empresa Encontrada
-                          </div>
-                          <div className="text-green-600 mt-1">
-                            <div>
-                              <strong>Razão Social:</strong> {cnpjValidation.companyData.name}
+                      {cnpjValidation.companyData &&
+                        cnpjValidation.status === 'valid' && (
+                          <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-xs">
+                            <div className="flex items-center gap-1 text-green-700 font-medium">
+                              <Building className="h-3 w-3" />
+                              Empresa Encontrada
                             </div>
-                            {cnpjValidation.companyData.fantasyName && (
+                            <div className="text-green-600 mt-1">
                               <div>
-                                <strong>Nome Fantasia:</strong> {cnpjValidation.companyData.fantasyName}
+                                <strong>Razão Social:</strong>{' '}
+                                {cnpjValidation.companyData.name}
                               </div>
-                            )}
-                            <div>
-                              <strong>Situação:</strong> {cnpjValidation.companyData.situation}
+                              {cnpjValidation.companyData.fantasyName && (
+                                <div>
+                                  <strong>Nome Fantasia:</strong>{' '}
+                                  {cnpjValidation.companyData.fantasyName}
+                                </div>
+                              )}
+                              <div>
+                                <strong>Situação:</strong>{' '}
+                                {cnpjValidation.companyData.situation}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      )}
-                      <p className="text-xs text-gray-500 mt-1">Será validado automaticamente na Receita Federal</p>
+                        )}
+                      <p className="text-xs text-gray-500 mt-1">
+                        Será validado automaticamente na Receita Federal
+                      </p>
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="responsible_name">Nome do responsável *</Label>
+                      <Label htmlFor="responsible_name">
+                        Nome do responsável *
+                      </Label>
                       <Input
                         id="responsible_name"
                         name="responsible_name"
@@ -820,7 +1050,12 @@ export default function CadastroPage() {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="phone">Telefone</Label>
-                      <Input id="phone" name="phone" placeholder="(11) 3333-3333" className="h-11" />
+                      <Input
+                        id="phone"
+                        name="phone"
+                        placeholder="(11) 3333-3333"
+                        className="h-11"
+                      />
                     </div>
                   </div>
                 </TabsContent>
@@ -831,13 +1066,13 @@ export default function CadastroPage() {
                     <Input
                       id="password"
                       name="password"
-                      type={showPassword ? "text" : "password"}
+                      type={showPassword ? 'text' : 'password'}
                       placeholder="Mínimo 8 caracteres"
                       className="h-11 pr-20"
                       required
                       minLength={8}
                       value={password}
-                      onChange={(e) => handlePasswordChange(e.target.value)}
+                      onChange={e => handlePasswordChange(e.target.value)}
                     />
                     <div className="absolute right-12 top-1/2 transform -translate-y-1/2">
                       {renderPasswordStrengthIcon()}
@@ -856,7 +1091,7 @@ export default function CadastroPage() {
                       )}
                     </Button>
                   </div>
-                  
+
                   {/* Indicador de força da senha */}
                   {password && (
                     <div className="space-y-2">
@@ -864,47 +1099,67 @@ export default function CadastroPage() {
                         <div className="flex-1 bg-gray-200 rounded-full h-2">
                           <div
                             className={`h-2 rounded-full transition-all duration-300 ${
-                              passwordValidation.strength === "weak"
-                                ? "w-1/3 bg-red-500"
-                                : passwordValidation.strength === "medium"
-                                  ? "w-2/3 bg-yellow-500"
-                                  : "w-full bg-green-500"
+                              passwordValidation.strength === 'weak'
+                                ? 'w-1/3 bg-red-500'
+                                : passwordValidation.strength === 'medium'
+                                  ? 'w-2/3 bg-yellow-500'
+                                  : 'w-full bg-green-500'
                             }`}
                           />
                         </div>
                         <span
                           className={`text-xs font-medium ${
-                            passwordValidation.strength === "weak"
-                              ? "text-red-600"
-                              : passwordValidation.strength === "medium"
-                                ? "text-yellow-600"
-                                : "text-green-600"
+                            passwordValidation.strength === 'weak'
+                              ? 'text-red-600'
+                              : passwordValidation.strength === 'medium'
+                                ? 'text-yellow-600'
+                                : 'text-green-600'
                           }`}
                         >
                           {passwordValidation.message}
                         </span>
                       </div>
-                      
+
                       {/* Lista de requisitos */}
                       <div className="grid grid-cols-2 gap-1 text-xs">
-                        <div className={`flex items-center gap-1 ${passwordValidation.requirements.length ? "text-green-600" : "text-gray-500"}`}>
-                          <div className={`w-1 h-1 rounded-full ${passwordValidation.requirements.length ? "bg-green-500" : "bg-gray-300"}`} />
+                        <div
+                          className={`flex items-center gap-1 ${passwordValidation.requirements.length ? 'text-green-600' : 'text-gray-500'}`}
+                        >
+                          <div
+                            className={`w-1 h-1 rounded-full ${passwordValidation.requirements.length ? 'bg-green-500' : 'bg-gray-300'}`}
+                          />
                           8+ caracteres
                         </div>
-                        <div className={`flex items-center gap-1 ${passwordValidation.requirements.uppercase ? "text-green-600" : "text-gray-500"}`}>
-                          <div className={`w-1 h-1 rounded-full ${passwordValidation.requirements.uppercase ? "bg-green-500" : "bg-gray-300"}`} />
+                        <div
+                          className={`flex items-center gap-1 ${passwordValidation.requirements.uppercase ? 'text-green-600' : 'text-gray-500'}`}
+                        >
+                          <div
+                            className={`w-1 h-1 rounded-full ${passwordValidation.requirements.uppercase ? 'bg-green-500' : 'bg-gray-300'}`}
+                          />
                           Letra maiúscula
                         </div>
-                        <div className={`flex items-center gap-1 ${passwordValidation.requirements.lowercase ? "text-green-600" : "text-gray-500"}`}>
-                          <div className={`w-1 h-1 rounded-full ${passwordValidation.requirements.lowercase ? "bg-green-500" : "bg-gray-300"}`} />
+                        <div
+                          className={`flex items-center gap-1 ${passwordValidation.requirements.lowercase ? 'text-green-600' : 'text-gray-500'}`}
+                        >
+                          <div
+                            className={`w-1 h-1 rounded-full ${passwordValidation.requirements.lowercase ? 'bg-green-500' : 'bg-gray-300'}`}
+                          />
                           Letra minúscula
                         </div>
-                        <div className={`flex items-center gap-1 ${passwordValidation.requirements.number ? "text-green-600" : "text-gray-500"}`}>
-                          <div className={`w-1 h-1 rounded-full ${passwordValidation.requirements.number ? "bg-green-500" : "bg-gray-300"}`} />
+                        <div
+                          className={`flex items-center gap-1 ${passwordValidation.requirements.number ? 'text-green-600' : 'text-gray-500'}`}
+                        >
+                          <div
+                            className={`w-1 h-1 rounded-full ${passwordValidation.requirements.number ? 'bg-green-500' : 'bg-gray-300'}`}
+                          />
                           Número
                         </div>
-                        <div className={`flex items-center gap-1 ${passwordValidation.requirements.special ? "text-green-600" : "text-gray-500"}`}>
-                          <div className={`w-1 h-1 rounded-full ${passwordValidation.requirements.special ? "bg-green-500" : "bg-gray-300"}`} />
+                        <div
+                          className={`flex items-center gap-1 ${passwordValidation.requirements.special ? 'text-green-600' : 'text-gray-500'}`}
+                        >
+                          <div
+                            className={`w-1 h-1 rounded-full ${passwordValidation.requirements.special ? 'bg-green-500' : 'bg-gray-300'}`}
+                          />
                           Caractere especial
                         </div>
                       </div>
@@ -913,14 +1168,24 @@ export default function CadastroPage() {
                 </div>
 
                 <div className="flex items-center space-x-2">
-                  <Checkbox id="terms" checked={acceptTerms} onCheckedChange={setAcceptTerms} />
+                  <Checkbox
+                    id="terms"
+                    checked={acceptTerms}
+                    onCheckedChange={setAcceptTerms}
+                  />
                   <Label htmlFor="terms" className="text-sm">
-                    Aceito os{" "}
-                    <Link href="/termos" className="text-[#4AB0D9] hover:underline">
+                    Aceito os{' '}
+                    <Link
+                      href="/termos"
+                      className="text-[#4AB0D9] hover:underline"
+                    >
                       Termos de Uso
-                    </Link>{" "}
-                    e{" "}
-                    <Link href="/privacidade" className="text-[#4AB0D9] hover:underline">
+                    </Link>{' '}
+                    e{' '}
+                    <Link
+                      href="/privacidade"
+                      className="text-[#4AB0D9] hover:underline"
+                    >
                       Política de Privacidade
                     </Link>
                   </Label>
@@ -929,20 +1194,22 @@ export default function CadastroPage() {
                 <Button
                   type="submit"
                   className={`w-full h-11 ${
-                    userType === "nutricionista"
-                      ? "bg-[#4AB0D9] hover:bg-[#4AB0D9]/90"
-                      : userType === "paciente"
-                        ? "bg-[#D90D32] hover:bg-[#D90D32]/90"
-                        : "bg-[#1E1D40] hover:bg-[#1E1D40]/90"
+                    userType === 'nutricionista'
+                      ? 'bg-[#4AB0D9] hover:bg-[#4AB0D9]/90'
+                      : userType === 'paciente'
+                        ? 'bg-[#D90D32] hover:bg-[#D90D32]/90'
+                        : 'bg-[#1E1D40] hover:bg-[#1E1D40]/90'
                   } text-white`}
                   disabled={
                     !acceptTerms ||
                     loading ||
                     documentsUploading ||
-                    (userType === "nutricionista" && crnValidation.status !== "valid") ||
-                    (userType === "nutricionista" && !crnProofFile) ||
-                    (userType === "empresa" && cnpjValidation.status !== "valid") ||
-                    passwordValidation.strength === "weak" ||
+                    (userType === 'nutricionista' &&
+                      crnValidation.status !== 'valid') ||
+                    (userType === 'nutricionista' && !crnProofFile) ||
+                    (userType === 'empresa' &&
+                      cnpjValidation.status !== 'valid') ||
+                    passwordValidation.strength === 'weak' ||
                     !password
                   }
                 >
@@ -952,7 +1219,7 @@ export default function CadastroPage() {
                       Cadastrando...
                     </>
                   ) : (
-                    `Cadastrar como ${userType === "nutricionista" ? "Nutricionista" : userType === "paciente" ? "Paciente" : "Empresa"}`
+                    `Cadastrar como ${userType === 'nutricionista' ? 'Nutricionista' : userType === 'paciente' ? 'Paciente' : 'Empresa'}`
                   )}
                 </Button>
               </form>
@@ -960,8 +1227,11 @@ export default function CadastroPage() {
 
             <div className="mt-6 text-center">
               <p className="text-sm text-[#1E1D40]/70">
-                Já tem uma conta?{" "}
-                <Link href="/login" className="text-[#4AB0D9] hover:underline font-medium">
+                Já tem uma conta?{' '}
+                <Link
+                  href="/login"
+                  className="text-[#4AB0D9] hover:underline font-medium"
+                >
                   Faça login aqui
                 </Link>
               </p>
@@ -982,4 +1252,3 @@ export default function CadastroPage() {
     </div>
   )
 }
-

@@ -1,21 +1,21 @@
-"use client"
+'use client'
 
-import type React from "react"
+import type React from 'react'
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Card, CardContent } from "@/components/ui/card"
-import { ArrowRight, CheckCircle } from "lucide-react"
-import { useToast } from "@/components/ui/use-toast"
+import { useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { Card, CardContent } from '@/components/ui/card'
+import { ArrowRight, CheckCircle } from 'lucide-react'
+import { useToast } from '@/components/ui/use-toast'
 
 export default function NewsletterSignup() {
   const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    profile: "nutricionista",
+    name: '',
+    email: '',
+    profile: 'nutricionista',
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSubmitted, setIsSubmitted] = useState(false)
@@ -26,22 +26,22 @@ export default function NewsletterSignup() {
     setIsSubmitting(true)
 
     // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500))
+    await new Promise(resolve => setTimeout(resolve, 1500))
 
     try {
       // Here you would integrate with your newsletter service
-      console.log("Newsletter signup:", formData)
+      // Newsletter signup logic would go here
 
       setIsSubmitted(true)
       toast({
-        title: "Inscrição realizada com sucesso!",
-        description: "Você receberá nossas novidades em breve.",
+        title: 'Inscrição realizada com sucesso!',
+        description: 'Você receberá nossas novidades em breve.',
       })
     } catch (error) {
       toast({
-        title: "Erro ao se inscrever",
-        description: "Tente novamente em alguns instantes.",
-        variant: "destructive",
+        title: 'Erro ao se inscrever',
+        description: 'Tente novamente em alguns instantes.',
+        variant: 'destructive',
       })
     } finally {
       setIsSubmitting(false)
@@ -49,7 +49,7 @@ export default function NewsletterSignup() {
   }
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData((prev) => ({
+    setFormData(prev => ({
       ...prev,
       [field]: value,
     }))
@@ -64,13 +64,20 @@ export default function NewsletterSignup() {
               <CardContent className="p-12 text-center">
                 <div className="mb-6">
                   <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-                  <h2 className="text-3xl font-bold text-[#1E1D40] mb-4">Bem-vindo à comunidade Busca Nutri!</h2>
+                  <h2 className="text-3xl font-bold text-[#1E1D40] mb-4">
+                    Bem-vindo à comunidade Busca Nutri!
+                  </h2>
                   <p className="text-gray-600 text-lg">
-                    Sua inscrição foi realizada com sucesso. Em breve você receberá nossas novidades, dicas exclusivas e
-                    conteúdos especializados em nutrição.
+                    Sua inscrição foi realizada com sucesso. Em breve você
+                    receberá nossas novidades, dicas exclusivas e conteúdos
+                    especializados em nutrição.
                   </p>
                 </div>
-                <Button onClick={() => setIsSubmitted(false)} variant="outline" className="mt-4">
+                <Button
+                  onClick={() => setIsSubmitted(false)}
+                  variant="outline"
+                  className="mt-4"
+                >
                   Fazer nova inscrição
                 </Button>
               </CardContent>
@@ -86,10 +93,12 @@ export default function NewsletterSignup() {
       <div className="container mx-auto px-4">
         <div className="max-w-2xl mx-auto text-center mb-12">
           <h1 className="text-4xl md:text-5xl font-bold text-white mb-6 leading-tight">
-            Comece agora a transformar sua prática com a <span className="text-[#4AB0D9]">Busca Nutri</span>
+            Comece agora a transformar sua prática com a{' '}
+            <span className="text-[#4AB0D9]">Busca Nutri</span>
           </h1>
           <p className="text-xl text-gray-300 leading-relaxed">
-            Cadastre-se gratuitamente e descubra como é fácil crescer em comunidade.
+            Cadastre-se gratuitamente e descubra como é fácil crescer em
+            comunidade.
           </p>
         </div>
 
@@ -99,7 +108,10 @@ export default function NewsletterSignup() {
               <form onSubmit={handleSubmit} className="space-y-8">
                 {/* Nome completo */}
                 <div className="space-y-3">
-                  <Label htmlFor="name" className="text-base font-medium text-gray-700">
+                  <Label
+                    htmlFor="name"
+                    className="text-base font-medium text-gray-700"
+                  >
                     Nome completo
                   </Label>
                   <Input
@@ -107,7 +119,7 @@ export default function NewsletterSignup() {
                     type="text"
                     placeholder="Seu nome completo"
                     value={formData.name}
-                    onChange={(e) => handleInputChange("name", e.target.value)}
+                    onChange={e => handleInputChange('name', e.target.value)}
                     required
                     className="h-14 text-base border-2 border-gray-200 focus:border-[#4AB0D9] focus:ring-0 rounded-xl"
                   />
@@ -115,7 +127,10 @@ export default function NewsletterSignup() {
 
                 {/* E-mail */}
                 <div className="space-y-3">
-                  <Label htmlFor="email" className="text-base font-medium text-gray-700">
+                  <Label
+                    htmlFor="email"
+                    className="text-base font-medium text-gray-700"
+                  >
                     E-mail
                   </Label>
                   <Input
@@ -123,7 +138,7 @@ export default function NewsletterSignup() {
                     type="email"
                     placeholder="seu@email.com"
                     value={formData.email}
-                    onChange={(e) => handleInputChange("email", e.target.value)}
+                    onChange={e => handleInputChange('email', e.target.value)}
                     required
                     className="h-14 text-base border-2 border-gray-200 focus:border-[#4AB0D9] focus:ring-0 rounded-xl"
                   />
@@ -131,27 +146,50 @@ export default function NewsletterSignup() {
 
                 {/* Perfil */}
                 <div className="space-y-4">
-                  <Label className="text-base font-medium text-gray-700">Qual é o seu perfil?</Label>
+                  <Label className="text-base font-medium text-gray-700">
+                    Qual é o seu perfil?
+                  </Label>
                   <RadioGroup
                     value={formData.profile}
-                    onValueChange={(value) => handleInputChange("profile", value)}
+                    onValueChange={value => handleInputChange('profile', value)}
                     className="grid grid-cols-1 md:grid-cols-3 gap-4"
                   >
                     <div className="flex items-center space-x-3 p-4 border-2 border-gray-200 rounded-xl hover:border-[#4AB0D9] transition-colors cursor-pointer">
-                      <RadioGroupItem value="nutricionista" id="nutricionista" className="text-[#4AB0D9]" />
-                      <Label htmlFor="nutricionista" className="text-base font-medium cursor-pointer flex-1">
+                      <RadioGroupItem
+                        value="nutricionista"
+                        id="nutricionista"
+                        className="text-[#4AB0D9]"
+                      />
+                      <Label
+                        htmlFor="nutricionista"
+                        className="text-base font-medium cursor-pointer flex-1"
+                      >
                         Nutricionista
                       </Label>
                     </div>
                     <div className="flex items-center space-x-3 p-4 border-2 border-gray-200 rounded-xl hover:border-[#4AB0D9] transition-colors cursor-pointer">
-                      <RadioGroupItem value="paciente" id="paciente" className="text-[#4AB0D9]" />
-                      <Label htmlFor="paciente" className="text-base font-medium cursor-pointer flex-1">
+                      <RadioGroupItem
+                        value="paciente"
+                        id="paciente"
+                        className="text-[#4AB0D9]"
+                      />
+                      <Label
+                        htmlFor="paciente"
+                        className="text-base font-medium cursor-pointer flex-1"
+                      >
                         Paciente
                       </Label>
                     </div>
                     <div className="flex items-center space-x-3 p-4 border-2 border-gray-200 rounded-xl hover:border-[#4AB0D9] transition-colors cursor-pointer">
-                      <RadioGroupItem value="empresa" id="empresa" className="text-[#4AB0D9]" />
-                      <Label htmlFor="empresa" className="text-base font-medium cursor-pointer flex-1">
+                      <RadioGroupItem
+                        value="empresa"
+                        id="empresa"
+                        className="text-[#4AB0D9]"
+                      />
+                      <Label
+                        htmlFor="empresa"
+                        className="text-base font-medium cursor-pointer flex-1"
+                      >
                         Empresa
                       </Label>
                     </div>
@@ -179,9 +217,10 @@ export default function NewsletterSignup() {
 
                 {/* Privacy Notice */}
                 <p className="text-sm text-gray-500 text-center leading-relaxed">
-                  Ao se inscrever, você concorda em receber comunicações da Busca Nutri sobre novidades, dicas de
-                  nutrição e conteúdos exclusivos. Respeitamos sua privacidade e você pode cancelar sua inscrição a
-                  qualquer momento.
+                  Ao se inscrever, você concorda em receber comunicações da
+                  Busca Nutri sobre novidades, dicas de nutrição e conteúdos
+                  exclusivos. Respeitamos sua privacidade e você pode cancelar
+                  sua inscrição a qualquer momento.
                 </p>
               </form>
             </CardContent>
@@ -197,7 +236,8 @@ export default function NewsletterSignup() {
               </div>
               <h3 className="text-xl font-semibold mb-2">Conteúdo Exclusivo</h3>
               <p className="text-gray-300">
-                Receba artigos, dicas e novidades sobre nutrição diretamente em seu e-mail
+                Receba artigos, dicas e novidades sobre nutrição diretamente em
+                seu e-mail
               </p>
             </div>
             <div className="text-white">
@@ -205,14 +245,20 @@ export default function NewsletterSignup() {
                 <span className="text-2xl">🎯</span>
               </div>
               <h3 className="text-xl font-semibold mb-2">Personalizado</h3>
-              <p className="text-gray-300">Conteúdo direcionado para seu perfil: nutricionista, paciente ou empresa</p>
+              <p className="text-gray-300">
+                Conteúdo direcionado para seu perfil: nutricionista, paciente ou
+                empresa
+              </p>
             </div>
             <div className="text-white">
               <div className="w-16 h-16 bg-[#4AB0D9] rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-2xl">🚀</span>
               </div>
               <h3 className="text-xl font-semibold mb-2">Oportunidades</h3>
-              <p className="text-gray-300">Seja o primeiro a saber sobre vagas, eventos e novidades da plataforma</p>
+              <p className="text-gray-300">
+                Seja o primeiro a saber sobre vagas, eventos e novidades da
+                plataforma
+              </p>
             </div>
           </div>
         </div>

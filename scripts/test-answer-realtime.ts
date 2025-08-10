@@ -28,7 +28,9 @@ async function testAnswerRealtime() {
     console.log('Nutricionistas encontrados:', nutritionists)
 
     if (!nutritionists || nutritionists.length === 0) {
-      console.log('❌ Nenhum nutricionista encontrado. Não é possível inserir resposta.')
+      console.log(
+        '❌ Nenhum nutricionista encontrado. Não é possível inserir resposta.'
+      )
       return
     }
 
@@ -49,7 +51,7 @@ async function testAnswerRealtime() {
         author_id: firstNutritionist.user_id,
         nutritionist_id: firstNutritionist.id,
         likes_count: 0,
-        is_best_answer: false
+        is_best_answer: false,
       })
       .select()
 
@@ -64,7 +66,7 @@ async function testAnswerRealtime() {
 
     // Atualizar contador de respostas da pergunta
     console.log('\n📊 Atualizando contador de respostas para 6...')
-    const { data: updateData, error: updateError } = await supabase
+    const { data: _updateData, error: updateError } = await supabase
       .from('forum_questions')
       .update({ answers_count: 6 })
       .eq('id', questionId)
@@ -76,8 +78,9 @@ async function testAnswerRealtime() {
       console.log('✅ Contador de respostas atualizado para 6')
     }
 
-    console.log('\n🎉 Teste concluído! Verifique se a nova resposta apareceu na interface em tempo real.')
-
+    console.log(
+      '\n🎉 Teste concluído! Verifique se a nova resposta apareceu na interface em tempo real.'
+    )
   } catch (error) {
     console.error('Erro geral:', error)
   }

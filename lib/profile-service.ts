@@ -1,27 +1,34 @@
-import { createSupabaseClient } from "./supabase"
+import { createSupabaseClient } from './supabase'
+import { saveNutritionistAvailability } from './availability-service'
+import type { DaySchedule } from './availability-service'
 
 // Usar o cliente que mantém a autenticação
 const supabase = createSupabaseClient()
-import type { PatientProfile, NutritionistProfile, CompanyProfile, UserType } from "./supabase"
+import type {
+  PatientProfile,
+  NutritionistProfile,
+  CompanyProfile,
+  UserType,
+} from './supabase'
 
 export async function updateUserProfile(
   userId: string,
   userType: UserType,
-  profileData: Partial<PatientProfile | NutritionistProfile | CompanyProfile>,
+  profileData: Partial<PatientProfile | NutritionistProfile | CompanyProfile>
 ) {
-  let tableName = ""
+  let tableName = ''
   switch (userType) {
-    case "paciente":
-      tableName = "patient_profiles"
+    case 'paciente':
+      tableName = 'patient_profiles'
       break
-    case "nutricionista":
-      tableName = "nutritionist_profiles"
+    case 'nutricionista':
+      tableName = 'nutritionist_profiles'
       break
-    case "empresa":
-      tableName = "company_profiles"
+    case 'empresa':
+      tableName = 'company_profiles'
       break
     default:
-      throw new Error("Tipo de usuário inválido para atualização de perfil.")
+      throw new Error('Tipo de usuário inválido para atualização de perfil.')
   }
 
   // Remover campos que não devem ser atualizados ou que são gerados automaticamente
@@ -31,57 +38,92 @@ export async function updateUserProfile(
   delete dataToUpdate.created_at
   delete dataToUpdate.updated_at
   delete dataToUpdate.email // Email é do auth, não do profile
-  
 
+  // Para nutricionistas, extrair e processar horários de disponibilidade separadamente
+  let availabilitySchedule: DaySchedule | null = null
+  if (userType === 'nutricionista' && dataToUpdate.available_times) {
+    try {
+      // Se available_times é uma string JSON, fazer parse
+      if (typeof dataToUpdate.available_times === 'string') {
+        availabilitySchedule = JSON.parse(dataToUpdate.available_times)
+      } else if (typeof dataToUpdate.available_times === 'object') {
+        availabilitySchedule = dataToUpdate.available_times
+      }
+      
+      // Remover available_times do update do perfil, será salvo na tabela específica
+      delete dataToUpdate.available_times
+    } catch (error) {
+      console.error('Erro ao processar horários de disponibilidade:', error)
+      delete dataToUpdate.available_times
+    }
+  }
 
   // Converter arrays de string para o formato correto se necessário (ex: de string separada por vírgulas)
-  if (userType === "paciente") {
-    if (dataToUpdate.health_conditions && typeof dataToUpdate.health_conditions === "string") {
+  if (userType === 'paciente') {
+    if (
+      dataToUpdate.health_conditions &&
+      typeof dataToUpdate.health_conditions === 'string'
+    ) {
       dataToUpdate.health_conditions = dataToUpdate.health_conditions
-        .split(",")
+        .split(',')
         .map((s: string) => s.trim())
         .filter(Boolean)
     }
-    if (dataToUpdate.allergies && typeof dataToUpdate.allergies === "string") {
+    if (dataToUpdate.allergies && typeof dataToUpdate.allergies === 'string') {
       dataToUpdate.allergies = dataToUpdate.allergies
-        .split(",")
+        .split(',')
         .map((s: string) => s.trim())
         .filter(Boolean)
     }
-    if (dataToUpdate.dietary_preferences && typeof dataToUpdate.dietary_preferences === "string") {
+    if (
+      dataToUpdate.dietary_preferences &&
+      typeof dataToUpdate.dietary_preferences === 'string'
+    ) {
       dataToUpdate.dietary_preferences = dataToUpdate.dietary_preferences
-        .split(",")
+        .split(',')
         .map((s: string) => s.trim())
         .filter(Boolean)
     }
-  } else if (userType === "nutricionista") {
-    if (dataToUpdate.specialties && typeof dataToUpdate.specialties === "string") {
+  } else if (userType === 'nutricionista') {
+    if (
+      dataToUpdate.specialties &&
+      typeof dataToUpdate.specialties === 'string'
+    ) {
       dataToUpdate.specialties = dataToUpdate.specialties
-        .split(",")
+        .split(',')
         .map((s: string) => s.trim())
         .filter(Boolean)
     }
-    if (dataToUpdate.available_times && typeof dataToUpdate.available_times === "string") {
+    if (
+      dataToUpdate.available_times &&
+      typeof dataToUpdate.available_times === 'string'
+    ) {
       dataToUpdate.available_times = dataToUpdate.available_times
-        .split(",")
+        .split(',')
         .map((s: string) => s.trim())
         .filter(Boolean)
     }
-    if (dataToUpdate.languages && typeof dataToUpdate.languages === "string") {
+    if (dataToUpdate.languages && typeof dataToUpdate.languages === 'string') {
       dataToUpdate.languages = dataToUpdate.languages
-        .split(",")
+        .split(',')
         .map((s: string) => s.trim())
         .filter(Boolean)
     }
-    if (dataToUpdate.certifications && typeof dataToUpdate.certifications === "string") {
+    if (
+      dataToUpdate.certifications &&
+      typeof dataToUpdate.certifications === 'string'
+    ) {
       dataToUpdate.certifications = dataToUpdate.certifications
-        .split(",")
+        .split(',')
         .map((s: string) => s.trim())
         .filter(Boolean)
     }
-    if (dataToUpdate.achievements && typeof dataToUpdate.achievements === "string") {
+    if (
+      dataToUpdate.achievements &&
+      typeof dataToUpdate.achievements === 'string'
+    ) {
       dataToUpdate.achievements = dataToUpdate.achievements
-        .split(",")
+        .split(',')
         .map((s: string) => s.trim())
         .filter(Boolean)
     }
@@ -90,11 +132,26 @@ export async function updateUserProfile(
     // convertidos para campos individuais para evitar erros de parsing JSON
   }
 
-  const { data, error } = await supabase.from(tableName).update(dataToUpdate).eq("user_id", userId).select().single()
+  const { data, error } = await supabase
+    .from(tableName)
+    .update(dataToUpdate)
+    .eq('user_id', userId)
+    .select()
+    .single()
 
   if (error) {
-    console.error(`Erro ao atualizar perfil de ${userType}:`, error)
-    throw error
+    throw new Error(`Erro ao atualizar perfil: ${error.message}`)
+  }
+
+  // Se é nutricionista e tem horários de disponibilidade, salvar na tabela específica
+  if (userType === 'nutricionista' && availabilitySchedule && userId) {
+    try {
+      await saveNutritionistAvailability(userId, availabilitySchedule)
+    } catch (availabilityError) {
+      console.error('Erro ao salvar horários de disponibilidade:', availabilityError)
+      // Não falhar a operação inteira por causa dos horários
+      // O perfil foi salvo com sucesso, apenas os horários falharam
+    }
   }
 
   return data

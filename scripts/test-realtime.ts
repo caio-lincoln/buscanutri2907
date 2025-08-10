@@ -20,7 +20,7 @@ async function testRealtime() {
       .from('forum_question_likes')
       .insert({
         question_id: questionId,
-        user_id: userId
+        user_id: userId,
       })
       .select()
 
@@ -35,7 +35,7 @@ async function testRealtime() {
 
     // Teste 2: Atualizar contador de likes da pergunta
     console.log('\n2️⃣ Atualizando contador de likes da pergunta...')
-    const { data: updateData, error: updateError } = await supabase
+    const { data: _updateData, error: updateError } = await supabase
       .from('forum_questions')
       .update({ likes_count: 9 }) // Era 8, agora 9
       .eq('id', questionId)
@@ -60,7 +60,7 @@ async function testRealtime() {
         author_id: userId,
         nutritionist_id: userId,
         likes_count: 0,
-        is_best_answer: false
+        is_best_answer: false,
       })
       .select()
 
@@ -87,8 +87,9 @@ async function testRealtime() {
       console.log('✅ Contador de respostas atualizado:', answersCountData)
     }
 
-    console.log('\n🎉 Teste concluído! Verifique a interface para ver as atualizações em tempo real.')
-
+    console.log(
+      '\n🎉 Teste concluído! Verifique a interface para ver as atualizações em tempo real.'
+    )
   } catch (error) {
     console.error('Erro geral:', error)
   }

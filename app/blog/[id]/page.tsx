@@ -1,15 +1,25 @@
-"use client"
+'use client'
 
-import { useState, useEffect } from "react"
-import { useParams, useRouter } from "next/navigation"
-import Image from "next/image"
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Calendar, Clock, Eye, ArrowLeft, Facebook, Twitter, Linkedin, Award } from "lucide-react"
-import { getBlogPostById, type BlogPost } from "@/lib/blog-data"
-import { toast } from "@/components/ui/use-toast"
+import { useState, useEffect } from 'react'
+import { useParams, useRouter } from 'next/navigation'
+import Image from 'next/image'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { ContentRenderer, useEmbedScripts } from '@/components/ui/content-renderer'
+import {
+  Calendar,
+  Clock,
+  Eye,
+  ArrowLeft,
+  Facebook,
+  Twitter,
+  Linkedin,
+  Award,
+} from 'lucide-react'
+import { getBlogPostById, type BlogPost } from '@/lib/blog-data'
+import { toast } from '@/components/ui/use-toast'
 
 export default function BlogPostPage() {
   const params = useParams()
@@ -17,6 +27,8 @@ export default function BlogPostPage() {
   const postId = params.id as string
   const [post, setPost] = useState<BlogPost | null>(null)
   const [loading, setLoading] = useState(true)
+  
+  useEmbedScripts()
 
   useEffect(() => {
     const fetchPost = async () => {
@@ -26,11 +38,11 @@ export default function BlogPostPage() {
         setPost(fetchedPost)
       } else {
         toast({
-          title: "Artigo não encontrado",
-          description: "O artigo que você está procurando não existe.",
-          variant: "destructive",
+          title: 'Artigo não encontrado',
+          description: 'O artigo que você está procurando não existe.',
+          variant: 'destructive',
         })
-        router.push("/blog")
+        router.push('/blog')
       }
       setLoading(false)
     }
@@ -68,10 +80,12 @@ export default function BlogPostPage() {
         <CardHeader className="p-0">
           <div className="relative w-full h-64 md:h-80 lg:h-96 overflow-hidden rounded-t-xl">
             <Image
-              src={post.image || "/placeholder.svg?height=400&width=800"}
+              src={post.image || '/placeholder.svg?height=400&width=800'}
               alt={post.title}
               fill
-              className="object-cover"
+              className={`object-cover ${
+                post.centerImage ? 'mx-auto block' : ''
+              }`}
               priority
             />
             <Badge
@@ -83,23 +97,39 @@ export default function BlogPostPage() {
           </div>
         </CardHeader>
         <CardContent className="p-6 md:p-8 lg:p-10 space-y-6">
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-[#1E1D40] leading-tight">{post.title}</h1>
+          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-[#1E1D40] leading-tight">
+            {post.title}
+          </h1>
 
           <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
             <div className="flex items-center gap-2">
               <Avatar className="h-8 w-8">
-                <AvatarImage src={post.authorImage || `/placeholder.svg?height=32&width=32&query=${post.author}`} />
+                <AvatarImage
+                  src={
+                    post.authorImage ||
+                    `/placeholder.svg?height=32&width=32&query=${post.author}`
+                  }
+                />
                 <AvatarFallback className="bg-gray-200 text-gray-600 text-xs font-semibold">
                   {post.author.charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              <span className="font-semibold text-[#1E1D40]">{post.author}</span>
+              <span className="font-semibold text-[#1E1D40]">
+                {post.author}
+              </span>
               {post.badges && post.badges.length > 0 && (
                 <div className="flex items-center gap-1">
                   {post.badges.slice(0, 3).map((badge: any, index: number) => (
-                    <div key={index} className="flex items-center gap-1 bg-blue-50 text-blue-700 px-2 py-1 rounded-full text-xs">
+                    <div
+                      key={index}
+                      className="flex items-center gap-1 bg-blue-50 text-blue-700 px-2 py-1 rounded-full text-xs"
+                    >
                       {badge.icon ? (
-                        <img src={badge.icon} alt={badge.name} className="w-4 h-4" />
+                        <img
+                          src={badge.icon}
+                          alt={badge.name}
+                          className="w-4 h-4"
+                        />
                       ) : (
                         <Award className="w-4 h-4" />
                       )}
@@ -107,14 +137,16 @@ export default function BlogPostPage() {
                     </div>
                   ))}
                   {post.badges.length > 3 && (
-                    <span className="text-xs text-gray-500">+{post.badges.length - 3} mais</span>
+                    <span className="text-xs text-gray-500">
+                      +{post.badges.length - 3} mais
+                    </span>
                   )}
                 </div>
               )}
             </div>
             <div className="flex items-center gap-1">
               <Calendar className="h-4 w-4" />
-              <span>{new Date(post.date).toLocaleDateString("pt-BR")}</span>
+              <span>{new Date(post.date).toLocaleDateString('pt-BR')}</span>
             </div>
             <div className="flex items-center gap-1">
               <Clock className="h-4 w-4" />
@@ -127,14 +159,20 @@ export default function BlogPostPage() {
           </div>
 
           <div className="prose prose-lg max-w-none text-gray-800 leading-relaxed">
-            <p>{post.content}</p>
-            {/* Conteúdo completo do artigo aqui */}
-          </div>
+              <ContentRenderer 
+                content={post.content} 
+                centerImages={post.centerImage}
+              />
+            </div>
 
           {post.tags && post.tags.length > 0 && (
             <div className="flex flex-wrap gap-2 pt-4 border-t border-gray-100">
               {post.tags.map((tag, index) => (
-                <Badge key={index} variant="outline" className="text-sm px-3 py-1">
+                <Badge
+                  key={index}
+                  variant="outline"
+                  className="text-sm px-3 py-1"
+                >
                   #{tag}
                 </Badge>
               ))}
@@ -156,7 +194,7 @@ export default function BlogPostPage() {
             <Button variant="ghost" size="icon" asChild>
               <a
                 href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(
-                  shareUrl,
+                  shareUrl
                 )}`}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -168,7 +206,7 @@ export default function BlogPostPage() {
             <Button variant="ghost" size="icon" asChild>
               <a
                 href={`https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(
-                  shareUrl,
+                  shareUrl
                 )}&title=${encodeURIComponent(post.title)}`}
                 target="_blank"
                 rel="noopener noreferrer"

@@ -1,21 +1,32 @@
-"use client"
+'use client'
 
 import React, { useState, useRef, useCallback, useEffect } from 'react'
 import Image from 'next/image'
 import { Button } from './button'
 import { Card } from './card'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from './dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from './dialog'
 import { Slider } from './slider'
 import { Label } from './label'
 import { uploadBlogImage, UploadResult } from '@/lib/image-upload'
 import { createSupabaseClient } from '@/lib/supabase'
-import ReactCrop, { Crop, PixelCrop, centerCrop, makeAspectCrop } from 'react-image-crop'
+import ReactCrop, {
+  Crop,
+  PixelCrop,
+  centerCrop,
+  makeAspectCrop,
+} from 'react-image-crop'
 import 'react-image-crop/dist/ReactCrop.css'
-import { 
-  Loader2, 
-  Upload, 
-  X, 
-  Image as ImageIcon, 
+import {
+  Loader2,
+  Upload,
+  X,
+  Image as ImageIcon,
   Crop as CropIcon,
   RotateCw,
   ZoomIn,
@@ -23,7 +34,7 @@ import {
   Move,
   Download,
   Eye,
-  RefreshCw
+  RefreshCw,
 } from 'lucide-react'
 
 interface ImageCropUploadProps {
@@ -53,14 +64,14 @@ export function ImageCropUpload({
   onImageRemoved,
   currentImageUrl,
   userId,
-  className = "",
+  className = '',
   disabled = false,
   aspectRatio = 1,
   cropType,
   minWidth = 600,
   minHeight = 600,
-  title = "Upload de Imagem",
-  description = "Selecione uma imagem para fazer upload"
+  title = 'Upload de Imagem',
+  description = 'Selecione uma imagem para fazer upload',
 }: ImageCropUploadProps) {
   const supabase = createSupabaseClient()
   const [isUploading, setIsUploading] = useState(false)
@@ -69,20 +80,20 @@ export function ImageCropUpload({
   const [dragActive, setDragActive] = useState(false)
   const [showCropModal, setShowCropModal] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
-  const [imageSrc, setImageSrc] = useState<string>("")
-  const [croppedImageUrl, setCroppedImageUrl] = useState<string>("")
-  
+  const [imageSrc, setImageSrc] = useState<string>('')
+  const [croppedImageUrl, setCroppedImageUrl] = useState<string>('')
+
   const [cropState, setCropState] = useState<CropState>({
     crop: {
       unit: '%',
       width: 90,
       height: 90,
       x: 5,
-      y: 5
+      y: 5,
     },
     completedCrop: undefined,
     scale: 1,
-    rotate: 0
+    rotate: 0,
   })
 
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -96,7 +107,8 @@ export function ImageCropUpload({
       return 'Formato nao suportado. Use JPEG, PNG ou WebP.'
     }
 
-    if (file.size > 5 * 1024 * 1024) { // 5MB
+    if (file.size > 5 * 1024 * 1024) {
+      // 5MB
       return 'Arquivo muito grande. Maximo 5MB.'
     }
 
@@ -127,10 +139,10 @@ export function ImageCropUpload({
         },
         aspectRatio,
         imageWidth,
-        imageHeight,
+        imageHeight
       ),
       imageWidth,
-      imageHeight,
+      imageHeight
     )
   }
 
@@ -160,7 +172,7 @@ export function ImageCropUpload({
   // Função para lidar com carregamento da imagem no crop
   const onImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
     const { width, height } = e.currentTarget
-    
+
     // Validar dimensões
     const dimensionError = validateImageDimensions(e.currentTarget)
     if (dimensionError) {
@@ -195,7 +207,7 @@ export function ImageCropUpload({
 
     // Aplicar transformações
     ctx.save()
-    
+
     // Aplicar rotação se houver
     if (cropState.rotate !== 0) {
       ctx.translate(canvas.width / 2, canvas.height / 2)
@@ -217,20 +229,24 @@ export function ImageCropUpload({
 
     ctx.restore()
 
-    return new Promise((resolve) => {
-      canvas.toBlob((blob) => {
-        if (!blob || !selectedFile) {
-          resolve(null)
-          return
-        }
+    return new Promise(resolve => {
+      canvas.toBlob(
+        blob => {
+          if (!blob || !selectedFile) {
+            resolve(null)
+            return
+          }
 
-        const croppedFile = new File([blob], selectedFile.name, {
-          type: selectedFile.type,
-          lastModified: Date.now()
-        })
+          const croppedFile = new File([blob], selectedFile.name, {
+            type: selectedFile.type,
+            lastModified: Date.now(),
+          })
 
-        resolve(croppedFile)
-      }, selectedFile?.type || 'image/jpeg', 0.9)
+          resolve(croppedFile)
+        },
+        selectedFile?.type || 'image/jpeg',
+        0.9
+      )
     })
   }, [cropState.completedCrop, cropState.rotate, selectedFile])
 
@@ -249,21 +265,23 @@ export function ImageCropUpload({
       }
 
       // Obter sessão do usuário
-      const { data: { session } } = await supabase.auth.getSession()
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
       if (!session?.access_token || !session?.user) {
         throw new Error('Usuario nao autenticado')
       }
 
       // Determinar tipo de usuário baseado no perfil
       let userType = 'patient' // padrão
-      
+
       // Verificar se é nutricionista
       const { data: nutritionistProfile } = await supabase
         .from('nutritionist_profiles')
         .select('id')
         .eq('user_id', session.user.id)
         .single()
-      
+
       if (nutritionistProfile) {
         userType = 'nutritionist'
       } else {
@@ -273,7 +291,7 @@ export function ImageCropUpload({
           .select('id')
           .eq('user_id', session.user.id)
           .single()
-        
+
         if (companyProfile) {
           userType = 'company'
         }
@@ -300,9 +318,14 @@ export function ImageCropUpload({
       }
 
       // Atualizar perfil no banco de dados
-      const updateField = cropType === 'cover' ? 'cover_image_url' : 'profile_image_url'
-      const tableName = userType === 'nutritionist' ? 'nutritionist_profiles' : 
-                       userType === 'company' ? 'company_profiles' : 'patient_profiles'
+      const updateField =
+        cropType === 'cover' ? 'cover_image_url' : 'profile_image_url'
+      const tableName =
+        userType === 'nutritionist'
+          ? 'nutritionist_profiles'
+          : userType === 'company'
+            ? 'company_profiles'
+            : 'patient_profiles'
 
       const { error: updateError } = await supabase
         .from(tableName)
@@ -310,21 +333,21 @@ export function ImageCropUpload({
         .eq('user_id', session.user.id)
 
       if (updateError) {
-        console.error('Erro ao atualizar perfil:', updateError)
+        // Silent error handling: Error updating profile
         // Não falhar completamente, pois a imagem foi enviada com sucesso
       }
-      
+
       onImageUploaded(result.url)
       setUploadSuccess('Imagem enviada com sucesso!')
       setShowCropModal(false)
       setSelectedFile(null)
-      setImageSrc("")
-      setCroppedImageUrl("")
-      
+      setImageSrc('')
+      setCroppedImageUrl('')
+
       // Limpar mensagem de sucesso após 3 segundos
       setTimeout(() => setUploadSuccess(null), 3000)
     } catch (error) {
-      console.error('Erro no upload:', error)
+      // Silent error handling: Upload error
       setUploadError(error instanceof Error ? error.message : 'Erro no upload')
     } finally {
       setIsUploading(false)
@@ -344,9 +367,9 @@ export function ImageCropUpload({
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault()
     e.stopPropagation()
-    if (e.type === "dragenter" || e.type === "dragover") {
+    if (e.type === 'dragenter' || e.type === 'dragover') {
       setDragActive(true)
-    } else if (e.type === "dragleave") {
+    } else if (e.type === 'dragleave') {
       setDragActive(false)
     }
   }
@@ -391,7 +414,9 @@ export function ImageCropUpload({
       {/* Preview da imagem atual */}
       {currentImageUrl && (
         <Card className="relative overflow-hidden">
-          <div className={`relative ${cropType === 'cover' ? 'aspect-[16/5]' : 'aspect-square w-32 h-32 mx-auto'}`}>
+          <div
+            className={`relative ${cropType === 'cover' ? 'aspect-[16/5]' : 'aspect-square w-32 h-32 mx-auto'}`}
+          >
             <Image
               src={currentImageUrl}
               alt={cropType === 'cover' ? 'Capa atual' : 'Avatar atual'}
@@ -414,10 +439,10 @@ export function ImageCropUpload({
       )}
 
       {/* Área de upload */}
-      <Card 
+      <Card
         className={`relative border-2 border-dashed transition-colors cursor-pointer ${
-          dragActive 
-            ? 'border-primary bg-primary/5' 
+          dragActive
+            ? 'border-primary bg-primary/5'
             : 'border-gray-300 hover:border-gray-400'
         } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
         onDragEnter={handleDrag}
@@ -435,13 +460,17 @@ export function ImageCropUpload({
               <p className="text-sm font-medium">{title}</p>
               <p className="text-xs text-gray-500">{description}</p>
               <p className="text-xs text-gray-400">
-                {cropType === 'cover' 
+                {cropType === 'cover'
                   ? 'Formatos: JPEG, PNG, WebP - Min: 2000x700px - Max: 5MB'
-                  : 'Formatos: JPEG, PNG, WebP - Min: 600x600px - Max: 5MB'
-                }
+                  : 'Formatos: JPEG, PNG, WebP - Min: 600x600px - Max: 5MB'}
               </p>
             </div>
-            <Button type="button" variant="outline" size="sm" disabled={disabled}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={disabled}
+            >
               <Upload className="h-4 w-4 mr-2" />
               Selecionar Arquivo
             </Button>
@@ -477,7 +506,9 @@ export function ImageCropUpload({
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {cropType === 'cover' ? 'Editar Capa do Perfil' : 'Editar Foto de Perfil'}
+              {cropType === 'cover'
+                ? 'Editar Capa do Perfil'
+                : 'Editar Foto de Perfil'}
             </DialogTitle>
           </DialogHeader>
 
@@ -488,7 +519,7 @@ export function ImageCropUpload({
                 <Label>Zoom: {cropState.scale.toFixed(1)}x</Label>
                 <Slider
                   value={[cropState.scale]}
-                  onValueChange={([value]) => 
+                  onValueChange={([value]) =>
                     setCropState(prev => ({ ...prev, scale: value }))
                   }
                   min={0.5}
@@ -502,7 +533,7 @@ export function ImageCropUpload({
                 <Label>Rotacao: {cropState.rotate} graus</Label>
                 <Slider
                   value={[cropState.rotate]}
-                  onValueChange={([value]) => 
+                  onValueChange={([value]) =>
                     setCropState(prev => ({ ...prev, rotate: value }))
                   }
                   min={-180}
@@ -517,11 +548,13 @@ export function ImageCropUpload({
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => setCropState(prev => ({ 
-                    ...prev, 
-                    scale: 1, 
-                    rotate: 0 
-                  }))}
+                  onClick={() =>
+                    setCropState(prev => ({
+                      ...prev,
+                      scale: 1,
+                      rotate: 0,
+                    }))
+                  }
                 >
                   <RefreshCw className="h-4 w-4 mr-2" />
                   Reset
@@ -534,10 +567,10 @@ export function ImageCropUpload({
               {imageSrc && (
                 <ReactCrop
                   crop={cropState.crop}
-                  onChange={(_, percentCrop) => 
+                  onChange={(_, percentCrop) =>
                     setCropState(prev => ({ ...prev, crop: percentCrop }))
                   }
-                  onComplete={(c) => 
+                  onComplete={c =>
                     setCropState(prev => ({ ...prev, completedCrop: c }))
                   }
                   aspect={aspectRatio}
@@ -548,10 +581,10 @@ export function ImageCropUpload({
                     ref={imageRef}
                     alt="Crop"
                     src={imageSrc}
-                    style={{ 
+                    style={{
                       transform: `scale(${cropState.scale}) rotate(${cropState.rotate}deg)`,
                       maxHeight: '400px',
-                      width: 'auto'
+                      width: 'auto',
                     }}
                     onLoad={onImageLoad}
                   />
@@ -563,11 +596,11 @@ export function ImageCropUpload({
             {cropState.completedCrop && (
               <div className="space-y-2">
                 <Label>Preview:</Label>
-                <div className={`relative mx-auto ${
-                  cropType === 'cover' 
-                    ? 'w-80 h-20' 
-                    : 'w-24 h-24'
-                }`}>
+                <div
+                  className={`relative mx-auto ${
+                    cropType === 'cover' ? 'w-80 h-20' : 'w-24 h-24'
+                  }`}
+                >
                   <canvas
                     ref={canvasRef}
                     className={`w-full h-full border border-gray-300 ${
@@ -575,7 +608,7 @@ export function ImageCropUpload({
                     }`}
                     style={{
                       width: cropType === 'cover' ? '320px' : '96px',
-                      height: cropType === 'cover' ? '80px' : '96px'
+                      height: cropType === 'cover' ? '80px' : '96px',
                     }}
                   />
                 </div>

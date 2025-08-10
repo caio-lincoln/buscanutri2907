@@ -1,21 +1,39 @@
-"use client"
+'use client'
 
-import type React from "react"
+import type React from 'react'
 
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Label } from "@/components/ui/label"
-import { Badge } from "@/components/ui/badge"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Plus, Edit, Trash, Calendar, Clock, User, Search, List, Grid, Award } from "lucide-react"
-import Image from "next/image"
-import Link from "next/link"
-import { toast } from "@/components/ui/use-toast"
-import { AdvancedImageUpload } from "@/components/ui/advanced-image-upload"
+import { useState, useEffect } from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Label } from '@/components/ui/label'
+import { Badge } from '@/components/ui/badge'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Checkbox } from '@/components/ui/checkbox'
+import { RichTextEditor } from '@/components/ui/rich-text-editor'
+import {
+  Plus,
+  Edit,
+  Trash,
+  Calendar,
+  Clock,
+  User,
+  Search,
+  List,
+  Grid,
+  Award,
+} from 'lucide-react'
+import Image from 'next/image'
+import Link from 'next/link'
+import { toast } from '@/components/ui/use-toast'
+import { AdvancedImageUpload } from '@/components/ui/advanced-image-upload'
 import {
   type BlogPost,
   getBlogPostsByAuthor,
@@ -23,9 +41,9 @@ import {
   updateBlogPost,
   deleteBlogPost,
   blogCategories,
-} from "@/lib/blog-data" // Importar funções e categorias do blog-data
-import { getCurrentUser } from "@/lib/auth" // Para obter o ID do usuário logado
-import { createSupabaseClient } from "@/lib/supabase" // Para cliente autenticado
+} from '@/lib/blog-data' // Importar funções e categorias do blog-data
+import { getCurrentUser } from '@/lib/auth' // Para obter o ID do usuário logado
+import { createSupabaseClient } from '@/lib/supabase' // Para cliente autenticado
 
 export function BlogTab() {
   const [myPosts, setMyPosts] = useState<BlogPost[]>([])
@@ -34,9 +52,9 @@ export function BlogTab() {
   const [loading, setLoading] = useState(true)
   const [authorId, setAuthorId] = useState<string | null>(null)
 
-  const [searchTerm, setSearchTerm] = useState("")
-  const [selectedCategory, setSelectedCategory] = useState("Todos")
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
+  const [searchTerm, setSearchTerm] = useState('')
+  const [selectedCategory, setSelectedCategory] = useState('Todos')
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
 
   useEffect(() => {
     const fetchUserAndPosts = async () => {
@@ -52,25 +70,29 @@ export function BlogTab() {
     fetchUserAndPosts()
   }, [])
 
-  const filteredPosts = myPosts.filter((post) => {
-    const matchesCategory = selectedCategory === "Todos" || post.category === selectedCategory
+  const filteredPosts = myPosts.filter(post => {
+    const matchesCategory =
+      selectedCategory === 'Todos' || post.category === selectedCategory
     const matchesSearch =
       post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       post.excerpt.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      post.tags.some((tag) => tag.toLowerCase().includes(searchTerm.toLowerCase()))
+      post.tags.some(tag =>
+        tag.toLowerCase().includes(searchTerm.toLowerCase())
+      )
     return matchesCategory && matchesSearch
   })
 
   const handleNewPost = () => {
     setIsEditing(true)
     setCurrentPost({
-      title: "",
-      excerpt: "",
-      content: "",
-      category: "",
-      image: "/placeholder.svg?height=400&width=800",
+      title: '',
+      excerpt: '',
+      content: '',
+      category: '',
+      image: '/placeholder.svg?height=400&width=800',
       tags: [],
       featured: false,
+      centerImage: false,
     })
   }
 
@@ -80,32 +102,38 @@ export function BlogTab() {
   }
 
   const handleDeletePost = async (id: string) => {
-    if (window.confirm("Tem certeza que deseja excluir este artigo? Esta ação não pode ser desfeita.")) {
+    if (
+      window.confirm(
+        'Tem certeza que deseja excluir este artigo? Esta ação não pode ser desfeita.'
+      )
+    ) {
       try {
         // Criar cliente Supabase autenticado
         const supabase = createSupabaseClient()
         const success = await deleteBlogPost(id, supabase)
         if (success) {
           // Refresh posts
-          const posts = await getBlogPostsByAuthor(authorId || "")
+          const posts = await getBlogPostsByAuthor(authorId || '')
           setMyPosts(posts)
-          toast({ 
-            title: "Artigo excluído", 
-            description: "O artigo foi removido com sucesso." 
+          toast({
+            title: 'Artigo excluído',
+            description: 'O artigo foi removido com sucesso.',
           })
         } else {
-          toast({ 
-            title: "Erro ao excluir", 
-            description: "Não foi possível excluir o artigo. Verifique se você tem permissão para esta ação.", 
-            variant: "destructive" 
+          toast({
+            title: 'Erro ao excluir',
+            description:
+              'Não foi possível excluir o artigo. Verifique se você tem permissão para esta ação.',
+            variant: 'destructive',
           })
         }
       } catch (error) {
-        console.error('Erro ao excluir post:', error)
-        toast({ 
-          title: "Erro inesperado", 
-          description: "Ocorreu um erro inesperado ao tentar excluir o artigo. Tente novamente.", 
-          variant: "destructive" 
+        // Silent error handling: Error deleting post
+        toast({
+          title: 'Erro inesperado',
+          description:
+            'Ocorreu um erro inesperado ao tentar excluir o artigo. Tente novamente.',
+          variant: 'destructive',
         })
       }
     }
@@ -130,16 +158,16 @@ export function BlogTab() {
 
     if (!currentPost.title || !currentPost.content || !currentPost.category) {
       toast({
-        title: "Campos obrigatórios",
-        description: "Preencha título, conteúdo e categoria.",
-        variant: "destructive",
+        title: 'Campos obrigatórios',
+        description: 'Preencha título, conteúdo e categoria.',
+        variant: 'destructive',
       })
       return
     }
 
-    const authorName = "Nutricionista Logado" // Placeholder, replace with actual user name
-    const authorBio = "Nutricionista da Busca Nutri." // Placeholder, replace with actual user bio
-    const authorImage = "/placeholder.svg?height=100&width=100" // Placeholder
+    const authorName = 'Nutricionista Logado' // Placeholder, replace with actual user name
+    const authorBio = 'Nutricionista da Busca Nutri.' // Placeholder, replace with actual user bio
+    const authorImage = '/placeholder.svg?height=100&width=100' // Placeholder
 
     if (currentPost.id) {
       // Update existing post
@@ -149,14 +177,21 @@ export function BlogTab() {
         authorId: authorId,
         authorBio: authorBio,
         authorImage: authorImage,
-        readTime: currentPost.readTime || "5 min", // Default if not set
+        readTime: currentPost.readTime || '5 min', // Default if not set
         views: currentPost.views || 0, // Default if not set
-        date: currentPost.date || new Date().toISOString().split("T")[0], // Default if not set
+        date: currentPost.date || new Date().toISOString().split('T')[0], // Default if not set
       } as BlogPost)
       if (updated) {
-        toast({ title: "Artigo atualizado", description: "O artigo foi salvo com sucesso." })
+        toast({
+          title: 'Artigo atualizado',
+          description: 'O artigo foi salvo com sucesso.',
+        })
       } else {
-        toast({ title: "Erro", description: "Não foi possível atualizar o artigo.", variant: "destructive" })
+        toast({
+          title: 'Erro',
+          description: 'Não foi possível atualizar o artigo.',
+          variant: 'destructive',
+        })
       }
     } else {
       // Add new post
@@ -166,13 +201,20 @@ export function BlogTab() {
         authorId: authorId,
         authorBio: authorBio,
         authorImage: authorImage,
-        readTime: "5 min", // Default read time for new posts
+        readTime: '5 min', // Default read time for new posts
         views: 0, // New posts start with 0 views
-      } as Omit<BlogPost, "id" | "date" | "views" | "badges">)
+      } as Omit<BlogPost, 'id' | 'date' | 'views' | 'badges'>)
       if (newPost) {
-        toast({ title: "Artigo publicado", description: "Seu novo artigo foi publicado com sucesso!" })
+        toast({
+          title: 'Artigo publicado',
+          description: 'Seu novo artigo foi publicado com sucesso!',
+        })
       } else {
-        toast({ title: "Erro", description: "Não foi possível publicar o artigo.", variant: "destructive" })
+        toast({
+          title: 'Erro',
+          description: 'Não foi possível publicar o artigo.',
+          variant: 'destructive',
+        })
       }
     }
     setIsEditing(false)
@@ -185,7 +227,9 @@ export function BlogTab() {
     return (
       <div className="min-h-[400px] flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-200 border-t-blue-500 mx-auto"></div>
-        <p className="text-[#1E1D40]/70 font-medium ml-4">Carregando seus artigos...</p>
+        <p className="text-[#1E1D40]/70 font-medium ml-4">
+          Carregando seus artigos...
+        </p>
       </div>
     )
   }
@@ -194,8 +238,12 @@ export function BlogTab() {
     <div className="space-y-8">
       <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl lg:text-4xl font-bold text-[#1E1D40] mb-2">Meu Blog</h1>
-          <p className="text-gray-600">Crie, edite e gerencie seus artigos para a comunidade Busca Nutri.</p>
+          <h1 className="text-3xl lg:text-4xl font-bold text-[#1E1D40] mb-2">
+            Meu Blog
+          </h1>
+          <p className="text-gray-600">
+            Crie, edite e gerencie seus artigos para a comunidade Busca Nutri.
+          </p>
         </div>
         <Button
           onClick={handleNewPost}
@@ -209,7 +257,9 @@ export function BlogTab() {
       {isEditing && currentPost ? (
         <Card className="border-0 shadow-lg backdrop-blur-sm">
           <CardHeader>
-            <CardTitle>{currentPost.id ? "Editar Artigo" : "Criar Novo Artigo"}</CardTitle>
+            <CardTitle>
+              {currentPost.id ? 'Editar Artigo' : 'Criar Novo Artigo'}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
@@ -217,8 +267,10 @@ export function BlogTab() {
                 <Label htmlFor="title">Título</Label>
                 <Input
                   id="title"
-                  value={currentPost.title || ""}
-                  onChange={(e) => setCurrentPost({ ...currentPost, title: e.target.value })}
+                  value={currentPost.title || ''}
+                  onChange={e =>
+                    setCurrentPost({ ...currentPost, title: e.target.value })
+                  }
                   required
                 />
               </div>
@@ -226,34 +278,46 @@ export function BlogTab() {
                 <Label htmlFor="excerpt">Resumo</Label>
                 <Textarea
                   id="excerpt"
-                  value={currentPost.excerpt || ""}
-                  onChange={(e) => setCurrentPost({ ...currentPost, excerpt: e.target.value })}
+                  value={currentPost.excerpt || ''}
+                  onChange={e =>
+                    setCurrentPost({ ...currentPost, excerpt: e.target.value })
+                  }
                   rows={3}
                   required
                 />
               </div>
               <div>
                 <Label htmlFor="content">Conteúdo</Label>
-                <Textarea
-                  id="content"
-                  value={currentPost.content || ""}
-                  onChange={(e) => setCurrentPost({ ...currentPost, content: e.target.value })}
-                  rows={10}
-                  required
+                <RichTextEditor
+                  content={currentPost.content || ''}
+                  onChange={(content) =>
+                    setCurrentPost({ ...currentPost, content })
+                  }
+                  placeholder="Escreva o conteúdo do seu artigo aqui... Cole links do YouTube, Instagram ou TikTok para incorporar vídeos automaticamente."
+                  imageUrl={currentPost.image}
+                  onImageUrlChange={(url) =>
+                    setCurrentPost({ ...currentPost, image: url })
+                  }
+                  centerImage={currentPost.centerImage || false}
+                  onCenterImageChange={(centered) =>
+                    setCurrentPost({ ...currentPost, centerImage: centered })
+                  }
                 />
               </div>
               <div>
                 <Label htmlFor="category">Categoria</Label>
                 <Select
-                  value={currentPost.category || ""}
-                  onValueChange={(value) => setCurrentPost({ ...currentPost, category: value })}
+                  value={currentPost.category || ''}
+                  onValueChange={value =>
+                    setCurrentPost({ ...currentPost, category: value })
+                  }
                   required
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione uma categoria" />
                   </SelectTrigger>
                   <SelectContent>
-                    {blogCategories.map((category) => (
+                    {blogCategories.map(category => (
                       <SelectItem key={category} value={category}>
                         {category}
                       </SelectItem>
@@ -264,10 +328,14 @@ export function BlogTab() {
               <div>
                 <Label htmlFor="image">Imagem de Capa</Label>
                 <AdvancedImageUpload
-                  onImageUploaded={(url) => setCurrentPost({ ...currentPost, image: url })}
-                  onImageRemoved={() => setCurrentPost({ ...currentPost, image: "" })}
+                  onImageUploaded={url =>
+                    setCurrentPost({ ...currentPost, image: url })
+                  }
+                  onImageRemoved={() =>
+                    setCurrentPost({ ...currentPost, image: '' })
+                  }
                   currentImageUrl={currentPost.image}
-                  userId={authorId || ""}
+                  userId={authorId || ''}
                   disabled={!authorId}
                 />
               </div>
@@ -275,9 +343,12 @@ export function BlogTab() {
                 <Label htmlFor="tags">Tags (separadas por vírgula)</Label>
                 <Input
                   id="tags"
-                  value={currentPost.tags?.join(", ") || ""}
-                  onChange={(e) =>
-                    setCurrentPost({ ...currentPost, tags: e.target.value.split(",").map((t) => t.trim()) })
+                  value={currentPost.tags?.join(', ') || ''}
+                  onChange={e =>
+                    setCurrentPost({
+                      ...currentPost,
+                      tags: e.target.value.split(',').map(t => t.trim()),
+                    })
                   }
                   placeholder="saúde, bem-estar, nutrição"
                 />
@@ -286,13 +357,15 @@ export function BlogTab() {
                 <Checkbox
                   id="featured"
                   checked={currentPost.featured || false}
-                  onCheckedChange={(checked) => setCurrentPost({ ...currentPost, featured: !!checked })}
+                  onCheckedChange={checked =>
+                    setCurrentPost({ ...currentPost, featured: !!checked })
+                  }
                 />
                 <Label htmlFor="featured">Artigo em Destaque</Label>
               </div>
               <div className="flex gap-4">
                 <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
-                  {currentPost.id ? "Salvar Alterações" : "Publicar Artigo"}
+                  {currentPost.id ? 'Salvar Alterações' : 'Publicar Artigo'}
                 </Button>
                 <Button variant="outline" onClick={() => setIsEditing(false)}>
                   Cancelar
@@ -309,13 +382,13 @@ export function BlogTab() {
               {/* Categories */}
               <div className="flex flex-wrap gap-2">
                 <Button
-                  variant={selectedCategory === "Todos" ? "default" : "outline"}
+                  variant={selectedCategory === 'Todos' ? 'default' : 'outline'}
                   size="sm"
-                  onClick={() => setSelectedCategory("Todos")}
+                  onClick={() => setSelectedCategory('Todos')}
                   className={`transition-all duration-200 ${
-                    selectedCategory === "Todos"
-                      ? "bg-[#4AB0D9] hover:bg-[#4AB0D9]/90 shadow-md"
-                      : "hover:bg-gray-50 border-gray-200"
+                    selectedCategory === 'Todos'
+                      ? 'bg-[#4AB0D9] hover:bg-[#4AB0D9]/90 shadow-md'
+                      : 'hover:bg-gray-50 border-gray-200'
                   }`}
                 >
                   Todos
@@ -323,21 +396,26 @@ export function BlogTab() {
                     {myPosts.length}
                   </Badge>
                 </Button>
-                {blogCategories.map((category) => (
+                {blogCategories.map(category => (
                   <Button
                     key={category}
-                    variant={category === selectedCategory ? "default" : "outline"}
+                    variant={
+                      category === selectedCategory ? 'default' : 'outline'
+                    }
                     size="sm"
                     onClick={() => setSelectedCategory(category)}
                     className={`transition-all duration-200 ${
                       category === selectedCategory
-                        ? "bg-[#4AB0D9] hover:bg-[#4AB0D9]/90 shadow-md"
-                        : "hover:bg-gray-50 border-gray-200"
+                        ? 'bg-[#4AB0D9] hover:bg-[#4AB0D9]/90 shadow-md'
+                        : 'hover:bg-gray-50 border-gray-200'
                     }`}
                   >
                     {category}
                     <Badge variant="secondary" className="ml-2 text-xs">
-                      {myPosts.filter((post) => post.category === category).length}
+                      {
+                        myPosts.filter(post => post.category === category)
+                          .length
+                      }
                     </Badge>
                   </Button>
                 ))}
@@ -351,31 +429,31 @@ export function BlogTab() {
                     type="text"
                     placeholder="Buscar artigos..."
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onChange={e => setSearchTerm(e.target.value)}
                     className="pl-9 pr-4 py-2 rounded-full border-2 border-gray-200 focus:border-[#4AB0D9] focus:ring-0"
                   />
                 </div>
                 <div className="flex border-2 border-gray-200 rounded-lg overflow-hidden shadow-sm">
                   <Button
-                    variant={viewMode === "grid" ? "default" : "ghost"}
+                    variant={viewMode === 'grid' ? 'default' : 'ghost'}
                     size="sm"
-                    onClick={() => setViewMode("grid")}
+                    onClick={() => setViewMode('grid')}
                     className={`rounded-none px-4 py-2 transition-all duration-200 ${
-                      viewMode === "grid" 
-                        ? "bg-[#4AB0D9] text-white shadow-md" 
-                        : "hover:bg-gray-50 text-gray-600"
+                      viewMode === 'grid'
+                        ? 'bg-[#4AB0D9] text-white shadow-md'
+                        : 'hover:bg-gray-50 text-gray-600'
                     }`}
                   >
                     <Grid className="h-4 w-4" />
                   </Button>
                   <Button
-                    variant={viewMode === "list" ? "default" : "ghost"}
+                    variant={viewMode === 'list' ? 'default' : 'ghost'}
                     size="sm"
-                    onClick={() => setViewMode("list")}
+                    onClick={() => setViewMode('list')}
                     className={`rounded-none px-4 py-2 transition-all duration-200 ${
-                      viewMode === "list" 
-                        ? "bg-[#4AB0D9] text-white shadow-md" 
-                        : "hover:bg-gray-50 text-gray-600"
+                      viewMode === 'list'
+                        ? 'bg-[#4AB0D9] text-white shadow-md'
+                        : 'hover:bg-gray-50 text-gray-600'
                     }`}
                   >
                     <List className="h-4 w-4" />
@@ -397,15 +475,17 @@ export function BlogTab() {
           {filteredPosts.length === 0 ? (
             <div className="text-center py-16">
               <div className="text-6xl mb-4">📝</div>
-              <h3 className="text-2xl font-bold text-gray-600 mb-2">Nenhum artigo encontrado</h3>
+              <h3 className="text-2xl font-bold text-gray-600 mb-2">
+                Nenhum artigo encontrado
+              </h3>
               <p className="text-gray-500">
                 {searchTerm
-                    ? `Não encontramos artigos para "${searchTerm}". Tente outros termos.`
-                    : "Você ainda não publicou nenhum artigo."}
+                  ? `Não encontramos artigos para "${searchTerm}". Tente outros termos.`
+                  : 'Você ainda não publicou nenhum artigo.'}
               </p>
               {!searchTerm && (
-                <Button 
-                  onClick={handleNewPost} 
+                <Button
+                  onClick={handleNewPost}
                   className="mt-6 bg-gradient-to-r from-[#4AB0D9] to-[#3A9BC1] hover:from-[#3A9BC1] hover:to-[#2E8AA8] text-white font-medium py-3 px-6 rounded-lg shadow-md hover:shadow-lg transition-all duration-200"
                 >
                   <Plus className="h-5 w-5 mr-2" />
@@ -414,17 +494,25 @@ export function BlogTab() {
               )}
             </div>
           ) : (
-            <div className={viewMode === "grid" ? "grid md:grid-cols-2 lg:grid-cols-3 gap-6" : "space-y-6"}>
-              {filteredPosts.map((post) => (
+            <div
+              className={
+                viewMode === 'grid'
+                  ? 'grid md:grid-cols-2 lg:grid-cols-3 gap-6'
+                  : 'space-y-6'
+              }
+            >
+              {filteredPosts.map(post => (
                 <Card
                   key={post.id}
                   className={`overflow-hidden hover:shadow-xl transition-all duration-300 group border-0 shadow-md ${
-                    viewMode === "list" ? "flex" : "flex flex-col h-full"
+                    viewMode === 'list' ? 'flex' : 'flex flex-col h-full'
                   }`}
                 >
-                  <div className={`relative ${viewMode === "list" ? "w-80 flex-shrink-0" : "h-56"} bg-gray-50 rounded-t-lg overflow-hidden`}>
+                  <div
+                    className={`relative ${viewMode === 'list' ? 'w-80 flex-shrink-0' : 'h-56'} bg-gray-50 rounded-t-lg overflow-hidden`}
+                  >
                     <Image
-                      src={post.image || "/placeholder.svg"}
+                      src={post.image || '/placeholder.svg'}
                       alt={post.title}
                       width={400}
                       height={200}
@@ -436,29 +524,36 @@ export function BlogTab() {
                     >
                       {post.category}
                     </Badge>
-                    <Badge variant="outline" className="absolute top-3 right-3 bg-white/95 backdrop-blur-sm text-xs">
+                    <Badge
+                      variant="outline"
+                      className="absolute top-3 right-3 bg-white/95 backdrop-blur-sm text-xs"
+                    >
                       {post.views.toLocaleString()} views
                     </Badge>
                   </div>
 
-                  <CardContent className={`p-6 ${viewMode === "list" ? "flex-1" : "flex flex-col flex-1"}`}>
+                  <CardContent
+                    className={`p-6 ${viewMode === 'list' ? 'flex-1' : 'flex flex-col flex-1'}`}
+                  >
                     <Link href={`/blog/${post.id}`} className="block">
                       <h3
                         className={`font-bold text-[#1E1D40] mb-3 group-hover:text-[#4AB0D9] transition-colors ${
-                          viewMode === "list" ? "text-xl" : "text-lg"
+                          viewMode === 'list' ? 'text-xl' : 'text-lg'
                         } line-clamp-2`}
                       >
                         {post.title}
                       </h3>
                     </Link>
 
-                    <p className={`text-gray-600 mb-4 ${viewMode === "list" ? "text-base" : "text-sm"} line-clamp-3 flex-grow`}>
+                    <p
+                      className={`text-gray-600 mb-4 ${viewMode === 'list' ? 'text-base' : 'text-sm'} line-clamp-3 flex-grow`}
+                    >
                       {post.excerpt}
                     </p>
 
                     {/* Tags */}
                     <div className="flex flex-wrap gap-1 mb-3">
-                      {post.tags.slice(0, 3).map((tag) => (
+                      {post.tags.slice(0, 3).map(tag => (
                         <Badge key={tag} variant="outline" className="text-xs">
                           #{tag}
                         </Badge>
@@ -468,11 +563,13 @@ export function BlogTab() {
                     <div className="flex items-center gap-4 text-xs text-gray-500 mb-3">
                       <div className="flex items-center gap-1">
                         <User className="h-3 w-3" />
-                        <span className="truncate" title={post.author}>{formatAuthorName(post.author)}</span>
+                        <span className="truncate" title={post.author}>
+                          {formatAuthorName(post.author)}
+                        </span>
                       </div>
                       <div className="flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
-                        {new Date(post.date).toLocaleDateString("pt-BR")}
+                        {new Date(post.date).toLocaleDateString('pt-BR')}
                       </div>
                       <div className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
@@ -486,9 +583,14 @@ export function BlogTab() {
                         <span className="text-xs text-gray-500">Badges:</span>
                         <div className="flex items-center gap-1 flex-wrap">
                           {post.badges.slice(0, 2).map((badge, index) => {
-                            const IconComponent = badge.icon ? eval(badge.icon) : Award
+                            const IconComponent = badge.icon
+                              ? eval(badge.icon)
+                              : Award
                             return (
-                              <div key={`post-${post.id}-badge-${badge.name}-${index}`} className="flex items-center gap-1 bg-yellow-50 text-yellow-700 px-2 py-1 rounded-full text-xs">
+                              <div
+                                key={`post-${post.id}-badge-${badge.name}-${index}`}
+                                className="flex items-center gap-1 bg-yellow-50 text-yellow-700 px-2 py-1 rounded-full text-xs"
+                              >
                                 <IconComponent className="h-3 w-3" />
                                 <span className="truncate">{badge.name}</span>
                               </div>
@@ -504,7 +606,10 @@ export function BlogTab() {
                     )}
 
                     <div className="flex flex-col sm:flex-row gap-3 mt-auto pt-2">
-                      <Link href={`/dashboard/nutricionistas/blog/${post.id}`} className="flex-1">
+                      <Link
+                        href={`/dashboard/nutricionistas/blog/${post.id}`}
+                        className="flex-1"
+                      >
                         <Button
                           variant="default"
                           size="sm"

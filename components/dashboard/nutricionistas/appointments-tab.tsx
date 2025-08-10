@@ -1,11 +1,22 @@
-"use client"
+'use client'
 
-import { useState, useEffect, useMemo, useCallback } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { format, startOfWeek, endOfWeek, addDays, isSameDay, parseISO } from "date-fns"
-import { ptBR } from "date-fns/locale"
+import { useState, useEffect, useMemo, useCallback } from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
+import {
+  format,
+  startOfWeek,
+  endOfWeek,
+  addDays,
+  isSameDay,
+  parseISO,
+} from 'date-fns'
+import { ptBR } from 'date-fns/locale'
 import {
   CalendarIcon,
   Clock,
@@ -20,13 +31,25 @@ import {
   MapPin,
   ClipboardList,
   Loader2,
-} from "lucide-react"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
-import { toast } from "@/components/ui/use-toast"
+} from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import { toast } from '@/components/ui/use-toast'
 // Telemedicina temporariamente desabilitada
 // import {
 //   getConsultationsForNutritionist,
@@ -42,8 +65,8 @@ interface Consultation {
   id: string
   start_time: string
   end_time: string
-  status: "scheduled" | "completed" | "cancelled" | "pending" | "rescheduled"
-  consultation_type: "online" | "presential"
+  status: 'scheduled' | 'completed' | 'cancelled' | 'pending' | 'rescheduled'
+  consultation_type: 'online' | 'presential'
   patient_name?: string
   patient_avatar?: string
   is_blocked_slot?: boolean
@@ -66,31 +89,49 @@ const getConsultationsForNutritionist = async (
   return []
 }
 
-const rescheduleConsultation = async (consultationId: string, newStart: Date, newEnd: Date): Promise<void> => {
+const rescheduleConsultation = async (
+  consultationId: string,
+  newStart: Date,
+  newEnd: Date
+): Promise<void> => {
   // Funcionalidade de telemedicina temporariamente desabilitada
-  throw new Error("Funcionalidade de reagendamento temporariamente indisponível")
+  throw new Error(
+    'Funcionalidade de reagendamento temporariamente indisponível'
+  )
 }
 
-const cancelConsultation = async (consultationId: string, reason?: string): Promise<void> => {
+const cancelConsultation = async (
+  consultationId: string,
+  reason?: string
+): Promise<void> => {
   // Funcionalidade de telemedicina temporariamente desabilitada
-  throw new Error("Funcionalidade de cancelamento temporariamente indisponível")
+  throw new Error('Funcionalidade de cancelamento temporariamente indisponível')
 }
 
-const blockTimeSlot = async (userId: string, startTime: Date, endTime: Date, reason: string): Promise<void> => {
+const blockTimeSlot = async (
+  userId: string,
+  startTime: Date,
+  endTime: Date,
+  reason: string
+): Promise<void> => {
   // Funcionalidade de telemedicina temporariamente desabilitada
-  throw new Error("Funcionalidade de bloqueio de horário temporariamente indisponível")
+  throw new Error(
+    'Funcionalidade de bloqueio de horário temporariamente indisponível'
+  )
 }
 
 const unblockTimeSlot = async (consultationId: string): Promise<void> => {
   // Funcionalidade de telemedicina temporariamente desabilitada
-  throw new Error("Funcionalidade de desbloqueio de horário temporariamente indisponível")
+  throw new Error(
+    'Funcionalidade de desbloqueio de horário temporariamente indisponível'
+  )
 }
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
-import { cn } from "@/lib/utils"
-import { CustomCalendar } from "@/components/custom-calendar"
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Badge } from '@/components/ui/badge'
+import { cn } from '@/lib/utils'
+import { CustomCalendar } from '@/components/custom-calendar'
 
-type ViewMode = "month" | "week" | "day"
+type ViewMode = 'month' | 'week' | 'day'
 
 interface AppointmentsTabProps {
   // Adicione props se necessário, como o ID do nutricionista
@@ -99,27 +140,30 @@ interface AppointmentsTabProps {
 
 export function AppointmentsTab({ userId }: AppointmentsTabProps) {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
-  const [viewMode, setViewMode] = useState<ViewMode>("week")
+  const [viewMode, setViewMode] = useState<ViewMode>('week')
   const [consultations, setConsultations] = useState<Consultation[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   // State para o modal de bloqueio/edição
   const [isBlockModalOpen, setIsBlockModalOpen] = useState(false)
-  const [blockReason, setBlockReason] = useState("")
-  const [blockStartTime, setBlockStartTime] = useState<string>("")
-  const [blockEndTime, setBlockEndTime] = useState<string>("")
-  const [editingConsultation, setEditingConsultation] = useState<Consultation | null>(null)
+  const [blockReason, setBlockReason] = useState('')
+  const [blockStartTime, setBlockStartTime] = useState<string>('')
+  const [blockEndTime, setBlockEndTime] = useState<string>('')
+  const [editingConsultation, setEditingConsultation] =
+    useState<Consultation | null>(null)
   const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false)
-  const [newRescheduleDate, setNewRescheduleDate] = useState<Date | undefined>(undefined)
-  const [newRescheduleTime, setNewRescheduleTime] = useState<string>("")
+  const [newRescheduleDate, setNewRescheduleDate] = useState<Date | undefined>(
+    undefined
+  )
+  const [newRescheduleTime, setNewRescheduleTime] = useState<string>('')
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false)
-  const [cancelReason, setCancelReason] = useState("")
+  const [cancelReason, setCancelReason] = useState('')
 
   // Filtros
-  const [filterStatus, setFilterStatus] = useState<string>("all")
-  const [filterType, setFilterType] = useState<string>("all")
-  const [filterPatientName, setFilterPatientName] = useState<string>("")
+  const [filterStatus, setFilterStatus] = useState<string>('all')
+  const [filterType, setFilterType] = useState<string>('all')
+  const [filterPatientName, setFilterPatientName] = useState<string>('')
 
   const fetchConsultations = useCallback(async () => {
     setLoading(true)
@@ -128,10 +172,18 @@ export function AppointmentsTab({ userId }: AppointmentsTabProps) {
       let startDate: Date | undefined
       let endDate: Date | undefined
 
-      if (viewMode === "month") {
-        startDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1)
-        endDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 0)
-      } else if (viewMode === "week") {
+      if (viewMode === 'month') {
+        startDate = new Date(
+          selectedDate.getFullYear(),
+          selectedDate.getMonth(),
+          1
+        )
+        endDate = new Date(
+          selectedDate.getFullYear(),
+          selectedDate.getMonth() + 1,
+          0
+        )
+      } else if (viewMode === 'week') {
         startDate = startOfWeek(selectedDate, { locale: ptBR })
         endDate = endOfWeek(selectedDate, { locale: ptBR })
       } else {
@@ -146,20 +198,27 @@ export function AppointmentsTab({ userId }: AppointmentsTabProps) {
         endDate,
         filterStatus,
         filterType,
-        filterPatientName,
+        filterPatientName
       )
       setConsultations(fetchedConsultations)
     } catch (err: any) {
-      setError(err.message || "Erro ao carregar consultas.")
+      setError(err.message || 'Erro ao carregar consultas.')
       toast({
-        title: "Erro",
-        description: "Não foi possível carregar as consultas.",
-        variant: "destructive",
+        title: 'Erro',
+        description: 'Não foi possível carregar as consultas.',
+        variant: 'destructive',
       })
     } finally {
       setLoading(false)
     }
-  }, [userId, selectedDate, viewMode, filterStatus, filterType, filterPatientName])
+  }, [
+    userId,
+    selectedDate,
+    viewMode,
+    filterStatus,
+    filterType,
+    filterPatientName,
+  ])
 
   useEffect(() => {
     if (userId) {
@@ -173,22 +232,30 @@ export function AppointmentsTab({ userId }: AppointmentsTabProps) {
     }
   }
 
-  const handlePrevNext = (direction: "prev" | "next") => {
+  const handlePrevNext = (direction: 'prev' | 'next') => {
     const newDate = new Date(selectedDate)
-    if (viewMode === "month") {
-      newDate.setMonth(newDate.getMonth() + (direction === "next" ? 1 : -1))
-    } else if (viewMode === "week") {
-      newDate.setDate(newDate.getDate() + (direction === "next" ? 7 : -7))
+    if (viewMode === 'month') {
+      newDate.setMonth(newDate.getMonth() + (direction === 'next' ? 1 : -1))
+    } else if (viewMode === 'week') {
+      newDate.setDate(newDate.getDate() + (direction === 'next' ? 7 : -7))
     } else {
-      newDate.setDate(newDate.getDate() + (direction === "next" ? 1 : -1))
+      newDate.setDate(newDate.getDate() + (direction === 'next' ? 1 : -1))
     }
     setSelectedDate(newDate)
   }
 
   const getVisibleDays = useMemo(() => {
-    if (viewMode === "month") {
-      const startOfMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1)
-      const endOfMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 0)
+    if (viewMode === 'month') {
+      const startOfMonth = new Date(
+        selectedDate.getFullYear(),
+        selectedDate.getMonth(),
+        1
+      )
+      const endOfMonth = new Date(
+        selectedDate.getFullYear(),
+        selectedDate.getMonth() + 1,
+        0
+      )
       const start = startOfWeek(startOfMonth, { locale: ptBR })
       const end = endOfWeek(endOfMonth, { locale: ptBR })
       const days = []
@@ -198,7 +265,7 @@ export function AppointmentsTab({ userId }: AppointmentsTabProps) {
         day = addDays(day, 1)
       }
       return days
-    } else if (viewMode === "week") {
+    } else if (viewMode === 'week') {
       const start = startOfWeek(selectedDate, { locale: ptBR })
       const days = []
       for (let i = 0; i < 7; i++) {
@@ -212,7 +279,7 @@ export function AppointmentsTab({ userId }: AppointmentsTabProps) {
 
   const getConsultationsForDay = (day: Date) => {
     return consultations
-      .filter((c) => isSameDay(parseISO(c.start_time), day))
+      .filter(c => isSameDay(parseISO(c.start_time), day))
       .sort((a, b) => {
         const timeA = new Date(a.start_time).getTime()
         const timeB = new Date(b.start_time).getTime()
@@ -223,9 +290,9 @@ export function AppointmentsTab({ userId }: AppointmentsTabProps) {
   const handleBlockTime = async () => {
     if (!blockStartTime || !blockEndTime || !blockReason) {
       toast({
-        title: "Campos obrigatórios",
-        description: "Preencha todos os campos para bloquear o horário.",
-        variant: "destructive",
+        title: 'Campos obrigatórios',
+        description: 'Preencha todos os campos para bloquear o horário.',
+        variant: 'destructive',
       })
       return
     }
@@ -233,27 +300,27 @@ export function AppointmentsTab({ userId }: AppointmentsTabProps) {
     setLoading(true)
     try {
       const startDateTime = new Date(selectedDate)
-      const startTimeParts = blockStartTime?.split(":") || ["0", "0"]
+      const startTimeParts = blockStartTime?.split(':') || ['0', '0']
       startDateTime.setHours(
         Number.parseInt(startTimeParts[0]),
         Number.parseInt(startTimeParts[1]),
         0,
-        0,
+        0
       )
       const endDateTime = new Date(selectedDate)
-      const endTimeParts = blockEndTime?.split(":") || ["0", "0"]
+      const endTimeParts = blockEndTime?.split(':') || ['0', '0']
       endDateTime.setHours(
         Number.parseInt(endTimeParts[0]),
         Number.parseInt(endTimeParts[1]),
         0,
-        0,
+        0
       )
 
       if (startDateTime >= endDateTime) {
         toast({
-          title: "Erro de horário",
-          description: "A hora de início deve ser anterior à hora de término.",
-          variant: "destructive",
+          title: 'Erro de horário',
+          description: 'A hora de início deve ser anterior à hora de término.',
+          variant: 'destructive',
         })
         setLoading(false)
         return
@@ -261,19 +328,19 @@ export function AppointmentsTab({ userId }: AppointmentsTabProps) {
 
       await blockTimeSlot(userId, startDateTime, endDateTime, blockReason)
       toast({
-        title: "Horário bloqueado!",
-        description: "O horário foi bloqueado com sucesso.",
+        title: 'Horário bloqueado!',
+        description: 'O horário foi bloqueado com sucesso.',
       })
       setIsBlockModalOpen(false)
-      setBlockReason("")
-      setBlockStartTime("")
-      setBlockEndTime("")
+      setBlockReason('')
+      setBlockStartTime('')
+      setBlockEndTime('')
       fetchConsultations()
     } catch (err: any) {
       toast({
-        title: "Erro ao bloquear horário",
-        description: err.message || "Ocorreu um erro ao bloquear o horário.",
-        variant: "destructive",
+        title: 'Erro ao bloquear horário',
+        description: err.message || 'Ocorreu um erro ao bloquear o horário.',
+        variant: 'destructive',
       })
     } finally {
       setLoading(false)
@@ -281,20 +348,20 @@ export function AppointmentsTab({ userId }: AppointmentsTabProps) {
   }
 
   const handleUnblockTime = async (consultationId: string) => {
-    if (!confirm("Tem certeza que deseja desbloquear este horário?")) return
+    if (!confirm('Tem certeza que deseja desbloquear este horário?')) return
     setLoading(true)
     try {
       await unblockTimeSlot(consultationId)
       toast({
-        title: "Horário desbloqueado!",
-        description: "O horário foi desbloqueado com sucesso.",
+        title: 'Horário desbloqueado!',
+        description: 'O horário foi desbloqueado com sucesso.',
       })
       fetchConsultations()
     } catch (err: any) {
       toast({
-        title: "Erro ao desbloquear horário",
-        description: err.message || "Ocorreu um erro ao desbloquear o horário.",
-        variant: "destructive",
+        title: 'Erro ao desbloquear horário',
+        description: err.message || 'Ocorreu um erro ao desbloquear o horário.',
+        variant: 'destructive',
       })
     } finally {
       setLoading(false)
@@ -304,16 +371,16 @@ export function AppointmentsTab({ userId }: AppointmentsTabProps) {
   const openRescheduleModal = (consultation: Consultation) => {
     setEditingConsultation(consultation)
     setNewRescheduleDate(parseISO(consultation.start_time))
-    setNewRescheduleTime(format(parseISO(consultation.start_time), "HH:mm"))
+    setNewRescheduleTime(format(parseISO(consultation.start_time), 'HH:mm'))
     setIsRescheduleModalOpen(true)
   }
 
   const handleReschedule = async () => {
     if (!editingConsultation || !newRescheduleDate || !newRescheduleTime) {
       toast({
-        title: "Campos obrigatórios",
-        description: "Preencha todos os campos para reagendar.",
-        variant: "destructive",
+        title: 'Campos obrigatórios',
+        description: 'Preencha todos os campos para reagendar.',
+        variant: 'destructive',
       })
       return
     }
@@ -321,31 +388,32 @@ export function AppointmentsTab({ userId }: AppointmentsTabProps) {
     setLoading(true)
     try {
       const newStart = new Date(newRescheduleDate)
-      const rescheduleTimeParts = newRescheduleTime?.split(":") || ["0", "0"]
+      const rescheduleTimeParts = newRescheduleTime?.split(':') || ['0', '0']
       newStart.setHours(
         Number.parseInt(rescheduleTimeParts[0]),
         Number.parseInt(rescheduleTimeParts[1]),
         0,
-        0,
+        0
       )
       const newEnd = new Date(
         newStart.getTime() +
-          (parseISO(editingConsultation.end_time).getTime() - parseISO(editingConsultation.start_time).getTime()),
+          (parseISO(editingConsultation.end_time).getTime() -
+            parseISO(editingConsultation.start_time).getTime())
       )
 
       await rescheduleConsultation(editingConsultation.id, newStart, newEnd)
       toast({
-        title: "Consulta reagendada!",
-        description: "A consulta foi reagendada com sucesso.",
+        title: 'Consulta reagendada!',
+        description: 'A consulta foi reagendada com sucesso.',
       })
       setIsRescheduleModalOpen(false)
       setEditingConsultation(null)
       fetchConsultations()
     } catch (err: any) {
       toast({
-        title: "Erro ao reagendar",
-        description: err.message || "Ocorreu um erro ao reagendar a consulta.",
-        variant: "destructive",
+        title: 'Erro ao reagendar',
+        description: err.message || 'Ocorreu um erro ao reagendar a consulta.',
+        variant: 'destructive',
       })
     } finally {
       setLoading(false)
@@ -364,53 +432,68 @@ export function AppointmentsTab({ userId }: AppointmentsTabProps) {
     try {
       await cancelConsultation(editingConsultation.id, cancelReason)
       toast({
-        title: "Consulta cancelada!",
-        description: "A consulta foi cancelada com sucesso.",
+        title: 'Consulta cancelada!',
+        description: 'A consulta foi cancelada com sucesso.',
       })
       setIsCancelModalOpen(false)
       setEditingConsultation(null)
-      setCancelReason("")
+      setCancelReason('')
       fetchConsultations()
     } catch (err: any) {
       toast({
-        title: "Erro ao cancelar",
-        description: err.message || "Ocorreu um erro ao cancelar a consulta.",
-        variant: "destructive",
+        title: 'Erro ao cancelar',
+        description: err.message || 'Ocorreu um erro ao cancelar a consulta.',
+        variant: 'destructive',
       })
     } finally {
       setLoading(false)
     }
   }
 
-  const getStatusBadge = (status: Consultation["status"]) => {
+  const getStatusBadge = (status: Consultation['status']) => {
     switch (status) {
-      case "scheduled":
+      case 'scheduled':
         return (
-          <Badge variant="default" className="bg-blue-100 text-blue-700 border-blue-200">
+          <Badge
+            variant="default"
+            className="bg-blue-100 text-blue-700 border-blue-200"
+          >
             Agendada
           </Badge>
         )
-      case "completed":
+      case 'completed':
         return (
-          <Badge variant="default" className="bg-green-100 text-green-700 border-green-200">
+          <Badge
+            variant="default"
+            className="bg-green-100 text-green-700 border-green-200"
+          >
             Concluída
           </Badge>
         )
-      case "cancelled":
+      case 'cancelled':
         return (
-          <Badge variant="destructive" className="bg-red-100 text-red-700 border-red-200">
+          <Badge
+            variant="destructive"
+            className="bg-red-100 text-red-700 border-red-200"
+          >
             Cancelada
           </Badge>
         )
-      case "pending":
+      case 'pending':
         return (
-          <Badge variant="secondary" className="bg-yellow-100 text-yellow-700 border-yellow-200">
+          <Badge
+            variant="secondary"
+            className="bg-yellow-100 text-yellow-700 border-yellow-200"
+          >
             Pendente
           </Badge>
         )
-      case "rescheduled":
+      case 'rescheduled':
         return (
-          <Badge variant="outline" className="bg-purple-100 text-purple-700 border-purple-200">
+          <Badge
+            variant="outline"
+            className="bg-purple-100 text-purple-700 border-purple-200"
+          >
             Reagendada
           </Badge>
         )
@@ -419,17 +502,25 @@ export function AppointmentsTab({ userId }: AppointmentsTabProps) {
     }
   }
 
-  const getConsultationTypeBadge = (type: Consultation["consultation_type"]) => {
+  const getConsultationTypeBadge = (
+    type: Consultation['consultation_type']
+  ) => {
     switch (type) {
-      case "online":
+      case 'online':
         return (
-          <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
+          <Badge
+            variant="outline"
+            className="bg-purple-50 text-purple-700 border-purple-200"
+          >
             Online
           </Badge>
         )
-      case "presential":
+      case 'presential':
         return (
-          <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
+          <Badge
+            variant="outline"
+            className="bg-orange-50 text-orange-700 border-orange-200"
+          >
             Presencial
           </Badge>
         )
@@ -442,8 +533,12 @@ export function AppointmentsTab({ userId }: AppointmentsTabProps) {
     <div className="space-y-8">
       <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl lg:text-4xl font-bold text-[#1E1D40] mb-2">Minha Agenda Profissional</h1>
-          <p className="text-gray-600">Gerencie seus horários, consultas e bloqueios.</p>
+          <h1 className="text-3xl lg:text-4xl font-bold text-[#1E1D40] mb-2">
+            Minha Agenda Profissional
+          </h1>
+          <p className="text-gray-600">
+            Gerencie seus horários, consultas e bloqueios.
+          </p>
         </div>
         <div className="flex gap-2">
           <Button
@@ -482,16 +577,27 @@ export function AppointmentsTab({ userId }: AppointmentsTabProps) {
               showAvailabilityIndicator={false} // Não mostra indicador de disponibilidade genérico aqui
             />
             <div className="flex justify-between gap-2">
-              <Button variant="outline" onClick={() => handlePrevNext("prev")} className="flex-1">
+              <Button
+                variant="outline"
+                onClick={() => handlePrevNext('prev')}
+                className="flex-1"
+              >
                 <ChevronLeft className="h-4 w-4" /> Anterior
               </Button>
-              <Button variant="outline" onClick={() => handlePrevNext("next")} className="flex-1">
+              <Button
+                variant="outline"
+                onClick={() => handlePrevNext('next')}
+                className="flex-1"
+              >
                 Próximo <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
             <div className="flex flex-col gap-2">
               <Label htmlFor="view-mode">Visualização</Label>
-              <Select value={viewMode} onValueChange={(value) => setViewMode(value as ViewMode)}>
+              <Select
+                value={viewMode}
+                onValueChange={value => setViewMode(value as ViewMode)}
+              >
                 <SelectTrigger id="view-mode">
                   <SelectValue placeholder="Selecionar visualização" />
                 </SelectTrigger>
@@ -537,7 +643,7 @@ export function AppointmentsTab({ userId }: AppointmentsTabProps) {
                 id="filter-patient"
                 placeholder="Buscar paciente..."
                 value={filterPatientName}
-                onChange={(e) => setFilterPatientName(e.target.value)}
+                onChange={e => setFilterPatientName(e.target.value)}
               />
             </div>
           </CardContent>
@@ -548,10 +654,10 @@ export function AppointmentsTab({ userId }: AppointmentsTabProps) {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <ClipboardList className="h-5 w-5 text-green-600" />
-              {viewMode === "day"
+              {viewMode === 'day'
                 ? `Consultas em ${format(selectedDate, "dd 'de' MMMM, yyyy", { locale: ptBR })}`
-                : viewMode === "week"
-                  ? `Consultas da Semana (${format(startOfWeek(selectedDate, { locale: ptBR }), "dd/MM")} - ${format(endOfWeek(selectedDate, { locale: ptBR }), "dd/MM")})`
+                : viewMode === 'week'
+                  ? `Consultas da Semana (${format(startOfWeek(selectedDate, { locale: ptBR }), 'dd/MM')} - ${format(endOfWeek(selectedDate, { locale: ptBR }), 'dd/MM')})`
                   : `Consultas de ${format(selectedDate, "MMMM 'de' yyyy", { locale: ptBR })}`}
             </CardTitle>
           </CardHeader>
@@ -563,11 +669,12 @@ export function AppointmentsTab({ userId }: AppointmentsTabProps) {
               </div>
             ) : consultations.length === 0 ? (
               <div className="text-center p-8 text-gray-500">
-                Nenhuma consulta ou horário bloqueado encontrado para o período e filtros selecionados.
+                Nenhuma consulta ou horário bloqueado encontrado para o período
+                e filtros selecionados.
               </div>
             ) : (
               <div className="space-y-6">
-                {viewMode === "day" ? (
+                {viewMode === 'day' ? (
                   <DayView
                     consultations={getConsultationsForDay(selectedDate)}
                     onReschedule={openRescheduleModal}
@@ -575,11 +682,14 @@ export function AppointmentsTab({ userId }: AppointmentsTabProps) {
                     onUnblock={handleUnblockTime}
                   />
                 ) : (
-                  getVisibleDays.map((day) => {
+                  getVisibleDays.map(day => {
                     const dailyConsultations = getConsultationsForDay(day)
                     if (dailyConsultations.length === 0) return null
                     return (
-                      <div key={day.toISOString()} className="border-b pb-4 mb-4 last:border-b-0 last:pb-0 last:mb-0">
+                      <div
+                        key={day.toISOString()}
+                        className="border-b pb-4 mb-4 last:border-b-0 last:pb-0 last:mb-0"
+                      >
                         <h3 className="text-lg font-semibold text-[#1E1D40] mb-3 flex items-center gap-2">
                           <CalendarIcon className="h-4 w-4 text-gray-500" />
                           {format(day, "EEEE, dd 'de' MMMM", { locale: ptBR })}
@@ -615,7 +725,7 @@ export function AppointmentsTab({ userId }: AppointmentsTabProps) {
                 id="block-start-time"
                 type="time"
                 value={blockStartTime}
-                onChange={(e) => setBlockStartTime(e.target.value)}
+                onChange={e => setBlockStartTime(e.target.value)}
                 className="col-span-3"
               />
             </div>
@@ -627,7 +737,7 @@ export function AppointmentsTab({ userId }: AppointmentsTabProps) {
                 id="block-end-time"
                 type="time"
                 value={blockEndTime}
-                onChange={(e) => setBlockEndTime(e.target.value)}
+                onChange={e => setBlockEndTime(e.target.value)}
                 className="col-span-3"
               />
             </div>
@@ -638,25 +748,35 @@ export function AppointmentsTab({ userId }: AppointmentsTabProps) {
               <Textarea
                 id="block-reason"
                 value={blockReason}
-                onChange={(e) => setBlockReason(e.target.value)}
+                onChange={e => setBlockReason(e.target.value)}
                 placeholder="Ex: Consulta pessoal, Férias, Evento"
                 className="col-span-3"
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsBlockModalOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsBlockModalOpen(false)}
+            >
               Cancelar
             </Button>
             <Button onClick={handleBlockTime} disabled={loading}>
-              {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Bloquear"}
+              {loading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                'Bloquear'
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Modal de Reagendamento */}
-      <Dialog open={isRescheduleModalOpen} onOpenChange={setIsRescheduleModalOpen}>
+      <Dialog
+        open={isRescheduleModalOpen}
+        onOpenChange={setIsRescheduleModalOpen}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Reagendar Consulta</DialogTitle>
@@ -664,9 +784,17 @@ export function AppointmentsTab({ userId }: AppointmentsTabProps) {
           {editingConsultation && (
             <div className="grid gap-4 py-4">
               <p className="text-sm text-gray-700">
-                Reagendando consulta com <span className="font-semibold">{editingConsultation.patient_name}</span> em{" "}
+                Reagendando consulta com{' '}
                 <span className="font-semibold">
-                  {format(parseISO(editingConsultation.start_time), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                  {editingConsultation.patient_name}
+                </span>{' '}
+                em{' '}
+                <span className="font-semibold">
+                  {format(
+                    parseISO(editingConsultation.start_time),
+                    'dd/MM/yyyy HH:mm',
+                    { locale: ptBR }
+                  )}
                 </span>
               </p>
               <div className="grid grid-cols-4 items-center gap-4">
@@ -676,15 +804,15 @@ export function AppointmentsTab({ userId }: AppointmentsTabProps) {
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
-                      variant={"outline"}
+                      variant={'outline'}
                       className={cn(
-                        "col-span-3 justify-start text-left font-normal",
-                        !newRescheduleDate && "text-muted-foreground",
+                        'col-span-3 justify-start text-left font-normal',
+                        !newRescheduleDate && 'text-muted-foreground'
                       )}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
                       {newRescheduleDate ? (
-                        format(newRescheduleDate, "PPP", { locale: ptBR })
+                        format(newRescheduleDate, 'PPP', { locale: ptBR })
                       ) : (
                         <span>Escolha uma data</span>
                       )}
@@ -708,18 +836,25 @@ export function AppointmentsTab({ userId }: AppointmentsTabProps) {
                   id="new-time"
                   type="time"
                   value={newRescheduleTime}
-                  onChange={(e) => setNewRescheduleTime(e.target.value)}
+                  onChange={e => setNewRescheduleTime(e.target.value)}
                   className="col-span-3"
                 />
               </div>
             </div>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsRescheduleModalOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsRescheduleModalOpen(false)}
+            >
               Cancelar
             </Button>
             <Button onClick={handleReschedule} disabled={loading}>
-              {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Reagendar"}
+              {loading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                'Reagendar'
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -734,10 +869,17 @@ export function AppointmentsTab({ userId }: AppointmentsTabProps) {
           {editingConsultation && (
             <div className="grid gap-4 py-4">
               <p className="text-sm text-gray-700">
-                Você está prestes a cancelar a consulta com{" "}
-                <span className="font-semibold">{editingConsultation.patient_name}</span> em{" "}
+                Você está prestes a cancelar a consulta com{' '}
                 <span className="font-semibold">
-                  {format(parseISO(editingConsultation.start_time), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                  {editingConsultation.patient_name}
+                </span>{' '}
+                em{' '}
+                <span className="font-semibold">
+                  {format(
+                    parseISO(editingConsultation.start_time),
+                    'dd/MM/yyyy HH:mm',
+                    { locale: ptBR }
+                  )}
                 </span>
                 .
               </p>
@@ -748,7 +890,7 @@ export function AppointmentsTab({ userId }: AppointmentsTabProps) {
                 <Textarea
                   id="cancel-reason"
                   value={cancelReason}
-                  onChange={(e) => setCancelReason(e.target.value)}
+                  onChange={e => setCancelReason(e.target.value)}
                   placeholder="Opcional: Informe o motivo do cancelamento."
                   className="col-span-3"
                 />
@@ -756,11 +898,22 @@ export function AppointmentsTab({ userId }: AppointmentsTabProps) {
             </div>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsCancelModalOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsCancelModalOpen(false)}
+            >
               Não Cancelar
             </Button>
-            <Button variant="destructive" onClick={handleCancel} disabled={loading}>
-              {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Confirmar Cancelamento"}
+            <Button
+              variant="destructive"
+              onClick={handleCancel}
+              disabled={loading}
+            >
+              {loading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                'Confirmar Cancelamento'
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -776,36 +929,56 @@ interface DayViewProps {
   onUnblock: (consultationId: string) => void
 }
 
-function DayView({ consultations, onReschedule, onCancel, onUnblock }: DayViewProps) {
-  const getStatusBadge = (status: Consultation["status"]) => {
+function DayView({
+  consultations,
+  onReschedule,
+  onCancel,
+  onUnblock,
+}: DayViewProps) {
+  const getStatusBadge = (status: Consultation['status']) => {
     switch (status) {
-      case "scheduled":
+      case 'scheduled':
         return (
-          <Badge variant="default" className="bg-blue-100 text-blue-700 border-blue-200">
+          <Badge
+            variant="default"
+            className="bg-blue-100 text-blue-700 border-blue-200"
+          >
             Agendada
           </Badge>
         )
-      case "completed":
+      case 'completed':
         return (
-          <Badge variant="default" className="bg-green-100 text-green-700 border-green-200">
+          <Badge
+            variant="default"
+            className="bg-green-100 text-green-700 border-green-200"
+          >
             Concluída
           </Badge>
         )
-      case "cancelled":
+      case 'cancelled':
         return (
-          <Badge variant="destructive" className="bg-red-100 text-red-700 border-red-200">
+          <Badge
+            variant="destructive"
+            className="bg-red-100 text-red-700 border-red-200"
+          >
             Cancelada
           </Badge>
         )
-      case "pending":
+      case 'pending':
         return (
-          <Badge variant="secondary" className="bg-yellow-100 text-yellow-700 border-yellow-200">
+          <Badge
+            variant="secondary"
+            className="bg-yellow-100 text-yellow-700 border-yellow-200"
+          >
             Pendente
           </Badge>
         )
-      case "rescheduled":
+      case 'rescheduled':
         return (
-          <Badge variant="outline" className="bg-purple-100 text-purple-700 border-purple-200">
+          <Badge
+            variant="outline"
+            className="bg-purple-100 text-purple-700 border-purple-200"
+          >
             Reagendada
           </Badge>
         )
@@ -814,17 +987,25 @@ function DayView({ consultations, onReschedule, onCancel, onUnblock }: DayViewPr
     }
   }
 
-  const getConsultationTypeBadge = (type: Consultation["consultation_type"]) => {
+  const getConsultationTypeBadge = (
+    type: Consultation['consultation_type']
+  ) => {
     switch (type) {
-      case "online":
+      case 'online':
         return (
-          <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
+          <Badge
+            variant="outline"
+            className="bg-purple-50 text-purple-700 border-purple-200"
+          >
             Online
           </Badge>
         )
-      case "presential":
+      case 'presential':
         return (
-          <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
+          <Badge
+            variant="outline"
+            className="bg-orange-50 text-orange-700 border-orange-200"
+          >
             Presencial
           </Badge>
         )
@@ -838,12 +1019,14 @@ function DayView({ consultations, onReschedule, onCancel, onUnblock }: DayViewPr
       {consultations.length === 0 ? (
         <p className="text-gray-500 text-sm">Nenhum evento neste dia.</p>
       ) : (
-        consultations.map((consultation) => (
+        consultations.map(consultation => (
           <Card
             key={consultation.id}
             className={cn(
-              "border-0 shadow-md transition-all duration-200 hover:shadow-lg",
-              consultation.is_blocked_slot ? "bg-gray-50 border-gray-200" : "bg-white border-blue-100",
+              'border-0 shadow-md transition-all duration-200 hover:shadow-lg',
+              consultation.is_blocked_slot
+                ? 'bg-gray-50 border-gray-200'
+                : 'bg-white border-blue-100'
             )}
           >
             <CardContent className="p-4 flex items-center justify-between gap-4">
@@ -851,24 +1034,36 @@ function DayView({ consultations, onReschedule, onCancel, onUnblock }: DayViewPr
                 <div className="flex flex-col items-center justify-center text-center">
                   <Clock className="h-5 w-5 text-gray-600" />
                   <span className="font-semibold text-lg text-[#1E1D40]">
-                    {format(parseISO(consultation.start_time), "HH:mm")}
+                    {format(parseISO(consultation.start_time), 'HH:mm')}
                   </span>
-                  <span className="text-xs text-gray-500">{format(parseISO(consultation.end_time), "HH:mm")}</span>
+                  <span className="text-xs text-gray-500">
+                    {format(parseISO(consultation.end_time), 'HH:mm')}
+                  </span>
                 </div>
                 <div className="flex-1 min-w-0">
                   {consultation.is_blocked_slot ? (
                     <>
-                      <h3 className="font-bold text-lg text-gray-800">Horário Bloqueado</h3>
+                      <h3 className="font-bold text-lg text-gray-800">
+                        Horário Bloqueado
+                      </h3>
                       <p className="text-sm text-gray-600 truncate">
-                        Motivo: {consultation.block_reason || "Não informado"}
+                        Motivo: {consultation.block_reason || 'Não informado'}
                       </p>
                     </>
                   ) : (
                     <>
                       <div className="flex items-center gap-2">
                         <Avatar className="h-8 w-8">
-                          <AvatarImage src={consultation.patient_avatar || "/placeholder.svg"} />
-                          <AvatarFallback>{consultation.patient_name?.charAt(0).toUpperCase() || "P"}</AvatarFallback>
+                          <AvatarImage
+                            src={
+                              consultation.patient_avatar || '/placeholder.svg'
+                            }
+                          />
+                          <AvatarFallback>
+                            {consultation.patient_name
+                              ?.charAt(0)
+                              .toUpperCase() || 'P'}
+                          </AvatarFallback>
                         </Avatar>
                         <h3 className="font-bold text-lg text-[#1E1D40] truncate">
                           Consulta com {consultation.patient_name}
@@ -876,9 +1071,11 @@ function DayView({ consultations, onReschedule, onCancel, onUnblock }: DayViewPr
                       </div>
                       <div className="flex flex-wrap gap-2 mt-1">
                         {getStatusBadge(consultation.status)}
-                        {getConsultationTypeBadge(consultation.consultation_type)}
+                        {getConsultationTypeBadge(
+                          consultation.consultation_type
+                        )}
                       </div>
-                      {consultation.consultation_type === "presential" &&
+                      {consultation.consultation_type === 'presential' &&
                         consultation.nutritionist_profiles?.address && (
                           <p className="text-sm text-gray-600 flex items-center gap-1 mt-1">
                             <MapPin className="h-3 w-3" />
@@ -891,20 +1088,32 @@ function DayView({ consultations, onReschedule, onCancel, onUnblock }: DayViewPr
               </div>
               <div className="flex gap-2">
                 {consultation.is_blocked_slot ? (
-                  <Button variant="outline" size="sm" onClick={() => onUnblock(consultation.id)}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onUnblock(consultation.id)}
+                  >
                     <XCircle className="h-4 w-4 mr-1" /> Desbloquear
                   </Button>
                 ) : (
                   <>
-                    {consultation.consultation_type === "online" && (
+                    {consultation.consultation_type === 'online' && (
                       <Button variant="outline" size="sm">
                         <Video className="h-4 w-4 mr-1" /> Entrar
                       </Button>
                     )}
-                    <Button variant="outline" size="sm" onClick={() => onReschedule(consultation)}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onReschedule(consultation)}
+                    >
                       <Edit className="h-4 w-4 mr-1" /> Reagendar
                     </Button>
-                    <Button variant="destructive" size="sm" onClick={() => onCancel(consultation)}>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => onCancel(consultation)}
+                    >
                       <Trash2 className="h-4 w-4 mr-1" /> Cancelar
                     </Button>
                   </>

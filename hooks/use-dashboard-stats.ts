@@ -1,7 +1,7 @@
-"use client"
+'use client'
 
-import { useState, useEffect } from "react"
-import { getDashboardStats, type DashboardStats } from "@/lib/dashboard-stats"
+import { useState, useEffect } from 'react'
+import { getDashboardStats, type DashboardStats } from '@/lib/dashboard-stats'
 
 interface UseDashboardStatsProps {
   userType: string
@@ -16,10 +16,10 @@ interface UseDashboardStatsReturn {
   refetch: () => Promise<void>
 }
 
-export function useDashboardStats({ 
-  userType, 
-  userId, 
-  enabled = true 
+export function useDashboardStats({
+  userType,
+  userId,
+  enabled = true,
 }: UseDashboardStatsProps): UseDashboardStatsReturn {
   const [stats, setStats] = useState<DashboardStats>({
     upcomingAppointments: 0,
@@ -38,12 +38,12 @@ export function useDashboardStats({
     try {
       setLoading(true)
       setError(null)
-      
+
       const newStats = await getDashboardStats(userType, userId)
       setStats(newStats)
     } catch (err) {
-      console.error("Erro ao buscar estatísticas:", err)
-      setError(err instanceof Error ? err.message : "Erro desconhecido")
+      // Error loading stats - silently handled
+      setError(err instanceof Error ? err.message : 'Erro desconhecido')
     } finally {
       setLoading(false)
     }
@@ -59,12 +59,12 @@ export function useDashboardStats({
       try {
         setLoading(true)
         setError(null)
-        
+
         const newStats = await getDashboardStats(userType, userId)
         setStats(newStats)
       } catch (err) {
-        console.error("Erro ao buscar estatísticas:", err)
-        setError(err instanceof Error ? err.message : "Erro desconhecido")
+          // Error loading stats - silently handled
+          setError(err instanceof Error ? err.message : 'Erro desconhecido')
       } finally {
         setLoading(false)
       }

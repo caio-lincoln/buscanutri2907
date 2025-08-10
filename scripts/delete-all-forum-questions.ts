@@ -24,7 +24,7 @@ async function simulateForumDeletion(): Promise<DeletionStats> {
     totalQuestionLikes: 0,
     totalAnswerLikes: 0,
     patientQuestions: 0,
-    nutritionistQuestions: 0
+    nutritionistQuestions: 0,
   }
 
   try {
@@ -36,9 +36,9 @@ async function simulateForumDeletion(): Promise<DeletionStats> {
     stats.totalQuestions = questionsCount || 0
 
     // 2. Contar perguntas por tipo de usuário
-    const { data: questionsWithProfiles } = await supabase
-      .from('forum_questions')
-      .select(`
+    const { data: questionsWithProfiles } = await supabase.from(
+      'forum_questions'
+    ).select(`
         id,
         author_id,
         title,
@@ -80,29 +80,34 @@ async function simulateForumDeletion(): Promise<DeletionStats> {
 
     // Exibir estatísticas
     console.log('📊 ESTATÍSTICAS DE DADOS QUE SERIAM DELETADOS:')
-    console.log('=' .repeat(50))
+    console.log('='.repeat(50))
     console.log(`📝 Total de Perguntas: ${stats.totalQuestions}`)
     console.log(`👥 Perguntas de Pacientes: ${stats.patientQuestions}`)
-    console.log(`🩺 Perguntas de Nutricionistas: ${stats.nutritionistQuestions}`)
+    console.log(
+      `🩺 Perguntas de Nutricionistas: ${stats.nutritionistQuestions}`
+    )
     console.log(`💬 Total de Respostas: ${stats.totalAnswers}`)
     console.log(`👍 Likes em Perguntas: ${stats.totalQuestionLikes}`)
     console.log(`❤️  Likes em Respostas: ${stats.totalAnswerLikes}`)
-    console.log('=' .repeat(50))
+    console.log('='.repeat(50))
 
     if (questionsWithProfiles && questionsWithProfiles.length > 0) {
       console.log('\n📋 PRIMEIRAS 10 PERGUNTAS QUE SERIAM DELETADAS:')
       questionsWithProfiles.slice(0, 10).forEach((q, index) => {
-        const userType = q.patient_id ? '👥 Paciente' : q.nutritionist_id ? '🩺 Nutricionista' : '❓ Indefinido'
+        const userType = q.patient_id
+          ? '👥 Paciente'
+          : q.nutritionist_id
+            ? '🩺 Nutricionista'
+            : '❓ Indefinido'
         console.log(`${index + 1}. [${userType}] ${q.title} (ID: ${q.id})`)
       })
-      
+
       if (questionsWithProfiles.length > 10) {
         console.log(`... e mais ${questionsWithProfiles.length - 10} perguntas`)
       }
     }
 
     return stats
-
   } catch (error) {
     console.error('❌ Erro durante simulação:', error)
     throw error
@@ -135,7 +140,10 @@ async function executeForumDeletion(): Promise<boolean> {
       .neq('id', '00000000-0000-0000-0000-000000000000') // Deletar todos
 
     if (questionLikesError) {
-      console.error('❌ Erro ao deletar likes em perguntas:', questionLikesError)
+      console.error(
+        '❌ Erro ao deletar likes em perguntas:',
+        questionLikesError
+      )
       return false
     }
     console.log('✅ Likes em perguntas deletados')
@@ -168,7 +176,6 @@ async function executeForumDeletion(): Promise<boolean> {
 
     console.log('\n🎉 EXCLUSÃO CONCLUÍDA COM SUCESSO!')
     return true
-
   } catch (error) {
     console.error('❌ Erro durante exclusão:', error)
     return false
@@ -177,8 +184,10 @@ async function executeForumDeletion(): Promise<boolean> {
 
 // Função principal
 async function deleteAllForumQuestions() {
-  console.log('🚀 INICIANDO PROCESSO DE EXCLUSÃO DE TODAS AS PERGUNTAS DO FÓRUM')
-  console.log('=' .repeat(60))
+  console.log(
+    '🚀 INICIANDO PROCESSO DE EXCLUSÃO DE TODAS AS PERGUNTAS DO FÓRUM'
+  )
+  console.log('='.repeat(60))
 
   try {
     // 1. Primeiro, simular a exclusão
@@ -191,15 +200,22 @@ async function deleteAllForumQuestions() {
 
     // 2. Solicitar confirmação
     console.log('\n⚠️  ATENÇÃO: Esta operação é IRREVERSÍVEL!')
-    console.log('📝 Para continuar, você deve adicionar o flag #liberar_producao na tarefa')
+    console.log(
+      '📝 Para continuar, você deve adicionar o flag #liberar_producao na tarefa'
+    )
     console.log('🛑 Operação cancelada por segurança.')
-    
+
     // Verificar se há autorização (simulando verificação do flag)
-    const hasAuthorization = process.argv.includes('--force') || process.env.FORCE_DELETE === 'true'
-    
+    const hasAuthorization =
+      process.argv.includes('--force') || process.env.FORCE_DELETE === 'true'
+
     if (!hasAuthorization) {
-      console.log('\n❌ OPERAÇÃO CANCELADA: Sem autorização para executar em produção')
-      console.log('💡 Para executar, adicione --force como argumento ou defina FORCE_DELETE=true')
+      console.log(
+        '\n❌ OPERAÇÃO CANCELADA: Sem autorização para executar em produção'
+      )
+      console.log(
+        '💡 Para executar, adicione --force como argumento ou defina FORCE_DELETE=true'
+      )
       return
     }
 
@@ -212,15 +228,18 @@ async function deleteAllForumQuestions() {
         .from('forum_questions')
         .select('*', { count: 'exact', head: true })
 
-      console.log(`\n📊 Verificação final: ${remainingQuestions || 0} perguntas restantes`)
-      
+      console.log(
+        `\n📊 Verificação final: ${remainingQuestions || 0} perguntas restantes`
+      )
+
       if ((remainingQuestions || 0) === 0) {
         console.log('✅ SUCESSO: Todas as perguntas foram deletadas!')
       } else {
-        console.log('⚠️  ATENÇÃO: Algumas perguntas podem não ter sido deletadas')
+        console.log(
+          '⚠️  ATENÇÃO: Algumas perguntas podem não ter sido deletadas'
+        )
       }
     }
-
   } catch (error) {
     console.error('❌ Erro fatal:', error)
     process.exit(1)

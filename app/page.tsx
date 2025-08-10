@@ -1,14 +1,14 @@
-"use client"
+'use client'
 
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent } from "@/components/ui/card"
-import Image from "next/image"
-import { useState, useEffect, useMemo, useCallback } from "react"
-import { cn } from "@/lib/utils"
+import Link from 'next/link'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { Label } from '@/components/ui/label'
+import { Card, CardContent } from '@/components/ui/card'
+import Image from 'next/image'
+import { useState, useEffect, useMemo, useCallback } from 'react'
+import { cn } from '@/lib/utils'
 import {
   Users,
   Calendar,
@@ -32,11 +32,21 @@ import {
   X,
   LogOut,
   LayoutDashboard,
-} from "lucide-react"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import type { UserType } from "@/lib/supabase"
-import { getPlatformStats, formatNumber, formatRating, type PlatformStats } from "@/lib/stats"
-import { useAuth } from "@/contexts/auth-context"
+} from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import type { UserType } from '@/lib/supabase'
+import {
+  getPlatformStats,
+  formatNumber,
+  formatRating,
+  type PlatformStats,
+} from '@/lib/stats'
+import { useAuth } from '@/contexts/auth-context'
 
 export default function Home() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
@@ -53,7 +63,8 @@ export default function Home() {
       const platformStats = await getPlatformStats()
       setStats(platformStats)
     } catch (error) {
-      console.error("Error loading stats:", error)
+      // Error loading stats - handled silently
+      setError('Erro ao carregar estatísticas')
     }
   }, [])
 
@@ -67,29 +78,31 @@ export default function Home() {
       await signOut()
       closeMobileMenu()
     } catch (error) {
-      console.error("Error signing out:", error)
+      // Error signing out - handled silently
     }
   }, [signOut])
 
   // Get dashboard URL based on user type
   const getDashboardUrl = useCallback((userType: UserType) => {
     switch (userType) {
-      case "paciente":
-        return "/dashboard/paciente"
-      case "nutricionista":
-        return "/dashboard/nutricionistas"
-      case "empresa":
-        return "/dashboard/empresa"
-      case "admin":
-        return "/dashboard/admin"
+      case 'paciente':
+        return '/dashboard/paciente'
+      case 'nutricionista':
+        return '/dashboard/nutricionistas'
+      case 'empresa':
+        return '/dashboard/empresa'
+      case 'admin':
+        return '/dashboard/admin'
       default:
-        return "/dashboard/paciente"
+        return '/dashboard/paciente'
     }
   }, [])
 
   // Memoize dashboard URL for current user
   const currentDashboardUrl = useMemo(() => {
-    return user?.user_type ? getDashboardUrl(user.user_type) : "/dashboard/paciente"
+    return user?.user_type
+      ? getDashboardUrl(user.user_type)
+      : '/dashboard/paciente'
   }, [user?.user_type, getDashboardUrl])
 
   // Toggle mobile menu
@@ -100,13 +113,13 @@ export default function Home() {
   // Prevent body scroll when menu is open
   useEffect(() => {
     if (isMobileMenuOpen) {
-      document.body.style.overflow = "hidden"
+      document.body.style.overflow = 'hidden'
     } else {
-      document.body.style.overflow = "unset"
+      document.body.style.overflow = 'unset'
     }
 
     return () => {
-      document.body.style.overflow = "unset"
+      document.body.style.overflow = 'unset'
     }
   }, [isMobileMenuOpen])
 
@@ -192,7 +205,10 @@ export default function Home() {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link href="/nutricionistas?tipo=consultoria" className="w-full">
+                  <Link
+                    href="/nutricionistas?tipo=consultoria"
+                    className="w-full"
+                  >
                     Encontrar Consultoria
                   </Link>
                 </DropdownMenuItem>
@@ -288,19 +304,35 @@ export default function Home() {
       </header>
 
       {/* Mobile Menu Overlay */}
-      {isMobileMenuOpen && <div className="fixed inset-0 bg-black/50 z-[60] lg:hidden" onClick={closeMobileMenu} />}
+      {isMobileMenuOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-[60] lg:hidden"
+          onClick={closeMobileMenu}
+        />
+      )}
 
       {/* Mobile Menu Sidebar */}
       <div
         className={cn(
-          "fixed top-0 right-0 w-full max-w-sm h-full bg-white shadow-2xl transform transition-transform duration-300 ease-in-out z-[70] lg:hidden overflow-hidden",
-          isMobileMenuOpen ? "translate-x-0" : "translate-x-full",
+          'fixed top-0 right-0 w-full max-w-sm h-full bg-white shadow-2xl transform transition-transform duration-300 ease-in-out z-[70] lg:hidden overflow-hidden',
+          isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
         )}
       >
         {/* Header do Menu Mobile */}
         <div className="flex items-center justify-between p-4 border-b border-gray-100 bg-white">
-          <Image src="/logo-busca-nutri.png" alt="Busca Nutri" width={120} height={24} className="h-6 w-auto" />
-          <Button variant="ghost" size="icon" onClick={closeMobileMenu} className="hover:bg-gray-100 p-2">
+          <Image
+            src="/logo-busca-nutri.png"
+            alt="Busca Nutri"
+            width={120}
+            height={24}
+            className="h-6 w-auto"
+          />
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={closeMobileMenu}
+            className="hover:bg-gray-100 p-2"
+          >
             <X className="h-5 w-5 text-[#1E1D40]" />
           </Button>
         </div>
@@ -311,7 +343,9 @@ export default function Home() {
           <div className="flex-1 overflow-y-auto py-4 pb-0">
             {/* Para Pacientes */}
             <div className="px-4 mb-6">
-              <h3 className="text-[#1E1D40] font-semibold text-sm mb-3 px-3">Para Pacientes</h3>
+              <h3 className="text-[#1E1D40] font-semibold text-sm mb-3 px-3">
+                Para Pacientes
+              </h3>
               <div className="space-y-1">
                 <Link
                   href="/para-pacientes"
@@ -339,7 +373,9 @@ export default function Home() {
 
             {/* Para Nutricionistas */}
             <div className="px-4 mb-6">
-              <h3 className="text-[#1E1D40] font-semibold text-sm mb-3 px-3">Para Nutricionistas</h3>
+              <h3 className="text-[#1E1D40] font-semibold text-sm mb-3 px-3">
+                Para Nutricionistas
+              </h3>
               <div className="space-y-1">
                 <Link
                   href="/para-nutricionistas"
@@ -367,7 +403,9 @@ export default function Home() {
 
             {/* Para Empresas */}
             <div className="px-4 mb-6">
-              <h3 className="text-[#1E1D40] font-semibold text-sm mb-3 px-3">Para Empresas</h3>
+              <h3 className="text-[#1E1D40] font-semibold text-sm mb-3 px-3">
+                Para Empresas
+              </h3>
               <div className="space-y-1">
                 <Link
                   href="/para-empresas"
@@ -440,7 +478,11 @@ export default function Home() {
                 {user && user.user_type ? (
                   // User is logged in - show dashboard and logout buttons
                   <>
-                    <Link href={currentDashboardUrl} onClick={closeMobileMenu} className="block">
+                    <Link
+                      href={currentDashboardUrl}
+                      onClick={closeMobileMenu}
+                      className="block"
+                    >
                       <Button
                         variant="outline"
                         size="lg"
@@ -450,8 +492,11 @@ export default function Home() {
                         Dashboard
                       </Button>
                     </Link>
-                    <Button 
-                      onClick={() => { handleLogout(); closeMobileMenu(); }}
+                    <Button
+                      onClick={() => {
+                        handleLogout()
+                        closeMobileMenu()
+                      }}
                       variant="outline"
                       size="lg"
                       className="w-full h-12 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 bg-transparent flex items-center gap-2 text-base"
@@ -463,7 +508,11 @@ export default function Home() {
                 ) : (
                   // User is not logged in - show login and register buttons
                   <>
-                    <Link href="/login" onClick={closeMobileMenu} className="block">
+                    <Link
+                      href="/login"
+                      onClick={closeMobileMenu}
+                      className="block"
+                    >
                       <Button
                         variant="outline"
                         size="lg"
@@ -472,8 +521,12 @@ export default function Home() {
                         Entrar
                       </Button>
                     </Link>
-                    <Link href="/cadastro" onClick={closeMobileMenu} className="block">
-                      <Button 
+                    <Link
+                      href="/cadastro"
+                      onClick={closeMobileMenu}
+                      className="block"
+                    >
+                      <Button
                         size="lg"
                         className="w-full h-12 bg-[#4AB0D9] hover:bg-[#4AB0D9]/90 text-white text-base"
                       >
@@ -500,11 +553,14 @@ export default function Home() {
                     Plataforma Inovadora
                   </div>
                   <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-[#1E1D40] leading-tight">
-                    Conectando <span className="text-[#4AB0D9]">Nutricionistas</span>, Transformando Vidas
+                    Conectando{' '}
+                    <span className="text-[#4AB0D9]">Nutricionistas</span>,
+                    Transformando Vidas
                   </h1>
                   <p className="text-lg md:text-xl text-[#1E1D40]/70 leading-relaxed">
-                    Uma plataforma feita por e para nutricionistas. Alcance mais clientes, compartilhe conhecimento e
-                    cresça com quem entende suas necessidades.
+                    Uma plataforma feita por e para nutricionistas. Alcance mais
+                    clientes, compartilhe conhecimento e cresça com quem entende
+                    suas necessidades.
                   </p>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
@@ -530,19 +586,25 @@ export default function Home() {
                     <div className="text-xl md:text-2xl font-bold text-[#1E1D40]">
                       {stats ? formatNumber(stats.totalNutricionistas) : '500+'}
                     </div>
-                    <div className="text-xs md:text-sm text-[#1E1D40]/60">Nutricionistas</div>
+                    <div className="text-xs md:text-sm text-[#1E1D40]/60">
+                      Nutricionistas
+                    </div>
                   </div>
                   <div className="text-center">
                     <div className="text-xl md:text-2xl font-bold text-[#1E1D40]">
                       {stats ? formatNumber(stats.totalPacientes) : '2.5k+'}
                     </div>
-                    <div className="text-xs md:text-sm text-[#1E1D40]/60">Clientes</div>
+                    <div className="text-xs md:text-sm text-[#1E1D40]/60">
+                      Clientes
+                    </div>
                   </div>
                   <div className="text-center">
                     <div className="text-xl md:text-2xl font-bold text-[#1E1D40]">
                       {stats ? formatRating(stats.averageRating) : '98%'}
                     </div>
-                    <div className="text-xs md:text-sm text-[#1E1D40]/60">Satisfação</div>
+                    <div className="text-xs md:text-sm text-[#1E1D40]/60">
+                      Satisfação
+                    </div>
                   </div>
                 </div>
               </div>
@@ -568,16 +630,22 @@ export default function Home() {
             <div className="max-w-4xl mx-auto text-center space-y-6 md:space-y-8">
               <div className="space-y-4 md:space-y-6">
                 <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#1E1D40]">
-                  Muito além de uma plataforma. <span className="text-[#4AB0D9]">Uma comunidade.</span>
+                  Muito além de uma plataforma.{' '}
+                  <span className="text-[#4AB0D9]">Uma comunidade.</span>
                 </h2>
                 <p className="text-lg md:text-xl text-[#1E1D40]/70 leading-relaxed">
-                  A <strong className="text-[#4AB0D9]">Busca Nutri</strong> é uma plataforma digital desenvolvida para
-                  fortalecer a prática da nutrição por meio da colaboração. Aqui, profissionais trocam experiências,
-                  acessam ferramentas exclusivas e expandem sua visibilidade.
+                  A <strong className="text-[#4AB0D9]">Busca Nutri</strong> é
+                  uma plataforma digital desenvolvida para fortalecer a prática
+                  da nutrição por meio da colaboração. Aqui, profissionais
+                  trocam experiências, acessam ferramentas exclusivas e expandem
+                  sua visibilidade.
                 </p>
                 <p className="text-base md:text-lg text-[#1E1D40]/70">
-                  Mais do que tecnologia, promovemos{" "}
-                  <strong className="text-[#D90D32]">relacionamentos, aprendizado e transformação</strong>.
+                  Mais do que tecnologia, promovemos{' '}
+                  <strong className="text-[#D90D32]">
+                    relacionamentos, aprendizado e transformação
+                  </strong>
+                  .
                 </p>
               </div>
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 mt-8 md:mt-12">
@@ -586,9 +654,12 @@ export default function Home() {
                     <div className="w-12 h-12 bg-[#4AB0D9] rounded-xl flex items-center justify-center mx-auto mb-4">
                       <Users className="h-6 w-6 text-white" />
                     </div>
-                    <h3 className="text-xl font-semibold text-[#1E1D40] mb-2">Comunidade Ativa</h3>
+                    <h3 className="text-xl font-semibold text-[#1E1D40] mb-2">
+                      Comunidade Ativa
+                    </h3>
                     <p className="text-[#1E1D40]/70">
-                      Conecte-se com profissionais e clientes em uma rede colaborativa
+                      Conecte-se com profissionais e clientes em uma rede
+                      colaborativa
                     </p>
                   </CardContent>
                 </Card>
@@ -597,9 +668,12 @@ export default function Home() {
                     <div className="w-12 h-12 bg-[#4AB0D9] rounded-xl flex items-center justify-center mx-auto mb-4">
                       <Shield className="h-6 w-6 text-white" />
                     </div>
-                    <h3 className="text-xl font-semibold text-[#1E1D40] mb-2">Segurança Total</h3>
+                    <h3 className="text-xl font-semibold text-[#1E1D40] mb-2">
+                      Segurança Total
+                    </h3>
                     <p className="text-[#1E1D40]/70">
-                      Plataforma segura com verificação de profissionais e proteção de dados
+                      Plataforma segura com verificação de profissionais e
+                      proteção de dados
                     </p>
                   </CardContent>
                 </Card>
@@ -608,8 +682,13 @@ export default function Home() {
                     <div className="w-12 h-12 bg-[#4AB0D9] rounded-xl flex items-center justify-center mx-auto mb-4">
                       <Zap className="h-6 w-6 text-white" />
                     </div>
-                    <h3 className="text-xl font-semibold text-[#1E1D40] mb-2">Tecnologia Avançada</h3>
-                    <p className="text-[#1E1D40]/70">Ferramentas modernas para gestão, agendamento e comunicação</p>
+                    <h3 className="text-xl font-semibold text-[#1E1D40] mb-2">
+                      Tecnologia Avançada
+                    </h3>
+                    <p className="text-[#1E1D40]/70">
+                      Ferramentas modernas para gestão, agendamento e
+                      comunicação
+                    </p>
                   </CardContent>
                 </Card>
               </div>
@@ -642,20 +721,29 @@ export default function Home() {
                     Para Pacientes
                   </div>
                   <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#1E1D40]">
-                    Encontre o nutricionista ideal de forma{" "}
-                    <span className="text-[#4AB0D9]">rápida, segura e acessível</span>
+                    Encontre o nutricionista ideal de forma{' '}
+                    <span className="text-[#4AB0D9]">
+                      rápida, segura e acessível
+                    </span>
                   </h2>
                   <p className="text-lg md:text-xl text-[#1E1D40]/70 leading-relaxed">
-                    Através da Busca Nutri, você conecta-se com profissionais verificados, agendando consultas
-                    presenciais ou online com facilidade e confiança.
+                    Através da Busca Nutri, você conecta-se com profissionais
+                    verificados, agendando consultas presenciais ou online com
+                    facilidade e confiança.
                   </p>
                 </div>
                 <div className="grid gap-4">
                   {[
-                    { icon: CheckCircle, text: "Perfis verificados e avaliações reais" },
-                    { icon: MapPin, text: "Nutricionistas próximos de você" },
-                    { icon: Calendar, text: "Agendamento online sem complicações" },
-                    { icon: Lock, text: "Privacidade e segurança garantidas" },
+                    {
+                      icon: CheckCircle,
+                      text: 'Perfis verificados e avaliações reais',
+                    },
+                    { icon: MapPin, text: 'Nutricionistas próximos de você' },
+                    {
+                      icon: Calendar,
+                      text: 'Agendamento online sem complicações',
+                    },
+                    { icon: Lock, text: 'Privacidade e segurança garantidas' },
                   ].map((item, index) => (
                     <div
                       key={index}
@@ -665,7 +753,9 @@ export default function Home() {
                         <item.icon className="h-5 w-5 text-white" />
                       </div>
                       <div className="flex-1">
-                        <p className="text-[#1E1D40] font-medium">{item.text}</p>
+                        <p className="text-[#1E1D40] font-medium">
+                          {item.text}
+                        </p>
                       </div>
                     </div>
                   ))}
@@ -696,20 +786,33 @@ export default function Home() {
                     Para Empresas
                   </div>
                   <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#1E1D40]">
-                    Encontre os melhores profissionais de nutrição para sua{" "}
+                    Encontre os melhores profissionais de nutrição para sua{' '}
                     <span className="text-[#4AB0D9]">empresa</span>
                   </h2>
                   <p className="text-lg md:text-xl text-[#1E1D40]/70 leading-relaxed">
-                    Conecte-se com nutricionistas qualificados para programas de bem-estar corporativo, consultorias e
-                    contratações. Transforme a saúde da sua equipe.
+                    Conecte-se com nutricionistas qualificados para programas de
+                    bem-estar corporativo, consultorias e contratações.
+                    Transforme a saúde da sua equipe.
                   </p>
                 </div>
                 <div className="grid gap-4">
                   {[
-                    { icon: Users, text: "Acesso a profissionais verificados e especializados" },
-                    { icon: Briefcase, text: "Publicação de vagas e processos seletivos" },
-                    { icon: Shield, text: "Programas de bem-estar corporativo personalizados" },
-                    { icon: BarChart3, text: "Relatórios e métricas de saúde organizacional" },
+                    {
+                      icon: Users,
+                      text: 'Acesso a profissionais verificados e especializados',
+                    },
+                    {
+                      icon: Briefcase,
+                      text: 'Publicação de vagas e processos seletivos',
+                    },
+                    {
+                      icon: Shield,
+                      text: 'Programas de bem-estar corporativo personalizados',
+                    },
+                    {
+                      icon: BarChart3,
+                      text: 'Relatórios e métricas de saúde organizacional',
+                    },
                   ].map((item, index) => (
                     <div
                       key={index}
@@ -719,13 +822,18 @@ export default function Home() {
                         <item.icon className="h-5 w-5 text-white" />
                       </div>
                       <div className="flex-1">
-                        <p className="text-[#1E1D40] font-medium">{item.text}</p>
+                        <p className="text-[#1E1D40] font-medium">
+                          {item.text}
+                        </p>
                       </div>
                     </div>
                   ))}
                 </div>
                 <Link href="/para-empresas">
-                  <Button size="lg" className="bg-[#1E1D40] hover:bg-[#1E1D40]/90 text-white">
+                  <Button
+                    size="lg"
+                    className="bg-[#1E1D40] hover:bg-[#1E1D40]/90 text-white"
+                  >
                     Contratar nutricionistas
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
@@ -755,10 +863,12 @@ export default function Home() {
             <div className="max-w-2xl mx-auto">
               <div className="text-center space-y-4 md:space-y-6 mb-8 md:mb-12">
                 <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold leading-tight">
-                  Comece agora a transformar sua prática com a <span className="text-[#4AB0D9]">Busca Nutri</span>
+                  Comece agora a transformar sua prática com a{' '}
+                  <span className="text-[#4AB0D9]">Busca Nutri</span>
                 </h2>
                 <p className="text-base md:text-lg text-white/80">
-                  Cadastre-se gratuitamente e descubra como é fácil crescer em comunidade.
+                  Cadastre-se gratuitamente e descubra como é fácil crescer em
+                  comunidade.
                 </p>
               </div>
               <Card className="border-0 shadow-2xl bg-white">
@@ -766,7 +876,10 @@ export default function Home() {
                   <form className="space-y-4 md:space-y-6">
                     <div className="grid sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="name" className="text-[#1E1D40] font-medium text-sm">
+                        <Label
+                          htmlFor="name"
+                          className="text-[#1E1D40] font-medium text-sm"
+                        >
                           Nome completo
                         </Label>
                         <Input
@@ -777,7 +890,10 @@ export default function Home() {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="email" className="text-[#1E1D40] font-medium text-sm">
+                        <Label
+                          htmlFor="email"
+                          className="text-[#1E1D40] font-medium text-sm"
+                        >
                           E-mail
                         </Label>
                         <Input
@@ -790,27 +906,49 @@ export default function Home() {
                       </div>
                     </div>
                     <div className="space-y-3">
-                      <Label className="text-[#1E1D40] font-medium text-sm">Qual é o seu perfil?</Label>
-                      <RadioGroup defaultValue="nutricionista" className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
+                      <Label className="text-[#1E1D40] font-medium text-sm">
+                        Qual é o seu perfil?
+                      </Label>
+                      <RadioGroup
+                        defaultValue="nutricionista"
+                        className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4"
+                      >
                         <div className="flex items-center space-x-2 p-3 border border-gray-200 rounded-lg hover:border-[#4AB0D9] transition-colors cursor-pointer">
                           <RadioGroupItem
                             value="nutricionista"
                             id="nutricionista"
                             className="border-[#4AB0D9] text-[#4AB0D9]"
                           />
-                          <Label htmlFor="nutricionista" className="text-[#1E1D40] font-medium cursor-pointer text-sm">
+                          <Label
+                            htmlFor="nutricionista"
+                            className="text-[#1E1D40] font-medium cursor-pointer text-sm"
+                          >
                             Nutricionista
                           </Label>
                         </div>
                         <div className="flex items-center space-x-2 p-3 border border-gray-200 rounded-lg hover:border-[#4AB0D9] transition-colors cursor-pointer">
-                          <RadioGroupItem value="paciente" id="paciente" className="border-[#4AB0D9] text-[#4AB0D9]" />
-                          <Label htmlFor="paciente" className="text-[#1E1D40] font-medium cursor-pointer text-sm">
+                          <RadioGroupItem
+                            value="paciente"
+                            id="paciente"
+                            className="border-[#4AB0D9] text-[#4AB0D9]"
+                          />
+                          <Label
+                            htmlFor="paciente"
+                            className="text-[#1E1D40] font-medium cursor-pointer text-sm"
+                          >
                             Paciente
                           </Label>
                         </div>
                         <div className="flex items-center space-x-2 p-3 border border-gray-200 rounded-lg hover:border-[#4AB0D9] transition-colors cursor-pointer">
-                          <RadioGroupItem value="empresa" id="empresa" className="border-[#4AB0D9] text-[#4AB0D9]" />
-                          <Label htmlFor="empresa" className="text-[#1E1D40] font-medium cursor-pointer text-sm">
+                          <RadioGroupItem
+                            value="empresa"
+                            id="empresa"
+                            className="border-[#4AB0D9] text-[#4AB0D9]"
+                          />
+                          <Label
+                            htmlFor="empresa"
+                            className="text-[#1E1D40] font-medium cursor-pointer text-sm"
+                          >
                             Empresa
                           </Label>
                         </div>
@@ -848,19 +986,26 @@ export default function Home() {
                   className="h-6 md:h-7 w-auto brightness-0 invert mx-auto sm:mx-0"
                 />
                 <p className="text-white/70 text-sm leading-relaxed">
-                  Conectando nutricionistas e transformando vidas através da tecnologia e colaboração. A plataforma que
-                  revoluciona o cuidado nutricional.
+                  Conectando nutricionistas e transformando vidas através da
+                  tecnologia e colaboração. A plataforma que revoluciona o
+                  cuidado nutricional.
                 </p>
                 <div className="flex gap-4">
                   <div className="flex text-yellow-400">
                     {[...Array(5)].map((_, i) => (
-                      <svg key={i} className="w-4 h-4 fill-current" viewBox="0 0 20 20">
+                      <svg
+                        key={i}
+                        className="w-4 h-4 fill-current"
+                        viewBox="0 0 20 20"
+                      >
                         <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                       </svg>
                     ))}
                   </div>
                   <span className="text-white/70 text-sm">
-                    {stats ? `${formatRating(stats.averageRating)} (${formatNumber(stats.totalAvaliacoes)} avaliações)` : '4.9 (1.2k avaliações)'}
+                    {stats
+                      ? `${formatRating(stats.averageRating)} (${formatNumber(stats.totalAvaliacoes)} avaliações)`
+                      : '4.9 (1.2k avaliações)'}
                   </span>
                 </div>
               </div>
@@ -870,27 +1015,42 @@ export default function Home() {
                 <h3 className="font-semibold text-lg">Plataforma</h3>
                 <ul className="space-y-3 text-sm">
                   <li>
-                    <Link href="/para-pacientes" className="text-white/70 hover:text-[#4AB0D9] transition-colors">
+                    <Link
+                      href="/para-pacientes"
+                      className="text-white/70 hover:text-[#4AB0D9] transition-colors"
+                    >
                       Para Pacientes
                     </Link>
                   </li>
                   <li>
-                    <Link href="/para-nutricionistas" className="text-white/70 hover:text-[#4AB0D9] transition-colors">
+                    <Link
+                      href="/para-nutricionistas"
+                      className="text-white/70 hover:text-[#4AB0D9] transition-colors"
+                    >
                       Para Nutricionistas
                     </Link>
                   </li>
                   <li>
-                    <Link href="/para-empresas" className="text-white/70 hover:text-[#4AB0D9] transition-colors">
+                    <Link
+                      href="/para-empresas"
+                      className="text-white/70 hover:text-[#4AB0D9] transition-colors"
+                    >
                       Para Empresas
                     </Link>
                   </li>
                   <li>
-                    <Link href="/vagas" className="text-white/70 hover:text-[#4AB0D9] transition-colors">
+                    <Link
+                      href="/vagas"
+                      className="text-white/70 hover:text-[#4AB0D9] transition-colors"
+                    >
                       Vagas
                     </Link>
                   </li>
                   <li>
-                    <Link href="/blog" className="text-white/70 hover:text-[#4AB0D9] transition-colors">
+                    <Link
+                      href="/blog"
+                      className="text-white/70 hover:text-[#4AB0D9] transition-colors"
+                    >
                       Blog
                     </Link>
                   </li>
@@ -902,17 +1062,26 @@ export default function Home() {
                 <h3 className="font-semibold text-lg">Suporte</h3>
                 <ul className="space-y-3 text-sm">
                   <li>
-                    <Link href="/ajuda" className="text-white/70 hover:text-[#4AB0D9] transition-colors">
+                    <Link
+                      href="/ajuda"
+                      className="text-white/70 hover:text-[#4AB0D9] transition-colors"
+                    >
                       Central de Ajuda
                     </Link>
                   </li>
                   <li>
-                    <Link href="/contato" className="text-white/70 hover:text-[#4AB0D9] transition-colors">
+                    <Link
+                      href="/contato"
+                      className="text-white/70 hover:text-[#4AB0D9] transition-colors"
+                    >
                       Contato
                     </Link>
                   </li>
                   <li>
-                    <Link href="/faq" className="text-white/70 hover:text-[#4AB0D9] transition-colors">
+                    <Link
+                      href="/faq"
+                      className="text-white/70 hover:text-[#4AB0D9] transition-colors"
+                    >
                       FAQ
                     </Link>
                   </li>
@@ -955,16 +1124,27 @@ export default function Home() {
                 <div className="text-white/70 text-xs md:text-sm">
                   © 2024 Busca Nutri. Todos os direitos reservados.
                 </div>
-                <div className="text-white/50 text-xs mt-1">CNPJ: 57.370.073/0001-92</div>
+                <div className="text-white/50 text-xs mt-1">
+                  CNPJ: 57.370.073/0001-92
+                </div>
               </div>
               <div className="flex flex-wrap justify-center gap-4 md:gap-6 text-xs md:text-sm">
-                <Link href="/termos" className="text-white/70 hover:text-[#4AB0D9] transition-colors">
+                <Link
+                  href="/termos"
+                  className="text-white/70 hover:text-[#4AB0D9] transition-colors"
+                >
                   Termos de Uso
                 </Link>
-                <Link href="/privacidade" className="text-white/70 hover:text-[#4AB0D9] transition-colors">
+                <Link
+                  href="/privacidade"
+                  className="text-white/70 hover:text-[#4AB0D9] transition-colors"
+                >
                   Política de Privacidade
                 </Link>
-                <Link href="/cookies" className="text-white/70 hover:text-[#4AB0D9] transition-colors">
+                <Link
+                  href="/cookies"
+                  className="text-white/70 hover:text-[#4AB0D9] transition-colors"
+                >
                   Cookies
                 </Link>
               </div>
@@ -975,4 +1155,3 @@ export default function Home() {
     </div>
   )
 }
-

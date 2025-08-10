@@ -4,11 +4,14 @@ import { config } from 'dotenv'
 // Carregar variáveis de ambiente
 config({ path: '.env.local' })
 
-const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseUrl =
+  process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
 if (!supabaseUrl || !supabaseServiceKey) {
-  console.error('❌ Variáveis de ambiente SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY são obrigatórias')
+  console.error(
+    '❌ Variáveis de ambiente SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY são obrigatórias'
+  )
   process.exit(1)
 }
 
@@ -16,14 +19,14 @@ if (!supabaseUrl || !supabaseServiceKey) {
 const supabase = createClient(supabaseUrl, supabaseServiceKey, {
   auth: {
     autoRefreshToken: false,
-    persistSession: false
-  }
+    persistSession: false,
+  },
 })
 
 async function createMissingTable() {
   try {
     console.log('🚀 Criando tabela forum_question_likes...')
-    
+
     // SQL para criar a tabela forum_question_likes
     const createTableSQL = `
       CREATE TABLE IF NOT EXISTS public.forum_question_likes (
@@ -51,33 +54,36 @@ async function createMissingTable() {
       ON public.forum_question_likes FOR DELETE 
       USING (auth.uid() = user_id);
     `
-    
+
     // Tentar criar usando uma query direta
     const { error } = await supabase
       .from('forum_questions')
       .select('id')
       .limit(1)
-    
+
     if (!error) {
       console.log('✅ Conexão estabelecida, tabelas do fórum já existem!')
-      
+
       // Verificar se forum_question_likes existe
       const { error: likesError } = await supabase
         .from('forum_question_likes')
         .select('id')
         .limit(1)
-      
+
       if (likesError && likesError.message.includes('does not exist')) {
-        console.log('⚠️  Tabela forum_question_likes não existe, mas não conseguimos criá-la via API')
-        console.log('📝 Por favor, execute o seguinte SQL no Supabase Dashboard:')
+        console.log(
+          '⚠️  Tabela forum_question_likes não existe, mas não conseguimos criá-la via API'
+        )
+        console.log(
+          '📝 Por favor, execute o seguinte SQL no Supabase Dashboard:'
+        )
         console.log(createTableSQL)
       } else {
         console.log('✅ Tabela forum_question_likes já existe!')
       }
     }
-    
+
     console.log('🎉 Verificação concluída!')
-    
   } catch (error) {
     console.error('❌ Erro:', error)
   }

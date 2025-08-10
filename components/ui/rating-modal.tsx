@@ -1,8 +1,8 @@
-"use client"
+'use client'
 
-import { useState } from "react"
-import { Star } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { useState } from 'react'
+import { Star } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
@@ -10,9 +10,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Textarea } from "@/components/ui/textarea"
-import { Label } from "@/components/ui/label"
+} from '@/components/ui/dialog'
+import { Textarea } from '@/components/ui/textarea'
+import { Label } from '@/components/ui/label'
 
 interface RatingModalProps {
   open: boolean
@@ -31,7 +31,7 @@ export function RatingModal({
 }: RatingModalProps) {
   const [rating, setRating] = useState(0)
   const [hoveredRating, setHoveredRating] = useState(0)
-  const [comment, setComment] = useState("")
+  const [comment, setComment] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleSubmit = async () => {
@@ -42,9 +42,9 @@ export function RatingModal({
       await onSubmit(rating, comment)
       onOpenChange(false)
       setRating(0)
-      setComment("")
+      setComment('')
     } catch (error) {
-      console.error("Erro ao enviar avaliação:", error)
+      // Silent error handling: Error submitting rating
     } finally {
       setIsSubmitting(false)
     }
@@ -53,17 +53,17 @@ export function RatingModal({
   const getRatingText = (rating: number) => {
     switch (rating) {
       case 1:
-        return "Muito insatisfeito"
+        return 'Muito insatisfeito'
       case 2:
-        return "Insatisfeito"
+        return 'Insatisfeito'
       case 3:
-        return "Neutro"
+        return 'Neutro'
       case 4:
-        return "Satisfeito"
+        return 'Satisfeito'
       case 5:
-        return "Muito satisfeito"
+        return 'Muito satisfeito'
       default:
-        return "Selecione uma avaliação"
+        return 'Selecione uma avaliação'
     }
   }
 
@@ -82,7 +82,7 @@ export function RatingModal({
           <div className="space-y-2">
             <Label>Avaliação</Label>
             <div className="flex items-center space-x-1">
-              {[1, 2, 3, 4, 5].map((star) => (
+              {[1, 2, 3, 4, 5].map(star => (
                 <button
                   key={star}
                   type="button"
@@ -94,8 +94,8 @@ export function RatingModal({
                   <Star
                     className={`w-8 h-8 ${
                       star <= (hoveredRating || rating)
-                        ? "fill-yellow-400 text-yellow-400"
-                        : "text-gray-300"
+                        ? 'fill-yellow-400 text-yellow-400'
+                        : 'text-gray-300'
                     }`}
                   />
                 </button>
@@ -108,14 +108,12 @@ export function RatingModal({
 
           {/* Comment */}
           <div className="space-y-2">
-            <Label htmlFor="comment">
-              Comentário (opcional)
-            </Label>
+            <Label htmlFor="comment">Comentário (opcional)</Label>
             <Textarea
               id="comment"
               placeholder="Conte-nos mais sobre sua experiência..."
               value={comment}
-              onChange={(e) => setComment(e.target.value)}
+              onChange={e => setComment(e.target.value)}
               rows={4}
             />
           </div>
@@ -133,7 +131,7 @@ export function RatingModal({
             onClick={handleSubmit}
             disabled={rating === 0 || isSubmitting}
           >
-            {isSubmitting ? "Enviando..." : "Enviar Avaliação"}
+            {isSubmitting ? 'Enviando...' : 'Enviar Avaliação'}
           </Button>
         </DialogFooter>
       </DialogContent>

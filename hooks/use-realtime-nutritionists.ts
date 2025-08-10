@@ -1,8 +1,8 @@
-"use client"
+'use client'
 
-import { useState, useEffect, useCallback, useRef } from "react"
-import { supabase } from "@/lib/supabase"
-import { RealtimeChannel } from "@supabase/supabase-js"
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { supabase } from '@/lib/supabase'
+import { RealtimeChannel } from '@supabase/supabase-js'
 
 export interface NutritionistProfile {
   id: string
@@ -30,7 +30,9 @@ export interface UseRealtimeNutritionistsProps {
   sortBy?: string
 }
 
-export function useRealtimeNutritionists(filters: UseRealtimeNutritionistsProps = {}) {
+export function useRealtimeNutritionists(
+  filters: UseRealtimeNutritionistsProps = {}
+) {
   const [nutritionists, setNutritionists] = useState<NutritionistProfile[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -43,7 +45,7 @@ export function useRealtimeNutritionists(filters: UseRealtimeNutritionistsProps 
       setError(null)
 
       // Query simplificada sem especialidades para teste
-      let query = supabase.from("nutritionist_profiles").select(`
+      let query = supabase.from('nutritionist_profiles').select(`
         id,
         user_id,
         full_name,
@@ -60,33 +62,42 @@ export function useRealtimeNutritionists(filters: UseRealtimeNutritionistsProps 
 
       // Aplicar filtros
       if (filters.searchTerm) {
-        query = query.or(`full_name.ilike.%${filters.searchTerm}%,bio.ilike.%${filters.searchTerm}%`)
+        query = query.or(
+          `full_name.ilike.%${filters.searchTerm}%,bio.ilike.%${filters.searchTerm}%`
+        )
       }
 
-      if (filters.state && filters.state !== "Todas") {
-        query = query.ilike("location", `%${filters.state}%`)
+      if (filters.state && filters.state !== 'Todas') {
+        query = query.ilike('location', `%${filters.state}%`)
       }
 
       if (filters.verifiedOnly) {
-        query = query.eq("is_verified", true)
+        query = query.eq('is_verified', true)
       }
 
       // Filtrar apenas nutricionistas aprovados (conforme política RLS)
-      query = query.eq("verification_status", "aprovado")
+      query = query.eq('verification_status', 'aprovado')
 
       const { data, error } = await query
 
       if (error) {
-        console.error("Error loading nutritionists:", error)
+        console.error('Error loading nutritionists:', error)
         throw error
       }
 
       let filteredData: NutritionistProfile[] = data || []
 
       // Filtrar nutricionistas com IDs válidos
-      filteredData = filteredData.filter((nutritionist) => {
-        if (!nutritionist.id || nutritionist.id === 'null' || nutritionist.id === 'undefined') {
-          console.warn('Nutricionista com ID inválido encontrado:', nutritionist)
+      filteredData = filteredData.filter(nutritionist => {
+        if (
+          !nutritionist.id ||
+          nutritionist.id === 'null' ||
+          nutritionist.id === 'undefined'
+        ) {
+          console.warn(
+            'Nutricionista com ID inválido encontrado:',
+            nutritionist
+          )
           return false
         }
         return true
@@ -103,32 +114,43 @@ export function useRealtimeNutritionists(filters: UseRealtimeNutritionistsProps 
 
       // Filtrar por preço
       if (filters.priceRange) {
-        filteredData = filteredData.filter((nutritionist) => {
+        filteredData = filteredData.filter(nutritionist => {
           const minPrice = getMinPrice(nutritionist.nutritionist_services)
           if (minPrice === null) return false
-          return minPrice >= filters.priceRange!.min && minPrice <= filters.priceRange!.max
+          return (
+            minPrice >= filters.priceRange!.min &&
+            minPrice <= filters.priceRange!.max
+          )
         })
       }
 
       // Filtrar por consulta online
       if (filters.onlineOnly) {
-        filteredData = filteredData.filter((nutritionist) =>
-          nutritionist.nutritionist_services?.some((service: any) => service.online_available)
+        filteredData = filteredData.filter(nutritionist =>
+          nutritionist.nutritionist_services?.some(
+            (service: any) => service.online_available
+          )
         )
       }
 
       // Ordenar
       filteredData.sort((a, b) => {
         switch (filters.sortBy) {
-          case "rating":
+          case 'rating':
             return (b.rating || 0) - (a.rating || 0)
-          case "price-low":
-            return (getMinPrice(a.nutritionist_services) || 0) - (getMinPrice(b.nutritionist_services) || 0)
-          case "price-high":
-            return (getMinPrice(b.nutritionist_services) || 0) - (getMinPrice(a.nutritionist_services) || 0)
-          case "name":
+          case 'price-low':
+            return (
+              (getMinPrice(a.nutritionist_services) || 0) -
+              (getMinPrice(b.nutritionist_services) || 0)
+            )
+          case 'price-high':
+            return (
+              (getMinPrice(b.nutritionist_services) || 0) -
+              (getMinPrice(a.nutritionist_services) || 0)
+            )
+          case 'name':
             return a.full_name.localeCompare(b.full_name)
-          case "experience":
+          case 'experience':
             return (b.experience_years || 0) - (a.experience_years || 0)
           default:
             return 0
@@ -137,8 +159,8 @@ export function useRealtimeNutritionists(filters: UseRealtimeNutritionistsProps 
 
       setNutritionists(filteredData)
     } catch (error) {
-      console.error("Error loading nutritionists:", error)
-      setError("Erro ao carregar nutricionistas")
+      console.error('Error loading nutritionists:', error)
+      setError('Erro ao carregar nutricionistas')
     } finally {
       setLoading(false)
     }
@@ -147,7 +169,7 @@ export function useRealtimeNutritionists(filters: UseRealtimeNutritionistsProps 
   // Função auxiliar para obter preço mínimo
   const getMinPrice = (services: any[]) => {
     if (!services || services.length === 0) return null
-    return Math.min(...services.map((service) => service.price))
+    return Math.min(...services.map(service => service.price))
   }
 
   // Configurar realtime para monitorar mudanças
@@ -163,9 +185,9 @@ export function useRealtimeNutritionists(filters: UseRealtimeNutritionistsProps 
         {
           event: '*', // Escutar INSERT, UPDATE, DELETE
           schema: 'public',
-          table: 'nutritionist_profiles'
+          table: 'nutritionist_profiles',
         },
-        (payload) => {
+        payload => {
           console.log('🔄 Mudança detectada em nutritionist_profiles:', payload)
           // Recarregar dados quando houver mudanças
           loadNutritionists()
@@ -176,9 +198,9 @@ export function useRealtimeNutritionists(filters: UseRealtimeNutritionistsProps 
         {
           event: '*',
           schema: 'public',
-          table: 'nutritionist_services'
+          table: 'nutritionist_services',
         },
-        (payload) => {
+        payload => {
           console.log('🔄 Mudança detectada em nutritionist_services:', payload)
           // Recarregar dados quando houver mudanças nos serviços
           loadNutritionists()
@@ -189,19 +211,26 @@ export function useRealtimeNutritionists(filters: UseRealtimeNutritionistsProps 
         {
           event: '*',
           schema: 'public',
-          table: 'nutritionist_specialties'
+          table: 'nutritionist_specialties',
         },
-        (payload) => {
-          console.log('🔄 Mudança detectada em nutritionist_specialties:', payload)
+        payload => {
+          console.log(
+            '🔄 Mudança detectada em nutritionist_specialties:',
+            payload
+          )
           // Recarregar dados quando houver mudanças nas especialidades
           loadNutritionists()
         }
       )
-      .subscribe((status) => {
+      .subscribe(status => {
         if (status === 'SUBSCRIBED') {
-          console.log('✅ Inscrito em atualizações de nutricionistas em tempo real')
+          console.log(
+            '✅ Inscrito em atualizações de nutricionistas em tempo real'
+          )
         } else if (status === 'CHANNEL_ERROR') {
-          console.error('❌ Erro ao inscrever-se em atualizações de nutricionistas')
+          console.error(
+            '❌ Erro ao inscrever-se em atualizações de nutricionistas'
+          )
         }
       })
 
@@ -226,6 +255,6 @@ export function useRealtimeNutritionists(filters: UseRealtimeNutritionistsProps 
     nutritionists,
     loading,
     error,
-    refreshNutritionists
+    refreshNutritionists,
   }
 }

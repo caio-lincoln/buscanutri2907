@@ -19,7 +19,7 @@ async function testSimpleRealtime() {
 
     // Teste: Atualizar contador de likes da pergunta
     console.log('\n🔄 Atualizando contador de likes da pergunta para 10...')
-    const { data: updateData, error: updateError } = await supabase
+    const { data: _updateData, error: updateError } = await supabase
       .from('forum_questions')
       .update({ likes_count: 10 })
       .eq('id', questionId)
@@ -36,7 +36,7 @@ async function testSimpleRealtime() {
 
     // Teste 2: Atualizar contador de visualizações
     console.log('\n👀 Atualizando contador de visualizações para 50...')
-    const { data: viewsData, error: viewsError } = await supabase
+    const { data: _viewsData, error: viewsError } = await supabase
       .from('forum_questions')
       .update({ views: 50 })
       .eq('id', questionId)
@@ -53,7 +53,7 @@ async function testSimpleRealtime() {
 
     // Teste 3: Atualizar contador de respostas
     console.log('\n💬 Atualizando contador de respostas para 5...')
-    const { data: answersData, error: answersError } = await supabase
+    const { data: _answersData, error: answersError } = await supabase
       .from('forum_questions')
       .update({ answers_count: 5 })
       .eq('id', questionId)
@@ -65,8 +65,9 @@ async function testSimpleRealtime() {
       console.log('✅ Contador de respostas atualizado para 5')
     }
 
-    console.log('\n🎉 Teste concluído! Verifique se os números mudaram na interface em tempo real.')
-
+    console.log(
+      '\n🎉 Teste concluído! Verifique se os números mudaram na interface em tempo real.'
+    )
   } catch (error) {
     console.error('Erro geral:', error)
   }

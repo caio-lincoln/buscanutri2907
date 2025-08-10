@@ -1,0 +1,37 @@
+# Build outputs
+.next/
+out/
+dist/
+build/
+
+# Dependencies
+node_modules/
+
+# Temporary files
+.tmp.driveupload/
+lint-output.txt
+
+# Generated files
+*.d.ts
+!src/**/*.d.ts
+
+# Config files that don't need strict linting
+next.config.mjs
+postcss.config.mjs
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment files
+.env*
+
+# IDE files
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
