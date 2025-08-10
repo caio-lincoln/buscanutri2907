@@ -12,6 +12,7 @@ import { MultiSelect, type Option } from "@/components/ui/multi-select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ImageUpload } from "@/components/ui/image-upload"
+import { ImageCropUpload } from "@/components/ui/image-crop-upload"
 import { User, Clock, CheckCircle, AlertCircle, Loader2, Camera, FileText, BadgeIcon as IdCard, ChevronLeft, ChevronRight } from "lucide-react"
 import { toast } from "@/components/ui/use-toast"
 import type { PatientProfile, NutritionistProfile, CompanyProfile, UserType } from "@/lib/supabase"
@@ -259,6 +260,7 @@ export function UserProfileModal({
       // são coletados através da anamnese nutricional
 
       if (userType === "nutricionista") {
+        safeFormData.cover_image_url = initialData?.cover_image_url || ""
         safeFormData.specialties = Array.isArray(initialData?.specialties)
           ? initialData.specialties.join(", ")
           : initialData?.specialties || ""
@@ -384,6 +386,14 @@ export function UserProfileModal({
   const handleImageRemoved = () => {
     const imageField = userType === "empresa" ? "logo_url" : "profile_image_url"
     setFormData((prev) => ({ ...prev, [imageField]: "" }))
+  }
+
+  const handleCoverImageUploaded = (imageUrl: string) => {
+    setFormData((prev) => ({ ...prev, cover_image_url: imageUrl }))
+  }
+
+  const handleCoverImageRemoved = () => {
+    setFormData((prev) => ({ ...prev, cover_image_url: "" }))
   }
 
   const handleCRNChange = async (value: string) => {
@@ -918,15 +928,18 @@ export function UserProfileModal({
             </div>
             
             <div className="max-w-md mx-auto">
-              <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                Enviar {userType === "empresa" ? "logo" : "foto"} do computador
-              </Label>
-              <ImageUpload
+              <ImageCropUpload
                 onImageUploaded={handleImageUploaded}
                 onImageRemoved={handleImageRemoved}
                 currentImageUrl={userType === "empresa" ? formData?.logo_url : formData?.profile_image_url}
                 userId={userId}
                 className="w-full"
+                aspectRatio={1}
+                cropType="avatar"
+                minWidth={600}
+                minHeight={600}
+                title={`Upload de ${userType === "empresa" ? "Logo" : "Foto de Perfil"}`}
+                description={`Selecione ${userType === "empresa" ? "o logo da empresa" : "sua foto de perfil"}`}
               />
             </div>
 
@@ -951,6 +964,73 @@ export function UserProfileModal({
               </p>
             </div>
           </div>
+
+          {/* Seção de Imagem de Capa - apenas para nutricionistas */}
+          {userType === "nutricionista" && (
+            <div className="space-y-4 mb-6 border-t pt-6">
+              <div className="flex flex-col items-center gap-4">
+                <div className="w-full max-w-md h-32 rounded-lg overflow-hidden bg-gray-100 border-2 border-dashed border-gray-300">
+                  {formData?.cover_image_url ? (
+                    <img
+                      src={formData.cover_image_url}
+                      alt="Imagem de Capa"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-gray-400">
+                      <div className="text-center">
+                        <Camera className="h-8 w-8 mx-auto mb-2" />
+                        <p className="text-sm">Imagem de Capa</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900">Imagem de Capa do Perfil</h3>
+                {formData?.cover_image_url && (
+                  <p className="text-xs text-gray-500 text-center max-w-xs truncate">
+                    Imagem atual: {formData.cover_image_url}
+                  </p>
+                )}
+              </div>
+              
+              <div className="max-w-md mx-auto">
+                <ImageCropUpload
+                  onImageUploaded={handleCoverImageUploaded}
+                  onImageRemoved={handleCoverImageRemoved}
+                  currentImageUrl={formData?.cover_image_url}
+                  userId={userId}
+                  className="w-full"
+                  aspectRatio={16/5}
+                  cropType="cover"
+                  minWidth={2000}
+                  minHeight={700}
+                  title="Upload de Capa do Perfil"
+                  description="Selecione uma imagem para a capa do seu perfil"
+                />
+              </div>
+
+              <div className="max-w-md mx-auto">
+                <Label htmlFor="cover_image_url" className="text-sm font-medium text-gray-700 mb-2 block">
+                  Ou inserir URL da imagem de capa
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="cover_image_url"
+                    value={formData?.cover_image_url || ""}
+                    onChange={handleChange}
+                    placeholder="URL da imagem de capa (ex: https://exemplo.com/capa.jpg)"
+                    className="pr-10"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                    <Camera className="h-4 w-4" />
+                  </span>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Cole a URL da imagem de capa do seu perfil. Esta imagem aparecerá no topo da sua página pública.
+                </p>
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>

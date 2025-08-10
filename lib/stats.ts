@@ -7,47 +7,60 @@ export interface PlatformStats {
   totalAvaliacoes: number
 }
 
+// Cache para as estatísticas
+let statsCache: { data: PlatformStats; timestamp: number } | null = null
+const CACHE_DURATION = 5 * 60 * 1000 // 5 minutos
+
 export async function getPlatformStats(): Promise<PlatformStats> {
+  // Verificar cache
+  if (statsCache && Date.now() - statsCache.timestamp < CACHE_DURATION) {
+    return statsCache.data
+  }
+
   const supabase = createSupabaseClient()
 
   try {
-    // Buscar total de nutricionistas
-    const { count: nutritionistsCount } = await supabase
-      .from("nutritionist_profiles")
-      .select("*", { count: "exact", head: true })
+    // Usar função RPC para contornar políticas RLS
+    const { data, error } = await supabase.rpc('get_platform_stats')
 
-    // Buscar total de pacientes
-    const { count: totalPatients, error: patientsError } = await supabase
-      .from("users")
-      .select("*", { count: "exact", head: true })
-      .eq("user_type", "paciente")
-
-    // Buscar todas as avaliações para calcular média e total
-    const { data: reviews } = await supabase
-      .from("reviews")
-      .select("rating")
-
-    const totalReviews = reviews?.length || 0
-    const averageRating = totalReviews > 0 
-      ? reviews.reduce((sum, review) => sum + review.rating, 0) / totalReviews
-      : 0
-
-    return {
-      totalNutricionistas: nutritionistsCount || 0,
-      totalPacientes: totalPatients || 0,
-      averageRating: Math.round(averageRating * 10) / 10, // Arredondar para 1 casa decimal
-      totalAvaliacoes: totalReviews
+    if (error) {
+      throw error
     }
+
+    const stats: PlatformStats = {
+      totalNutricionistas: data.totalNutricionistas || 0,
+      totalPacientes: data.totalPacientes || 0,
+      averageRating: data.averageRating || 0,
+      totalAvaliacoes: data.totalAvaliacoes || 0
+    }
+
+    // Atualizar cache
+    statsCache = {
+      data: stats,
+      timestamp: Date.now()
+    }
+
+    return stats
   } catch (error) {
     console.error("Erro ao buscar estatísticas:", error)
     
     // Retornar valores padrão em caso de erro
-    return {
+    const defaultStats: PlatformStats = {
       totalNutricionistas: 0,
       totalPacientes: 0,
       averageRating: 0,
       totalAvaliacoes: 0
     }
+
+    // Se não há cache, usar valores padrão
+    if (!statsCache) {
+      statsCache = {
+        data: defaultStats,
+        timestamp: Date.now()
+      }
+    }
+
+    return statsCache.data
   }
 }
 

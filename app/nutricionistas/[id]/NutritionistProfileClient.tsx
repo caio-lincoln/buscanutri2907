@@ -36,6 +36,7 @@ import {
 import { useState, useEffect } from "react"
 import type { NutritionistProfile } from "@/lib/supabase" // Importa a interface real
 import { useRealtimeProfileViews } from "@/hooks/use-realtime-profile-views"
+import { generateImageVariants, selectBestCoverVariant, selectBestAvatarVariant, generateSrcSet, generateSizes } from "@/lib/image-variants"
 
 // Garante que o valor retornado seja sempre um array
 function toArray(value: unknown): string[] {
@@ -87,10 +88,20 @@ export default function NutritionistProfilePageClient({ nutritionist }: Nutritio
   const formattedExperience = nutritionist.experience_years || 0
   const formattedPatients = 0 // Placeholder, pois não está diretamente na interface
   const formattedPrice = nutritionist.consultation_price || 0
-  const formattedImage =
-    nutritionist?.profile_image_url || `/placeholder.svg?height=400&width=400&text=${encodeURIComponent(formattedName)}`
-  // cover_image_url não existe no DB, então usamos um placeholder direto
-  const formattedCoverImage = `/placeholder.svg?height=300&width=800&text=Consultório ${encodeURIComponent(formattedName)}`
+  // Gerar variantes de imagem otimizadas
+  const avatarVariants = generateImageVariants(
+    nutritionist?.profile_image_url, 
+    'avatar', 
+    nutritionist?.updated_at
+  )
+  const coverVariants = generateImageVariants(
+    nutritionist?.cover_image_url, 
+    'cover', 
+    nutritionist?.updated_at
+  )
+  
+  const formattedImage = selectBestAvatarVariant(avatarVariants, 160)
+  const formattedCoverImage = selectBestCoverVariant(coverVariants)
   const formattedBio = nutritionist.bio || "Sem biografia disponível."
   const formattedFullBio = nutritionist.bio || "Sem biografia disponível."
   const formattedEducation = nutritionist.education || "Formação não informada."
@@ -339,33 +350,52 @@ export default function NutritionistProfilePageClient({ nutritionist }: Nutritio
         </div>
 
         <main className="container px-4 md:px-6 py-8">
-          {/* Cover Image */}
-          <div className="relative h-64 md:h-80 rounded-2xl overflow-hidden mb-8 shadow-xl">
-            <img
-              src={formattedCoverImage || "/placeholder.svg"} // Usa o placeholder direto
-              alt={`Consultório ${formattedName}`}
-              className="w-full h-full object-cover"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-            <div className="absolute bottom-6 left-6 text-white">
-              <h1 className="text-3xl md:text-4xl font-bold mb-2">{formattedName}</h1>
-              <p className="text-xl opacity-90">{formattedSpecialty}</p>
+          {/* Cover Image - Full Width with Responsive Aspect Ratios */}
+          <div className="relative w-full overflow-hidden mb-8 shadow-xl">
+            {/* Desktop: 16:5 aspect ratio, Mobile: 16:9 aspect ratio */}
+            <div className="relative w-full h-64 md:h-80 lg:h-96">
+              <Image
+                src={formattedCoverImage}
+                alt={`Capa do perfil de ${formattedName}`}
+                fill
+                className="object-cover object-center"
+                sizes={generateSizes('cover')}
+                priority
+                quality={85}
+              />
+              {/* Overlay sutil para contraste */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+              
+              {/* Informações sobrepostas */}
+              <div className="absolute bottom-6 left-6 text-white z-10">
+                <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-2 drop-shadow-lg">
+                  {formattedName}
+                </h1>
+                <p className="text-lg md:text-xl opacity-90 drop-shadow-md">
+                  {formattedSpecialty}
+                </p>
+              </div>
             </div>
           </div>
 
           {/* Profile Header */}
           <div className="relative -mt-20 mb-8">
             <div className="flex flex-col md:flex-row items-start md:items-end gap-6">
+              {/* Avatar com sobreposição e borda sutil */}
               <div className="relative mx-auto md:mx-0">
-                {" "}
-                {/* Adicionado mx-auto para centralizar horizontalmente */}
-                <img
-                  src={formattedImage || "/placeholder.svg"}
-                  alt={formattedName}
-                  className="w-32 h-32 md:w-40 md:h-40 rounded-full object-contain shadow-xl border-4 border-white"
-                />
-                <div className="absolute -bottom-2 -right-2 bg-green-500 text-white p-2 rounded-full shadow-lg">
-                  <Shield className="h-5 w-5" />
+                <div className="relative w-32 h-32 md:w-40 md:h-40">
+                  <Image
+                    src={formattedImage}
+                    alt={`Foto de perfil de ${formattedName}`}
+                    fill
+                    className="rounded-full object-cover shadow-xl border-4 border-white"
+                    sizes={generateSizes('avatar')}
+                    quality={90}
+                  />
+                  {/* Badge de verificação */}
+                  <div className="absolute -bottom-2 -right-2 bg-green-500 text-white p-2 rounded-full shadow-lg border-2 border-white">
+                    <Shield className="h-4 w-4 md:h-5 md:w-5" />
+                  </div>
                 </div>
               </div>
 

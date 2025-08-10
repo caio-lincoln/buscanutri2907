@@ -15,9 +15,13 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { ArrowLeft, Eye, EyeOff, Loader2, AlertCircle, CheckCircle, Clock, Building, Shield, ShieldCheck, ShieldAlert } from "lucide-react"
 import { signUp } from "@/lib/auth"
 import { toast } from "@/components/ui/use-toast"
+import ConsultationPricingConfig from "./components/ConsultationPricingConfig"
+import AddressManagement from "./components/AddressManagement"
+import { NutritionistDocumentsUpload } from "@/components/ui/nutritionist-documents-upload"
 
 import { validateCRNFormat, validateCRNWithAPI, formatCRN } from "@/lib/crn-validator"
 import { validateCNPJFormat, validateCNPJWithAPI, formatCNPJ } from "@/lib/cnpj-validator"
+import { saveNutritionistAddresses, type AddressData } from "@/lib/address-utils"
 
 // Tipos para validação de senha
 type PasswordStrength = "weak" | "medium" | "strong"
@@ -35,6 +39,17 @@ interface PasswordValidation {
   }
 }
 
+// Tipos para documentos de nutricionistas
+interface Certificate {
+  id?: string
+  title: string
+  file: File | null
+  fileName?: string
+  fileUrl?: string
+  fileSize?: number
+  isUploaded?: boolean
+}
+
 export default function CadastroPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [userType, setUserType] = useState("paciente")
@@ -42,6 +57,23 @@ export default function CadastroPage() {
   const [loading, setLoading] = useState(false)
   const [acceptsCorporatePlans, setAcceptsCorporatePlans] = useState<boolean | null>(null)
   const [error, setError] = useState("")
+  const [addresses, setAddresses] = useState<AddressData[]>([])
+  const [pricingConfig, setPricingConfig] = useState({
+    inPerson: {
+      enabled: false,
+      pricingType: 'combined' as 'combined' | 'separate',
+      combinedPrice: '',
+      consultationPrice: '',
+      followupPrice: ''
+    },
+    online: {
+      enabled: false,
+      pricingType: 'combined' as 'combined' | 'separate',
+      combinedPrice: '',
+      consultationPrice: '',
+      followupPrice: ''
+    }
+  })
   
   // Estados para validação de senha
   const [password, setPassword] = useState("")
@@ -68,6 +100,11 @@ export default function CadastroPage() {
     status: "idle",
     message: ""
   })
+
+  // Estados para documentos de nutricionistas
+  const [crnProofFile, setCrnProofFile] = useState<File | null>(null)
+  const [certificates, setCertificates] = useState<Certificate[]>([])
+  const [documentsUploading, setDocumentsUploading] = useState(false)
 
   // Função para validar força da senha
   const validatePasswordStrength = (password: string): PasswordValidation => {
@@ -118,6 +155,76 @@ export default function CadastroPage() {
   }>({ status: "idle", message: "" })
 
   const router = useRouter()
+
+  // Função para upload de documentos
+  const uploadNutritionistDocuments = async (userId: string, accessToken: string) => {
+    if (!crnProofFile) {
+      throw new Error("Comprovante de CRN é obrigatório")
+    }
+
+    setDocumentsUploading(true)
+    
+    try {
+      // Upload do comprovante de CRN
+      console.log("📄 Fazendo upload do comprovante de CRN...")
+      const crnFormData = new FormData()
+      crnFormData.append("file", crnProofFile)
+      crnFormData.append("documentType", "crn_proof")
+      crnFormData.append("userId", userId)
+      crnFormData.append("accessToken", accessToken)
+
+      const crnResponse = await fetch("/api/upload-nutritionist-document", {
+        method: "POST",
+        body: crnFormData,
+      })
+
+      if (!crnResponse.ok) {
+        const errorData = await crnResponse.json()
+        throw new Error(errorData.error || "Erro ao fazer upload do comprovante de CRN")
+      }
+
+      console.log("✅ Comprovante de CRN enviado com sucesso")
+
+      // Upload dos certificados (se houver)
+      for (const certificate of certificates) {
+        if (certificate.title.trim() && certificate.file) {
+          console.log(`📄 Fazendo upload do certificado: ${certificate.title}`)
+          
+          const certFormData = new FormData()
+          certFormData.append("file", certificate.file)
+          certFormData.append("documentType", "certificate")
+          certFormData.append("title", certificate.title.trim())
+          certFormData.append("userId", userId)
+          certFormData.append("accessToken", accessToken)
+
+          const certResponse = await fetch("/api/upload-nutritionist-document", {
+            method: "POST",
+            body: certFormData,
+          })
+
+          if (!certResponse.ok) {
+            const errorData = await certResponse.json()
+            console.error(`❌ Erro ao fazer upload do certificado ${certificate.title}:`, errorData.error)
+            // Não falha o cadastro por causa dos certificados, apenas loga o erro
+            toast({
+              title: "⚠️ Aviso",
+              description: `Erro ao fazer upload do certificado "${certificate.title}". Você pode adicioná-lo depois no seu perfil.`,
+              variant: "default",
+            })
+          } else {
+            console.log(`✅ Certificado "${certificate.title}" enviado com sucesso`)
+          }
+        }
+      }
+
+      console.log("✅ Todos os documentos foram processados")
+    } catch (error) {
+      console.error("💥 Erro no upload de documentos:", error)
+      throw error
+    } finally {
+      setDocumentsUploading(false)
+    }
+  }
 
   // Função para validar CRN em tempo real
   const handleCRNChange = async (value: string) => {
@@ -211,6 +318,23 @@ export default function CadastroPage() {
         setError("CRN deve ser validado antes de continuar")
         return
       }
+      
+      if (!crnProofFile) {
+        setError("Comprovante de CRN é obrigatório")
+        return
+      }
+
+      // Validar certificados (se tiver título, deve ter arquivo e vice-versa)
+      for (const cert of certificates) {
+        if (cert.title.trim() && !cert.file) {
+          setError(`Certificado "${cert.title}" precisa de um arquivo`)
+          return
+        }
+        if (!cert.title.trim() && cert.file) {
+          setError("Certificado com arquivo precisa de um título")
+          return
+        }
+      }
     }
 
     // Validação específica para empresa
@@ -253,11 +377,32 @@ export default function CadastroPage() {
           throw new Error("Por favor, responda se aceita atender em planos corporativos")
         }
 
+        // Converter preços para números
+        const parsePrice = (price: string) => {
+          if (!price) return null
+          const numericValue = parseFloat(price.replace(/[^\d,]/g, '').replace(',', '.'))
+          return isNaN(numericValue) ? null : numericValue
+        }
+
         additionalData = {
           full_name,
           crn: crnValue, // Usa o valor formatado e validado
           phone,
           accepts_corporate_plans: acceptsCorporatePlans,
+          in_person_pricing_type: pricingConfig.inPerson.enabled ? pricingConfig.inPerson.pricingType : null,
+          online_pricing_type: pricingConfig.online.enabled ? pricingConfig.online.pricingType : null,
+          in_person_combined_price: pricingConfig.inPerson.enabled && pricingConfig.inPerson.pricingType === 'combined' 
+            ? parsePrice(pricingConfig.inPerson.combinedPrice) : null,
+          online_combined_price: pricingConfig.online.enabled && pricingConfig.online.pricingType === 'combined' 
+            ? parsePrice(pricingConfig.online.combinedPrice) : null,
+          in_person_consultation_price: pricingConfig.inPerson.enabled && pricingConfig.inPerson.pricingType === 'separate' 
+            ? parsePrice(pricingConfig.inPerson.consultationPrice) : null,
+          in_person_followup_price: pricingConfig.inPerson.enabled && pricingConfig.inPerson.pricingType === 'separate' 
+            ? parsePrice(pricingConfig.inPerson.followupPrice) : null,
+          online_consultation_price: pricingConfig.online.enabled && pricingConfig.online.pricingType === 'separate' 
+            ? parsePrice(pricingConfig.online.consultationPrice) : null,
+          online_followup_price: pricingConfig.online.enabled && pricingConfig.online.pricingType === 'separate' 
+            ? parsePrice(pricingConfig.online.followupPrice) : null,
         }
       } else if (userType === "paciente") {
         const full_name = formData.get("full_name") as string
@@ -300,6 +445,34 @@ export default function CadastroPage() {
 
       if (signUpError) {
         throw new Error(signUpError)
+      }
+
+      // Salvar endereços para nutricionistas
+      if (userType === "nutricionista" && data?.user?.id && addresses.length > 0) {
+        try {
+          await saveNutritionistAddresses(data.user.id, addresses)
+          console.log("✅ Endereços salvos com sucesso")
+        } catch (addressError) {
+          console.error("❌ Erro ao salvar endereços:", addressError)
+          // Não falha o cadastro por causa dos endereços, apenas loga o erro
+          toast({
+            title: "⚠️ Aviso",
+            description: "Cadastro realizado, mas houve um problema ao salvar os endereços. Você pode adicioná-los depois no seu perfil.",
+            variant: "default",
+          })
+        }
+      }
+
+      // Upload de documentos para nutricionistas
+      if (userType === "nutricionista" && data?.user?.id && data?.session?.access_token) {
+        try {
+          await uploadNutritionistDocuments(data.user.id, data.session.access_token)
+          console.log("✅ Documentos enviados com sucesso")
+        } catch (documentError) {
+          console.error("❌ Erro ao fazer upload dos documentos:", documentError)
+          // Falha o cadastro se não conseguir fazer upload do comprovante de CRN
+          throw new Error("Erro ao fazer upload dos documentos obrigatórios. Tente novamente.")
+        }
       }
 
       toast({
@@ -457,7 +630,7 @@ export default function CadastroPage() {
                 </TabsContent>
 
                 <TabsContent value="nutricionista" className="space-y-4 mt-0">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="full_name">Nome completo *</Label>
                       <Input
@@ -467,37 +640,6 @@ export default function CadastroPage() {
                         className="h-11"
                         required
                       />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="crn">CRN *</Label>
-                      <div className="relative">
-                        <Input
-                          id="crn"
-                          name="crn"
-                          placeholder="Ex: CRN3 12345"
-                          className="h-11 pr-10"
-                          value={crnValue}
-                          onChange={(e) => handleCRNChange(e.target.value)}
-                          required
-                        />
-                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                          {renderCRNValidationIcon()}
-                        </div>
-                      </div>
-                      {crnValidation.message && (
-                        <p
-                          className={`text-xs mt-1 ${
-                            crnValidation.status === "valid"
-                              ? "text-green-600"
-                              : crnValidation.status === "invalid"
-                                ? "text-red-600"
-                                : "text-yellow-600"
-                          }`}
-                        >
-                          {crnValidation.message}
-                        </p>
-                      )}
-                      <p className="text-xs text-gray-500 mt-1">Formato: CRN + região + número (ex: CRN3 12345)</p>
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
@@ -555,6 +697,27 @@ export default function CadastroPage() {
                       </Button>
                     </div>
                   </div>
+
+                  {/* Configuração de Preços */}
+                  <ConsultationPricingConfig
+                    pricingConfig={pricingConfig}
+                    setPricingConfig={setPricingConfig}
+                  />
+
+                  {/* Gerenciamento de Endereços */}
+                  <AddressManagement onAddressesChange={setAddresses} />
+
+                  {/* Documentos e CRN */}
+                  <NutritionistDocumentsUpload
+                    crnNumber={crnValue}
+                    onCrnNumberChange={handleCRNChange}
+                    crnProofFile={crnProofFile}
+                    onCrnProofFileChange={setCrnProofFile}
+                    certificates={certificates}
+                    onCertificatesChange={setCertificates}
+                    isRequired={true}
+                    disabled={loading || documentsUploading}
+                  />
                 </TabsContent>
 
                 <TabsContent value="empresa" className="space-y-4 mt-0">
@@ -775,13 +938,15 @@ export default function CadastroPage() {
                   disabled={
                     !acceptTerms ||
                     loading ||
+                    documentsUploading ||
                     (userType === "nutricionista" && crnValidation.status !== "valid") ||
+                    (userType === "nutricionista" && !crnProofFile) ||
                     (userType === "empresa" && cnpjValidation.status !== "valid") ||
                     passwordValidation.strength === "weak" ||
                     !password
                   }
                 >
-                  {loading ? (
+                  {loading || documentsUploading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Cadastrando...

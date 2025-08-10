@@ -102,6 +102,15 @@ export async function signUp(email: string, password: string, userType: UserType
             full_name: additionalData.full_name,
             crn: additionalData.crn,
             phone: additionalData.phone || null,
+            accepts_corporate_plans: additionalData.accepts_corporate_plans || false,
+            in_person_pricing_type: additionalData.in_person_pricing_type || null,
+            online_pricing_type: additionalData.online_pricing_type || null,
+            in_person_combined_price: additionalData.in_person_combined_price || null,
+            online_combined_price: additionalData.online_combined_price || null,
+            in_person_consultation_price: additionalData.in_person_consultation_price || null,
+            in_person_followup_price: additionalData.in_person_followup_price || null,
+            online_consultation_price: additionalData.online_consultation_price || null,
+            online_followup_price: additionalData.online_followup_price || null,
           })
           .select()
           .single()
@@ -253,6 +262,22 @@ export async function getCurrentUser() {
       }
     }
 
+    // Verificar se há uma sessão ativa primeiro
+    const {
+      data: { session },
+      error: sessionError,
+    } = await supabase.auth.getSession()
+
+    if (sessionError) {
+      console.error("❌ Erro ao obter sessão:", sessionError)
+      return null
+    }
+
+    if (!session) {
+      console.log("ℹ️ Nenhuma sessão ativa")
+      return null
+    }
+
     // Obter usuário atual do Supabase
     const {
       data: { user },
@@ -261,6 +286,10 @@ export async function getCurrentUser() {
 
     if (authError) {
       console.error("❌ Erro ao obter usuário:", authError)
+      // Se o erro for de sessão ausente, retornar null silenciosamente
+      if (authError.message?.includes('session') || authError.message?.includes('Auth')) {
+        return null
+      }
       return null
     }
 
@@ -295,6 +324,11 @@ export async function getCurrentUser() {
     return userData
   } catch (error: any) {
     console.error("💥 Erro geral ao obter usuário atual:", error)
+    // Se for erro de sessão, não logar como erro crítico
+    if (error.message?.includes('AuthSessionMissingError') || error.message?.includes('session')) {
+      console.log("ℹ️ Sessão não encontrada - usuário não logado")
+      return null
+    }
     return null
   }
 }

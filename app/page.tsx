@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -7,7 +7,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent } from "@/components/ui/card"
 import Image from "next/image"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo, useCallback } from "react"
 import { cn } from "@/lib/utils"
 import {
   Users,
@@ -43,40 +43,36 @@ export default function Home() {
   const [stats, setStats] = useState<PlatformStats | null>(null)
   const { user, loading, signOut } = useAuth()
 
-  const toggleMobileMenu = () => {
-    setIsMobileMenuOpen(!isMobileMenuOpen)
-  }
-
-  const closeMobileMenu = () => {
+  const closeMobileMenu = useCallback(() => {
     setIsMobileMenuOpen(false)
-  }
-
-  // Load stats
-  useEffect(() => {
-    const loadStats = async () => {
-      try {
-        const platformStats = await getPlatformStats()
-        setStats(platformStats)
-      } catch (error) {
-        console.error("Error loading stats:", error)
-      }
-    }
-
-    loadStats()
   }, [])
 
+  // Load stats
+  const loadStats = useCallback(async () => {
+    try {
+      const platformStats = await getPlatformStats()
+      setStats(platformStats)
+    } catch (error) {
+      console.error("Error loading stats:", error)
+    }
+  }, [])
+
+  useEffect(() => {
+    loadStats()
+  }, [loadStats])
+
   // Handle logout
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
     try {
       await signOut()
       closeMobileMenu()
     } catch (error) {
       console.error("Error signing out:", error)
     }
-  }
+  }, [signOut])
 
   // Get dashboard URL based on user type
-  const getDashboardUrl = (userType: UserType) => {
+  const getDashboardUrl = useCallback((userType: UserType) => {
     switch (userType) {
       case "paciente":
         return "/dashboard/paciente"
@@ -89,7 +85,17 @@ export default function Home() {
       default:
         return "/dashboard/paciente"
     }
-  }
+  }, [])
+
+  // Memoize dashboard URL for current user
+  const currentDashboardUrl = useMemo(() => {
+    return user?.user_type ? getDashboardUrl(user.user_type) : "/dashboard/paciente"
+  }, [user?.user_type, getDashboardUrl])
+
+  // Toggle mobile menu
+  const toggleMobileMenu = useCallback(() => {
+    setIsMobileMenuOpen(prev => !prev)
+  }, [])
 
   // Prevent body scroll when menu is open
   useEffect(() => {
@@ -205,6 +211,13 @@ export default function Home() {
 
             {/* Links diretos */}
             <Link
+              href="/duvidas-pacientes"
+              className="text-sm font-medium text-[#1E1D40]/70 hover:text-[#4AB0D9] transition-all duration-300 relative group"
+            >
+              Dúvidas dos Pacientes
+              <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#4AB0D9] transition-all duration-300 group-hover:w-full"></span>
+            </Link>
+            <Link
               href="/vagas"
               className="text-sm font-medium text-[#1E1D40]/70 hover:text-[#4AB0D9] transition-all duration-300 relative group"
             >
@@ -226,7 +239,7 @@ export default function Home() {
             ) : user && user.user_type ? (
               // User is logged in - show dashboard and logout buttons
               <>
-                <Link href={getDashboardUrl(user.user_type)}>
+                <Link href={currentDashboardUrl}>
                   <Button
                     variant="ghost"
                     className="hidden md:flex items-center gap-2 text-[#1E1D40] hover:text-[#4AB0D9] hover:bg-[#4AB0D9]/5"
@@ -391,6 +404,13 @@ export default function Home() {
             <div className="px-4 mb-6">
               <div className="space-y-1">
                 <Link
+                  href="/duvidas-pacientes"
+                  onClick={closeMobileMenu}
+                  className="flex items-center px-3 py-2.5 text-[#1E1D40]/70 hover:text-[#4AB0D9] hover:bg-[#4AB0D9]/5 rounded-lg transition-all duration-200 text-sm font-medium"
+                >
+                  Dúvidas dos Pacientes
+                </Link>
+                <Link
                   href="/vagas"
                   onClick={closeMobileMenu}
                   className="flex items-center px-3 py-2.5 text-[#1E1D40]/70 hover:text-[#4AB0D9] hover:bg-[#4AB0D9]/5 rounded-lg transition-all duration-200 text-sm font-medium"
@@ -420,7 +440,7 @@ export default function Home() {
                 {user && user.user_type ? (
                   // User is logged in - show dashboard and logout buttons
                   <>
-                    <Link href={getDashboardUrl(user.user_type)} onClick={closeMobileMenu} className="block">
+                    <Link href={currentDashboardUrl} onClick={closeMobileMenu} className="block">
                       <Button
                         variant="outline"
                         size="lg"

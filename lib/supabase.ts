@@ -248,6 +248,38 @@ export interface NutritionistService {
   duration_minutes: number
 }
 
+export interface NutritionistAddress {
+  id: string
+  nutritionist_id: string
+  type: "in_person" | "teleconsultation"
+  status: "active" | "inactive"
+  is_main: boolean
+  
+  // Structured address fields
+  country: string
+  state: string
+  city: string
+  neighborhood?: string | null
+  zip_code?: string | null
+  street?: string | null
+  number?: string | null
+  complement?: string | null
+  
+  // Geocoding for search and maps
+  latitude?: number | null
+  longitude?: number | null
+  
+  // Service radius in kilometers (optional)
+  service_radius_km?: number | null
+  
+  // Generated fields
+  city_slug: string // normalized city + state for filtering
+  full_address: string // complete address for display
+  
+  created_at: string
+  updated_at: string
+}
+
 // ────────────────────────────────────────────────────────────────────────────────
 // Database Type Definition
 // ────────────────────────────────────────────────────────────────────────────────
@@ -315,6 +347,11 @@ export interface Database {
         Row: NutritionistService
         Insert: Omit<NutritionistService, "id">
         Update: Partial<Omit<NutritionistService, "id">>
+      }
+      nutritionist_addresses: {
+        Row: NutritionistAddress
+        Insert: Omit<NutritionistAddress, "id" | "city_slug" | "full_address" | "created_at" | "updated_at">
+        Update: Partial<Omit<NutritionistAddress, "id" | "city_slug" | "full_address" | "created_at" | "updated_at">>
       }
     }
     Views: {

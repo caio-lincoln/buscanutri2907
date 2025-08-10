@@ -1,6 +1,6 @@
 "use client"
 
-import React, { createContext, useContext, useEffect, useState } from "react"
+import React, { createContext, useContext, useEffect, useState, useMemo, useCallback } from "react"
 import { createSupabaseClient } from "@/lib/supabase"
 import { getCurrentUser, getUserProfile } from "@/lib/auth"
 import type { User } from "@supabase/supabase-js"
@@ -24,9 +24,9 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<ExtendedUser | null>(null)
   const [loading, setLoading] = useState(true)
-  const supabase = createSupabaseClient()
+  const supabase = useMemo(() => createSupabaseClient(), [])
 
-  const loadUser = async () => {
+  const loadUser = useCallback(async () => {
     try {
       setLoading(true)
       const currentUser = await getCurrentUser()
@@ -68,9 +68,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  const handleSignOut = async () => {
+  const handleSignOut = useCallback(async () => {
     try {
       // Limpar localStorage se existir
       if (typeof window !== "undefined") {
@@ -90,11 +90,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error("💥 Erro geral no logout:", error)
       throw error
     }
-  }
+  }, [supabase])
 
-  const refreshUser = async () => {
+  const refreshUser = useCallback(async () => {
     await loadUser()
-  }
+  }, [loadUser])
 
   useEffect(() => {
     // Carregar usuário inicial
@@ -117,14 +117,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       subscription.unsubscribe()
     }
-  }, [])
+  }, [loadUser, supabase])
 
-  const value = {
+  const value = useMemo(() => ({
     user,
     loading,
     signOut: handleSignOut,
     refreshUser,
-  }
+  }), [user, loading, handleSignOut, refreshUser])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
