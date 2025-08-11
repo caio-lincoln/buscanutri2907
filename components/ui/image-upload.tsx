@@ -108,7 +108,7 @@ export function ImageUpload({
               onLoad={() => {
                 // Silent operation: Image loaded successfully
               }}
-              onError={e => {
+              onError={(e) => {
                 // Silent error handling: Error loading image
               }}
             />

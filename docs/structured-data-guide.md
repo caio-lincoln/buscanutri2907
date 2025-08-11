@@ -2,7 +2,9 @@
 
 ## 📋 Visão Geral
 
-Este guia estabelece o padrão para manipulação de campos estruturados (arrays e objetos) no sistema BuscaNutri. O objetivo é **eliminar problemas de múltiplos escapes e JSON stringificado** que causam corrupção de dados.
+Este guia estabelece o padrão para manipulação de campos estruturados (arrays e objetos) no sistema
+BuscaNutri. O objetivo é **eliminar problemas de múltiplos escapes e JSON stringificado** que causam
+corrupção de dados.
 
 ## 🎯 Princípio Fundamental
 
@@ -11,6 +13,7 @@ Este guia estabelece o padrão para manipulação de campos estruturados (arrays
 ## 📊 Campos Estruturados Identificados
 
 ### Perfis de Nutricionistas
+
 - `specialties: string[]` - Especialidades médicas
 - `languages: string[]` - Idiomas falados
 - `services: string[]` - Serviços oferecidos
@@ -21,11 +24,13 @@ Este guia estabelece o padrão para manipulação de campos estruturados (arrays
 - `addresses: object[]` - Endereços de atendimento
 
 ### Perfis de Usuários
+
 - `preferences: string[]` - Preferências alimentares
 - `dietary_restrictions: string[]` - Restrições dietéticas
 - `health_conditions: string[]` - Condições de saúde
 
 ### Perfis de Empresas
+
 - `services: string[]` - Serviços oferecidos
 - `locations: object[]` - Localizações
 - `contact_methods: string[]` - Métodos de contato
@@ -33,6 +38,7 @@ Este guia estabelece o padrão para manipulação de campos estruturados (arrays
 ## ✅ O Que PODE Fazer
 
 ### ✅ Front-end
+
 ```typescript
 // ✅ CORRETO: Trabalhar com arrays diretamente
 const languages = ['Português', 'Inglês', 'Espanhol']
@@ -55,18 +61,19 @@ if (!validation.isValid) {
 ```
 
 ### ✅ Back-end/API
+
 ```typescript
 // ✅ CORRETO: Usar middleware de validação
 import { validateApiPayload } from '@/lib/api-validation-middleware'
 
 export async function POST(request: Request) {
   const body = await request.json()
-  
+
   const validation = validateApiPayload(body, 'nutritionist')
   if (!validation.isValid) {
     return Response.json({ errors: validation.errors }, { status: 400 })
   }
-  
+
   // Dados já estão normalizados e validados
   const result = await saveNutritionist(body)
   return Response.json(result)
@@ -79,6 +86,7 @@ const jsonString = safeStringify(data) // Não faz stringify duplo
 ```
 
 ### ✅ Banco de Dados
+
 ```sql
 -- ✅ CORRETO: Usar tipos JSON/JSONB
 CREATE TABLE nutritionist_profiles (
@@ -90,7 +98,7 @@ CREATE TABLE nutritionist_profiles (
 );
 
 -- ✅ CORRETO: Inserir arrays diretamente
-INSERT INTO nutritionist_profiles (specialties, languages) 
+INSERT INTO nutritionist_profiles (specialties, languages)
 VALUES (
   '["Nutrição Esportiva", "Emagrecimento"]'::jsonb,
   '["Português", "Inglês"]'::jsonb
@@ -100,6 +108,7 @@ VALUES (
 ## ❌ O Que NÃO PODE Fazer
 
 ### ❌ Front-end
+
 ```typescript
 // ❌ ERRADO: Stringificar arrays manualmente
 const languages = JSON.stringify(['Português', 'Inglês']) // NÃO!
@@ -112,11 +121,12 @@ const cleaned = data.replace(/\\"/g, '"') // Use utilitários!
 
 // ❌ ERRADO: Enviar strings que parecem JSON
 const formData = {
-  languages: '["Português", "Inglês"]' // NÃO!
+  languages: '["Português", "Inglês"]', // NÃO!
 }
 ```
 
 ### ❌ Back-end/API
+
 ```typescript
 // ❌ ERRADO: Fazer stringify duplo
 const data = JSON.stringify(JSON.stringify(array)) // NÃO!
@@ -129,6 +139,7 @@ const parsed = JSON.parse(data) // Pode quebrar!
 ```
 
 ### ❌ Banco de Dados
+
 ```sql
 -- ❌ ERRADO: Usar TEXT para dados estruturados
 CREATE TABLE profiles (
@@ -136,19 +147,20 @@ CREATE TABLE profiles (
 );
 
 -- ❌ ERRADO: Inserir strings JSON escapadas
-INSERT INTO profiles (specialties) 
+INSERT INTO profiles (specialties)
 VALUES ('"[\"Nutrição\", \"Esportiva\"]"'); -- NÃO!
 ```
 
 ## 🛠️ Utilitários Disponíveis
 
 ### Normalização
+
 ```typescript
 import {
   normalizeStringArray,
   normalizeLanguages,
   normalizeSpecialties,
-  normalizeJsonObject
+  normalizeJsonObject,
 } from '@/lib/structured-data-utils'
 
 // Para arrays genéricos
@@ -165,6 +177,7 @@ const workingHours = normalizeJsonObject(input, 'working_hours')
 ```
 
 ### Validação
+
 ```typescript
 import { validateStructuredPayload } from '@/lib/structured-data-utils'
 
@@ -175,6 +188,7 @@ if (!validation.isValid) {
 ```
 
 ### Serialização Segura
+
 ```typescript
 import { safeStringify } from '@/lib/structured-data-utils'
 
@@ -183,6 +197,7 @@ const json = safeStringify(data)
 ```
 
 ### Telemetria
+
 ```typescript
 import { logNormalizationEvent } from '@/lib/structured-data-utils'
 
@@ -190,13 +205,14 @@ import { logNormalizationEvent } from '@/lib/structured-data-utils'
 logNormalizationEvent('data_normalized', {
   field: 'languages',
   original_type: 'string',
-  final_type: 'array'
+  final_type: 'array',
 })
 ```
 
 ## 🔍 Detecção de Problemas
 
 ### Padrões de Risco
+
 O sistema detecta automaticamente:
 
 1. **JSON Duplo**: `JSON.stringify(JSON.stringify())`
@@ -207,12 +223,14 @@ O sistema detecta automaticamente:
 ### Ferramentas de Monitoramento
 
 #### ESLint (Desenvolvimento)
+
 ```bash
 # Detecta padrões de risco no código
 npm run lint
 ```
 
 #### Monitoramento Contínuo
+
 ```bash
 # Executa verificação única
 npm run monitor:data
@@ -225,6 +243,7 @@ npm run monitor:data:fix
 ```
 
 #### Testes de Contrato
+
 ```bash
 # Valida fluxo completo de dados
 npm run test:contracts
@@ -233,11 +252,13 @@ npm run test:contracts
 ## 🚨 Alertas e Correções
 
 ### Quando Alertas São Disparados
+
 - Mais de 10 problemas detectados
 - Problemas de severidade alta encontrados
 - Dados corrompidos no banco
 
 ### Correção Manual
+
 ```typescript
 // Para um registro específico
 import { StructuredDataMonitor } from '@/scripts/monitor-structured-data'
@@ -247,6 +268,7 @@ await monitor.fixRecord('nutritionist_profiles', 'record-id')
 ```
 
 ### Migração de Dados Existentes
+
 ```bash
 # Executa migração completa (dry-run)
 npm run migrate:structured-data
@@ -258,12 +280,13 @@ npm run migrate:structured-data --apply
 ## 📝 Exemplos Práticos
 
 ### Formulário de Cadastro
+
 ```typescript
 // ✅ CORRETO
 function NutritionistForm() {
   const [languages, setLanguages] = useState<string[]>([])
   const [specialties, setSpecialties] = useState<string[]>([])
-  
+
   const handleSubmit = async (data: FormData) => {
     // Normalizar dados antes de enviar
     const normalizedData = {
@@ -271,18 +294,18 @@ function NutritionistForm() {
       languages: normalizeLanguages(data.languages),
       specialties: normalizeSpecialties(data.specialties)
     }
-    
+
     // Validar payload
     const validation = validateStructuredPayload(normalizedData, 'nutritionist')
     if (!validation.isValid) {
       setErrors(validation.errors)
       return
     }
-    
+
     // Enviar dados normalizados
     await submitForm(normalizedData)
   }
-  
+
   return (
     <form onSubmit={handleSubmit}>
       <MultiSelect
@@ -301,12 +324,13 @@ function NutritionistForm() {
 ```
 
 ### API Route
+
 ```typescript
 // ✅ CORRETO
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    
+
     // Validar payload estruturado
     const validation = validateApiPayload(body, 'nutritionist')
     if (!validation.isValid) {
@@ -315,36 +339,33 @@ export async function POST(request: Request) {
         { status: 400 }
       )
     }
-    
+
     // Salvar no banco (dados já normalizados)
     const { data, error } = await supabase
       .from('nutritionist_profiles')
       .insert(body)
       .select()
       .single()
-    
+
     if (error) throw error
-    
+
     return Response.json(data)
-    
   } catch (error) {
-    logNormalizationEvent('api_error', { error: error.message })
-    return Response.json(
-      { error: 'Erro interno do servidor' },
-      { status: 500 }
-    )
+    logNormalizationEvent('api_error', error.message, error.message, false)
+    return Response.json({ error: 'Erro interno do servidor' }, { status: 500 })
   }
 }
 ```
 
 ### Exibição de Dados
+
 ```typescript
 // ✅ CORRETO
 function NutritionistProfile({ nutritionist }) {
   // Normalizar dados vindos do banco (por segurança)
   const languages = normalizeLanguages(nutritionist.languages)
   const specialties = normalizeSpecialties(nutritionist.specialties)
-  
+
   return (
     <div>
       <h3>Idiomas</h3>
@@ -353,7 +374,7 @@ function NutritionistProfile({ nutritionist }) {
           <li key={lang}>{lang}</li>
         ))}
       </ul>
-      
+
       <h3>Especialidades</h3>
       <ul>
         {specialties.map(spec => (
@@ -376,12 +397,14 @@ function NutritionistProfile({ nutritionist }) {
 ## 📊 Monitoramento e Métricas
 
 ### Métricas Importantes
+
 - Número de normalizações por dia
 - Tipos de problemas mais comuns
 - Tempo de resposta das APIs
 - Taxa de erro de validação
 
 ### Dashboards
+
 - Grafana: Métricas em tempo real
 - Logs: Eventos de normalização
 - Alertas: Problemas críticos
@@ -397,6 +420,7 @@ function NutritionistProfile({ nutritionist }) {
 ## 📞 Suporte
 
 Para dúvidas ou problemas:
+
 1. Consulte este guia primeiro
 2. Verifique logs de monitoramento
 3. Execute testes de contrato

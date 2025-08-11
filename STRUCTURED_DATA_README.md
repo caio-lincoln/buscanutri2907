@@ -2,16 +2,19 @@
 
 ## 🎯 Objetivo
 
-Este sistema foi implementado para **eliminar problemas de múltiplos escapes e JSON stringificado** que causavam corrupção de dados em campos estruturados como arrays e objetos.
+Este sistema foi implementado para **eliminar problemas de múltiplos escapes e JSON stringificado**
+que causavam corrupção de dados em campos estruturados como arrays e objetos.
 
 ## 🚀 Quick Start
 
 ### 1. Verificar Saúde dos Dados
+
 ```bash
 npm run data:health-check
 ```
 
 ### 2. Monitorar Problemas
+
 ```bash
 # Verificação única
 npm run monitor:data
@@ -21,6 +24,7 @@ npm run monitor:data:watch
 ```
 
 ### 3. Migrar Dados Existentes
+
 ```bash
 # Dry run (recomendado primeiro)
 npm run migrate:structured-data
@@ -30,6 +34,7 @@ npm run migrate:structured-data:apply
 ```
 
 ### 4. Executar Testes de Contrato
+
 ```bash
 npm run test:contracts
 ```
@@ -63,11 +68,12 @@ reports/
 ## 🔧 Utilitários Principais
 
 ### Normalização
+
 ```typescript
-import { 
+import {
   normalizeStringArray,
   normalizeLanguages,
-  normalizeSpecialties 
+  normalizeSpecialties,
 } from '@/lib/structured-data-utils'
 
 // Normalizar arrays genéricos
@@ -81,6 +87,7 @@ const specialties = normalizeSpecialties(input)
 ```
 
 ### Validação
+
 ```typescript
 import { validateStructuredPayload } from '@/lib/structured-data-utils'
 
@@ -93,12 +100,14 @@ if (!validation.isValid) {
 ## 🚨 Detecção de Problemas
 
 ### Padrões Detectados
+
 - ❌ `JSON.stringify(JSON.stringify())` - Stringify duplo
-- ❌ `JSON.parse(JSON.parse())` - Parse duplo  
+- ❌ `JSON.parse(JSON.parse())` - Parse duplo
 - ❌ `\\"\\[\\\"item\\\"]\\\"` - Múltiplos escapes
 - ❌ `"[\"item1\", \"item2\"]"` - Strings JSON
 
 ### Ferramentas
+
 - **ESLint**: Detecta padrões no código
 - **Monitoramento**: Verifica banco de dados
 - **Testes**: Valida fluxo completo
@@ -106,8 +115,9 @@ if (!validation.isValid) {
 ## 📊 Campos Estruturados
 
 ### Nutricionistas
+
 - `specialties: string[]`
-- `languages: string[]` 
+- `languages: string[]`
 - `services: string[]`
 - `certifications: string[]`
 - `achievements: string[]`
@@ -116,11 +126,13 @@ if (!validation.isValid) {
 - `addresses: object[]`
 
 ### Usuários
+
 - `preferences: string[]`
 - `dietary_restrictions: string[]`
 - `health_conditions: string[]`
 
 ### Empresas
+
 - `services: string[]`
 - `locations: object[]`
 - `contact_methods: string[]`
@@ -128,6 +140,7 @@ if (!validation.isValid) {
 ## ✅ Boas Práticas
 
 ### ✅ FAZER
+
 ```typescript
 // Trabalhar com arrays diretamente
 const languages = ['Português', 'Inglês']
@@ -140,6 +153,7 @@ const validation = validateStructuredPayload(data, 'nutritionist')
 ```
 
 ### ❌ NÃO FAZER
+
 ```typescript
 // Stringificar manualmente
 const languages = JSON.stringify(['Português', 'Inglês']) // ❌
@@ -154,12 +168,14 @@ const cleaned = data.replace(/\\"/g, '"') // ❌
 ## 🔍 Monitoramento
 
 ### Métricas Importantes
+
 - Número de normalizações por dia
 - Tipos de problemas mais comuns
 - Taxa de erro de validação
 - Tempo de resposta das APIs
 
 ### Alertas
+
 - Mais de 10 problemas detectados
 - Problemas de severidade alta
 - Dados corrompidos no banco

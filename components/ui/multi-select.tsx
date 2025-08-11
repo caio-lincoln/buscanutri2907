@@ -72,12 +72,12 @@ export function MultiSelect({
                     {option?.label || item}
                     <span
                       className="ml-1 ring-offset-background rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                      onKeyDown={e => {
+                      onKeyDown={(e) => {
                         if (e.key === 'Enter') {
                           handleUnselect(item)
                         }
                       }}
-                      onMouseDown={e => {
+                      onMouseDown={(e) => {
                         e.preventDefault()
                         e.stopPropagation()
                       }}

@@ -49,7 +49,7 @@ export async function updateUserProfile(
       } else if (typeof dataToUpdate.available_times === 'object') {
         availabilitySchedule = dataToUpdate.available_times
       }
-      
+
       // Remover available_times do update do perfil, será salvo na tabela específica
       delete dataToUpdate.available_times
     } catch (error) {
@@ -148,7 +148,10 @@ export async function updateUserProfile(
     try {
       await saveNutritionistAvailability(userId, availabilitySchedule)
     } catch (availabilityError) {
-      console.error('Erro ao salvar horários de disponibilidade:', availabilityError)
+      console.error(
+        'Erro ao salvar horários de disponibilidade:',
+        availabilityError
+      )
       // Não falhar a operação inteira por causa dos horários
       // O perfil foi salvo com sucesso, apenas os horários falharam
     }

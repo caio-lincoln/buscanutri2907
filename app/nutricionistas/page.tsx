@@ -164,8 +164,7 @@ export default function NutricionistasPage() {
       const matchesOnline =
         !onlineOnly || nutritionist.service_online_available || false
 
-      const matchesCupons =
-        !aceitaCupons || nutritionist.aceita_cupons || false
+      const matchesCupons = !aceitaCupons || nutritionist.aceita_cupons || false
 
       return (
         matchesSearch &&
@@ -642,18 +641,24 @@ export default function NutricionistasPage() {
                       checked={onlineOnly}
                       onCheckedChange={setOnlineOnly}
                     />
-                    <label htmlFor="online-only" className="text-sm font-medium">
+                    <label
+                      htmlFor="online-only"
+                      className="text-sm font-medium"
+                    >
                       Apenas consultas online
                     </label>
                   </div>
-                  
+
                   <div className="flex items-center space-x-2">
                     <Checkbox
                       id="aceita-cupons"
                       checked={aceitaCupons}
                       onCheckedChange={setAceitaCupons}
                     />
-                    <label htmlFor="aceita-cupons" className="text-sm font-medium">
+                    <label
+                      htmlFor="aceita-cupons"
+                      className="text-sm font-medium"
+                    >
                       Aceitam cupom
                     </label>
                   </div>
@@ -801,13 +806,16 @@ export default function NutricionistasPage() {
                                   </span>
                                 </div>
                               )}
-                              
+
                               {/* Badges existentes */}
                               {nutritionist.badges &&
                                 nutritionist.badges.length > 0 && (
                                   <>
                                     {nutritionist.badges
-                                      .slice(0, nutritionist.aceita_cupons ? 1 : 2)
+                                      .slice(
+                                        0,
+                                        nutritionist.aceita_cupons ? 1 : 2
+                                      )
                                       .map((badgeData, index) => {
                                         const badge = badgeData.badge
                                         if (!badge) return null
@@ -831,10 +839,15 @@ export default function NutricionistasPage() {
                                           </div>
                                         )
                                       })}
-                                    {nutritionist.badges.length > (nutritionist.aceita_cupons ? 1 : 2) && (
+                                    {nutritionist.badges.length >
+                                      (nutritionist.aceita_cupons ? 1 : 2) && (
                                       <div className="flex items-center gap-1 px-2 py-1 bg-gray-100 rounded-full">
                                         <span className="text-xs font-medium text-gray-600">
-                                          +{nutritionist.badges.length - (nutritionist.aceita_cupons ? 1 : 2)}
+                                          +
+                                          {nutritionist.badges.length -
+                                            (nutritionist.aceita_cupons
+                                              ? 1
+                                              : 2)}
                                         </span>
                                       </div>
                                     )}

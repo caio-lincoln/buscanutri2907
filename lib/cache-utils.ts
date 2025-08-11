@@ -148,29 +148,49 @@ export class CacheManager {
  */
 export function invalidateBrowserCache() {
   if (typeof window !== 'undefined') {
-    // Limpar localStorage relacionado ao cache
-    const cacheKeys = Object.keys(localStorage).filter(
-      key =>
-        key.startsWith('cache-') ||
-        key.startsWith('build-') ||
-        key.includes('cached')
-    )
+    // Limpar localStorage relacionado ao cache (verificação segura)
+    if (window.localStorage) {
+      try {
+        const cacheKeys = Object.keys(localStorage).filter(
+          key =>
+            key.startsWith('cache-') ||
+            key.startsWith('build-') ||
+            key.includes('cached')
+        )
 
-    cacheKeys.forEach(key => {
-      localStorage.removeItem(key)
-    })
+        cacheKeys.forEach(key => {
+          try {
+            localStorage.removeItem(key)
+          } catch (error) {
+            console.warn(`Erro ao remover chave ${key} do localStorage:`, error)
+          }
+        })
+      } catch (error) {
+        console.warn('Erro ao acessar localStorage:', error)
+      }
+    }
 
-    // Limpar sessionStorage relacionado ao cache
-    const sessionCacheKeys = Object.keys(sessionStorage).filter(
-      key =>
-        key.startsWith('cache-') ||
-        key.startsWith('build-') ||
-        key.includes('cached')
-    )
+    // Limpar sessionStorage relacionado ao cache (verificação segura)
+    if (window.sessionStorage) {
+      try {
+        const sessionCacheKeys = Object.keys(sessionStorage).filter(
+          key =>
+            key.startsWith('cache-') ||
+            key.startsWith('build-') ||
+            key.includes('cached')
+        )
 
-    sessionCacheKeys.forEach(key => {
-      sessionStorage.removeItem(key)
-    })
+        sessionCacheKeys.forEach(key => {
+          try {
+            sessionStorage.removeItem(key)
+          } catch (error) {
+            console.warn(`Erro ao remover chave ${key} do sessionStorage:`, error)
+          }
+        })
+      } catch (error) {
+        console.warn('Erro ao acessar sessionStorage:', error)
+      }
+    }
   }
 }
 

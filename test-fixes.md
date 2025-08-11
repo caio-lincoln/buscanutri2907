@@ -5,6 +5,7 @@
 ### 1. Horários do Nutricionista não Salvam
 
 **Problema identificado:**
+
 - O sistema salvava horários como JSON no campo `available_times` do perfil
 - Não havia sincronização com a tabela `nutritionist_availability`
 - Incompatibilidade entre formato do ScheduleSelector e estrutura do banco
@@ -12,9 +13,11 @@
 **Correções implementadas:**
 
 1. **Criado novo serviço de disponibilidade** (`lib/availability-service.ts`):
-   - Função `convertScheduleToAvailability()` - converte objeto do ScheduleSelector para slots individuais
+   - Função `convertScheduleToAvailability()` - converte objeto do ScheduleSelector para slots
+     individuais
    - Função `saveNutritionistAvailability()` - salva horários na tabela `nutritionist_availability`
-   - Função `getNutritionistAvailability()` - carrega horários da tabela e converte para formato do ScheduleSelector
+   - Função `getNutritionistAvailability()` - carrega horários da tabela e converte para formato do
+     ScheduleSelector
 
 2. **Atualizado serviço de perfil** (`lib/profile-service.ts`):
    - Integração com o novo serviço de disponibilidade
@@ -26,6 +29,7 @@
    - Carregamento automático dos horários ao abrir o modal
 
 **Resultado esperado:**
+
 - Horários agora são salvos corretamente na tabela `nutritionist_availability`
 - Carregamento dos horários funciona a partir da tabela específica
 - Compatibilidade mantida com o componente ScheduleSelector
@@ -33,6 +37,7 @@
 ### 2. Respostas de Perguntas do Nutricionista não Funcionam
 
 **Problema identificado:**
+
 - Políticas RLS muito restritivas na tabela `forum_answers`
 - Referência a campo inexistente (`status`) na política de INSERT
 - Falta de logs para debug
@@ -50,6 +55,7 @@
    - Verificações mais claras do fluxo de execução
 
 **Resultado esperado:**
+
 - Nutricionistas podem responder perguntas no fórum
 - Logs ajudam a identificar problemas futuros
 - Políticas RLS funcionam corretamente
@@ -57,6 +63,7 @@
 ## Como Testar
 
 ### Teste 1: Horários do Nutricionista
+
 1. Faça login como nutricionista
 2. Abra o modal de perfil
 3. Configure horários no ScheduleSelector
@@ -65,6 +72,7 @@
 6. Confirme no banco que os dados estão na tabela `nutritionist_availability`
 
 ### Teste 2: Respostas do Fórum
+
 1. Faça login como nutricionista
 2. Acesse uma pergunta no fórum
 3. Tente responder a pergunta

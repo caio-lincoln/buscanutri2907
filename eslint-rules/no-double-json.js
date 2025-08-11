@@ -7,12 +7,13 @@ module.exports = {
   meta: {
     type: 'problem',
     docs: {
-      description: 'Previne uso de JSON.stringify ou JSON.parse aninhados que podem causar múltiplos escapes',
+      description:
+        'Previne uso de JSON.stringify ou JSON.parse aninhados que podem causar múltiplos escapes',
       category: 'Possible Errors',
-      recommended: true
+      recommended: true,
     },
     fixable: null,
-    schema: []
+    schema: [],
   },
 
   create(context) {
@@ -41,7 +42,7 @@ module.exports = {
         if (isJsonMethod(arg, methodName)) {
           context.report({
             node,
-            message: `Evite ${methodName} aninhado: ${methodName}(${methodName}()) pode causar múltiplos escapes. Use utilitários centralizados.`
+            message: `Evite ${methodName} aninhado: ${methodName}(${methodName}()) pode causar múltiplos escapes. Use utilitários centralizados.`,
           })
         }
 
@@ -49,7 +50,7 @@ module.exports = {
         if (arg.type === 'CallExpression' && isJsonMethod(arg, methodName)) {
           context.report({
             node,
-            message: `Detectado ${methodName} aninhado. Isso pode causar problemas de escape. Use normalizeStringArray() ou normalizeJsonObject().`
+            message: `Detectado ${methodName} aninhado. Isso pode causar problemas de escape. Use normalizeStringArray() ou normalizeJsonObject().`,
           })
         }
       })
@@ -66,16 +67,21 @@ module.exports = {
         if (/\\\\+["'\[\]{}]/g.test(value)) {
           context.report({
             node,
-            message: 'String contém múltiplos escapes que podem indicar dados corrompidos. Verifique a origem dos dados.'
+            message:
+              'String contém múltiplos escapes que podem indicar dados corrompidos. Verifique a origem dos dados.',
           })
         }
 
         // Detectar strings que parecem JSON escapado
-        if (/^"?\[.*\]"?$/.test(value.trim()) || /^"?\{.*\}"?$/.test(value.trim())) {
+        if (
+          /^"?\[.*\]"?$/.test(value.trim()) ||
+          /^"?\{.*\}"?$/.test(value.trim())
+        ) {
           if (value.includes('\\"') || value.includes('\\\\')) {
             context.report({
               node,
-              message: 'String parece ser JSON escapado. Use arrays/objetos diretamente em vez de strings JSON.'
+              message:
+                'String parece ser JSON escapado. Use arrays/objetos diretamente em vez de strings JSON.',
             })
           }
         }
@@ -97,7 +103,8 @@ module.exports = {
             if (arg.value.includes('\\\\') || arg.value.includes('\\"')) {
               context.report({
                 node,
-                message: 'Limpeza manual de escapes detectada. Use normalizeStringArray() ou normalizeLanguages() para tratamento consistente.'
+                message:
+                  'Limpeza manual de escapes detectada. Use normalizeStringArray() ou normalizeLanguages() para tratamento consistente.',
               })
             }
           }
@@ -111,7 +118,7 @@ module.exports = {
         checkForNestedJsonCalls(node, 'parse')
         checkReplacePatterns(node)
       },
-      
+
       Literal(node) {
         checkStringLiterals(node)
       },
@@ -123,12 +130,13 @@ module.exports = {
             if (/\\\\+["'\[\]{}]/g.test(quasi.value.raw)) {
               context.report({
                 node: quasi,
-                message: 'Template literal contém múltiplos escapes. Verifique se os dados não estão corrompidos.'
+                message:
+                  'Template literal contém múltiplos escapes. Verifique se os dados não estão corrompidos.',
               })
             }
           }
         })
-      }
+      },
     }
-  }
+  },
 }

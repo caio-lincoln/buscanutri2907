@@ -264,7 +264,7 @@ export function AnamneseNutricionalModal({
   // Função para formatar peso automaticamente
   const formatPeso = (value: string) => {
     // Remove caracteres não numéricos
-    const numericValue = value.replace(/[^\d]/g, '')
+    const numericValue = value.replace(/[^d]/g, '')
 
     if (numericValue.length === 0) return ''
     if (numericValue.length === 1) return numericValue
@@ -280,7 +280,7 @@ export function AnamneseNutricionalModal({
   // Função para formatar altura automaticamente
   const formatAltura = (value: string) => {
     // Remove caracteres não numéricos
-    const numericValue = value.replace(/[^\d]/g, '')
+    const numericValue = value.replace(/[^d]/g, '')
 
     if (numericValue.length === 0) return ''
     if (numericValue.length === 1) return `1.${numericValue}`

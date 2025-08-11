@@ -144,6 +144,12 @@ export function ReportsTab({ companyId }: ReportsTabProps) {
       }
 
       // Criar e baixar arquivo
+      // Verificação segura para SSR
+      if (typeof document === 'undefined' || !document.createElement || !document.body) {
+        alert('Funcionalidade de download não disponível no servidor.')
+        return
+      }
+      
       const encodedUri = encodeURI(csvContent)
       const link = document.createElement('a')
       link.setAttribute('href', encodedUri)

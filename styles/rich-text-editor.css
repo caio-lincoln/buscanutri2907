@@ -11,7 +11,7 @@
 }
 
 .ProseMirror:focus {
-  border-color: #4AB0D9;
+  border-color: #4ab0d9;
   box-shadow: 0 0 0 2px rgba(74, 176, 217, 0.1);
 }
 
@@ -75,7 +75,7 @@
 }
 
 .ProseMirror blockquote {
-  border-left: 4px solid #4AB0D9;
+  border-left: 4px solid #4ab0d9;
   padding-left: 1rem;
   margin: 1rem 0;
   font-style: italic;
@@ -86,7 +86,7 @@
 }
 
 .ProseMirror a {
-  color: #4AB0D9;
+  color: #4ab0d9;
   text-decoration: underline;
 }
 
@@ -177,7 +177,7 @@
 }
 
 .editor-menu button.is-active {
-  background: #4AB0D9;
+  background: #4ab0d9;
   color: white;
 }
 
@@ -197,7 +197,7 @@
 
 .editor-input:focus {
   outline: none;
-  border-color: #4AB0D9;
+  border-color: #4ab0d9;
   box-shadow: 0 0 0 2px rgba(74, 176, 217, 0.1);
 }
 
@@ -206,11 +206,11 @@
   .editor-menu {
     padding: 0.25rem;
   }
-  
+
   .editor-menu button {
     padding: 0.375rem;
   }
-  
+
   .ProseMirror {
     padding: 0.75rem;
     min-height: 150px;
@@ -226,7 +226,7 @@
 .content-renderer br {
   display: block;
   margin: 0.5rem 0;
-  content: "";
+  content: '';
 }
 
 .content-renderer p:empty {

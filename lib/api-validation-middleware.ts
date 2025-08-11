@@ -9,7 +9,7 @@ import { validateStructuredPayload } from './structured-data-utils'
 // Campos que devem ser arrays/objetos estruturados
 const STRUCTURED_FIELDS = [
   'languages',
-  'specialties', 
+  'specialties',
   'services',
   'certifications',
   'achievements',
@@ -22,7 +22,7 @@ const STRUCTURED_FIELDS = [
   'prices',
   'dietary_preferences',
   'payment_methods',
-  'consultation_languages'
+  'consultation_languages',
 ]
 
 /**
@@ -44,7 +44,7 @@ export function validateApiPayload(payload: any): ValidationResult {
   for (const fieldName of STRUCTURED_FIELDS) {
     if (payload.hasOwnProperty(fieldName)) {
       const validation = validateStructuredPayload(payload, fieldName)
-      
+
       if (!validation.isValid) {
         errors.push(validation.error!)
       } else if (validation.normalizedValue !== undefined) {
@@ -56,7 +56,7 @@ export function validateApiPayload(payload: any): ValidationResult {
   return {
     isValid: errors.length === 0,
     errors,
-    normalizedPayload: errors.length === 0 ? normalizedPayload : undefined
+    normalizedPayload: errors.length === 0 ? normalizedPayload : undefined,
   }
 }
 
@@ -81,7 +81,8 @@ export function withApiValidation(
           {
             error: 'Payload inválido',
             details: validation.errors,
-            message: 'Campos estruturados devem ser enviados como arrays/objetos, não como strings JSON.'
+            message:
+              'Campos estruturados devem ser enviados como arrays/objetos, não como strings JSON.',
           },
           { status: 400 }
         )
@@ -91,7 +92,7 @@ export function withApiValidation(
       const normalizedReq = new NextRequest(req.url, {
         method: req.method,
         headers: req.headers,
-        body: JSON.stringify(validation.normalizedPayload)
+        body: JSON.stringify(validation.normalizedPayload),
       })
 
       return handler(normalizedReq, validation.normalizedPayload)
@@ -99,7 +100,7 @@ export function withApiValidation(
       return NextResponse.json(
         {
           error: 'Erro ao processar payload',
-          message: 'Formato de dados inválido'
+          message: 'Formato de dados inválido',
         },
         { status: 400 }
       )
@@ -119,18 +120,25 @@ export function validateNutritionistPayload(payload: any): ValidationResult {
     errors.push('CRN deve ser uma string')
   }
 
-  if (payload.consultation_price && typeof payload.consultation_price !== 'number') {
+  if (
+    payload.consultation_price &&
+    typeof payload.consultation_price !== 'number'
+  ) {
     errors.push('Preço da consulta deve ser um número')
   }
 
-  if (payload.experience_years && typeof payload.experience_years !== 'number') {
+  if (
+    payload.experience_years &&
+    typeof payload.experience_years !== 'number'
+  ) {
     errors.push('Anos de experiência deve ser um número')
   }
 
   return {
     isValid: errors.length === 0,
     errors,
-    normalizedPayload: errors.length === 0 ? baseValidation.normalizedPayload : undefined
+    normalizedPayload:
+      errors.length === 0 ? baseValidation.normalizedPayload : undefined,
   }
 }
 
@@ -157,7 +165,8 @@ export function validatePatientPayload(payload: any): ValidationResult {
   return {
     isValid: errors.length === 0,
     errors,
-    normalizedPayload: errors.length === 0 ? baseValidation.normalizedPayload : undefined
+    normalizedPayload:
+      errors.length === 0 ? baseValidation.normalizedPayload : undefined,
   }
 }
 
@@ -180,7 +189,8 @@ export function validateCompanyPayload(payload: any): ValidationResult {
   return {
     isValid: errors.length === 0,
     errors,
-    normalizedPayload: errors.length === 0 ? baseValidation.normalizedPayload : undefined
+    normalizedPayload:
+      errors.length === 0 ? baseValidation.normalizedPayload : undefined,
   }
 }
 
@@ -203,9 +213,10 @@ export function logInvalidPayloadAttempt(
   console.warn('payload_invalid_json_wrapped_blocked', {
     field: fieldName,
     valueType: typeof value,
-    valuePreview: typeof value === 'string' ? value.substring(0, 100) + '...' : value,
+    valuePreview:
+      typeof value === 'string' ? value.substring(0, 100) + '...' : value,
     timestamp: new Date().toISOString(),
-    context
+    context,
   })
 }
 
@@ -221,7 +232,7 @@ export function createValidationErrorResponse(
       error: 'Dados inválidos',
       details: errors,
       message: 'Verifique os dados enviados e tente novamente.',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     },
     { status: statusCode }
   )

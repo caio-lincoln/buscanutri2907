@@ -4,13 +4,13 @@
  */
 
 import { createClient } from '@supabase/supabase-js'
-import { 
-  normalizeStringArray, 
-  normalizeLanguages, 
+import {
+  normalizeStringArray,
+  normalizeLanguages,
   normalizeSpecialties,
   createBackup,
   logNormalizationEvent,
-  type NormalizationResult
+  type NormalizationResult,
 } from '../lib/structured-data-utils'
 
 // Configuração do Supabase
@@ -48,50 +48,52 @@ const FIELD_MIGRATIONS: FieldMigration[] = [
     table: 'nutritionist_profiles',
     field: 'languages',
     normalizer: normalizeLanguages,
-    backupField: 'languages_raw_backup'
+    backupField: 'languages_raw_backup',
   },
   {
-    table: 'nutritionist_profiles', 
+    table: 'nutritionist_profiles',
     field: 'specialties',
     normalizer: normalizeSpecialties,
-    backupField: 'specialties_raw_backup'
+    backupField: 'specialties_raw_backup',
   },
   {
     table: 'nutritionist_profiles',
     field: 'certifications',
     normalizer: normalizeStringArray,
-    backupField: 'certifications_raw_backup'
+    backupField: 'certifications_raw_backup',
   },
   {
     table: 'nutritionist_profiles',
     field: 'achievements',
     normalizer: normalizeStringArray,
-    backupField: 'achievements_raw_backup'
+    backupField: 'achievements_raw_backup',
   },
   {
     table: 'nutritionist_profiles',
     field: 'available_times',
     normalizer: normalizeStringArray,
-    backupField: 'available_times_raw_backup'
+    backupField: 'available_times_raw_backup',
   },
   {
     table: 'patient_profiles',
     field: 'dietary_preferences',
     normalizer: normalizeStringArray,
-    backupField: 'dietary_preferences_raw_backup'
-  }
+    backupField: 'dietary_preferences_raw_backup',
+  },
 ]
 
 /**
  * Executa migração para uma tabela específica
  */
-async function migrateTable(migration: FieldMigration): Promise<MigrationStats> {
+async function migrateTable(
+  migration: FieldMigration
+): Promise<MigrationStats> {
   const stats: MigrationStats = {
     totalRecords: 0,
     processedRecords: 0,
     corruptedRecords: 0,
     errors: 0,
-    fieldsNormalized: 0
+    fieldsNormalized: 0,
   }
 
   console.log(`\n🔄 Migrando ${migration.table}.${migration.field}...`)
@@ -132,7 +134,7 @@ async function migrateTable(migration: FieldMigration): Promise<MigrationStats> 
       for (const record of records) {
         try {
           const fieldValue = record[migration.field]
-          
+
           // Pular se o campo já é null/undefined
           if (fieldValue === null || fieldValue === undefined) {
             stats.processedRecords++
@@ -141,67 +143,81 @@ async function migrateTable(migration: FieldMigration): Promise<MigrationStats> 
 
           // Normalizar o campo
           const result = migration.normalizer(fieldValue)
-          
+
           // Log se dados foram corrompidos
           if (result.wasCorrupted) {
             stats.corruptedRecords++
             logNormalizationEvent(migration.field, result, {
               context: 'migration',
               table: migration.table,
-              recordId: record.id
+              recordId: record.id,
             })
           }
 
           // Verificar se houve mudança
-          const hasChanged = JSON.stringify(result.data) !== JSON.stringify(fieldValue)
-          
+          const hasChanged =
+            JSON.stringify(result.data) !== JSON.stringify(fieldValue)
+
           if (hasChanged || result.wasCorrupted) {
             if (!DRY_RUN) {
               // Criar backup do valor original
               const backup = createBackup(fieldValue, migration.field)
-              
+
               // Atualizar registro com valor normalizado e backup
               const { error: updateError } = await supabase
                 .from(migration.table)
                 .update({
                   [migration.field]: result.data,
-                  [migration.backupField]: backup.backupValue
+                  [migration.backupField]: backup.backupValue,
                 })
                 .eq('id', record.id)
 
               if (updateError) {
-                console.error(`❌ Erro ao atualizar registro ${record.id}: ${updateError.message}`)
+                console.error(
+                  `❌ Erro ao atualizar registro ${record.id}: ${updateError.message}`
+                )
                 stats.errors++
                 continue
               }
             }
 
             stats.fieldsNormalized++
-            
+
             if (DRY_RUN) {
-              console.log(`🔍 [DRY RUN] Registro ${record.id}: ${JSON.stringify(fieldValue)} → ${JSON.stringify(result.data)}`)
+              console.log(
+                `🔍 [DRY RUN] Registro ${record.id}: ${JSON.stringify(fieldValue)} → ${JSON.stringify(result.data)}`
+              )
             }
           }
 
           stats.processedRecords++
         } catch (recordError) {
-          console.error(`❌ Erro ao processar registro ${record.id}:`, recordError)
+          console.error(
+            `❌ Erro ao processar registro ${record.id}:`,
+            recordError
+          )
           stats.errors++
         }
       }
 
       offset += BATCH_SIZE
-      console.log(`📈 Progresso: ${Math.min(offset, stats.totalRecords)}/${stats.totalRecords} (${Math.round((Math.min(offset, stats.totalRecords) / stats.totalRecords) * 100)}%)`)
+      console.log(
+        `📈 Progresso: ${Math.min(offset, stats.totalRecords)}/${stats.totalRecords} (${Math.round((Math.min(offset, stats.totalRecords) / stats.totalRecords) * 100)}%)`
+      )
     }
 
-    console.log(`✅ Migração de ${migration.table}.${migration.field} concluída`)
+    console.log(
+      `✅ Migração de ${migration.table}.${migration.field} concluída`
+    )
     console.log(`   📊 Processados: ${stats.processedRecords}`)
     console.log(`   🔧 Normalizados: ${stats.fieldsNormalized}`)
     console.log(`   ⚠️  Corrompidos: ${stats.corruptedRecords}`)
     console.log(`   ❌ Erros: ${stats.errors}`)
-
   } catch (error) {
-    console.error(`❌ Erro na migração de ${migration.table}.${migration.field}:`, error)
+    console.error(
+      `❌ Erro na migração de ${migration.table}.${migration.field}:`,
+      error
+    )
     stats.errors++
   }
 
@@ -213,7 +229,7 @@ async function migrateTable(migration: FieldMigration): Promise<MigrationStats> 
  */
 async function runMigrations() {
   console.log('🚀 Iniciando migração de dados estruturados...')
-  
+
   if (DRY_RUN) {
     console.log('🔍 MODO DRY RUN - Nenhuma alteração será feita no banco')
   }
@@ -223,12 +239,12 @@ async function runMigrations() {
     processedRecords: 0,
     corruptedRecords: 0,
     errors: 0,
-    fieldsNormalized: 0
+    fieldsNormalized: 0,
   }
 
   for (const migration of FIELD_MIGRATIONS) {
     const stats = await migrateTable(migration)
-    
+
     totalStats.totalRecords += stats.totalRecords
     totalStats.processedRecords += stats.processedRecords
     totalStats.corruptedRecords += stats.corruptedRecords

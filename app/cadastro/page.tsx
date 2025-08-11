@@ -148,8 +148,8 @@ export default function CadastroPage() {
       length: password.length >= 8,
       uppercase: /[A-Z]/.test(password),
       lowercase: /[a-z]/.test(password),
-      number: /\d/.test(password),
-      special: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password),
+      number: /d/.test(password),
+      special: /[!@#$%^&*()_+-=[]{};':"\|,.<>\/?]/.test(password),
     }
 
     const score = Object.values(requirements).filter(Boolean).length
@@ -313,7 +313,7 @@ export default function CadastroPage() {
     const formatted = formatCNPJ(value)
     setCnpjValue(formatted)
 
-    if (!formatted || formatted.replace(/\D/g, '').length < 14) {
+    if (!formatted || formatted.replace(/D/g, '').length < 14) {
       setCnpjValidation({ status: 'idle', message: '' })
       return
     }
@@ -435,7 +435,7 @@ export default function CadastroPage() {
         const parsePrice = (price: string) => {
           if (!price) return null
           const numericValue = parseFloat(
-            price.replace(/[^\d,]/g, '').replace(',', '.')
+            price.replace(/[^d,]/g, '').replace(',', '.')
           )
           return isNaN(numericValue) ? null : numericValue
         }
@@ -920,22 +920,26 @@ export default function CadastroPage() {
                         type="checkbox"
                         id="aceita_cupons"
                         checked={aceitaCupons}
-                        onChange={(e) => setAceitaCupons(e.target.checked)}
+                        onChange={e => setAceitaCupons(e.target.checked)}
                         className="mt-1 h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
                         aria-describedby="aceita_cupons_description"
                       />
                       <div className="flex-1">
-                        <Label 
-                          htmlFor="aceita_cupons" 
+                        <Label
+                          htmlFor="aceita_cupons"
                           className="text-sm font-medium text-gray-900 cursor-pointer"
                         >
-                          Aceito disponibilizar cupons de desconto para pacientes em promoções da plataforma.
+                          Aceito disponibilizar cupons de desconto para
+                          pacientes em promoções da plataforma.
                         </Label>
-                        <p 
+                        <p
                           id="aceita_cupons_description"
                           className="text-xs text-gray-600 mt-1 leading-relaxed"
                         >
-                          Campanhas e prêmios para os primeiros pacientes que se cadastrarem na plataforma serão realizadas, onde disponibilizamos cupons de 10% desconto na consulta online.
+                          Campanhas e prêmios para os primeiros pacientes que se
+                          cadastrarem na plataforma serão realizadas, onde
+                          disponibilizamos cupons de 10% desconto na consulta
+                          online.
                         </p>
                       </div>
                     </div>

@@ -12,7 +12,8 @@ interface ContentRendererProps {
 // Função para detectar e converter links de vídeo em embeds
 const processVideoEmbeds = (html: string): string => {
   // YouTube
-  const youtubeRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/g
+  const youtubeRegex =
+    /(?:https?:\/\/)?(?:www.)?(?:youtube.com\/watch?v=|youtu.be\/|youtube.com\/embed\/)([a-zA-Z0-9_-]{11})/g
   html = html.replace(youtubeRegex, (match, videoId) => {
     return `<div class="video-embed youtube-embed">
       <iframe 
@@ -25,7 +26,8 @@ const processVideoEmbeds = (html: string): string => {
   })
 
   // Instagram (usando oEmbed approach simplificado)
-  const instagramRegex = /(?:https?:\/\/)?(?:www\.)?instagram\.com\/(?:p|reel)\/([a-zA-Z0-9_-]+)/g
+  const instagramRegex =
+    /(?:https?:\/\/)?(?:www.)?instagram.com\/(?:p|reel)\/([a-zA-Z0-9_-]+)/g
   html = html.replace(instagramRegex, (match, postId) => {
     return `<div class="video-embed instagram-embed">
       <blockquote class="instagram-media" data-instgrm-permalink="${match}" data-instgrm-version="14">
@@ -37,7 +39,8 @@ const processVideoEmbeds = (html: string): string => {
   })
 
   // TikTok
-  const tiktokRegex = /(?:https?:\/\/)?(?:www\.)?tiktok\.com\/@[^\/]+\/video\/(\d+)/g
+  const tiktokRegex =
+    /(?:https?:\/\/)?(?:www.)?tiktok.com\/@[^\/]+\/video\/(d+)/g
   html = html.replace(tiktokRegex, (match, videoId) => {
     return `<div class="video-embed tiktok-embed">
       <blockquote class="tiktok-embed" cite="${match}" data-video-id="${videoId}">
@@ -54,7 +57,7 @@ const processVideoEmbeds = (html: string): string => {
 // Função para processar imagens e adicionar classes de centralização
 const processImages = (html: string, centerImages: boolean = false): string => {
   if (!centerImages) return html
-  
+
   return html.replace(
     /<img([^>]*)>/g,
     `<img$1 class="mx-auto block max-w-full h-auto rounded-lg">`
@@ -65,37 +68,37 @@ const processImages = (html: string, centerImages: boolean = false): string => {
 const preserveFormatting = (html: string): string => {
   // Preservar quebras de linha duplas como parágrafos
   html = html.replace(/\n\n/g, '</p><p>')
-  
+
   // Preservar quebras de linha simples como <br>
   html = html.replace(/\n/g, '<br>')
-  
+
   // Preservar espaços múltiplos
-  html = html.replace(/  +/g, (match) => {
+  html = html.replace(/  +/g, match => {
     return '&nbsp;'.repeat(match.length)
   })
-  
+
   return html
 }
 
-export function ContentRenderer({ 
-  content, 
+export function ContentRenderer({
+  content,
   className,
-  centerImages = false 
+  centerImages = false,
 }: ContentRendererProps) {
   // Processar o conteúdo
   let processedContent = content
-  
+
   // 1. Processar embeds de vídeo
   processedContent = processVideoEmbeds(processedContent)
-  
+
   // 2. Processar imagens
   processedContent = processImages(processedContent, centerImages)
-  
+
   // 3. Preservar formatação
   processedContent = preserveFormatting(processedContent)
 
   return (
-    <div 
+    <div
       className={cn(
         'prose prose-lg max-w-none',
         'prose-headings:text-gray-900 prose-headings:font-bold',
@@ -127,6 +130,11 @@ export function ContentRenderer({
 // Hook para carregar scripts de embed externos
 export function useEmbedScripts() {
   React.useEffect(() => {
+    // Verificação segura para SSR
+    if (typeof document === 'undefined' || !document.createElement || !document.body) {
+      return
+    }
+
     // Carregar script do Instagram
     if (!document.querySelector('script[src*="instagram.com/embed.js"]')) {
       const instagramScript = document.createElement('script')

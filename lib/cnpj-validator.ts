@@ -12,7 +12,7 @@ export interface CNPJValidationResult {
 
 // Remove caracteres não numéricos do CNPJ
 export function cleanCNPJ(cnpj: string): string {
-  return cnpj.replace(/\D/g, '')
+  return cnpj.replace(/D/g, '')
 }
 
 // Formata CNPJ para exibição (XX.XXX.XXX/XXXX-XX)
@@ -20,14 +20,14 @@ export function formatCNPJ(cnpj: string): string {
   const cleaned = cleanCNPJ(cnpj)
 
   if (cleaned.length <= 2) return cleaned
-  if (cleaned.length <= 5) return cleaned.replace(/(\d{2})(\d+)/, '$1.$2')
+  if (cleaned.length <= 5) return cleaned.replace(/(d{2})(d+)/, '$1.$2')
   if (cleaned.length <= 8)
-    return cleaned.replace(/(\d{2})(\d{3})(\d+)/, '$1.$2.$3')
+    return cleaned.replace(/(d{2})(d{3})(d+)/, '$1.$2.$3')
   if (cleaned.length <= 12)
-    return cleaned.replace(/(\d{2})(\d{3})(\d{3})(\d+)/, '$1.$2.$3/$4')
+    return cleaned.replace(/(d{2})(d{3})(d{3})(d+)/, '$1.$2.$3/$4')
 
   return cleaned.replace(
-    /(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/,
+    /(d{2})(d{3})(d{3})(d{4})(d{2})/,
     '$1.$2.$3/$4-$5'
   )
 }
@@ -45,7 +45,7 @@ export function validateCNPJFormat(cnpj: string): CNPJValidationResult {
   }
 
   // Verifica se não são todos os dígitos iguais
-  if (/^(\d)\1+$/.test(cleaned)) {
+  if (/^(d)1+$/.test(cleaned)) {
     return {
       isValid: false,
       message: 'CNPJ não pode ter todos os dígitos iguais',

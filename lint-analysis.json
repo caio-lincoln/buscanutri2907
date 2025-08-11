@@ -1,0 +1,100 @@
+{
+  "summary": {
+    "totalFiles": 128,
+    "totalErrors": 567,
+    "totalWarnings": 196,
+    "totalFixable": 0,
+    "totalIssues": 763
+  },
+  "priorityFiles": [
+    ".\\components\\user-profile-modal.tsx",
+    ".\\lib\\forum-data.ts",
+    ".\\app\\dashboard\\paciente\\page.tsx",
+    ".\\lib\\realtime-service.ts",
+    ".\\components\\dashboard\\nutricionistas\\appointments-tab.tsx",
+    ".\\components\\anamnese-nutricional-modal.tsx",
+    ".\\lib\\chat-forum-service.ts",
+    ".\\components\\dashboard\\nutricionistas\\applications-tab.tsx",
+    ".\\app\\dashboard\\nutricionistas\\forum\\[id]\\page.tsx",
+    ".\\hooks\\use-realtime-nutritionists.ts"
+  ],
+  "topRules": [
+    {
+      "rule": "@typescript-eslint/no-unused-vars",
+      "count": 482,
+      "severity": "error",
+      "fileCount": 108
+    },
+    {
+      "rule": "@typescript-eslint/no-explicit-any",
+      "count": 133,
+      "severity": "warning",
+      "fileCount": 45
+    },
+    {
+      "rule": "no-console",
+      "count": 71,
+      "severity": "error",
+      "fileCount": 12
+    },
+    {
+      "rule": "@typescript-eslint/no-non-null-assertion",
+      "count": 24,
+      "severity": "warning",
+      "fileCount": 11
+    },
+    {
+      "rule": "react-hooks/exhaustive-deps",
+      "count": 24,
+      "severity": "warning",
+      "fileCount": 18
+    },
+    {
+      "rule": "@next/next/no-img-element",
+      "count": 15,
+      "severity": "warning",
+      "fileCount": 12
+    },
+    {
+      "rule": "react/no-unescaped-entities",
+      "count": 6,
+      "severity": "error",
+      "fileCount": 3
+    },
+    {
+      "rule": "react-hooks/rules-of-hooks",
+      "count": 4,
+      "severity": "error",
+      "fileCount": 1
+    },
+    {
+      "rule": "@typescript-eslint/ban-ts-comment",
+      "count": 3,
+      "severity": "error",
+      "fileCount": 1
+    },
+    {
+      "rule": "@typescript-eslint/no-empty-object-type",
+      "count": 1,
+      "severity": "error",
+      "fileCount": 1
+    }
+  ],
+  "priorityRulesStatus": [
+    {
+      "rule": "no-console",
+      "count": 71,
+      "present": true
+    },
+    {
+      "rule": "no-useless-escape",
+      "count": 0,
+      "present": false
+    },
+    {
+      "rule": "no-irregular-whitespace",
+      "count": 0,
+      "present": false
+    }
+  ]
+}

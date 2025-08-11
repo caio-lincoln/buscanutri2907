@@ -6,39 +6,38 @@ export function useLocalStorage<T>(
   key: string,
   initialValue: T
 ): [T, (value: T | ((val: T) => T)) => void] {
-  // Estado para armazenar nosso valor
-  // Passar função de estado inicial para useState para que a lógica seja executada apenas uma vez
-  const [storedValue, setStoredValue] = useState<T>(() => {
-    if (typeof window === 'undefined') {
-      return initialValue
-    }
+  // Estado para armazenar nosso valor - sempre inicia com initialValue para evitar hidratação
+  const [storedValue, setStoredValue] = useState<T>(initialValue)
+  const [isClient, setIsClient] = useState(false)
+
+  // Efeito para carregar do localStorage apenas no cliente
+  useEffect(() => {
+    setIsClient(true)
     try {
-      // Obter do localStorage local por chave
       const item = window.localStorage.getItem(key)
-      // Analisar JSON armazenado ou se nenhum retornar initialValue
-      return item ? JSON.parse(item) : initialValue
+      if (item) {
+        setStoredValue(JSON.parse(item))
+      }
     } catch (error) {
-      // Se erro também retornar initialValue
-      console.log(error)
-      return initialValue
+      console.warn(`Erro ao ler localStorage para a chave "${key}":`, error)
     }
-  })
+  }, [key])
 
   // Retornar uma versão envolvida da função setter useState que ...
   // ... persiste o novo valor no localStorage.
   const setValue = (value: T | ((val: T) => T)) => {
     try {
       // Permitir que value seja uma função para que tenhamos a mesma API que useState
-      const valueToStore = value instanceof Function ? value(storedValue) : value
+      const valueToStore =
+        value instanceof Function ? value(storedValue) : value
       // Salvar estado
       setStoredValue(valueToStore)
-      // Salvar no localStorage
-      if (typeof window !== 'undefined') {
+      // Salvar no localStorage apenas se estivermos no cliente
+      if (isClient) {
         window.localStorage.setItem(key, JSON.stringify(valueToStore))
       }
     } catch (error) {
-      // Uma implementação mais avançada lidaria com o caso de erro
-      console.log(error)
+      console.warn(`Erro ao salvar no localStorage para a chave "${key}":`, error)
     }
   }
 
@@ -49,7 +48,8 @@ export function useIsomorphicLayoutEffect(
   effect: React.EffectCallback,
   deps?: React.DependencyList
 ) {
-  const useEffect = typeof window !== 'undefined' ? React.useLayoutEffect : React.useEffect
+  const useEffect =
+    typeof window !== 'undefined' ? React.useLayoutEffect : React.useEffect
   return useEffect(effect, deps)
 }
 

@@ -7,7 +7,10 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { ContentRenderer, useEmbedScripts } from '@/components/ui/content-renderer'
+import {
+  ContentRenderer,
+  useEmbedScripts,
+} from '@/components/ui/content-renderer'
 import {
   Calendar,
   Clock,
@@ -27,7 +30,7 @@ export default function BlogPostPage() {
   const postId = params.id as string
   const [post, setPost] = useState<BlogPost | null>(null)
   const [loading, setLoading] = useState(true)
-  
+
   useEmbedScripts()
 
   useEffect(() => {
@@ -159,11 +162,11 @@ export default function BlogPostPage() {
           </div>
 
           <div className="prose prose-lg max-w-none text-gray-800 leading-relaxed">
-              <ContentRenderer 
-                content={post.content} 
-                centerImages={post.centerImage}
-              />
-            </div>
+            <ContentRenderer
+              content={post.content}
+              centerImages={post.centerImage}
+            />
+          </div>
 
           {post.tags && post.tags.length > 0 && (
             <div className="flex flex-wrap gap-2 pt-4 border-t border-gray-100">

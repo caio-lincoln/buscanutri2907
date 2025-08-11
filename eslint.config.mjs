@@ -21,8 +21,10 @@ const eslintConfig = [
       '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/no-non-null-assertion': 'warn',
 
-      // General rules
+      // General rules - CI blocking rules
       'no-console': 'error',
+      'no-useless-escape': 'error',
+      'no-irregular-whitespace': 'error',
       'no-debugger': 'error',
       'no-var': 'error',
       'prefer-const': 'error',

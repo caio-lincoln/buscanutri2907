@@ -152,17 +152,13 @@ export async function updateNutritionistRating(
 }
 
 // Verificar se uma consulta pode ser avaliada
-export async function canRateConsultation(
-  consultationId: string
-): Promise<boolean> {
+export async function canRateConsultation(): Promise<boolean> {
   // Função removida - não há mais consultas de telemedicina
   return false
 }
 
 // Buscar consultas que podem ser avaliadas por um paciente
-export async function getConsultationsToRate(
-  patientId: string
-): Promise<any[]> {
+export async function getConsultationsToRate(): Promise<any[]> {
   // Função removida - não há mais consultas de telemedicina
   return []
 }

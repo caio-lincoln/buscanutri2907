@@ -142,7 +142,8 @@ export async function deleteBlogImage(
       // Silent error handling - user not authenticated
       return {
         success: false,
-        error: 'Usuário não autenticado. Faça login para fazer upload de imagens.',
+        error:
+          'Usuário não autenticado. Faça login para fazer upload de imagens.',
       }
     }
 

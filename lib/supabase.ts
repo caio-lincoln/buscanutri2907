@@ -26,7 +26,7 @@ export const createSupabaseClient = () =>
   createBrowserClient<Database>(finalUrl, finalKey)
 
 // Export UserType for use in other files
-export type UserType = 'patient' | 'nutritionist' | 'company' | 'admin'
+export type UserType = 'paciente' | 'nutricionista' | 'empresa' | 'admin'
 
 // ────────────────────────────────────────────────────────────────────────────────
 // Interfaces de Perfil
@@ -84,7 +84,8 @@ export interface NutritionistProfile extends UserProfile {
   // Campo online_consultation removido - substituído por service_online_available
   crn?: string | null // Alias para crn_number
   profile_image_url?: string | null // URL da imagem de perfil
-  badges?: Badge[] | null // Badges/insígnias do nutricionista
+  cover_image_url?: string | null // URL da imagem de capa
+  badges?: any[] | null // Badges/insígnias do nutricionista
 
   // Redes sociais (campos individuais)
   instagram_username?: string | null
@@ -137,6 +138,7 @@ export interface CompanyProfile extends UserProfile {
   industry?: string | null
   company_size?: number | null
   website?: string | null
+  logo_url?: string | null
 }
 
 // ────────────────────────────────────────────────────────────────────────────────

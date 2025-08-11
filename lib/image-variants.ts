@@ -60,7 +60,9 @@ export function generateImageVariants(
 
   // Adiciona versionamento para cache busting
   // Use a consistent hash instead of timestamp to avoid hydration mismatch
-  const versionParam = updatedAt ? `?v=${updatedAt.replace(/[^0-9]/g, '').slice(-8)}` : ''
+  const versionParam = updatedAt
+    ? `?v=${updatedAt.replace(/[^0-9]/g, '').slice(-8)}`
+    : ''
 
   // Se a URL já contém parâmetros de transformação (ex: Supabase Transform)
   const hasTransformParams = originalUrl.includes('transform=')

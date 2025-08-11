@@ -5,12 +5,12 @@
 
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals'
 import { createClient } from '@supabase/supabase-js'
-import { 
-  normalizeStringArray, 
-  normalizeLanguages, 
+import {
+  normalizeStringArray,
+  normalizeLanguages,
   normalizeSpecialties,
   validateStructuredPayload,
-  safeStringify 
+  safeStringify,
 } from '../lib/structured-data-utils'
 
 // Mock do Supabase para testes
@@ -21,7 +21,7 @@ const supabase = createClient(
 
 describe('Structured Data Contract Tests', () => {
   let testNutritionistId: string
-  
+
   beforeEach(async () => {
     // Criar um nutricionista de teste
     const { data, error } = await supabase
@@ -32,11 +32,11 @@ describe('Structured Data Contract Tests', () => {
         specialties: ['Nutrição Esportiva', 'Emagrecimento'],
         languages: ['Português', 'Inglês'],
         services: ['Consulta Online', 'Plano Alimentar'],
-        certifications: ['CRN-1 12345', 'Pós-graduação em Nutrição Esportiva']
+        certifications: ['CRN-1 12345', 'Pós-graduação em Nutrição Esportiva'],
       })
       .select('id')
       .single()
-    
+
     if (error) throw error
     testNutritionistId = data.id
   })
@@ -63,7 +63,7 @@ describe('Structured Data Contract Tests', () => {
         // JSON string com escapes
         '"[\\"Português\\", \\"Inglês\\"]"',
         // JSON string com múltiplos escapes
-        '\\"[\\\\\\"Português\\\\\\", \\\\\\"Inglês\\\\\\"]\\\"'
+        '\\"[\\\\\\"Português\\\\\\", \\\\\\"Inglês\\\\\\"]\\\"',
       ]
 
       testCases.forEach(testCase => {
@@ -78,7 +78,7 @@ describe('Structured Data Contract Tests', () => {
         'pt-BR, en-US',
         'Português (Brasil), English (US)',
         '["pt-BR", "en-US"]',
-        '"[\\"Português\\", \\"Inglês\\"]"'
+        '"[\\"Português\\", \\"Inglês\\"]"',
       ]
 
       testCases.forEach(testCase => {
@@ -92,7 +92,7 @@ describe('Structured Data Contract Tests', () => {
       const testCases = [
         'Nutrição Esportiva, Emagrecimento',
         '["Nutrição Esportiva", "Emagrecimento"]',
-        '"[\\"Nutrição Esportiva\\", \\"Emagrecimento\\"]"'
+        '"[\\"Nutrição Esportiva\\", \\"Emagrecimento\\"]"',
       ]
 
       testCases.forEach(testCase => {
@@ -108,15 +108,15 @@ describe('Structured Data Contract Tests', () => {
       const invalidPayloads = [
         {
           languages: '["Português", "Inglês"]',
-          specialties: ['Nutrição Esportiva']
+          specialties: ['Nutrição Esportiva'],
         },
         {
           languages: ['Português'],
-          specialties: '"[\\"Nutrição Esportiva\\"]"'
+          specialties: '"[\\"Nutrição Esportiva\\"]"',
         },
         {
-          services: '{"online": true, "presencial": false}'
-        }
+          services: '{"online": true, "presencial": false}',
+        },
       ]
 
       invalidPayloads.forEach(payload => {
@@ -131,16 +131,16 @@ describe('Structured Data Contract Tests', () => {
         {
           languages: ['Português', 'Inglês'],
           specialties: ['Nutrição Esportiva', 'Emagrecimento'],
-          services: ['Consulta Online', 'Plano Alimentar']
+          services: ['Consulta Online', 'Plano Alimentar'],
         },
         {
           languages: [],
           specialties: ['Nutrição Clínica'],
           working_hours: {
             monday: { start: '08:00', end: '18:00' },
-            tuesday: { start: '08:00', end: '18:00' }
-          }
-        }
+            tuesday: { start: '08:00', end: '18:00' },
+          },
+        },
       ]
 
       validPayloads.forEach(payload => {
@@ -156,7 +156,7 @@ describe('Structured Data Contract Tests', () => {
       const testData = {
         specialties: ['Nutrição Esportiva', 'Emagrecimento'],
         languages: ['Português', 'Inglês'],
-        services: ['Consulta Online', 'Plano Alimentar']
+        services: ['Consulta Online', 'Plano Alimentar'],
       }
 
       // Atualizar o registro de teste
@@ -178,7 +178,7 @@ describe('Structured Data Contract Tests', () => {
       expect(Array.isArray(storedData.specialties)).toBe(true)
       expect(Array.isArray(storedData.languages)).toBe(true)
       expect(Array.isArray(storedData.services)).toBe(true)
-      
+
       expect(storedData.specialties).toEqual(testData.specialties)
       expect(storedData.languages).toEqual(testData.languages)
       expect(storedData.services).toEqual(testData.services)
@@ -188,13 +188,13 @@ describe('Structured Data Contract Tests', () => {
       // Tentar inserir dados com JSON string (isso deve ser normalizado)
       const corruptedData = {
         specialties: '["Nutrição Esportiva", "Emagrecimento"]',
-        languages: '"[\\"Português\\", \\"Inglês\\"]"'
+        languages: '"[\\"Português\\", \\"Inglês\\"]"',
       }
 
       // Normalizar antes de inserir (simulando middleware)
       const normalizedData = {
         specialties: normalizeSpecialties(corruptedData.specialties),
-        languages: normalizeLanguages(corruptedData.languages)
+        languages: normalizeLanguages(corruptedData.languages),
       }
 
       const { error: updateError } = await supabase
@@ -214,7 +214,7 @@ describe('Structured Data Contract Tests', () => {
       expect(fetchError).toBeNull()
       expect(Array.isArray(storedData.specialties)).toBe(true)
       expect(Array.isArray(storedData.languages)).toBe(true)
-      
+
       // Verificar que não são strings JSON
       expect(typeof storedData.specialties).not.toBe('string')
       expect(typeof storedData.languages).not.toBe('string')
@@ -228,7 +228,7 @@ describe('Structured Data Contract Tests', () => {
         languages: 'Português, Inglês, Espanhol',
         specialties: 'Nutrição Esportiva; Emagrecimento; Nutrição Clínica',
         services: '["Consulta Online", "Plano Alimentar", "Acompanhamento"]',
-        certifications: '"[\\"CRN-1 12345\\", \\"Pós-graduação\\"]"'
+        certifications: '"[\\"CRN-1 12345\\", \\"Pós-graduação\\"]"',
       }
 
       // Normalizar dados (simulando processamento no front-end/API)
@@ -236,11 +236,17 @@ describe('Structured Data Contract Tests', () => {
         languages: normalizeLanguages(formData.languages),
         specialties: normalizeSpecialties(formData.specialties),
         services: normalizeStringArray(formData.services, 'services'),
-        certifications: normalizeStringArray(formData.certifications, 'certifications')
+        certifications: normalizeStringArray(
+          formData.certifications,
+          'certifications'
+        ),
       }
 
       // Validar payload
-      const validation = validateStructuredPayload(normalizedData, 'nutritionist')
+      const validation = validateStructuredPayload(
+        normalizedData,
+        'nutritionist'
+      )
       expect(validation.isValid).toBe(true)
 
       // Salvar no banco
@@ -259,7 +265,7 @@ describe('Structured Data Contract Tests', () => {
         .single()
 
       expect(fetchError).toBeNull()
-      
+
       // Verificar que todos os campos são arrays
       expect(Array.isArray(savedData.languages)).toBe(true)
       expect(Array.isArray(savedData.specialties)).toBe(true)
@@ -280,16 +286,16 @@ describe('Structured Data Contract Tests', () => {
       const testData = {
         languages: ['Português', 'Inglês'],
         specialties: ['Nutrição Esportiva'],
-        metadata: { version: 1, updated: new Date().toISOString() }
+        metadata: { version: 1, updated: new Date().toISOString() },
       }
 
       const serialized = safeStringify(testData)
       expect(typeof serialized).toBe('string')
-      
+
       // Verificar que não há escapes duplos
       expect(serialized).not.toMatch(/\\\\/)
       expect(serialized).not.toMatch(/\\"/g)
-      
+
       // Verificar que pode ser parseado de volta
       const parsed = JSON.parse(serialized)
       expect(parsed).toEqual(testData)
@@ -298,13 +304,13 @@ describe('Structured Data Contract Tests', () => {
     it('should not double-stringify already stringified data', () => {
       const originalData = ['Português', 'Inglês']
       const firstStringify = JSON.stringify(originalData)
-      
+
       // safeStringify deve detectar que já é uma string JSON válida
       const safeResult = safeStringify(firstStringify)
-      
+
       // Deve retornar a string original, não fazer stringify novamente
       expect(safeResult).toBe(firstStringify)
-      
+
       // Verificar que pode ser parseado corretamente
       const parsed = JSON.parse(safeResult)
       expect(parsed).toEqual(originalData)

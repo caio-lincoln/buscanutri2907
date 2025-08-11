@@ -49,7 +49,7 @@ class StructuredDataMonitor {
     console.log('🔍 Iniciando monitoramento de dados estruturados...')
     console.log(`📊 Intervalo: ${this.config.checkInterval} minutos`)
     console.log(`⚠️  Limite de alerta: ${this.config.alertThreshold} problemas`)
-    
+
     if (this.config.dryRun) {
       console.log('🧪 Modo DRY RUN ativado - apenas relatórios')
     }
@@ -58,17 +58,22 @@ class StructuredDataMonitor {
     await this.runHealthCheck()
 
     // Configurar verificações periódicas
-    setInterval(async () => {
-      await this.runHealthCheck()
-    }, this.config.checkInterval * 60 * 1000)
+    setInterval(
+      async () => {
+        await this.runHealthCheck()
+      },
+      this.config.checkInterval * 60 * 1000
+    )
   }
 
   /**
    * Executa verificação completa de saúde dos dados
    */
   async runHealthCheck() {
-    console.log(`\n🔍 Executando verificação de saúde - ${new Date().toISOString()}`)
-    
+    console.log(
+      `\n🔍 Executando verificação de saúde - ${new Date().toISOString()}`
+    )
+
     this.issues = []
 
     // Verificar tabelas principais
@@ -90,8 +95,14 @@ class StructuredDataMonitor {
    */
   async checkNutritionistProfiles() {
     const structuredFields = [
-      'specialties', 'languages', 'services', 'certifications', 
-      'achievements', 'working_hours', 'social_media', 'addresses'
+      'specialties',
+      'languages',
+      'services',
+      'certifications',
+      'achievements',
+      'working_hours',
+      'social_media',
+      'addresses',
     ]
 
     for (const field of structuredFields) {
@@ -103,7 +114,11 @@ class StructuredDataMonitor {
    * Verifica perfis de usuários
    */
   async checkUserProfiles() {
-    const structuredFields = ['preferences', 'dietary_restrictions', 'health_conditions']
+    const structuredFields = [
+      'preferences',
+      'dietary_restrictions',
+      'health_conditions',
+    ]
 
     for (const field of structuredFields) {
       await this.checkTableField('user_profiles', field)
@@ -142,7 +157,6 @@ class StructuredDataMonitor {
         const issues = this.analyzeFieldValue(value, table, field, row.id)
         this.issues.push(...issues)
       }
-
     } catch (error) {
       console.error(`❌ Erro ao verificar ${table}.${field}:`, error)
     }
@@ -151,7 +165,12 @@ class StructuredDataMonitor {
   /**
    * Analisa um valor de campo para detectar problemas
    */
-  analyzeFieldValue(value: any, table: string, field: string, id: string): DataIssue[] {
+  analyzeFieldValue(
+    value: any,
+    table: string,
+    field: string,
+    id: string
+  ): DataIssue[] {
     const issues: DataIssue[] = []
     const now = new Date().toISOString()
 
@@ -167,7 +186,7 @@ class StructuredDataMonitor {
           current_value: value,
           suggested_fix: this.suggestJsonFix(value),
           severity: 'high',
-          detected_at: now
+          detected_at: now,
         })
       }
 
@@ -181,14 +200,16 @@ class StructuredDataMonitor {
           current_value: value,
           suggested_fix: this.suggestEscapeFix(value),
           severity: 'high',
-          detected_at: now
+          detected_at: now,
         })
       }
     }
 
     // Verificar arrays com elementos inconsistentes
     if (Array.isArray(value)) {
-      const hasStringElements = value.some(item => typeof item === 'string' && this.looksLikeJson(item))
+      const hasStringElements = value.some(
+        item => typeof item === 'string' && this.looksLikeJson(item)
+      )
       if (hasStringElements) {
         issues.push({
           table,
@@ -198,7 +219,7 @@ class StructuredDataMonitor {
           current_value: value,
           suggested_fix: value.map(item => this.suggestJsonFix(item)),
           severity: 'medium',
-          detected_at: now
+          detected_at: now,
         })
       }
     }
@@ -211,7 +232,7 @@ class StructuredDataMonitor {
    */
   looksLikeJson(value: string): boolean {
     if (typeof value !== 'string') return false
-    
+
     const trimmed = value.trim()
     return (
       (trimmed.startsWith('[') && trimmed.endsWith(']')) ||
@@ -244,7 +265,10 @@ class StructuredDataMonitor {
         return JSON.parse(cleaned)
       } catch {
         // Se falhar, tentar separar por vírgulas
-        return value.split(',').map(item => item.trim()).filter(Boolean)
+        return value
+          .split(',')
+          .map(item => item.trim())
+          .filter(Boolean)
       }
     }
   }
@@ -254,7 +278,7 @@ class StructuredDataMonitor {
    */
   suggestEscapeFix(value: string): any {
     let cleaned = value
-    
+
     // Remover escapes duplos progressivamente
     while (cleaned.includes('\\\\') || cleaned.includes('\\"')) {
       cleaned = cleaned.replace(/\\\\"/g, '"').replace(/\\\\/g, '\\')
@@ -277,20 +301,26 @@ class StructuredDataMonitor {
     }
 
     // Agrupar por severidade
-    const bySeverity = this.issues.reduce((acc, issue) => {
-      acc[issue.severity] = (acc[issue.severity] || 0) + 1
-      return acc
-    }, {} as Record<string, number>)
+    const bySeverity = this.issues.reduce(
+      (acc, issue) => {
+        acc[issue.severity] = (acc[issue.severity] || 0) + 1
+        return acc
+      },
+      {} as Record<string, number>
+    )
 
     console.log(`🔴 Alta: ${bySeverity.high || 0}`)
     console.log(`🟡 Média: ${bySeverity.medium || 0}`)
     console.log(`🟢 Baixa: ${bySeverity.low || 0}`)
 
     // Agrupar por tipo
-    const byType = this.issues.reduce((acc, issue) => {
-      acc[issue.issue_type] = (acc[issue.issue_type] || 0) + 1
-      return acc
-    }, {} as Record<string, number>)
+    const byType = this.issues.reduce(
+      (acc, issue) => {
+        acc[issue.issue_type] = (acc[issue.issue_type] || 0) + 1
+        return acc
+      },
+      {} as Record<string, number>
+    )
 
     console.log(`\n📋 Por tipo:`)
     Object.entries(byType).forEach(([type, count]) => {
@@ -298,13 +328,19 @@ class StructuredDataMonitor {
     })
 
     // Mostrar exemplos dos problemas mais críticos
-    const criticalIssues = this.issues.filter(issue => issue.severity === 'high').slice(0, 5)
+    const criticalIssues = this.issues
+      .filter(issue => issue.severity === 'high')
+      .slice(0, 5)
     if (criticalIssues.length > 0) {
       console.log(`\n🚨 Problemas críticos (primeiros 5):`)
       criticalIssues.forEach((issue, index) => {
-        console.log(`  ${index + 1}. ${issue.table}.${issue.column} (ID: ${issue.id})`)
+        console.log(
+          `  ${index + 1}. ${issue.table}.${issue.column} (ID: ${issue.id})`
+        )
         console.log(`     Tipo: ${issue.issue_type}`)
-        console.log(`     Valor: ${JSON.stringify(issue.current_value).substring(0, 100)}...`)
+        console.log(
+          `     Valor: ${JSON.stringify(issue.current_value).substring(0, 100)}...`
+        )
       })
     }
 
@@ -316,7 +352,7 @@ class StructuredDataMonitor {
       issues_found: this.issues.length,
       severity_breakdown: bySeverity,
       type_breakdown: byType,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     })
   }
 
@@ -326,17 +362,20 @@ class StructuredDataMonitor {
   async saveReportToFile() {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
     const filename = `monitoring-report-${timestamp}.json`
-    
+
     const report = {
       timestamp: new Date().toISOString(),
       total_issues: this.issues.length,
       issues: this.issues,
-      config: this.config
+      config: this.config,
     }
 
     try {
       const fs = require('fs').promises
-      await fs.writeFile(`./reports/${filename}`, JSON.stringify(report, null, 2))
+      await fs.writeFile(
+        `./reports/${filename}`,
+        JSON.stringify(report, null, 2)
+      )
       console.log(`💾 Relatório salvo: ./reports/${filename}`)
     } catch (error) {
       console.error('❌ Erro ao salvar relatório:', error)
@@ -347,10 +386,14 @@ class StructuredDataMonitor {
    * Envia alertas quando necessário
    */
   async sendAlerts() {
-    console.log(`\n🚨 ALERTA: ${this.issues.length} problemas detectados (limite: ${this.config.alertThreshold})`)
+    console.log(
+      `\n🚨 ALERTA: ${this.issues.length} problemas detectados (limite: ${this.config.alertThreshold})`
+    )
 
-    const criticalCount = this.issues.filter(issue => issue.severity === 'high').length
-    
+    const criticalCount = this.issues.filter(
+      issue => issue.severity === 'high'
+    ).length
+
     const alertMessage = `
 🚨 ALERTA: Problemas com dados estruturados detectados
 
@@ -397,7 +440,9 @@ class StructuredDataMonitor {
       return
     }
 
-    console.log(`🔧 Iniciando correção automática de ${this.issues.length} problemas...`)
+    console.log(
+      `🔧 Iniciando correção automática de ${this.issues.length} problemas...`
+    )
 
     let fixedCount = 0
     let errorCount = 0
@@ -410,14 +455,22 @@ class StructuredDataMonitor {
           .eq('id', issue.id)
 
         if (error) {
-          console.error(`❌ Erro ao corrigir ${issue.table}.${issue.column} (${issue.id}):`, error)
+          console.error(
+            `❌ Erro ao corrigir ${issue.table}.${issue.column} (${issue.id}):`,
+            error
+          )
           errorCount++
         } else {
-          console.log(`✅ Corrigido: ${issue.table}.${issue.column} (${issue.id})`)
+          console.log(
+            `✅ Corrigido: ${issue.table}.${issue.column} (${issue.id})`
+          )
           fixedCount++
         }
       } catch (error) {
-        console.error(`❌ Erro ao corrigir ${issue.table}.${issue.column} (${issue.id}):`, error)
+        console.error(
+          `❌ Erro ao corrigir ${issue.table}.${issue.column} (${issue.id}):`,
+          error
+        )
         errorCount++
       }
     }
@@ -434,18 +487,21 @@ const defaultConfig: MonitoringConfig = {
   alertThreshold: 10,
   enableSlackAlerts: false,
   enableEmailAlerts: false,
-  dryRun: true
+  dryRun: true,
 }
 
 // Executar se chamado diretamente
 if (require.main === module) {
   const monitor = new StructuredDataMonitor(defaultConfig)
-  
+
   // Verificar argumentos da linha de comando
   const args = process.argv.slice(2)
-  
+
   if (args.includes('--auto-fix')) {
-    monitor.runHealthCheck().then(() => monitor.autoFix()).catch(console.error)
+    monitor
+      .runHealthCheck()
+      .then(() => monitor.autoFix())
+      .catch(console.error)
   } else if (args.includes('--once')) {
     monitor.runHealthCheck().catch(console.error)
   } else {

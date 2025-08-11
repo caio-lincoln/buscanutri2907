@@ -27,7 +27,7 @@ const DAY_MAPPING: { [key: string]: number } = {
   thursday: 4,
   friday: 5,
   saturday: 6,
-  sunday: 0
+  sunday: 0,
 }
 
 /**
@@ -49,7 +49,7 @@ export function convertScheduleToAvailability(
             day_of_week: dayOfWeek,
             start_time: slot.start,
             end_time: slot.end,
-            is_available: true
+            is_available: true,
           })
         }
       })
@@ -74,11 +74,16 @@ export async function saveNutritionistAvailability(
       .eq('nutritionist_id', nutritionistId)
 
     if (deleteError) {
-      throw new Error(`Erro ao limpar horários existentes: ${deleteError.message}`)
+      throw new Error(
+        `Erro ao limpar horários existentes: ${deleteError.message}`
+      )
     }
 
     // Converte o schedule para slots de disponibilidade
-    const availabilitySlots = convertScheduleToAvailability(schedule, nutritionistId)
+    const availabilitySlots = convertScheduleToAvailability(
+      schedule,
+      nutritionistId
+    )
 
     // Se há slots para inserir, insere todos de uma vez
     if (availabilitySlots.length > 0) {
@@ -124,7 +129,7 @@ export async function getNutritionistAvailability(
       3: 'wednesday',
       4: 'thursday',
       5: 'friday',
-      6: 'saturday'
+      6: 'saturday',
     }
 
     data?.forEach(slot => {
@@ -135,7 +140,7 @@ export async function getNutritionistAvailability(
         }
         schedule[dayKey].push({
           start: slot.start_time,
-          end: slot.end_time
+          end: slot.end_time,
         })
       }
     })

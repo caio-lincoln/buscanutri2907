@@ -18,7 +18,7 @@ export default function TestNotificationsPage() {
         // User loaded successfully
         setUser(currentUser)
       } catch (error) {
-          // Error loading user - handled silently
+        // Error loading user - handled silently
       } finally {
         setUserLoading(false)
       }

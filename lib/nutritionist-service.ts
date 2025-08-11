@@ -5,7 +5,10 @@ import {
   profileViewsService,
   type ProfileViewStats,
 } from './profile-views-service' // Importar o serviço de visualizações
-import { normalizeStringArray, logNormalizationEvent } from './structured-data-utils'
+import {
+  normalizeStringArray,
+  logNormalizationEvent,
+} from './structured-data-utils'
 
 // Helper para formatar dados do nutricionista para exibição
 export function formatNutritionistData(
@@ -32,12 +35,14 @@ export function formatNutritionistData(
   // Função wrapper para manter compatibilidade
   const toArray = (value: unknown): string[] => {
     const result = normalizeStringArray(value)
-    
+
     // Log eventos de normalização para telemetria
     if (result.wasCorrupted) {
-      logNormalizationEvent('nutritionist_field', result, { context: 'nutritionist-service' })
+      logNormalizationEvent('nutritionist_field', result, {
+        context: 'nutritionist-service',
+      })
     }
-    
+
     return result.data
   }
 
@@ -74,11 +79,9 @@ export function formatNutritionistData(
   }
 }
 
-export async function getNutritionistById(
-  id: string
-): Promise<
+export async function getNutritionistById(id: string): Promise<
   | (NutritionistProfile & {
-      badges?: NutritionistBadge[]
+      badges?: any[]
       viewStats?: ProfileViewStats
     })
   | null
@@ -140,7 +143,7 @@ export async function getNutritionistById(
 
 export async function getAllNutritionists(): Promise<
   (NutritionistProfile & {
-    badges?: NutritionistBadge[]
+    badges?: any[]
     viewStats?: ProfileViewStats
   })[]
 > {
@@ -177,11 +180,9 @@ export async function getAllNutritionists(): Promise<
   }
 }
 
-export async function getNutritionistsBySpecialty(
-  specialty: string
-): Promise<
+export async function getNutritionistsBySpecialty(specialty: string): Promise<
   (NutritionistProfile & {
-    badges?: NutritionistBadge[]
+    badges?: any[]
     viewStats?: ProfileViewStats
   })[]
 > {
@@ -218,11 +219,9 @@ export async function getNutritionistsBySpecialty(
   }
 }
 
-export async function getNutritionistsByLocation(
-  location: string
-): Promise<
+export async function getNutritionistsByLocation(location: string): Promise<
   (NutritionistProfile & {
-    badges?: NutritionistBadge[]
+    badges?: any[]
     viewStats?: ProfileViewStats
   })[]
 > {
@@ -259,11 +258,9 @@ export async function getNutritionistsByLocation(
   }
 }
 
-export async function getTopRatedNutritionists(
-  limit = 5
-): Promise<
+export async function getTopRatedNutritionists(limit = 5): Promise<
   (NutritionistProfile & {
-    badges?: NutritionistBadge[]
+    badges?: any[]
     viewStats?: ProfileViewStats
   })[]
 > {

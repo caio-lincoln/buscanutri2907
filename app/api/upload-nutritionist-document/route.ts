@@ -124,7 +124,7 @@ export async function POST(request: NextRequest) {
     const timestamp = Date.now()
     const fileExtension = file.name.split('.').pop()
     const sanitizedTitle = title
-      ? title.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '-')
+      ? title.replace(/[^a-zA-Z0-9s]/g, '').replace(/s+/g, '-')
       : ''
     const fileName =
       documentType === 'crn_proof'

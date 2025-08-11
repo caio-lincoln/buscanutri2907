@@ -18,6 +18,7 @@ import { createSupabaseClient } from '@/lib/supabase'
 import { useAuth } from '@/contexts/auth-context'
 import { toast } from 'sonner'
 import Image from 'next/image'
+import { useRouter } from 'next/navigation'
 
 interface JobApplication {
   id: string
@@ -66,6 +67,7 @@ export function ApplicationsTab() {
   const [applications, setApplications] = useState<JobApplication[]>([])
   const [loading, setLoading] = useState(true)
   const { user } = useAuth()
+  const router = useRouter()
 
   useEffect(() => {
     if (user) {
@@ -300,7 +302,7 @@ export function ApplicationsTab() {
           </p>
           <Button
             className="bg-[#4AB0D9] hover:bg-[#4AB0D9]/90 text-white"
-            onClick={() => (window.location.href = '/vagas')}
+            onClick={() => router.push('/vagas')}
           >
             <Briefcase className="h-4 w-4 mr-2" />
             Ver Vagas Disponíveis
@@ -403,9 +405,7 @@ export function ApplicationsTab() {
                     <Button
                       variant="ghost"
                       className="text-blue-600 hover:bg-blue-50"
-                      onClick={() =>
-                        window.open(`/vagas/${jobPosting.id}`, '_blank')
-                      }
+                      onClick={() => router.push(`/vagas/${jobPosting.id}`)}
                     >
                       <Eye className="h-3 w-3 mr-1" />
                       Ver Vaga

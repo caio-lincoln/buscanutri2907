@@ -63,8 +63,8 @@ export function useDashboardStats({
         const newStats = await getDashboardStats(userType, userId)
         setStats(newStats)
       } catch (err) {
-          // Error loading stats - silently handled
-          setError(err instanceof Error ? err.message : 'Erro desconhecido')
+        // Error loading stats - silently handled
+        setError(err instanceof Error ? err.message : 'Erro desconhecido')
       } finally {
         setLoading(false)
       }

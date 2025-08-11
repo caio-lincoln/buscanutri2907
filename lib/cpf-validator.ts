@@ -17,7 +17,7 @@ export function validateCPF(cpf: string): CPFValidationResult {
   }
 
   // Remove caracteres não numéricos
-  const cleanCPF = cpf.replace(/\D/g, '')
+  const cleanCPF = cpf.replace(/D/g, '')
 
   // Verifica se tem 11 dígitos
   if (cleanCPF.length !== 11) {
@@ -28,7 +28,7 @@ export function validateCPF(cpf: string): CPFValidationResult {
   }
 
   // Verifica se todos os dígitos são iguais (CPF inválido)
-  if (/^(\d)\1{10}$/.test(cleanCPF)) {
+  if (/^(d)1{10}$/.test(cleanCPF)) {
     return {
       isValid: false,
       message: 'CPF inválido',
@@ -75,17 +75,17 @@ export function formatCPF(cpf: string): string {
   if (!cpf) return ''
 
   // Remove tudo que não é número
-  const clean = cpf.replace(/\D/g, '')
+  const clean = cpf.replace(/D/g, '')
 
   // Aplica a máscara XXX.XXX.XXX-XX
   if (clean.length <= 3) {
     return clean
   } else if (clean.length <= 6) {
-    return clean.replace(/(\d{3})(\d{0,3})/, '$1.$2')
+    return clean.replace(/(d{3})(d{0,3})/, '$1.$2')
   } else if (clean.length <= 9) {
-    return clean.replace(/(\d{3})(\d{3})(\d{0,3})/, '$1.$2.$3')
+    return clean.replace(/(d{3})(d{3})(d{0,3})/, '$1.$2.$3')
   } else {
-    return clean.replace(/(\d{3})(\d{3})(\d{3})(\d{0,2})/, '$1.$2.$3-$4')
+    return clean.replace(/(d{3})(d{3})(d{3})(d{0,2})/, '$1.$2.$3-$4')
   }
 }
 
@@ -102,7 +102,7 @@ export function validateCPFFormat(cpf: string): CPFValidationResult {
   const trimmedCPF = cpf.trim()
 
   // Verifica formato básico: XXX.XXX.XXX-XX ou apenas números
-  const cpfRegex = /^(\d{3}\.?\d{3}\.?\d{3}-?\d{2})$/
+  const cpfRegex = /^(d{3}.?d{3}.?d{3}-?d{2})$/
   if (!cpfRegex.test(trimmedCPF)) {
     return {
       isValid: false,
@@ -115,5 +115,5 @@ export function validateCPFFormat(cpf: string): CPFValidationResult {
 
 // Função para limpar CPF (remover formatação)
 export function cleanCPF(cpf: string): string {
-  return cpf.replace(/\D/g, '')
+  return cpf.replace(/D/g, '')
 }

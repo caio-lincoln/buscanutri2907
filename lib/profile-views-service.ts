@@ -22,16 +22,34 @@ class ProfileViewsService {
   // Registrar uma nova visualização
   async recordView(nutritionistId: string, referrer?: string): Promise<void> {
     try {
+      // Verificação segura para SSR
+      if (typeof window === 'undefined' || !window.sessionStorage || !window.navigator) {
+        return // Não executar no servidor
+      }
+
       // Gerar um session_id único para esta sessão do navegador
-      let sessionId = sessionStorage.getItem('profile_view_session')
-      if (!sessionId) {
+      let sessionId: string | null = null
+      try {
+        sessionId = sessionStorage.getItem('profile_view_session')
+        if (!sessionId) {
+          sessionId = `sess_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+          sessionStorage.setItem('profile_view_session', sessionId)
+        }
+      } catch (error) {
+        // Fallback se sessionStorage não estiver disponível (modo privado)
         sessionId = `sess_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-        sessionStorage.setItem('profile_view_session', sessionId)
+        console.warn('Erro ao acessar sessionStorage:', error)
       }
 
       // Verificar se já registrou uma visualização para este nutricionista nesta sessão
       const viewedKey = `viewed_${nutritionistId}`
-      const alreadyViewed = sessionStorage.getItem(viewedKey)
+      let alreadyViewed = false
+      try {
+        alreadyViewed = !!sessionStorage.getItem(viewedKey)
+      } catch (error) {
+        // Ignorar erro de sessionStorage
+        console.warn('Erro ao verificar sessionStorage:', error)
+      }
 
       if (alreadyViewed) {
         return // Já registrou uma visualização nesta sessão
@@ -41,7 +59,7 @@ class ProfileViewsService {
         nutritionist_id: nutritionistId,
         viewer_user_agent: navigator.userAgent,
         session_id: sessionId,
-        referrer: referrer || document.referrer || 'direct',
+        referrer: referrer || (typeof document !== 'undefined' ? document.referrer : '') || 'direct',
       })
 
       if (error) {
@@ -50,7 +68,12 @@ class ProfileViewsService {
       }
 
       // Marcar como visualizado nesta sessão
-      sessionStorage.setItem(viewedKey, 'true')
+      try {
+        sessionStorage.setItem(viewedKey, 'true')
+      } catch (error) {
+        // Ignorar erro de sessionStorage
+        console.warn('Erro ao salvar no sessionStorage:', error)
+      }
     } catch (error) {
       // Silent error handling - error recording view
     }
@@ -71,7 +94,6 @@ class ProfileViewsService {
         return {
           total_views: 0,
           unique_views: 0,
-          last_view_at: undefined,
         }
       }
 
@@ -86,7 +108,6 @@ class ProfileViewsService {
       return {
         total_views: 0,
         unique_views: 0,
-        last_view_at: undefined,
       }
     }
   }
@@ -117,10 +138,12 @@ class ProfileViewsService {
       const dailyViews: { [key: string]: Set<string> } = {}
       data?.forEach(view => {
         const date = new Date(view.viewed_at).toISOString().split('T')[0]
-        if (!dailyViews[date]) {
+        if (date && !dailyViews[date]) {
           dailyViews[date] = new Set()
         }
-        dailyViews[date].add(view.viewed_at) // Usar timestamp como identificador único
+        if (date && dailyViews[date]) {
+          dailyViews[date].add(view.viewed_at) // Usar timestamp como identificador único
+        }
       })
 
       return Object.entries(dailyViews)

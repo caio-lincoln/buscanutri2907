@@ -114,7 +114,7 @@ export default function PatientForumQuestionPage() {
         const user = await getCurrentUser()
         setCurrentUser(user)
       } catch (error) {
-      // Error loading question - handled silently
+        // Error loading question - handled silently
         toast({
           title: 'Erro',
           description: 'Não foi possível carregar a pergunta.',

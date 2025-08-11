@@ -203,7 +203,7 @@ export default function AddressManagement({
       return
     }
 
-    if (formData.zip_code && !/^\d{5}-?\d{3}$/.test(formData.zip_code)) {
+    if (formData.zip_code && !/^d{5}-?d{3}$/.test(formData.zip_code)) {
       toast({
         title: 'Erro de validação',
         description: 'CEP deve estar no formato 00000-000',
@@ -315,7 +315,7 @@ export default function AddressManagement({
     setFormData(prev => ({ ...prev, zip_code: zipCode }))
 
     // Auto-fill address from CEP (Brazilian postal code)
-    if (/^\d{5}-?\d{3}$/.test(zipCode)) {
+    if (/^d{5}-?d{3}$/.test(zipCode)) {
       try {
         const cleanZip = zipCode.replace('-', '')
         const response = await fetch(

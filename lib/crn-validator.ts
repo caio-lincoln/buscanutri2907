@@ -36,7 +36,7 @@ export function validateCRNFormat(crn: string): CRNValidationResult {
   const cleanCRN = crn.trim().toUpperCase()
 
   // Verifica formato básico: CRN + número da região + espaço/hífen + número
-  const crnRegex = /^CRN(\d{1,2})[\s-]?(\d{4,6})$/
+  const crnRegex = /^CRN(d{1,2})[s-]?(d{4,6})$/
   const match = cleanCRN.match(crnRegex)
 
   if (!match) {
@@ -132,7 +132,7 @@ export function formatCRN(value: string): string {
   let formatted = clean.startsWith('CRN') ? clean : 'CRN' + clean
 
   // Aplica formatação: CRN + região + espaço + número
-  const match = formatted.match(/^CRN(\d{1,2})(\d{4,6})$/)
+  const match = formatted.match(/^CRN(d{1,2})(d{4,6})$/)
   if (match) {
     formatted = `CRN${match[1]} ${match[2]}`
   }

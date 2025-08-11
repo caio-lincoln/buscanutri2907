@@ -84,7 +84,7 @@ export default async function NutritionistProfilePage({ params }: PageProps) {
   const formattedRating = nutritionist.rating?.toFixed(1) || '0.0'
   const formattedReviews = nutritionist.total_reviews || 0
   const formattedAddress = nutritionist.address || 'Localização não informada'
-  
+
   // Generate image variants on server
   const avatarVariants = generateImageVariants(
     nutritionist?.profile_image_url,

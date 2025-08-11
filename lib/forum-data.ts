@@ -2,7 +2,7 @@ import { createSupabaseClient } from './supabase'
 
 // Usar o cliente que mantém a autenticação
 const supabase = createSupabaseClient()
-import { getNutritionistBadges, type Badge } from './badge-service'
+import { getNutritionistBadges, type NutritionistBadge } from './badge-service'
 
 export interface ForumAuthor {
   name: string
@@ -11,7 +11,7 @@ export interface ForumAuthor {
   credentials?: string // Ex: CRN para nutricionistas
   isVerified?: boolean
   id: string // Adicionar ID do autor para buscar insígnias
-  badges?: Badge[] // Adicionar badges ao tipo
+  badges?: NutritionistBadge[] // Adicionar badges ao tipo
 }
 
 export interface ForumReply {
@@ -125,7 +125,7 @@ const addBadgesToAuthor = async (author: ForumAuthor): Promise<ForumAuthor> => {
   if (author.userType === 'nutricionista') {
     try {
       const badges = await getNutritionistBadges(author.id)
-      return { ...author, badges: badges.map(nb => nb.badge) }
+      return { ...author, badges }
     } catch (error) {
       // Silent error handling: Error fetching badges
       return author
@@ -611,7 +611,11 @@ export async function createForumAnswer(
   authorId: string
 ): Promise<ForumReply | null> {
   try {
-    console.log('Iniciando createForumAnswer:', { questionId, authorId, contentLength: content.length })
+    console.log('Iniciando createForumAnswer:', {
+      questionId,
+      authorId,
+      contentLength: content.length,
+    })
 
     // Primeiro, verificar o tipo de usuário
     const { data: userData, error: userError } = await supabase
@@ -642,7 +646,10 @@ export async function createForumAnswer(
       .eq('user_id', authorId)
       .single()
 
-    console.log('Perfil do nutricionista:', { nutritionistProfile: !!nutritionistProfile, profileError })
+    console.log('Perfil do nutricionista:', {
+      nutritionistProfile: !!nutritionistProfile,
+      profileError,
+    })
 
     if (profileError || !nutritionistProfile) {
       console.error('Erro ao buscar perfil do nutricionista:', profileError)

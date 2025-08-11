@@ -44,7 +44,7 @@ export default function DuvidaPacienteDetalhePage() {
           setError('Pergunta não encontrada')
         }
       } catch (error) {
-      // Error loading question - handled silently
+        // Error loading question - handled silently
         setError('Erro ao carregar a pergunta')
       } finally {
         setLoading(false)
@@ -58,7 +58,7 @@ export default function DuvidaPacienteDetalhePage() {
     try {
       const date = new Date(
         timestamp.replace(
-          /(\d{2})\/(\d{2})\/(\d{4}), (\d{2}):(\d{2}):(\d{2})/,
+          /(d{2})\/(d{2})\/(d{4}), (d{2}):(d{2}):(d{2})/,
           '$3-$2-$1T$4:$5:$6'
         )
       )

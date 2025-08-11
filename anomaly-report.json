@@ -1,0 +1,684 @@
+{
+  "filesScanned": 222,
+  "filesFixed": 51,
+  "anomaliesFound": {
+    "repeatedCloseBraces": [
+      {
+        "file": "app\\dashboard\\paciente\\page.tsx",
+        "count": 7,
+        "matches": [
+          "}}",
+          "}}",
+          "}}",
+          "}}",
+          "}}"
+        ]
+      },
+      {
+        "file": "components\\ui\\rich-text-editor.tsx",
+        "count": 4,
+        "matches": [
+          "}}",
+          "}}",
+          "}}",
+          "}}"
+        ]
+      },
+      {
+        "file": "components\\dashboard\\empresa\\job-candidates-modal.tsx",
+        "count": 4,
+        "matches": [
+          "}}",
+          "}}",
+          "}}",
+          "}}"
+        ]
+      },
+      {
+        "file": "app\\dashboard\\admin\\page.tsx",
+        "count": 3,
+        "matches": [
+          "}}",
+          "}}",
+          "}}"
+        ]
+      },
+      {
+        "file": "components\\ui\\chart.tsx",
+        "count": 3,
+        "matches": [
+          "}}",
+          "}}",
+          "}}"
+        ]
+      },
+      {
+        "file": "app\\nutricionistas\\page.tsx",
+        "count": 2,
+        "matches": [
+          "}}",
+          "}}"
+        ]
+      },
+      {
+        "file": "app\\dashboard\\nutricionistas\\page.tsx",
+        "count": 2,
+        "matches": [
+          "}}",
+          "}}"
+        ]
+      },
+      {
+        "file": "app\\dashboard\\nutricionistas\\forum\\[id]\\page.tsx",
+        "count": 2,
+        "matches": [
+          "}}",
+          "}}"
+        ]
+      },
+      {
+        "file": "components\\ui\\nutritionist-documents-upload.tsx",
+        "count": 2,
+        "matches": [
+          "}}",
+          "}}"
+        ]
+      },
+      {
+        "file": "components\\ui\\multi-select.tsx",
+        "count": 2,
+        "matches": [
+          "}}",
+          "}}"
+        ]
+      },
+      {
+        "file": "components\\ui\\image-upload.tsx",
+        "count": 2,
+        "matches": [
+          "}}",
+          "}}"
+        ]
+      },
+      {
+        "file": "components\\ui\\image-crop-upload.tsx",
+        "count": 2,
+        "matches": [
+          "}}",
+          "}}"
+        ]
+      },
+      {
+        "file": "components\\ui\\form.tsx",
+        "count": 2,
+        "matches": [
+          "}}",
+          "}}"
+        ]
+      },
+      {
+        "file": "components\\ui\\calendar.tsx",
+        "count": 2,
+        "matches": [
+          "}}",
+          "}}"
+        ]
+      },
+      {
+        "file": "app\\page.tsx",
+        "count": 1,
+        "matches": [
+          "}}"
+        ]
+      },
+      {
+        "file": "app\\vagas\\page.tsx",
+        "count": 1,
+        "matches": [
+          "}}"
+        ]
+      },
+      {
+        "file": "app\\nutricionistas\\[id]\\page.tsx",
+        "count": 1,
+        "matches": [
+          "}}"
+        ]
+      },
+      {
+        "file": "app\\dashboard\\nutricionistas\\forum\\page.tsx",
+        "count": 1,
+        "matches": [
+          "}}"
+        ]
+      },
+      {
+        "file": "app\\dashboard\\nutricionistas\\chat\\[id]\\page.tsx",
+        "count": 1,
+        "matches": [
+          "}}"
+        ]
+      },
+      {
+        "file": "components\\testimonial-card.tsx",
+        "count": 1,
+        "matches": [
+          "}}"
+        ]
+      },
+      {
+        "file": "components\\patient-forum-tab.tsx",
+        "count": 1,
+        "matches": [
+          "}}"
+        ]
+      },
+      {
+        "file": "components\\feature-card.tsx",
+        "count": 1,
+        "matches": [
+          "}}"
+        ]
+      },
+      {
+        "file": "components\\dashboard-sidebar.tsx",
+        "count": 1,
+        "matches": [
+          "}}"
+        ]
+      },
+      {
+        "file": "components\\ui\\toggle-group.tsx",
+        "count": 1,
+        "matches": [
+          "}}"
+        ]
+      },
+      {
+        "file": "components\\ui\\sonner.tsx",
+        "count": 1,
+        "matches": [
+          "}}"
+        ]
+      },
+      {
+        "file": "components\\ui\\sidebar.tsx",
+        "count": 1,
+        "matches": [
+          "}}"
+        ]
+      },
+      {
+        "file": "components\\ui\\progress.tsx",
+        "count": 1,
+        "matches": [
+          "}}"
+        ]
+      },
+      {
+        "file": "components\\ui\\content-renderer.tsx",
+        "count": 1,
+        "matches": [
+          "}}"
+        ]
+      },
+      {
+        "file": "components\\ui\\carousel.tsx",
+        "count": 1,
+        "matches": [
+          "}}"
+        ]
+      },
+      {
+        "file": "components\\ui\\advanced-image-upload.tsx",
+        "count": 1,
+        "matches": [
+          "}}"
+        ]
+      },
+      {
+        "file": "components\\dashboard\\nutricionistas\\jobs-tab.tsx",
+        "count": 1,
+        "matches": [
+          "}}"
+        ]
+      },
+      {
+        "file": "components\\dashboard\\empresa\\reports-tab.tsx",
+        "count": 1,
+        "matches": [
+          "}}"
+        ]
+      },
+      {
+        "file": "components\\dashboard\\empresa\\jobs-tab.tsx",
+        "count": 1,
+        "matches": [
+          "}}"
+        ]
+      },
+      {
+        "file": "components\\dashboard\\admin\\badges-tab.tsx",
+        "count": 1,
+        "matches": [
+          "}}"
+        ]
+      }
+    ],
+    "repeatedBraces": [
+      {
+        "file": "components\\dashboard\\empresa\\job-candidates-modal.tsx",
+        "count": 4,
+        "matches": [
+          "{{",
+          "{{",
+          "{{",
+          "{{"
+        ]
+      },
+      {
+        "file": "app\\dashboard\\paciente\\page.tsx",
+        "count": 3,
+        "matches": [
+          "{{",
+          "{{",
+          "{{"
+        ]
+      },
+      {
+        "file": "app\\dashboard\\admin\\page.tsx",
+        "count": 3,
+        "matches": [
+          "{{",
+          "{{",
+          "{{"
+        ]
+      },
+      {
+        "file": "components\\ui\\chart.tsx",
+        "count": 3,
+        "matches": [
+          "{{",
+          "{{",
+          "{{"
+        ]
+      },
+      {
+        "file": "components\\ui\\image-crop-upload.tsx",
+        "count": 2,
+        "matches": [
+          "{{",
+          "{{"
+        ]
+      },
+      {
+        "file": "components\\ui\\form.tsx",
+        "count": 2,
+        "matches": [
+          "{{",
+          "{{"
+        ]
+      },
+      {
+        "file": "components\\ui\\calendar.tsx",
+        "count": 2,
+        "matches": [
+          "{{",
+          "{{"
+        ]
+      },
+      {
+        "file": "app\\nutricionistas\\page.tsx",
+        "count": 1,
+        "matches": [
+          "{{"
+        ]
+      },
+      {
+        "file": "app\\nutricionistas\\[id]\\page.tsx",
+        "count": 1,
+        "matches": [
+          "{{"
+        ]
+      },
+      {
+        "file": "app\\dashboard\\nutricionistas\\page.tsx",
+        "count": 1,
+        "matches": [
+          "{{"
+        ]
+      },
+      {
+        "file": "components\\testimonial-card.tsx",
+        "count": 1,
+        "matches": [
+          "{{"
+        ]
+      },
+      {
+        "file": "components\\feature-card.tsx",
+        "count": 1,
+        "matches": [
+          "{{"
+        ]
+      },
+      {
+        "file": "components\\dashboard-sidebar.tsx",
+        "count": 1,
+        "matches": [
+          "{{"
+        ]
+      },
+      {
+        "file": "components\\ui\\toggle-group.tsx",
+        "count": 1,
+        "matches": [
+          "{{"
+        ]
+      },
+      {
+        "file": "components\\ui\\sonner.tsx",
+        "count": 1,
+        "matches": [
+          "{{"
+        ]
+      },
+      {
+        "file": "components\\ui\\rich-text-editor.tsx",
+        "count": 1,
+        "matches": [
+          "{{"
+        ]
+      },
+      {
+        "file": "components\\ui\\progress.tsx",
+        "count": 1,
+        "matches": [
+          "{{"
+        ]
+      },
+      {
+        "file": "components\\ui\\content-renderer.tsx",
+        "count": 1,
+        "matches": [
+          "{{"
+        ]
+      },
+      {
+        "file": "components\\ui\\carousel.tsx",
+        "count": 1,
+        "matches": [
+          "{{"
+        ]
+      },
+      {
+        "file": "components\\ui\\advanced-image-upload.tsx",
+        "count": 1,
+        "matches": [
+          "{{"
+        ]
+      },
+      {
+        "file": "components\\dashboard\\empresa\\reports-tab.tsx",
+        "count": 1,
+        "matches": [
+          "{{"
+        ]
+      }
+    ],
+    "doubleBars": [
+      {
+        "file": "lib\\structured-data-utils.ts",
+        "count": 7,
+        "matches": [
+          "\\\\\\\\",
+          "\\\\\\\\",
+          "\\\\\\\\",
+          "\\\\\\\\",
+          "\\\\\\\\"
+        ]
+      },
+      {
+        "file": "app\\nutricionistas\\[id]\\NutritionistProfileClient.tsx",
+        "count": 2,
+        "matches": [
+          "\\\\\\\\",
+          "\\\\\\\\"
+        ]
+      }
+    ],
+    "uselessEscapes": [
+      {
+        "file": "lib\\cpf-validator.ts",
+        "count": 20,
+        "matches": [
+          "\\D",
+          "\\d",
+          "\\1",
+          "\\D",
+          "\\d"
+        ]
+      },
+      {
+        "file": "lib\\cnpj-validator.ts",
+        "count": 17,
+        "matches": [
+          "\\D",
+          "\\d",
+          "\\d",
+          "\\d",
+          "\\d"
+        ]
+      },
+      {
+        "file": "components\\ui\\rich-text-editor.tsx",
+        "count": 15,
+        "matches": [
+          "\\.",
+          "\\.",
+          "\\?",
+          "\\.",
+          "\\."
+        ]
+      },
+      {
+        "file": "lib\\structured-data-utils.ts",
+        "count": 15,
+        "matches": [
+          "\\+",
+          "\\+",
+          "\\[",
+          "\\+",
+          "\\{"
+        ]
+      },
+      {
+        "file": "components\\user-profile-modal.tsx",
+        "count": 12,
+        "matches": [
+          "\\D",
+          "\\D",
+          "\\D",
+          "\\D",
+          "\\D"
+        ]
+      },
+      {
+        "file": "lib\\rg-validator.ts",
+        "count": 12,
+        "matches": [
+          "\\d",
+          "\\1",
+          "\\d",
+          "\\w",
+          "\\d"
+        ]
+      },
+      {
+        "file": "components\\ui\\content-renderer.tsx",
+        "count": 10,
+        "matches": [
+          "\\.",
+          "\\.",
+          "\\?",
+          "\\.",
+          "\\."
+        ]
+      },
+      {
+        "file": "components\\iris-chat.tsx",
+        "count": 8,
+        "matches": [
+          "\\*",
+          "\\*",
+          "\\*",
+          "\\*",
+          "\\*"
+        ]
+      },
+      {
+        "file": "app\\cadastro\\page.tsx",
+        "count": 7,
+        "matches": [
+          "\\d",
+          "\\-",
+          "\\[",
+          "\\]",
+          "\\|"
+        ]
+      },
+      {
+        "file": "app\\duvidas-pacientes\\page.tsx",
+        "count": 6,
+        "matches": [
+          "\\d",
+          "\\d",
+          "\\d",
+          "\\d",
+          "\\d"
+        ]
+      },
+      {
+        "file": "app\\duvidas-pacientes\\[id]\\page.tsx",
+        "count": 6,
+        "matches": [
+          "\\d",
+          "\\d",
+          "\\d",
+          "\\d",
+          "\\d"
+        ]
+      },
+      {
+        "file": "lib\\crn-validator.ts",
+        "count": 5,
+        "matches": [
+          "\\d",
+          "\\s",
+          "\\d",
+          "\\d",
+          "\\d"
+        ]
+      },
+      {
+        "file": "app\\cadastro\\components\\ConsultationPricingConfig.tsx",
+        "count": 4,
+        "matches": [
+          "\\D",
+          "\\d",
+          "\\s",
+          "\\s"
+        ]
+      },
+      {
+        "file": "app\\cadastro\\components\\AddressManagement.tsx",
+        "count": 4,
+        "matches": [
+          "\\d",
+          "\\d",
+          "\\d",
+          "\\d"
+        ]
+      },
+      {
+        "file": "app\\dashboard\\nutricionistas\\page.tsx",
+        "count": 3,
+        "matches": [
+          "\\+",
+          "\\[",
+          "\\]"
+        ]
+      },
+      {
+        "file": "app\\api\\upload-nutritionist-document\\route.ts",
+        "count": 2,
+        "matches": [
+          "\\s",
+          "\\s"
+        ]
+      },
+      {
+        "file": "components\\anamnese-nutricional-modal.tsx",
+        "count": 2,
+        "matches": [
+          "\\d",
+          "\\d"
+        ]
+      },
+      {
+        "file": "lib\\nutritionist-address-service.ts",
+        "count": 2,
+        "matches": [
+          "\\d",
+          "\\d"
+        ]
+      }
+    ],
+    "repeatedBrackets": [
+      {
+        "file": "components\\ui\\sidebar.tsx",
+        "count": 8,
+        "matches": [
+          "[[",
+          "[[",
+          "[[",
+          "[[",
+          "[["
+        ]
+      }
+    ],
+    "repeatedCloseBrackets": [
+      {
+        "file": "components\\ui\\command.tsx",
+        "count": 13,
+        "matches": [
+          "]]",
+          "]]",
+          "]]",
+          "]]",
+          "]]"
+        ]
+      },
+      {
+        "file": "components\\ui\\chart.tsx",
+        "count": 5,
+        "matches": [
+          "]]",
+          "]]",
+          "]]",
+          "]]",
+          "]]"
+        ]
+      },
+      {
+        "file": "components\\ui\\sidebar.tsx",
+        "count": 2,
+        "matches": [
+          "]]",
+          "]]"
+        ]
+      }
+    ]
+  },
+  "errors": []
+}

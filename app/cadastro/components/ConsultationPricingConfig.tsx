@@ -41,7 +41,7 @@ export default function ConsultationPricingConfig({
   // Função para formatar valor como moeda BRL
   const formatCurrency = (value: string): string => {
     if (!value) return ''
-    const numericValue = value.replace(/\D/g, '')
+    const numericValue = value.replace(/D/g, '')
     if (!numericValue) return ''
     const floatValue = parseFloat(numericValue) / 100
     return floatValue.toLocaleString('pt-BR', {
@@ -54,7 +54,7 @@ export default function ConsultationPricingConfig({
   // Função para converter valor formatado para número
   const parseCurrency = (value: string): number | null => {
     if (!value) return null
-    const numericValue = value.replace(/[^\d,]/g, '').replace(',', '.')
+    const numericValue = value.replace(/[^d,]/g, '').replace(',', '.')
     const parsed = parseFloat(numericValue)
     return isNaN(parsed) ? null : parsed
   }
@@ -160,11 +160,11 @@ export default function ConsultationPricingConfig({
 
     return (
       <div className="space-y-2">
-        <Label htmlFor={label.toLowerCase().replace(/\s+/g, '-')}>
+        <Label htmlFor={label.toLowerCase().replace(/s+/g, '-')}>
           {label}
         </Label>
         <Input
-          id={label.toLowerCase().replace(/\s+/g, '-')}
+          id={label.toLowerCase().replace(/s+/g, '-')}
           type="text"
           value={value}
           onChange={handleChange}

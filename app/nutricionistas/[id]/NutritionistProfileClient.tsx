@@ -43,7 +43,10 @@ import {
   generateSrcSet,
   generateSizes,
 } from '@/lib/image-variants'
-import { normalizeLanguages, logNormalizationEvent } from '@/lib/structured-data-utils'
+import {
+  normalizeLanguages,
+  logNormalizationEvent,
+} from '@/lib/structured-data-utils'
 
 // Garante que o valor retornado seja sempre um array
 function toArray(value: unknown): string[] {
@@ -69,25 +72,27 @@ function toArray(value: unknown): string[] {
 function processLanguages(value: unknown): string[] {
   if (Array.isArray(value)) return value
   if (typeof value === 'string' && value.trim() !== '') {
-    let processedValue = value
-    
+    const processedValue = value
+
     // Remove múltiplas camadas de escape e caracteres desnecessários
     // Procura por padrões como "Português" e "Inglês" na string
-    const languageMatches = processedValue.match(/(?:Português|Inglês|Espanhol|Francês|Alemão|Italiano|Japonês|Chinês|Coreano|Árabe)/g)
-    
+    const languageMatches = processedValue.match(
+      /(?:Português|Inglês|Espanhol|Francês|Alemão|Italiano|Japonês|Chinês|Coreano|Árabe)/g
+    )
+
     if (languageMatches && languageMatches.length > 0) {
       // Remove duplicatas e retorna apenas os idiomas encontrados
       return [...new Set(languageMatches)]
     }
-    
+
     // Se não encontrou padrões específicos, tenta o processamento normal
     try {
       // Remove escapes excessivos
       let cleaned = processedValue
-      while (cleaned.includes('\\"') || cleaned.includes('\\\\')) {
-        cleaned = cleaned.replace(/\\"/g, '"').replace(/\\\\/g, '\\')
+      while (cleaned.includes('\\"') || cleaned.includes('\\')) {
+        cleaned = cleaned.replace(/\\"/g, '"').replace(/\\/g, '\\')
       }
-      
+
       // Tenta fazer parse do JSON limpo
       const parsed = JSON.parse(cleaned)
       if (Array.isArray(parsed)) return parsed
@@ -216,18 +221,8 @@ export default function NutritionistProfilePageClient({
 
   const formattedSpecializations = toArray(nutritionist.specialties)
   const formattedAvailableTimes = toArray(nutritionist.available_times)
-  
-  const languageResult = normalizeLanguages(nutritionist.languages)
-  
-  // Log eventos de normalização para telemetria
-  if (languageResult.wasCorrupted) {
-    logNormalizationEvent('languages', languageResult, { 
-      context: 'nutritionist-profile-client',
-      nutritionistId: nutritionist.id 
-    })
-  }
-  
-  const formattedLanguages = languageResult.data
+
+  const formattedLanguages = normalizeLanguages(nutritionist.languages) || []
   const formattedCertifications = toArray(nutritionist.certifications)
   const formattedAchievements = toArray(nutritionist.achievements)
 

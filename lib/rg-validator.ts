@@ -36,7 +36,7 @@ export function validateRG(rg: string): RGValidationResult {
   }
 
   // Verifica se contém pelo menos um número
-  if (!/\d/.test(cleanRG)) {
+  if (!/d/.test(cleanRG)) {
     return {
       isValid: false,
       message: 'RG deve conter pelo menos um número',
@@ -44,7 +44,7 @@ export function validateRG(rg: string): RGValidationResult {
   }
 
   // Verifica se todos os caracteres são iguais (RG inválido)
-  if (/^(.)\1+$/.test(cleanRG)) {
+  if (/^(.)1+$/.test(cleanRG)) {
     return {
       isValid: false,
       message: 'RG inválido',
@@ -69,11 +69,11 @@ export function formatRG(rg: string): string {
   if (clean.length <= 2) {
     return clean
   } else if (clean.length <= 5) {
-    return clean.replace(/(\d{2})(\w{0,3})/, '$1.$2')
+    return clean.replace(/(d{2})(w{0,3})/, '$1.$2')
   } else if (clean.length <= 8) {
-    return clean.replace(/(\d{2})(\d{3})(\w{0,3})/, '$1.$2.$3')
+    return clean.replace(/(d{2})(d{3})(w{0,3})/, '$1.$2.$3')
   } else {
-    return clean.replace(/(\d{2})(\d{3})(\d{3})(\w{0,1})/, '$1.$2.$3-$4')
+    return clean.replace(/(d{2})(d{3})(d{3})(w{0,1})/, '$1.$2.$3-$4')
   }
 }
 
@@ -119,7 +119,7 @@ export function validateRGSP(rg: string): RGValidationResult {
   const checkDigit = cleanRG.substring(8, 9)
 
   // Verifica se os 8 primeiros são números
-  if (!/^\d{8}$/.test(digits)) {
+  if (!/^d{8}$/.test(digits)) {
     return validateRG(rg) // Fallback para validação geral
   }
 

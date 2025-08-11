@@ -102,6 +102,11 @@ export function BlogTab() {
   }
 
   const handleDeletePost = async (id: string) => {
+    // Verificação segura para SSR
+    if (typeof window === 'undefined' || !window.confirm) {
+      return
+    }
+    
     if (
       window.confirm(
         'Tem certeza que deseja excluir este artigo? Esta ação não pode ser desfeita.'
@@ -290,16 +295,16 @@ export function BlogTab() {
                 <Label htmlFor="content">Conteúdo</Label>
                 <RichTextEditor
                   content={currentPost.content || ''}
-                  onChange={(content) =>
+                  onChange={content =>
                     setCurrentPost({ ...currentPost, content })
                   }
                   placeholder="Escreva o conteúdo do seu artigo aqui... Cole links do YouTube, Instagram ou TikTok para incorporar vídeos automaticamente."
                   imageUrl={currentPost.image}
-                  onImageUrlChange={(url) =>
+                  onImageUrlChange={url =>
                     setCurrentPost({ ...currentPost, image: url })
                   }
                   centerImage={currentPost.centerImage || false}
-                  onCenterImageChange={(centered) =>
+                  onCenterImageChange={centered =>
                     setCurrentPost({ ...currentPost, centerImage: centered })
                   }
                 />

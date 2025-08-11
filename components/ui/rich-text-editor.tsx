@@ -60,7 +60,12 @@ const MenuBar = ({ editor }: { editor: any }) => {
 
   const addLink = useCallback(() => {
     if (linkUrl) {
-      editor.chain().focus().extendMarkRange('link').setLink({ href: linkUrl }).run()
+      editor
+        .chain()
+        .focus()
+        .extendMarkRange('link')
+        .setLink({ href: linkUrl })
+        .run()
       setLinkUrl('')
       setShowLinkInput(false)
     }
@@ -86,34 +91,40 @@ const MenuBar = ({ editor }: { editor: any }) => {
     }
   }, [editor, youtubeUrl])
 
-  const detectAndConvertLinks = useCallback((text: string) => {
-    // Regex para detectar URLs de vídeo
-    const youtubeRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/
-    const instagramRegex = /(?:https?:\/\/)?(?:www\.)?instagram\.com\/(?:p|reel)\/([a-zA-Z0-9_-]+)/
-    const tiktokRegex = /(?:https?:\/\/)?(?:www\.)?tiktok\.com\/@[^\/]+\/video\/(\d+)/
+  const detectAndConvertLinks = useCallback(
+    (text: string) => {
+      // Regex para detectar URLs de vídeo
+      const youtubeRegex =
+        /(?:https?:\/\/)?(?:www.)?(?:youtube.com\/watch?v=|youtu.be\/|youtube.com\/embed\/)([a-zA-Z0-9_-]{11})/
+      const instagramRegex =
+        /(?:https?:\/\/)?(?:www.)?instagram.com\/(?:p|reel)\/([a-zA-Z0-9_-]+)/
+      const tiktokRegex =
+        /(?:https?:\/\/)?(?:www.)?tiktok.com\/@[^\/]+\/video\/(d+)/
 
-    if (youtubeRegex.test(text)) {
-      const match = text.match(youtubeRegex)
-      if (match) {
-        const videoId = match[1]
-        const embedUrl = `https://www.youtube.com/watch?v=${videoId}`
-        editor.commands.setYoutubeVideo({
-          src: embedUrl,
-          width: 640,
-          height: 480,
-        })
+      if (youtubeRegex.test(text)) {
+        const match = text.match(youtubeRegex)
+        if (match) {
+          const videoId = match[1]
+          const embedUrl = `https://www.youtube.com/watch?v=${videoId}`
+          editor.commands.setYoutubeVideo({
+            src: embedUrl,
+            width: 640,
+            height: 480,
+          })
+          return true
+        }
+      }
+
+      // Para Instagram e TikTok, por enquanto mantemos como links
+      if (instagramRegex.test(text) || tiktokRegex.test(text)) {
+        editor.chain().focus().setLink({ href: text }).run()
         return true
       }
-    }
 
-    // Para Instagram e TikTok, por enquanto mantemos como links
-    if (instagramRegex.test(text) || tiktokRegex.test(text)) {
-      editor.chain().focus().setLink({ href: text }).run()
-      return true
-    }
-
-    return false
-  }, [editor])
+      return false
+    },
+    [editor]
+  )
 
   return (
     <div className="border-b border-gray-200 p-2 space-y-2">
@@ -137,15 +148,15 @@ const MenuBar = ({ editor }: { editor: any }) => {
         >
           <Redo className="h-4 w-4" />
         </Button>
-        
+
         <div className="w-px h-6 bg-gray-300 mx-1" />
-        
+
         <Button
           variant="ghost"
           size="sm"
           onClick={() => editor.chain().focus().toggleBold().run()}
           className={cn(
-            "h-8 w-8 p-0",
+            'h-8 w-8 p-0',
             editor.isActive('bold') ? 'bg-gray-200' : ''
           )}
         >
@@ -156,7 +167,7 @@ const MenuBar = ({ editor }: { editor: any }) => {
           size="sm"
           onClick={() => editor.chain().focus().toggleItalic().run()}
           className={cn(
-            "h-8 w-8 p-0",
+            'h-8 w-8 p-0',
             editor.isActive('italic') ? 'bg-gray-200' : ''
           )}
         >
@@ -167,7 +178,7 @@ const MenuBar = ({ editor }: { editor: any }) => {
           size="sm"
           onClick={() => editor.chain().focus().toggleStrike().run()}
           className={cn(
-            "h-8 w-8 p-0",
+            'h-8 w-8 p-0',
             editor.isActive('strike') ? 'bg-gray-200' : ''
           )}
         >
@@ -179,9 +190,11 @@ const MenuBar = ({ editor }: { editor: any }) => {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+          onClick={() =>
+            editor.chain().focus().toggleHeading({ level: 1 }).run()
+          }
           className={cn(
-            "h-8 w-8 p-0",
+            'h-8 w-8 p-0',
             editor.isActive('heading', { level: 1 }) ? 'bg-gray-200' : ''
           )}
         >
@@ -190,9 +203,11 @@ const MenuBar = ({ editor }: { editor: any }) => {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+          onClick={() =>
+            editor.chain().focus().toggleHeading({ level: 2 }).run()
+          }
           className={cn(
-            "h-8 w-8 p-0",
+            'h-8 w-8 p-0',
             editor.isActive('heading', { level: 2 }) ? 'bg-gray-200' : ''
           )}
         >
@@ -201,9 +216,11 @@ const MenuBar = ({ editor }: { editor: any }) => {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+          onClick={() =>
+            editor.chain().focus().toggleHeading({ level: 3 }).run()
+          }
           className={cn(
-            "h-8 w-8 p-0",
+            'h-8 w-8 p-0',
             editor.isActive('heading', { level: 3 }) ? 'bg-gray-200' : ''
           )}
         >
@@ -214,7 +231,7 @@ const MenuBar = ({ editor }: { editor: any }) => {
           size="sm"
           onClick={() => editor.chain().focus().setParagraph().run()}
           className={cn(
-            "h-8 w-8 p-0",
+            'h-8 w-8 p-0',
             editor.isActive('paragraph') ? 'bg-gray-200' : ''
           )}
         >
@@ -229,7 +246,7 @@ const MenuBar = ({ editor }: { editor: any }) => {
           size="sm"
           onClick={() => editor.chain().focus().toggleBulletList().run()}
           className={cn(
-            "h-8 w-8 p-0",
+            'h-8 w-8 p-0',
             editor.isActive('bulletList') ? 'bg-gray-200' : ''
           )}
         >
@@ -240,7 +257,7 @@ const MenuBar = ({ editor }: { editor: any }) => {
           size="sm"
           onClick={() => editor.chain().focus().toggleOrderedList().run()}
           className={cn(
-            "h-8 w-8 p-0",
+            'h-8 w-8 p-0',
             editor.isActive('orderedList') ? 'bg-gray-200' : ''
           )}
         >
@@ -251,7 +268,7 @@ const MenuBar = ({ editor }: { editor: any }) => {
           size="sm"
           onClick={() => editor.chain().focus().toggleBlockquote().run()}
           className={cn(
-            "h-8 w-8 p-0",
+            'h-8 w-8 p-0',
             editor.isActive('blockquote') ? 'bg-gray-200' : ''
           )}
         >
@@ -265,7 +282,7 @@ const MenuBar = ({ editor }: { editor: any }) => {
           size="sm"
           onClick={() => editor.chain().focus().setTextAlign('left').run()}
           className={cn(
-            "h-8 w-8 p-0",
+            'h-8 w-8 p-0',
             editor.isActive({ textAlign: 'left' }) ? 'bg-gray-200' : ''
           )}
         >
@@ -276,7 +293,7 @@ const MenuBar = ({ editor }: { editor: any }) => {
           size="sm"
           onClick={() => editor.chain().focus().setTextAlign('center').run()}
           className={cn(
-            "h-8 w-8 p-0",
+            'h-8 w-8 p-0',
             editor.isActive({ textAlign: 'center' }) ? 'bg-gray-200' : ''
           )}
         >
@@ -287,7 +304,7 @@ const MenuBar = ({ editor }: { editor: any }) => {
           size="sm"
           onClick={() => editor.chain().focus().setTextAlign('right').run()}
           className={cn(
-            "h-8 w-8 p-0",
+            'h-8 w-8 p-0',
             editor.isActive({ textAlign: 'right' }) ? 'bg-gray-200' : ''
           )}
         >
@@ -329,8 +346,8 @@ const MenuBar = ({ editor }: { editor: any }) => {
             type="url"
             placeholder="Cole o link aqui..."
             value={linkUrl}
-            onChange={(e) => setLinkUrl(e.target.value)}
-            onKeyDown={(e) => {
+            onChange={e => setLinkUrl(e.target.value)}
+            onKeyDown={e => {
               if (e.key === 'Enter') {
                 e.preventDefault()
                 addLink()
@@ -341,7 +358,11 @@ const MenuBar = ({ editor }: { editor: any }) => {
           <Button size="sm" onClick={addLink}>
             Adicionar
           </Button>
-          <Button size="sm" variant="outline" onClick={() => setShowLinkInput(false)}>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setShowLinkInput(false)}
+          >
             Cancelar
           </Button>
         </div>
@@ -353,8 +374,8 @@ const MenuBar = ({ editor }: { editor: any }) => {
             type="url"
             placeholder="Cole a URL da imagem aqui..."
             value={imageUrl}
-            onChange={(e) => setImageUrl(e.target.value)}
-            onKeyDown={(e) => {
+            onChange={e => setImageUrl(e.target.value)}
+            onKeyDown={e => {
               if (e.key === 'Enter') {
                 e.preventDefault()
                 addImage()
@@ -365,7 +386,11 @@ const MenuBar = ({ editor }: { editor: any }) => {
           <Button size="sm" onClick={addImage}>
             Adicionar
           </Button>
-          <Button size="sm" variant="outline" onClick={() => setShowImageInput(false)}>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setShowImageInput(false)}
+          >
             Cancelar
           </Button>
         </div>
@@ -377,8 +402,8 @@ const MenuBar = ({ editor }: { editor: any }) => {
             type="url"
             placeholder="Cole o link do YouTube aqui..."
             value={youtubeUrl}
-            onChange={(e) => setYoutubeUrl(e.target.value)}
-            onKeyDown={(e) => {
+            onChange={e => setYoutubeUrl(e.target.value)}
+            onKeyDown={e => {
               if (e.key === 'Enter') {
                 e.preventDefault()
                 addYoutube()
@@ -389,7 +414,11 @@ const MenuBar = ({ editor }: { editor: any }) => {
           <Button size="sm" onClick={addYoutube}>
             Adicionar
           </Button>
-          <Button size="sm" variant="outline" onClick={() => setShowYoutubeInput(false)}>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setShowYoutubeInput(false)}
+          >
             Cancelar
           </Button>
         </div>
@@ -452,7 +481,8 @@ export function RichTextEditor({
         const text = event.clipboardData?.getData('text/plain')
         if (text) {
           // Detectar e converter links de vídeo automaticamente
-          const youtubeRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/
+          const youtubeRegex =
+            /(?:https?:\/\/)?(?:www.)?(?:youtube.com\/watch?v=|youtu.be\/|youtube.com\/embed\/)([a-zA-Z0-9_-]{11})/
           if (youtubeRegex.test(text)) {
             event.preventDefault()
             editor?.commands.setYoutubeVideo({
@@ -475,11 +505,18 @@ export function RichTextEditor({
   }, [content, editor])
 
   return (
-    <div className={cn('border border-gray-200 rounded-lg overflow-hidden', className)}>
+    <div
+      className={cn(
+        'border border-gray-200 rounded-lg overflow-hidden',
+        className
+      )}
+    >
       {/* Controles da imagem de capa */}
       {imageUrl && onImageUrlChange && onCenterImageChange && (
         <div className="p-4 bg-gray-50 border-b">
-          <Label className="text-sm font-medium mb-2 block">Imagem de Capa</Label>
+          <Label className="text-sm font-medium mb-2 block">
+            Imagem de Capa
+          </Label>
           <div className="space-y-3">
             <div className="relative">
               <img
@@ -496,7 +533,7 @@ export function RichTextEditor({
               <Checkbox
                 id="center-image"
                 checked={centerImage}
-                onCheckedChange={(checked) => onCenterImageChange(!!checked)}
+                onCheckedChange={checked => onCenterImageChange(!!checked)}
               />
               <Label htmlFor="center-image" className="text-sm">
                 Centralizar imagem de capa
@@ -507,16 +544,17 @@ export function RichTextEditor({
       )}
 
       <MenuBar editor={editor} />
-      <EditorContent 
-        editor={editor} 
+      <EditorContent
+        editor={editor}
         className="min-h-[300px] max-h-[600px] overflow-y-auto"
       />
-      
+
       {/* Dica de uso */}
       <div className="p-2 bg-gray-50 border-t text-xs text-gray-600">
         <p>
-          <strong>Dica:</strong> Cole links do YouTube, Instagram ou TikTok para incorporar vídeos automaticamente.
-          Use Ctrl+B para negrito, Ctrl+I para itálico, Ctrl+Z para desfazer.
+          <strong>Dica:</strong> Cole links do YouTube, Instagram ou TikTok para
+          incorporar vídeos automaticamente. Use Ctrl+B para negrito, Ctrl+I
+          para itálico, Ctrl+Z para desfazer.
         </p>
       </div>
     </div>

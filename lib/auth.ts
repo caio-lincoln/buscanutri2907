@@ -1,5 +1,10 @@
 import { createSupabaseClient, type UserType } from './supabase'
-import { normalizeStringArray, normalizeSpecialties, normalizeLanguages, logNormalizationEvent } from './structured-data-utils'
+import {
+  normalizeStringArray,
+  normalizeSpecialties,
+  normalizeLanguages,
+  logNormalizationEvent,
+} from './structured-data-utils'
 
 // Usar o novo cliente para autenticação
 const supabase = createSupabaseClient()
@@ -206,7 +211,7 @@ export async function signIn(email: string, password: string) {
     if (error) {
       // Silent error handling: Login error
       // Silent error handling: Error fetching user profile
-    throw error
+      throw error
     }
 
     if (!data.user) {
@@ -229,9 +234,14 @@ export async function signOut() {
   try {
     // Silent logging: Performing logout
 
-    // Limpar localStorage se existir
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('admin_session')
+    // Limpar localStorage se existir (verificação segura para SSR)
+    if (typeof window !== 'undefined' && window.localStorage) {
+      try {
+        localStorage.removeItem('admin_session')
+      } catch (error) {
+        // Ignorar erros de localStorage em modo privado/incógnito
+        console.warn('Erro ao limpar localStorage:', error)
+      }
     }
 
     const { error } = await supabase.auth.signOut()
@@ -255,8 +265,14 @@ export async function isAdmin(email: string): Promise<boolean> {
 
 export async function signInAdmin(email: string, password: string) {
   if (email === 'iris@buscanutri.com' && password === 'iris123456') {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('admin_session', 'iris@buscanutri.com')
+    // Verificação segura para SSR
+    if (typeof window !== 'undefined' && window.localStorage) {
+      try {
+        localStorage.setItem('admin_session', 'iris@buscanutri.com')
+      } catch (error) {
+        // Ignorar erros de localStorage em modo privado/incógnito
+        console.warn('Erro ao salvar no localStorage:', error)
+      }
     }
     // Silent logging: Admin login performed
     return {
@@ -276,15 +292,20 @@ export async function signInAdmin(email: string, password: string) {
 
 export async function getCurrentUser() {
   try {
-    // Verificar se é admin primeiro
-    if (typeof window !== 'undefined') {
-      const adminSession = localStorage.getItem('admin_session')
-      if (adminSession === 'iris@buscanutri.com') {
-        return {
-          id: 'admin-001',
-          email: 'iris@buscanutri.com',
-          user_type: 'admin' as UserType,
+    // Verificar se é admin primeiro (verificação segura para SSR)
+    if (typeof window !== 'undefined' && window.localStorage) {
+      try {
+        const adminSession = localStorage.getItem('admin_session')
+        if (adminSession === 'iris@buscanutri.com') {
+          return {
+            id: 'admin-001',
+            email: 'iris@buscanutri.com',
+            user_type: 'admin' as UserType,
+          }
         }
+      } catch (error) {
+        // Ignorar erros de localStorage em modo privado/incógnito
+        console.warn('Erro ao acessar localStorage:', error)
       }
     }
 
@@ -409,7 +430,7 @@ export async function getUserProfile(userId: string, userType: UserType) {
     // Função helper para processar campos que podem estar com escape duplo
     const processField = (field: any, fieldName?: string): string[] => {
       let result
-      
+
       // Usar normalizadores específicos quando disponível
       if (fieldName === 'languages') {
         result = normalizeLanguages(field)
@@ -418,12 +439,17 @@ export async function getUserProfile(userId: string, userType: UserType) {
       } else {
         result = normalizeStringArray(field)
       }
-      
+
       // Log eventos de normalização para telemetria
       if (result.wasCorrupted) {
-        logNormalizationEvent(fieldName || 'unknown_field', result, { context: 'auth-service' })
+        logNormalizationEvent(
+          fieldName || 'unknown_field',
+          result.originalValue,
+          result.data,
+          result.wasCorrupted
+        )
       }
-      
+
       return result.data
     }
 
@@ -432,7 +458,10 @@ export async function getUserProfile(userId: string, userType: UserType) {
       nutritionistProfile.specialties,
       'specialties'
     )
-    nutritionistProfile.languages = processField(nutritionistProfile.languages, 'languages')
+    nutritionistProfile.languages = processField(
+      nutritionistProfile.languages,
+      'languages'
+    )
     nutritionistProfile.certifications = processField(
       nutritionistProfile.certifications,
       'certifications'

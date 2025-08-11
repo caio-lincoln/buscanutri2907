@@ -7,77 +7,123 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   images: {
-    unoptimized: true,
+    unoptimized: false, // Habilitar otimização de imagens no Vercel
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: '**',
+        hostname: 'images.unsplash.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'via.placeholder.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'picsum.photos',
+      },
+      {
+        protocol: 'https',
+        hostname: 'randomuser.me',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.supabase.co',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.supabase.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'avatars.githubusercontent.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'lh3.googleusercontent.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'platform-lookaside.fbsbx.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'graph.facebook.com',
       },
     ],
   },
   serverExternalPackages: ['@supabase/supabase-js'],
-
-  // Controle de versão de build para quebrar cache
   generateBuildId: async () => {
-    const buildId =
-      process.env.BUILD_ID ||
-      `build-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-    console.log(`🚀 Build ID: ${buildId}`)
-    return buildId
+    return 'buscanutri-build-' + Date.now()
   },
-
-  // Headers para controle de cache
+  // Configuração para evitar problemas de hidratação no SSR
+  reactStrictMode: true,
+  // Configuração para otimização de build
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production',
+  },
+  // Headers otimizados para produção
   async headers() {
     return [
       {
-        source: '/(.*)',
+        source: '/',
         headers: [
           {
-            key: 'X-Build-ID',
-            value: process.env.BUILD_ID || 'development',
+            key: 'Cache-Control',
+            value: 'public, max-age=3600, stale-while-revalidate=86400',
           },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+          {
+            key: 'X-Frame-Options',
+            value: 'DENY',
+          },
+          {
+            key: 'X-XSS-Protection',
+            value: '1; mode=block',
+          },
+        ],
+      },
+      {
+        source: '/api/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-store, no-cache, must-revalidate',
+          },
+        ],
+      },
+      {
+        source: '/dashboard/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-store, no-cache, must-revalidate',
+          },
+        ],
+      },
+      {
+        source: '/_next/static/:path*',
+        headers: [
           {
             key: 'Cache-Control',
             value: 'public, max-age=31536000, immutable',
           },
         ],
       },
-      {
-        source: '/api/(.*)',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'no-cache, no-store, must-revalidate',
-          },
-          {
-            key: 'X-Build-ID',
-            value: process.env.BUILD_ID || 'development',
-          },
-        ],
-      },
-      {
-        source: '/dashboard/(.*)',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'no-cache, no-store, must-revalidate',
-          },
-          {
-            key: 'X-Build-ID',
-            value: process.env.BUILD_ID || 'development',
-          },
-        ],
-      },
     ]
   },
-
-  // Revalidação de cache por tag
   experimental: {
     staleTimes: {
       dynamic: 30,
       static: 180,
     },
+    // Otimizações para produção
+    optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
   },
+  // Configuração para evitar problemas de build no Vercel
+  output: 'standalone',
 }
 
 export default nextConfig

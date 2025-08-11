@@ -4,17 +4,16 @@
  */
 
 import { describe, it, expect } from '@jest/globals'
-import { 
-  normalizeStringArray, 
-  normalizeLanguages, 
+import {
+  normalizeStringArray,
+  normalizeLanguages,
   normalizeSpecialties,
   validateStructuredPayload,
   safeStringify,
-  safeJsonParse
+  safeJsonParse,
 } from '../lib/structured-data-utils'
 
 describe('Structured Data Utils Tests', () => {
-  
   describe('normalizeStringArray', () => {
     it('should handle valid arrays', () => {
       const input = ['Português', 'Inglês']
@@ -60,7 +59,7 @@ describe('Structured Data Utils Tests', () => {
       const testCases = [
         { input: 'pt-BR, en-US', expected: ['pt-BR', 'en-US'] },
         { input: 'Português, Inglês', expected: ['Português', 'Inglês'] },
-        { input: '["pt-BR", "en-US"]', expected: ['pt-BR', 'en-US'] }
+        { input: '["pt-BR", "en-US"]', expected: ['pt-BR', 'en-US'] },
       ]
 
       testCases.forEach(({ input, expected }) => {
@@ -81,14 +80,14 @@ describe('Structured Data Utils Tests', () => {
   describe('normalizeSpecialties', () => {
     it('should normalize medical specialties', () => {
       const testCases = [
-        { 
-          input: 'Nutrição Esportiva, Emagrecimento', 
-          expected: ['Nutrição Esportiva', 'Emagrecimento'] 
+        {
+          input: 'Nutrição Esportiva, Emagrecimento',
+          expected: ['Nutrição Esportiva', 'Emagrecimento'],
         },
-        { 
-          input: '["Nutrição Clínica", "Nutrição Infantil"]', 
-          expected: ['Nutrição Clínica', 'Nutrição Infantil'] 
-        }
+        {
+          input: '["Nutrição Clínica", "Nutrição Infantil"]',
+          expected: ['Nutrição Clínica', 'Nutrição Infantil'],
+        },
       ]
 
       testCases.forEach(({ input, expected }) => {
@@ -179,7 +178,10 @@ describe('Structured Data Utils Tests', () => {
       const payload = { specialties: ['Nutrição Esportiva', 'Emagrecimento'] }
       const result = validateStructuredPayload(payload, 'specialties')
       expect(result.isValid).toBe(true)
-      expect(result.normalizedValue).toEqual(['Nutrição Esportiva', 'Emagrecimento'])
+      expect(result.normalizedValue).toEqual([
+        'Nutrição Esportiva',
+        'Emagrecimento',
+      ])
     })
 
     it('should reject JSON string payload', () => {
@@ -193,10 +195,16 @@ describe('Structured Data Utils Tests', () => {
       const payload1 = { specialties: null }
       const payload2 = { specialties: undefined }
       const payload3 = {}
-      
-      expect(validateStructuredPayload(payload1, 'specialties').isValid).toBe(true)
-      expect(validateStructuredPayload(payload2, 'specialties').isValid).toBe(true)
-      expect(validateStructuredPayload(payload3, 'specialties').isValid).toBe(true)
+
+      expect(validateStructuredPayload(payload1, 'specialties').isValid).toBe(
+        true
+      )
+      expect(validateStructuredPayload(payload2, 'specialties').isValid).toBe(
+        true
+      )
+      expect(validateStructuredPayload(payload3, 'specialties').isValid).toBe(
+        true
+      )
     })
 
     it('should reject corrupted data patterns', () => {
@@ -224,7 +232,7 @@ describe('Structured Data Utils Tests', () => {
         '{"incomplete": ',
         '[1,2,3',
         '{"key": "value"',
-        'not json at all'
+        'not json at all',
       ]
 
       malformedInputs.forEach(input => {

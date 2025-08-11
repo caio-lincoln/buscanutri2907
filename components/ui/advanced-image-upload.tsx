@@ -94,6 +94,17 @@ export function AdvancedImageUpload({
       quality: number = 0.8
     ): Promise<CompressedImageResult> => {
       return new Promise(resolve => {
+        // Verificação segura para SSR
+        if (typeof document === 'undefined' || !document.createElement) {
+          resolve({
+            file,
+            originalSize: file.size,
+            compressedSize: file.size,
+            compressionRatio: 0,
+          })
+          return
+        }
+        
         const canvas = document.createElement('canvas')
         const ctx = canvas.getContext('2d')!
         const img = new Image()

@@ -61,7 +61,6 @@ import { useRealtimeProfileViews } from '@/hooks/use-realtime-profile-views'
 import { RealtimeViewsTest } from '@/components/realtime-views-test'
 
 export default function NutritionistDashboard() {
-  const [profile, setProfile] = useState<NutritionistProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('overview')
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
@@ -78,6 +77,17 @@ export default function NutritionistDashboard() {
   const [unreadMessages, setUnreadMessages] = useState<UnreadMessage[]>([])
   const router = useRouter()
   const { user, loading: authLoading, signOut } = useAuth()
+
+  // Usar o perfil do contexto de autenticação
+  const profile = user?.nutritionistProfile
+
+  // Log temporário para debug
+  console.log('Dashboard Debug:', {
+    user: user,
+    profile: profile,
+    profileId: profile?.id,
+    hasProfile: !!profile
+  })
 
   // Hook para estatísticas dinâmicas do dashboard
   const { stats: dashboardStats, loading: statsLoading } = useDashboardStats({
@@ -96,35 +106,18 @@ export default function NutritionistDashboard() {
   const menuItems = getMenuItems('nutricionista', dashboardStats)
 
   useEffect(() => {
-    if (!authLoading) {
-      loadProfile()
+    if (!authLoading && !user) {
+      router.push('/login')
+      return
     }
-  }, [user, authLoading])
-
-  useEffect(() => {
+    
     if (profile?.user_id) {
       loadDashboardData()
-    }
-  }, [profile?.user_id])
-
-  const loadProfile = async () => {
-    try {
-      if (!user) {
-        router.push('/login')
-        return
-      }
-
-      const { data: profileData } = await getUserProfile(
-        user.id,
-        'nutricionista'
-      )
-      setProfile(profileData)
-    } catch (error) {
-      // Error loading profile - handled silently
-    } finally {
       setLoading(false)
     }
-  }
+  }, [user, authLoading, profile?.user_id])
+
+  // Remover a função loadProfile pois agora usamos o perfil do contexto
 
   const loadDashboardData = async () => {
     if (!profile?.user_id) return
@@ -172,6 +165,14 @@ export default function NutritionistDashboard() {
     )
   }
 
+  const handleItemClick = (itemId: string) => {
+    if (itemId === 'perfil' && profile?.id) {
+      router.push(`/dashboard/nutricionistas/${profile.id}`)
+    } else {
+      setActiveTab(itemId)
+    }
+  }
+
   return (
     <DashboardSidebar
       userType="nutricionista"
@@ -179,7 +180,7 @@ export default function NutritionistDashboard() {
       userAvatar={profile?.profile_image_url || '/placeholder.svg'}
       menuItems={menuItems}
       activeItem={activeTab}
-      onItemClick={setActiveTab}
+      onItemClick={handleItemClick}
       onSignOut={handleSignOut}
     >
       <div className="space-y-8">
@@ -685,7 +686,7 @@ export default function NutritionistDashboard() {
               </div>
               <div className="flex flex-col sm:flex-row gap-3">
                 {/* Botão "Ver meu perfil público" - só aparece se o ID existir */}
-                {profile?.id && (
+                {profile?.id ? (
                   <Button
                     variant="outline"
                     className="hover-lift bg-white/80 backdrop-blur-sm border-gray-200"
@@ -696,6 +697,16 @@ export default function NutritionistDashboard() {
                   >
                     <ExternalLink className="h-4 w-4 mr-2" />
                     Ver meu perfil público
+                  </Button>
+                ) : (
+                  <Button
+                    variant="outline"
+                    className="hover-lift bg-white/80 backdrop-blur-sm border-gray-200 opacity-50 cursor-not-allowed"
+                    disabled
+                    title="Complete seu perfil para visualizar a página pública"
+                  >
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    Perfil não disponível
                   </Button>
                 )}
                 <Button
@@ -871,9 +882,9 @@ export default function NutritionistDashboard() {
 
                             // Remove múltiplos escapes e caracteres problemáticos
                             cleanString = cleanString
-                              .replace(/\\+"/g, '"') // Remove escapes múltiplos
+                              .replace(/\+"/g, '"') // Remove escapes múltiplos
                               .replace(/^\[+/, '') // Remove [ do início
-                              .replace(/\]+$/, '') // Remove ] do final
+                              .replace(/]+$/, '') // Remove ] do final
                               .replace(/^"+/, '') // Remove " do início
                               .replace(/"+$/, '') // Remove " do final
 
@@ -1642,7 +1653,10 @@ export default function NutritionistDashboard() {
           onOpenChange={setIsProfileModalOpen}
           userType="nutricionista"
           initialData={profile}
-          onProfileUpdate={loadProfile}
+          onProfileUpdate={() => {
+            // Recarregar a página para atualizar o perfil
+            window.location.reload()
+          }}
           userId={profile.user_id}
         />
       )}

@@ -124,6 +124,11 @@ export function BadgesTab() {
   }
 
   const handleDeleteBadge = async id => {
+    // Verificação segura para SSR
+    if (typeof window === 'undefined' || !window.confirm) {
+      return
+    }
+    
     if (window.confirm('Tem certeza que deseja excluir esta insígnia?')) {
       const success = await deleteBadge(id)
       if (success) {
@@ -174,6 +179,12 @@ export function BadgesTab() {
 
   const handleRemoveBadge = async badgeId => {
     if (!selectedNutritionist) return
+    
+    // Verificação segura para SSR
+    if (typeof window === 'undefined' || !window.confirm) {
+      return
+    }
+    
     if (
       window.confirm(
         'Tem certeza que deseja remover esta insígnia do nutricionista?'

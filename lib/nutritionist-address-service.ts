@@ -319,7 +319,7 @@ class NutritionistAddressService {
     }
 
     if ('zip_code' in data && data.zip_code) {
-      const zipRegex = /^\d{5}-?\d{3}$/
+      const zipRegex = /^d{5}-?d{3}$/
       if (!zipRegex.test(data.zip_code)) {
         errors.push('CEP deve estar no formato 00000-000')
       }

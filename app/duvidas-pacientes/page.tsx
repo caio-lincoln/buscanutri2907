@@ -36,7 +36,7 @@ export default function DuvidasPacientesPage() {
         setQuestions(data)
         setFilteredQuestions(data)
       } catch (error) {
-      // Error loading questions - handled silently
+        // Error loading questions - handled silently
       } finally {
         setLoading(false)
       }
@@ -65,7 +65,7 @@ export default function DuvidasPacientesPage() {
     try {
       const date = new Date(
         timestamp.replace(
-          /(\d{2})\/(\d{2})\/(\d{4}), (\d{2}):(\d{2}):(\d{2})/,
+          /(d{2})\/(d{2})\/(d{4}), (d{2}):(d{2}):(d{2})/,
           '$3-$2-$1T$4:$5:$6'
         )
       )

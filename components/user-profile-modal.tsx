@@ -20,10 +20,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { MultiSelect, type Option } from '@/components/ui/multi-select'
-import { Checkbox } from '@/components/ui/checkbox'
+import { MultiSelect } from '@/components/ui/multi-select'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { ImageUpload } from '@/components/ui/image-upload'
 import { ImageCropUpload } from '@/components/ui/image-crop-upload'
 import {
   User,
@@ -32,8 +30,7 @@ import {
   AlertCircle,
   Loader2,
   Camera,
-  FileText,
-  BadgeIcon as IdCard,
+
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react'
@@ -61,25 +58,19 @@ import { validateCPF, formatCPF, validateCPFFormat } from '@/lib/cpf-validator'
 import { validateRG, formatRG, validateRGFormat } from '@/lib/rg-validator'
 import { ScheduleSelector } from '@/components/ui/schedule-selector'
 import { SpecialtySelector } from '@/components/ui/specialty-selector'
-import { normalizeStringArray, normalizeLanguages, logNormalizationEvent } from '@/lib/structured-data-utils'
+import {
+  normalizeStringArray,
+  normalizeLanguages,
+  logNormalizationEvent,
+} from '@/lib/structured-data-utils'
 
-// Specialty options for nutritionists
-const SPECIALTY_OPTIONS: Option[] = [
-  { label: 'Nutricao Clinica', value: 'nutricao_clinica' },
-  { label: 'Nutricao Esportiva', value: 'nutricao_esportiva' },
-  { label: 'Nutricao Materno-Infantil', value: 'nutricao_materno_infantil' },
-  { label: 'Nutricao Geriatrica', value: 'nutricao_geriatrica' },
-  { label: 'Nutricao Funcional', value: 'nutricao_funcional' },
-  { label: 'Nutricao Comportamental', value: 'nutricao_comportamental' },
-  { label: 'Nutricao Oncologica', value: 'nutricao_oncologica' },
-  { label: 'Nutricao Vegetariana/Vegana', value: 'nutricao_vegetariana' },
-  { label: 'Transtornos Alimentares', value: 'transtornos_alimentares' },
-  { label: 'Emagrecimento', value: 'emagrecimento' },
-  { label: 'Ganho de Massa Muscular', value: 'ganho_massa' },
-  { label: 'Diabetes', value: 'diabetes' },
-  { label: 'Hipertensao', value: 'hipertensao' },
-  { label: 'Dislipidemia', value: 'dislipidemia' },
-]
+// Interface para opções do MultiSelect
+interface Option {
+  value: string
+  label: string
+}
+
+
 
 // Payment method options
 const PAYMENT_METHOD_OPTIONS: Option[] = [
@@ -103,23 +94,7 @@ const LANGUAGE_OPTIONS: Option[] = [
   { label: 'Libras', value: 'libras' },
 ]
 
-// Available times options
-const AVAILABLE_TIMES_OPTIONS: Option[] = [
-  { label: 'Segunda 08:00-12:00', value: 'seg_manha' },
-  { label: 'Segunda 13:00-18:00', value: 'seg_tarde' },
-  { label: 'Terca 08:00-12:00', value: 'ter_manha' },
-  { label: 'Terca 13:00-18:00', value: 'ter_tarde' },
-  { label: 'Quarta 08:00-12:00', value: 'qua_manha' },
-  { label: 'Quarta 13:00-18:00', value: 'qua_tarde' },
-  { label: 'Quinta 08:00-12:00', value: 'qui_manha' },
-  { label: 'Quinta 13:00-18:00', value: 'qui_tarde' },
-  { label: 'Sexta 08:00-12:00', value: 'sex_manha' },
-  { label: 'Sexta 13:00-18:00', value: 'sex_tarde' },
-  { label: 'Sabado 08:00-12:00', value: 'sab_manha' },
-  { label: 'Sabado 13:00-17:00', value: 'sab_tarde' },
-  { label: 'Domingo 08:00-12:00', value: 'dom_manha' },
-  { label: 'Domingo 13:00-17:00', value: 'dom_tarde' },
-]
+
 
 // Opções para anamnese nutricional
 const GENERO_OPTIONS = [
@@ -255,7 +230,7 @@ export function UserProfileModal({
     message: string
   }>({ status: 'idle', message: '' })
 
-  const [cnpjValue, setCnpjValue] = useState('')
+
   const [cnpjValidation, setCnpjValidation] = useState<{
     status: 'idle' | 'validating' | 'valid' | 'invalid'
     message: string
@@ -279,10 +254,10 @@ export function UserProfileModal({
     userType === 'paciente' ? 3 : userType === 'nutricionista' ? 2 : 1
 
   // Estado para controlar se está editando (modo de edição)
-  const [isEditing, setIsEditing] = useState(true)
+  const [isEditing] = useState(true)
 
   // Estado para especialidades selecionadas (nutricionistas)
-  const [selectedSpecialties, setSelectedSpecialties] = useState<number[]>([])
+  const [selectedSpecialties, setSelectedSpecialties] = useState<string[]>([])
 
   // Estados para anamnese nutricional (apenas para pacientes)
   const [anamneseData, setAnamneseData] = useState<any>({
@@ -379,7 +354,7 @@ export function UserProfileModal({
       }
       if (userType === 'empresa' && initialData?.cnpj) {
         const formattedCnpj = formatCNPJ(initialData.cnpj)
-        setCnpjValue(formattedCnpj)
+        setFormData(prev => ({ ...prev, cnpj: formattedCnpj }))
         setCnpjValidation({ status: 'valid', message: 'CNPJ válido' })
       }
 
@@ -447,12 +422,12 @@ export function UserProfileModal({
 
     try {
       const schedule = await getNutritionistAvailability(userId)
-      
+
       // Atualizar o formData com os horários carregados da tabela
       if (Object.keys(schedule).length > 0) {
         setFormData(prev => ({
           ...prev,
-          available_times: JSON.stringify(schedule)
+          available_times: JSON.stringify(schedule),
         }))
       }
     } catch (error) {
@@ -533,9 +508,9 @@ export function UserProfileModal({
   const handleCRNChange = async (value: string) => {
     const formatted = formatCRN(value)
     setCrnValue(formatted)
-    setFormData(prev => ({ ...prev, crn: formatted.replace(/\D/g, '') }))
+    setFormData(prev => ({ ...prev, crn: formatted.replace(/D/g, '') }))
 
-    if (!formatted || formatted.replace(/\D/g, '').length < 6) {
+    if (!formatted || formatted.replace(/D/g, '').length < 6) {
       setCrnValidation({ status: 'idle', message: '' })
       return
     }
@@ -561,49 +536,14 @@ export function UserProfileModal({
     }
   }
 
-  const handleCNPJChange = async (value: string) => {
-    const formatted = formatCNPJ(value)
-    setCnpjValue(formatted)
-    setFormData(prev => ({ ...prev, cnpj: formatted.replace(/\D/g, '') }))
 
-    if (!formatted || formatted.replace(/\D/g, '').length < 14) {
-      setCnpjValidation({ status: 'idle', message: '' })
-      return
-    }
-
-    const formatValidation = validateCNPJFormat(formatted)
-    if (!formatValidation.isValid) {
-      setCnpjValidation({
-        status: 'invalid',
-        message: formatValidation.message,
-      })
-      return
-    }
-
-    setCnpjValidation({
-      status: 'validating',
-      message: 'Consultando Receita Federal...',
-    })
-    try {
-      const apiValidation = await validateCNPJWithAPI(formatted)
-      setCnpjValidation({
-        status: apiValidation.isValid ? 'valid' : 'invalid',
-        message: apiValidation.message,
-      })
-    } catch (error) {
-      setCnpjValidation({
-        status: 'invalid',
-        message: 'Erro ao validar CNPJ. Tente novamente.',
-      })
-    }
-  }
 
   const handleCPFChange = (value: string) => {
     const formatted = formatCPF(value)
     setCpfValue(formatted)
-    setFormData(prev => ({ ...prev, cpf: formatted.replace(/\D/g, '') }))
+    setFormData((prev: any) => ({ ...prev, cpf: formatted.replace(/D/g, '') }))
 
-    if (!formatted || formatted.replace(/\D/g, '').length < 11) {
+    if (!formatted || formatted.replace(/D/g, '').length < 11) {
       setCpfValidation({ status: 'idle', message: '' })
       return
     }
@@ -616,7 +556,7 @@ export function UserProfileModal({
       return
     }
 
-    const isValid = validateCPF(formatted.replace(/\D/g, ''))
+    const isValid = validateCPF(formatted.replace(/D/g, ''))
     if (isValid) {
       setCpfValidation({ status: 'valid', message: 'CPF valido' })
     } else {
@@ -627,9 +567,9 @@ export function UserProfileModal({
   const handleRGChange = (value: string) => {
     const formatted = formatRG(value)
     setRgValue(formatted)
-    setFormData(prev => ({ ...prev, rg: formatted.replace(/\D/g, '') }))
+    setFormData((prev: any) => ({ ...prev, rg: formatted.replace(/D/g, '') }))
 
-    if (!formatted || formatted.replace(/\D/g, '').length < 7) {
+    if (!formatted || formatted.replace(/D/g, '').length < 7) {
       setRgValidation({ status: 'idle', message: '' })
       return
     }
@@ -639,7 +579,7 @@ export function UserProfileModal({
       return
     }
 
-    const isValid = validateRG(formatted.replace(/\D/g, ''))
+    const isValid = validateRG(formatted.replace(/D/g, ''))
     if (isValid) {
       setRgValidation({ status: 'valid', message: 'RG valido' })
     } else {
@@ -652,14 +592,14 @@ export function UserProfileModal({
       value =>
         PAYMENT_METHOD_OPTIONS.find(opt => opt.value === value)?.label || value
     )
-    setFormData(prev => ({ ...prev, payment_methods: labels.join(', ') }))
+    setFormData((prev: any) => ({ ...prev, payment_methods: labels.join(', ') }))
   }
 
   const handleLanguagesChange = (values: string[]) => {
     const labels = values.map(
       value => LANGUAGE_OPTIONS.find(opt => opt.value === value)?.label || value
     )
-    setFormData(prev => ({
+    setFormData((prev: any) => ({
       ...prev,
       consultation_languages: labels.join(', '),
     }))
@@ -684,7 +624,7 @@ export function UserProfileModal({
   // Função para formatar peso automaticamente
   const formatPeso = (value: string) => {
     // Remove caracteres não numéricos
-    const numericValue = value.replace(/[^\d]/g, '')
+    const numericValue = value.replace(/[^d]/g, '')
 
     if (numericValue.length === 0) return ''
     if (numericValue.length === 1) return numericValue
@@ -700,7 +640,7 @@ export function UserProfileModal({
   // Função para formatar altura automaticamente
   const formatAltura = (value: string) => {
     // Remove caracteres não numéricos
-    const numericValue = value.replace(/[^\d]/g, '')
+    const numericValue = value.replace(/[^d]/g, '')
 
     if (numericValue.length === 0) return ''
     if (numericValue.length === 1) return `1.${numericValue}`
@@ -726,7 +666,6 @@ export function UserProfileModal({
 
     // Aplicar formatação apenas se necessário
     const formattedValue = formatPeso(rawValue)
-    const numericValue = parseFloat(formattedValue) || 0
 
     // Atualizar com o valor formatado para exibição
     handleAnamneseChange('peso_atual', formattedValue)
@@ -745,7 +684,6 @@ export function UserProfileModal({
 
     // Aplicar formatação apenas se necessário
     const formattedValue = formatAltura(rawValue)
-    const numericValue = parseFloat(formattedValue) || 0
 
     // Atualizar com o valor formatado para exibição
     handleAnamneseChange('altura', formattedValue)
@@ -886,26 +824,35 @@ export function UserProfileModal({
         }
 
         // Função helper para processar campos que podem estar com escape duplo
-        const processStringField = (field: string, fieldName?: string): string[] => {
-          let result
-          
+        const processStringField = (
+          field: string,
+          fieldName?: string
+        ): string[] => {
           // Usar normalizador específico para idiomas
           if (fieldName === 'languages') {
-            result = normalizeLanguages(field)
+            return normalizeLanguages(field)
           } else {
-            result = normalizeStringArray(field)
+            const result = normalizeStringArray(field)
+            
+            // Log eventos de normalização para telemetria
+            if (result.wasCorrupted) {
+              logNormalizationEvent(
+                fieldName || 'unknown_field',
+                result.originalValue,
+                result.data,
+                result.wasCorrupted
+              )
+            }
+
+            return result.data
           }
-          
-          // Log eventos de normalização para telemetria
-          if (result.wasCorrupted) {
-            logNormalizationEvent(fieldName || 'unknown_field', result, { context: 'user-profile-modal' })
-          }
-          
-          return result.data
         }
 
         if (typeof dataToSubmit.languages === 'string') {
-          dataToSubmit.languages = processStringField(dataToSubmit.languages, 'languages')
+          dataToSubmit.languages = processStringField(
+            dataToSubmit.languages,
+            'languages'
+          )
         }
         if (typeof dataToSubmit.certifications === 'string') {
           dataToSubmit.certifications = processStringField(
@@ -1025,18 +972,7 @@ export function UserProfileModal({
     }
   }
 
-  const renderCNPJValidationIcon = () => {
-    switch (cnpjValidation.status) {
-      case 'validating':
-        return <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
-      case 'valid':
-        return <CheckCircle className="h-4 w-4 text-green-500" />
-      case 'invalid':
-        return <AlertCircle className="h-4 w-4 text-red-500" />
-      default:
-        return null
-    }
-  }
+
 
   const renderCPFValidationIcon = () => {
     switch (cpfValidation.status) {
@@ -1768,8 +1704,9 @@ export function UserProfileModal({
                       </Label>
                     </div>
                     <p className="text-xs text-gray-500 ml-6">
-                      Ao marcar esta opção, você concorda em participar de campanhas promocionais
-                      e permitir que seus dados sejam utilizados para ofertas de cupons de desconto.
+                      Ao marcar esta opção, você concorda em participar de
+                      campanhas promocionais e permitir que seus dados sejam
+                      utilizados para ofertas de cupons de desconto.
                     </p>
                   </div>
 
@@ -1821,7 +1758,7 @@ export function UserProfileModal({
                               .split(', ')
                               .filter(Boolean)
                               .map(
-                                label =>
+                                (label: string) =>
                                   LANGUAGE_OPTIONS.find(
                                     opt => opt.label === label
                                   )?.value || label
@@ -1846,7 +1783,7 @@ export function UserProfileModal({
                               .split(', ')
                               .filter(Boolean)
                               .map(
-                                label =>
+                                (label: string) =>
                                   PAYMENT_METHOD_OPTIONS.find(
                                     opt => opt.label === label
                                   )?.value || label
@@ -1865,7 +1802,7 @@ export function UserProfileModal({
                     <ScheduleSelector
                       value={formData?.available_times || '{}'}
                       onChange={value =>
-                        setFormData(prev => ({
+                        setFormData((prev: any) => ({
                           ...prev,
                           available_times: value,
                         }))

@@ -124,16 +124,15 @@ export class RealtimeService {
 
       // Escutar presença (quem está online)
       channel.on('presence', { event: 'sync' }, () => {
-        const state = channel.presenceState()
         // Silent logging: Presença sincronizada
       })
 
-      channel.on('presence', { event: 'join' }, ({ key, newPresences }) => {
+      channel.on('presence', { event: 'join' }, ({ key }) => {
         // Silent logging: Usuário entrou
         this.onParticipantStatusChanged?.(key, 'joined')
       })
 
-      channel.on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
+      channel.on('presence', { event: 'leave' }, ({ key }) => {
         // Silent logging: Usuário saiu
         this.onParticipantStatusChanged?.(key, 'left')
       })
