@@ -1,0 +1,205 @@
+{
+  "timestamp": "2025-08-11T02:07:39.231Z",
+  "summary": {
+    "total": 39,
+    "success": 0,
+    "errors": 39
+  },
+  "details": [
+    {
+      "command": "Criando política RLS otimizada",
+      "success": false,
+      "error": "Could not find the function public.exec_sql(sql_query) in the schema cache"
+    },
+    {
+      "command": "Removendo política RLS",
+      "success": false,
+      "error": "Could not find the function public.exec_sql(sql_query) in the schema cache"
+    },
+    {
+      "command": "Criando política RLS otimizada",
+      "success": false,
+      "error": "Could not find the function public.exec_sql(sql_query) in the schema cache"
+    },
+    {
+      "command": "Criando política RLS otimizada",
+      "success": false,
+      "error": "Could not find the function public.exec_sql(sql_query) in the schema cache"
+    },
+    {
+      "command": "Criando política RLS otimizada",
+      "success": false,
+      "error": "Could not find the function public.exec_sql(sql_query) in the schema cache"
+    },
+    {
+      "command": "Removendo política RLS",
+      "success": false,
+      "error": "Could not find the function public.exec_sql(sql_query) in the schema cache"
+    },
+    {
+      "command": "Criando política RLS otimizada",
+      "success": false,
+      "error": "Could not find the function public.exec_sql(sql_query) in the schema cache"
+    },
+    {
+      "command": "Removendo política RLS",
+      "success": false,
+      "error": "Could not find the function public.exec_sql(sql_query) in the schema cache"
+    },
+    {
+      "command": "Criando política RLS otimizada",
+      "success": false,
+      "error": "Could not find the function public.exec_sql(sql_query) in the schema cache"
+    },
+    {
+      "command": "Criando função com segurança aprimorada",
+      "success": false,
+      "error": "Could not find the function public.exec_sql(sql_query) in the schema cache"
+    },
+    {
+      "command": "Comando 11",
+      "success": false,
+      "error": "Could not find the function public.exec_sql(sql_query) in the schema cache"
+    },
+    {
+      "command": "Comando 12",
+      "success": false,
+      "error": "Could not find the function public.exec_sql(sql_query) in the schema cache"
+    },
+    {
+      "command": "Criando função com segurança aprimorada",
+      "success": false,
+      "error": "Could not find the function public.exec_sql(sql_query) in the schema cache"
+    },
+    {
+      "command": "Comando 14",
+      "success": false,
+      "error": "Could not find the function public.exec_sql(sql_query) in the schema cache"
+    },
+    {
+      "command": "Comando 15",
+      "success": false,
+      "error": "Could not find the function public.exec_sql(sql_query) in the schema cache"
+    },
+    {
+      "command": "Comando 16",
+      "success": false,
+      "error": "Could not find the function public.exec_sql(sql_query) in the schema cache"
+    },
+    {
+      "command": "Criando função com segurança aprimorada",
+      "success": false,
+      "error": "Could not find the function public.exec_sql(sql_query) in the schema cache"
+    },
+    {
+      "command": "Comando 18",
+      "success": false,
+      "error": "Could not find the function public.exec_sql(sql_query) in the schema cache"
+    },
+    {
+      "command": "Comando 19",
+      "success": false,
+      "error": "Could not find the function public.exec_sql(sql_query) in the schema cache"
+    },
+    {
+      "command": "Comando 20",
+      "success": false,
+      "error": "Could not find the function public.exec_sql(sql_query) in the schema cache"
+    },
+    {
+      "command": "Comando 21",
+      "success": false,
+      "error": "Could not find the function public.exec_sql(sql_query) in the schema cache"
+    },
+    {
+      "command": "Criando função com segurança aprimorada",
+      "success": false,
+      "error": "Could not find the function public.exec_sql(sql_query) in the schema cache"
+    },
+    {
+      "command": "Comando 23",
+      "success": false,
+      "error": "Could not find the function public.exec_sql(sql_query) in the schema cache"
+    },
+    {
+      "command": "Comando 24",
+      "success": false,
+      "error": "Could not find the function public.exec_sql(sql_query) in the schema cache"
+    },
+    {
+      "command": "Comando 25",
+      "success": false,
+      "error": "Could not find the function public.exec_sql(sql_query) in the schema cache"
+    },
+    {
+      "command": "Comando 26",
+      "success": false,
+      "error": "Could not find the function public.exec_sql(sql_query) in the schema cache"
+    },
+    {
+      "command": "Criando função com segurança aprimorada",
+      "success": false,
+      "error": "Could not find the function public.exec_sql(sql_query) in the schema cache"
+    },
+    {
+      "command": "Comando 28",
+      "success": false,
+      "error": "Could not find the function public.exec_sql(sql_query) in the schema cache"
+    },
+    {
+      "command": "Comando 29",
+      "success": false,
+      "error": "Could not find the function public.exec_sql(sql_query) in the schema cache"
+    },
+    {
+      "command": "Comando 30",
+      "success": false,
+      "error": "Could not find the function public.exec_sql(sql_query) in the schema cache"
+    },
+    {
+      "command": "Comando 31",
+      "success": false,
+      "error": "Could not find the function public.exec_sql(sql_query) in the schema cache"
+    },
+    {
+      "command": "Comando 32",
+      "success": false,
+      "error": "Could not find the function public.exec_sql(sql_query) in the schema cache"
+    },
+    {
+      "command": "Adicionando documentação",
+      "success": false,
+      "error": "Could not find the function public.exec_sql(sql_query) in the schema cache"
+    },
+    {
+      "command": "Adicionando documentação",
+      "success": false,
+      "error": "Could not find the function public.exec_sql(sql_query) in the schema cache"
+    },
+    {
+      "command": "Adicionando documentação",
+      "success": false,
+      "error": "Could not find the function public.exec_sql(sql_query) in the schema cache"
+    },
+    {
+      "command": "Adicionando documentação",
+      "success": false,
+      "error": "Could not find the function public.exec_sql(sql_query) in the schema cache"
+    },
+    {
+      "command": "Adicionando documentação",
+      "success": false,
+      "error": "Could not find the function public.exec_sql(sql_query) in the schema cache"
+    },
+    {
+      "command": "Adicionando documentação",
+      "success": false,
+      "error": "Could not find the function public.exec_sql(sql_query) in the schema cache"
+    },
+    {
+      "command": "Adicionando documentação",
+      "success": false,
+      "error": "Could not find the function public.exec_sql(sql_query) in the schema cache"
+    }
+  ]
+}
