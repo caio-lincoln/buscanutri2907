@@ -18,7 +18,19 @@ export function formatNutritionistData(
   } // Adicionar badges e viewStats ao tipo
 ) {
   const formattedName = nutritionist.full_name || 'Nutricionista Desconhecido'
-  const formattedSpecialty = nutritionist.specialties?.[0] || 'Nutrição'
+  // Parse specialties if it's a JSON string
+  let specialtiesArray: string[] = []
+  try {
+    if (typeof nutritionist.specialties === 'string') {
+      specialtiesArray = JSON.parse(nutritionist.specialties)
+    } else if (Array.isArray(nutritionist.specialties)) {
+      specialtiesArray = nutritionist.specialties
+    }
+  } catch (e) {
+    specialtiesArray = []
+  }
+  
+  const formattedSpecialty = specialtiesArray[0] || 'Nutrição'
   const formattedLocation = nutritionist.address || 'Localização não informada'
   const formattedRating = nutritionist.rating || 0
   const formattedReviews = nutritionist.total_reviews || 0
@@ -29,7 +41,7 @@ export function formatNutritionistData(
     nutritionist?.profile_image_url ||
     `/placeholder.svg?height=400&width=400&text=${encodeURIComponent(formattedName)}`
   const formattedOnlineConsultation =
-    nutritionist.service_online_available || false
+    nutritionist.online_consultation_available || nutritionist.online_consultation || false
   const formattedCrn = nutritionist.crn || 'Não informado'
 
   // Função wrapper para manter compatibilidade
@@ -53,7 +65,7 @@ export function formatNutritionistData(
       duration: service.duration || 'N/A',
     })
   )
-  const formattedSpecializations = toArray(nutritionist.specialties)
+  const formattedSpecializations = specialtiesArray
 
   return {
     id: nutritionist.id,

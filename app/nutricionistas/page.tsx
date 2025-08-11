@@ -92,7 +92,7 @@ export default function NutricionistasPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedSpecialty, setSelectedSpecialty] = useState('Todas')
   const [selectedState, setSelectedState] = useState('Todas')
-  const [selectedPriceRange, setSelectedPriceRange] = useState('Todas')
+  const [selectedPriceRange, setSelectedPriceRange] = useState(priceRanges[0])
   const [onlineOnly, setOnlineOnly] = useState(false)
   const [aceitaCupons, setAceitaCupons] = useState(false)
   const [sortBy, setSortBy] = useState('rating')
@@ -144,9 +144,21 @@ export default function NutricionistasPage() {
           spec.toLowerCase().includes(searchTerm.toLowerCase())
         )
 
+      // Parse specialties if it's a JSON string
+      let specialtiesArray: string[] = []
+      try {
+        if (typeof nutritionist.specialties === 'string') {
+          specialtiesArray = JSON.parse(nutritionist.specialties)
+        } else if (Array.isArray(nutritionist.specialties)) {
+          specialtiesArray = nutritionist.specialties
+        }
+      } catch (e) {
+        specialtiesArray = []
+      }
+
       const matchesSpecialty =
         selectedSpecialty === 'Todas' ||
-        (nutritionist.specialties || []).includes(selectedSpecialty)
+        specialtiesArray.includes(selectedSpecialty)
 
       // O filtro por estado agora verifica se a string do estado está contida no endereço
       const matchesState =
@@ -156,13 +168,14 @@ export default function NutricionistasPage() {
           .includes(selectedState.toUpperCase())
 
       const matchesPrice =
+        selectedPriceRange.label === 'Todos' ||
         nutritionist.consultation_price === undefined ||
         nutritionist.consultation_price === null ||
         (nutritionist.consultation_price >= selectedPriceRange.min &&
           nutritionist.consultation_price <= selectedPriceRange.max)
 
       const matchesOnline =
-        !onlineOnly || nutritionist.service_online_available || false
+        !onlineOnly || nutritionist.online_consultation_available || nutritionist.online_consultation || false
 
       const matchesCupons = !aceitaCupons || nutritionist.aceita_cupons || false
 
@@ -726,14 +739,16 @@ export default function NutricionistasPage() {
                     <div className={viewMode === 'list' ? 'flex w-full' : ''}>
                       {/* Imagem */}
                       <div
-                        className={`relative ${viewMode === 'list' ? 'w-48 flex-shrink-0' : ''}`}
+                        className={`relative ${viewMode === 'list' ? 'w-48 flex-shrink-0 p-4' : 'p-4'} flex justify-center items-center`}
                       >
-                        <img
+                        <Image
                           src={formatted.image || '/placeholder.svg'}
                           alt={formatted.name}
-                          className={`w-full object-contain mx-auto ${
-                            viewMode === 'list' ? 'h-full' : 'h-48'
-                          } rounded-t-lg ${viewMode === 'list' ? 'rounded-l-lg rounded-tr-none' : ''}`}
+                          width={400}
+                          height={400}
+                          className={`object-cover rounded-full ${
+                            viewMode === 'list' ? 'w-32 h-32' : 'w-40 h-40'
+                          }`}
                         />
                         {formatted.onlineConsultation && (
                           <Badge className="absolute top-3 right-3 bg-green-500 text-white">

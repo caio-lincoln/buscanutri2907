@@ -241,6 +241,7 @@ export default function ScheduleConsultationPage() {
                     <Avatar className="h-24 w-24 mx-auto ring-4 ring-red-100 shadow-lg">
                       <AvatarImage
                         src={nutritionist?.profile_image_url || undefined}
+                        className="rounded-full object-cover"
                       />
                       <AvatarFallback className="bg-gradient-to-br from-red-500 to-red-600 text-white text-2xl font-bold">
                         {nutritionist.full_name?.charAt(0) || 'N'}

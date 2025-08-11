@@ -256,7 +256,7 @@ export default function PatientChatPage() {
 
                 <div className="flex items-center gap-3">
                   <Avatar className="h-10 w-10">
-                    <AvatarImage src={nutritionist?.profile_image_url || ''} />
+                    <AvatarImage src={nutritionist?.profile_image_url || ''} className="rounded-full object-cover" />
                     <AvatarFallback>
                       {nutritionist?.full_name?.charAt(0) || 'N'}
                     </AvatarFallback>
@@ -318,6 +318,7 @@ export default function PatientChatPage() {
                           <Avatar className="h-8 w-8 mt-1">
                             <AvatarImage
                               src={nutritionist?.profile_image_url || ''}
+                              className="rounded-full object-cover"
                             />
                             <AvatarFallback className="text-xs">
                               {nutritionist?.full_name?.charAt(0) || 'N'}

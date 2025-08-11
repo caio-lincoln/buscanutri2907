@@ -1140,6 +1140,7 @@ export default function PatientDashboard() {
                                     nutritionist?.profile_image_url ||
                                     `/placeholder.svg?height=48&width=48&query=${nutritionist?.full_name || 'nutritionist profile'}`
                                   }
+                                  className="rounded-full object-cover"
                                 />
                                 <AvatarFallback className="bg-gradient-to-br from-blue-500 to-blue-600 text-white text-xl font-bold">
                                   {nutritionist.full_name?.charAt(0) || 'N'}
