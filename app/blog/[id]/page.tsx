@@ -27,7 +27,7 @@ import { toast } from '@/components/ui/use-toast'
 export default function BlogPostPage() {
   const params = useParams()
   const router = useRouter()
-  const postId = params.id as string
+  const postId = params['id'] as string
   const [post, setPost] = useState<BlogPost | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -66,7 +66,7 @@ export default function BlogPostPage() {
     return null // Ou um componente de erro/não encontrado
   }
 
-  const shareUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/blog/${post.id}`
+  const shareUrl = `${process.env['NEXT_PUBLIC_BASE_URL']}/blog/${post.id}`
   const shareText = `Confira este artigo da Busca Nutri: ${post.title}`
 
   return (
@@ -164,7 +164,7 @@ export default function BlogPostPage() {
           <div className="prose prose-lg max-w-none text-gray-800 leading-relaxed">
             <ContentRenderer
               content={post.content}
-              centerImages={post.centerImage}
+              centerImages={post.centerImage || false}
             />
           </div>
 

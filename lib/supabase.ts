@@ -150,9 +150,14 @@ export interface CompanyProfile extends UserProfile {
   cnpj: string
   company_name: string
   industry?: string | null
-  company_size?: number | null
+  company_size?: string | null
   website?: string | null
   logo_url?: string | null
+  description?: string | null
+  address?: string | null
+  responsible_name?: string | null
+  responsible_position?: string | null
+  responsible_cpf?: string | null
 }
 
 // ────────────────────────────────────────────────────────────────────────────────

@@ -196,13 +196,13 @@ export function ForumTab() {
                                   .slice(0, 2)
                                   .map((badge, index) => (
                                     <div
-                                      key={`recent-question-${question.id}-badge-${badge.id || badge.name}-${index}`}
+                                      key={`recent-question-${question.id}-badge-${badge.id || badge.badge?.name}-${index}`}
                                       className="flex items-center justify-center w-4 h-4 rounded-full bg-gradient-to-r from-yellow-400 to-yellow-600 text-white"
-                                      title={badge.name}
+                                      title={badge.badge?.name || 'Badge'}
                                     >
-                                      {badge.icon ? (
+                                      {badge.badge?.icon_url ? (
                                         <span className="text-xs">
-                                          {badge.icon}
+                                          {badge.badge.icon_url}
                                         </span>
                                       ) : (
                                         <Award className="w-2.5 h-2.5" />
@@ -307,13 +307,13 @@ export function ForumTab() {
                                   .slice(0, 2)
                                   .map((badge, index) => (
                                     <div
-                                      key={`nutritionist-question-${question.id}-badge-${badge.id || badge.name}-${index}`}
+                                      key={`nutritionist-question-${question.id}-badge-${badge.id || badge.badge?.name}-${index}`}
                                       className="flex items-center justify-center w-4 h-4 rounded-full bg-gradient-to-r from-yellow-400 to-yellow-600 text-white"
-                                      title={badge.name}
+                                      title={badge.badge?.name || 'Badge'}
                                     >
-                                      {badge.icon ? (
+                                      {badge.badge?.icon_url ? (
                                         <span className="text-xs">
-                                          {badge.icon}
+                                          {badge.badge.icon_url}
                                         </span>
                                       ) : (
                                         <Award className="w-2.5 h-2.5" />

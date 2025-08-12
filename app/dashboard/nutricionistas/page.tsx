@@ -19,20 +19,19 @@ import {
   MapPin,
   Target,
   Heart,
-  Video,
+
   Bot,
   Activity,
   ExternalLink,
 } from 'lucide-react'
-import { getUserProfile } from '@/lib/auth'
-import type { NutritionistProfile } from '@/lib/supabase'
+
 import { useAuth } from '@/contexts/auth-context'
 import { NotificationsPanel } from '@/components/notifications-panel'
 import { DashboardSidebar, getMenuItems } from '@/components/dashboard-sidebar'
 import { IrisChat } from '@/components/iris-chat'
 import { StatsCard } from '@/components/stats-card'
 import { UserProfileModal } from '@/components/user-profile-modal'
-import { RatingCard, RatingDisplay } from '@/components/ui/rating-display'
+import { RatingDisplay } from '@/components/ui/rating-display'
 // Importar os novos componentes das abas
 import { ReportsTab } from '@/components/dashboard/nutricionistas/reports-tab'
 import { CoursesTab } from '@/components/dashboard/nutricionistas/courses-tab'
@@ -46,14 +45,9 @@ import NutritionistRecentChatsList from '@/components/nutritionist-recent-chats-
 // Importar o serviço de dados do nutricionista
 import {
   getNutritionistStats,
-  getActivePatients,
-  getScheduledAppointments,
-  getUnreadMessages,
   getUpcomingAppointments,
   type NutritionistStats,
-  type ActivePatient,
   type ScheduledAppointment,
-  type UnreadMessage,
 } from '@/lib/nutritionist-data-service'
 // Importar o hook de estatísticas do dashboard
 import { useDashboardStats } from '@/hooks/use-dashboard-stats'
@@ -70,16 +64,14 @@ export default function NutritionistDashboard() {
     unreadMessages: 0,
     totalConsultations: 0,
   })
-  const [activePatients, setActivePatients] = useState<ActivePatient[]>([])
   const [upcomingAppointments, setUpcomingAppointments] = useState<
     ScheduledAppointment[]
   >([])
-  const [unreadMessages, setUnreadMessages] = useState<UnreadMessage[]>([])
   const router = useRouter()
-  const { user, loading: authLoading, signOut } = useAuth()
+  const { user, nutritionistProfile, loading: authLoading, signOut } = useAuth()
 
   // Usar o perfil do contexto de autenticação
-  const profile = user?.nutritionistProfile
+  const profile = nutritionistProfile
 
   // Log temporário para debug
   console.log('Dashboard Debug:', {
@@ -90,7 +82,7 @@ export default function NutritionistDashboard() {
   })
 
   // Hook para estatísticas dinâmicas do dashboard
-  const { stats: dashboardStats, loading: statsLoading } = useDashboardStats({
+  const { stats: dashboardStats } = useDashboardStats({
     userType: 'nutricionista',
     userId: profile?.user_id || '',
     enabled: !!profile?.user_id,
@@ -98,9 +90,9 @@ export default function NutritionistDashboard() {
 
   // Hook para visualizações em tempo real
   const { viewStats } = useRealtimeProfileViews(profile?.id || '', {
-    totalViews: profile?.total_views || 0,
-    uniqueViews: profile?.unique_views || 0,
-    lastViewAt: profile?.last_view_at || null,
+    totalViews: profile?.totalViews || 0,
+    uniqueViews: profile?.uniqueViews || 0,
+    lastViewAt: profile?.lastViewAt || null,
   })
 
   const menuItems = getMenuItems('nutricionista', dashboardStats)
@@ -127,17 +119,9 @@ export default function NutritionistDashboard() {
       const statsData = await getNutritionistStats(profile.user_id)
       setStats(statsData)
 
-      // Carregar pacientes ativos
-      const patientsData = await getActivePatients(profile.user_id)
-      setActivePatients(patientsData)
-
       // Carregar próximas consultas
       const appointmentsData = await getUpcomingAppointments(profile.user_id, 5)
       setUpcomingAppointments(appointmentsData)
-
-      // Carregar mensagens não lidas
-      const messagesData = await getUnreadMessages(profile.user_id)
-      setUnreadMessages(messagesData)
     } catch (error) {
       // Error loading dashboard data - handled silently
     }
@@ -773,7 +757,7 @@ export default function NutritionistDashboard() {
                       CPF
                     </label>
                     <p className="text-[#1E1D40] font-semibold">
-                      {profile?.cpf || 'Não informado'}
+                      Não informado
                     </p>
                   </div>
                   <div>
@@ -781,7 +765,7 @@ export default function NutritionistDashboard() {
                       RG
                     </label>
                     <p className="text-[#1E1D40] font-semibold">
-                      {profile?.rg || 'Não informado'}
+                      Não informado
                     </p>
                   </div>
                   <div>
@@ -789,7 +773,7 @@ export default function NutritionistDashboard() {
                       Gênero
                     </label>
                     <p className="text-[#1E1D40] font-semibold">
-                      {profile?.gender || 'Não informado'}
+                      Não informado
                     </p>
                   </div>
                   <div>
@@ -797,11 +781,7 @@ export default function NutritionistDashboard() {
                       Data de Nascimento
                     </label>
                     <p className="text-[#1E1D40] font-semibold">
-                      {profile?.birth_date
-                        ? new Date(profile.birth_date).toLocaleDateString(
-                            'pt-BR'
-                          )
-                        : 'Não informado'}
+                      Não informado
                     </p>
                   </div>
                   <div>
@@ -831,9 +811,7 @@ export default function NutritionistDashboard() {
                       Formação Acadêmica
                     </label>
                     <p className="text-[#1E1D40] font-semibold text-sm mt-1">
-                      {profile?.academic_background ||
-                        profile?.education ||
-                        'Não informado'}
+                      Não informado
                     </p>
                   </div>
                   <div>
@@ -841,7 +819,7 @@ export default function NutritionistDashboard() {
                       Experiência Profissional
                     </label>
                     <p className="text-[#1E1D40] font-semibold text-sm mt-1">
-                      {profile?.experience || 'Não informado'}
+                      Não informado
                     </p>
                   </div>
                   <div>
@@ -944,37 +922,9 @@ export default function NutritionistDashboard() {
                       Certificações
                     </label>
                     <div className="flex flex-wrap gap-2 mt-2 min-h-[2rem]">
-                      {profile?.certifications ? (
-                        Array.isArray(profile.certifications) ? (
-                          profile.certifications.map((cert, i) => (
-                            <Badge
-                              key={i}
-                              variant="outline"
-                              className="text-xs bg-purple-50 text-purple-700 border-purple-200"
-                            >
-                              {cert}
-                            </Badge>
-                          ))
-                        ) : typeof profile.certifications === 'string' ? (
-                          profile.certifications.split(', ').map((cert, i) => (
-                            <Badge
-                              key={i}
-                              variant="outline"
-                              className="text-xs bg-purple-50 text-purple-700 border-purple-200"
-                            >
-                              {cert.trim()}
-                            </Badge>
-                          ))
-                        ) : (
-                          <p className="text-sm text-gray-500">
-                            Nenhuma informada
-                          </p>
-                        )
-                      ) : (
-                        <p className="text-sm text-gray-500">
-                          Nenhuma informada
-                        </p>
-                      )}
+                      <p className="text-sm text-gray-500">
+                        Nenhuma informada
+                      </p>
                     </div>
                   </div>
                   <div>
@@ -982,37 +932,9 @@ export default function NutritionistDashboard() {
                       Conquistas
                     </label>
                     <div className="flex flex-wrap gap-2 mt-2 min-h-[2rem]">
-                      {profile?.achievements ? (
-                        Array.isArray(profile.achievements) ? (
-                          profile.achievements.map((ach, i) => (
-                            <Badge
-                              key={i}
-                              variant="outline"
-                              className="text-xs bg-orange-50 text-orange-700 border-orange-200"
-                            >
-                              {ach}
-                            </Badge>
-                          ))
-                        ) : typeof profile.achievements === 'string' ? (
-                          profile.achievements.split(', ').map((ach, i) => (
-                            <Badge
-                              key={i}
-                              variant="outline"
-                              className="text-xs bg-orange-50 text-orange-700 border-orange-200"
-                            >
-                              {ach.trim()}
-                            </Badge>
-                          ))
-                        ) : (
-                          <p className="text-sm text-gray-500">
-                            Nenhuma informada
-                          </p>
-                        )
-                      ) : (
-                        <p className="text-sm text-gray-500">
-                          Nenhuma informada
-                        </p>
-                      )}
+                      <p className="text-sm text-gray-500">
+                        Nenhuma informada
+                      </p>
                     </div>
                   </div>
                   <div>
@@ -1101,14 +1023,12 @@ export default function NutritionistDashboard() {
                     <Badge
                       variant="outline"
                       className={
-                        profile?.online_consultation_available ||
                         profile?.service_online_available
                           ? 'bg-green-50 text-green-700 border-green-200'
                           : 'bg-red-50 text-red-700 border-red-200'
                       }
                     >
-                      {profile?.online_consultation_available ||
-                      profile?.service_online_available
+                      {profile?.service_online_available
                         ? 'Disponível'
                         : 'Não Disponível'}
                     </Badge>
@@ -1119,13 +1039,9 @@ export default function NutritionistDashboard() {
                     </label>
                     <Badge
                       variant="outline"
-                      className={
-                        profile?.online_only_consultation
-                          ? 'bg-blue-50 text-blue-700 border-blue-200'
-                          : 'bg-gray-50 text-gray-700 border-gray-200'
-                      }
+                      className="bg-gray-50 text-gray-700 border-gray-200"
                     >
-                      {profile?.online_only_consultation ? 'Sim' : 'Não'}
+                      Não Disponível
                     </Badge>
                   </div>
                   <div>
@@ -1134,15 +1050,9 @@ export default function NutritionistDashboard() {
                     </label>
                     <Badge
                       variant="outline"
-                      className={
-                        profile?.home_visit || profile?.service_home_visit
-                          ? 'bg-green-50 text-green-700 border-green-200'
-                          : 'bg-red-50 text-red-700 border-red-200'
-                      }
+                      className="bg-gray-50 text-gray-700 border-gray-200"
                     >
-                      {profile?.home_visit || profile?.service_home_visit
-                        ? 'Disponível'
-                        : 'Não Disponível'}
+                      Não Disponível
                     </Badge>
                   </div>
                   <div>
@@ -1267,7 +1177,7 @@ export default function NutritionistDashboard() {
                         typeof profile.consultation_languages === 'string' ? (
                           profile.consultation_languages
                             .split(', ')
-                            .map((lang, i) => (
+                            .map((lang: string, i: number) => (
                               <Badge
                                 key={i}
                                 variant="outline"
@@ -1276,32 +1186,6 @@ export default function NutritionistDashboard() {
                                 {lang.trim()}
                               </Badge>
                             ))
-                        ) : (
-                          <p className="text-sm text-gray-500">
-                            Nenhum informado
-                          </p>
-                        )
-                      ) : profile?.languages ? (
-                        typeof profile.languages === 'string' ? (
-                          profile.languages.split(', ').map((lang, i) => (
-                            <Badge
-                              key={i}
-                              variant="outline"
-                              className="text-xs bg-gray-50 text-gray-700 border-gray-200"
-                            >
-                              {lang.trim()}
-                            </Badge>
-                          ))
-                        ) : Array.isArray(profile.languages) ? (
-                          profile.languages.map((lang, i) => (
-                            <Badge
-                              key={i}
-                              variant="outline"
-                              className="text-xs bg-gray-50 text-gray-700 border-gray-200"
-                            >
-                              {lang}
-                            </Badge>
-                          ))
                         ) : (
                           <p className="text-sm text-gray-500">
                             Nenhum informado
@@ -1579,13 +1463,9 @@ export default function NutritionistDashboard() {
                     </label>
                     <Badge
                       variant="outline"
-                      className={
-                        profile?.trust_seal
-                          ? 'bg-green-50 text-green-700 border-green-200'
-                          : 'bg-gray-50 text-gray-700 border-gray-200'
-                      }
+                      className="bg-gray-50 text-gray-700 border-gray-200"
                     >
-                      {profile?.trust_seal ? 'Ativo' : 'Inativo'}
+                      Não Disponível
                     </Badge>
                   </div>
                 </CardContent>

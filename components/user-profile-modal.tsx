@@ -70,8 +70,6 @@ interface Option {
   label: string
 }
 
-
-
 // Payment method options
 const PAYMENT_METHOD_OPTIONS: Option[] = [
   { label: 'PIX', value: 'pix' },
@@ -93,8 +91,6 @@ const LANGUAGE_OPTIONS: Option[] = [
   { label: 'Alemao', value: 'alemao' },
   { label: 'Libras', value: 'libras' },
 ]
-
-
 
 // Opções para anamnese nutricional
 const GENERO_OPTIONS = [
@@ -229,7 +225,6 @@ export function UserProfileModal({
     status: 'idle' | 'validating' | 'valid' | 'invalid'
     message: string
   }>({ status: 'idle', message: '' })
-
 
   const [cnpjValidation, setCnpjValidation] = useState<{
     status: 'idle' | 'validating' | 'valid' | 'invalid'
@@ -535,8 +530,6 @@ export function UserProfileModal({
       })
     }
   }
-
-
 
   const handleCPFChange = (value: string) => {
     const formatted = formatCPF(value)
@@ -971,8 +964,6 @@ export function UserProfileModal({
         return null
     }
   }
-
-
 
   const renderCPFValidationIcon = () => {
     switch (cpfValidation.status) {

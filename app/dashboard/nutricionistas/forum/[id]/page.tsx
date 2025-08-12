@@ -12,7 +12,6 @@ import {
   ThumbsUp,
   MessageCircle,
   Search,
-  Heart,
   Send,
   ArrowLeft,
   Shield,
@@ -68,7 +67,7 @@ interface ForumReply {
 export default function NutritionistForumQuestionPage() {
   const params = useParams()
   const router = useRouter()
-  const questionId = params.id as string
+  const questionId = params['id'] as string
 
   // User and auth states
   const [currentUser, setCurrentUser] = useState<any>(null)

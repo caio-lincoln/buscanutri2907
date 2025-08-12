@@ -212,7 +212,7 @@ export function normalizeLanguages(input: unknown): string[] {
       )
 
       if (detectedLanguages.length > 0) {
-        return [...new Set(detectedLanguages)] // Remove duplicatas
+        return Array.from(new Set(detectedLanguages)) // Remove duplicatas
       }
     }
   }
@@ -234,7 +234,7 @@ export function normalizeSpecialties(input: unknown): string[] {
       )
 
       if (detectedSpecialties.length > 0) {
-        return [...new Set(detectedSpecialties)] // Remove duplicatas
+        return Array.from(new Set(detectedSpecialties)) // Remove duplicatas
       }
     }
   }

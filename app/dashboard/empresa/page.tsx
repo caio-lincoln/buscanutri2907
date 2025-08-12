@@ -9,7 +9,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
   Calendar,
   Users,
-  MessageSquare,
   Briefcase,
   Building,
   User,
@@ -391,7 +390,7 @@ export default function CompanyDashboard() {
                               {job.title}
                             </p>
                             <p className="text-sm text-gray-600">
-                              Publicado há {job.timeAgo}
+                              Publicado há {job.posted}
                             </p>
                           </div>
                         </div>
@@ -474,7 +473,7 @@ export default function CompanyDashboard() {
                           </p>
                         </div>
                         <span className="text-xs text-gray-500 font-medium">
-                          {item.timeAgo}
+                          {item.time}
                         </span>
                       </div>
                     ))

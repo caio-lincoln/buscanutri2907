@@ -2,11 +2,10 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
 import { signOut } from '@/lib/auth'
 import { DashboardSidebar, getMenuItems } from '@/components/dashboard-sidebar'
 import { useDashboardStats } from '@/hooks/use-dashboard-stats'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -31,14 +30,11 @@ import {
 import { getCurrentUser } from '@/lib/auth'
 import { getBlogPostById, updateBlogPost, type BlogPost } from '@/lib/blog-data'
 import { toast } from '@/components/ui/use-toast'
-import { format } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
-import Link from 'next/link'
 
 export default function NutritionistBlogPostPage() {
   const router = useRouter()
   const params = useParams()
-  const postId = params.id as string
+  const postId = params['id'] as string
 
   const [post, setPost] = useState<BlogPost | null>(null)
   const [loading, setLoading] = useState(true)
@@ -56,7 +52,7 @@ export default function NutritionistBlogPostPage() {
   const [currentUser, setCurrentUser] = useState<any>(null)
 
   // Dashboard stats
-  const { stats, loading: statsLoading } = useDashboardStats({
+  const { stats } = useDashboardStats({
     userType: 'nutricionista',
     userId: currentUserId || '',
     enabled: !!currentUserId,

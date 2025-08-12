@@ -15,7 +15,6 @@ import {
   Grid,
   List,
   ArrowLeft,
-  Award,
 } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -35,9 +34,6 @@ export default function BlogPage() {
   const [sortBy, setSortBy] = useState('recent')
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [visiblePosts, setVisiblePosts] = useState(6)
-
-  // Função mock para getStatsForPost
-  const getStatsForPost = (postId: string) => ({ totalViews: 0 })
 
   useEffect(() => {
     const loadPosts = async () => {

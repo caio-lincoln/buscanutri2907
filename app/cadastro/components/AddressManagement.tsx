@@ -18,25 +18,28 @@ import { Trash2, Plus, MapPin, Home } from 'lucide-react'
 import { toast } from '@/components/ui/use-toast'
 import { nutritionistAddressService } from '@/lib/nutritionist-address-service'
 import { useUser } from '@/hooks/use-user'
+import { AddressData } from '@/lib/address-utils'
+import type { NutritionistAddress } from '@/lib/supabase'
 
-export interface AddressData {
-  id?: string
-  nutritionist_id?: string
-  type: 'in_person' | 'teleconsultation'
-  status: 'active' | 'inactive'
-  is_main: boolean
-  country: string
-  state: string
-  city: string
-  neighborhood?: string
-  zip_code?: string
-  street?: string
-  number?: string
-  complement?: string
-  latitude?: number
-  longitude?: number
-  service_radius_km?: number
-}
+// Função para converter NutritionistAddress para AddressData
+const convertToAddressData = (address: NutritionistAddress): AddressData => ({
+  id: address.id,
+  nutritionist_id: address.nutritionist_id,
+  type: address.type,
+  status: address.status,
+  is_main: address.is_main,
+  country: address.country,
+  state: address.state,
+  city: address.city,
+  neighborhood: address.neighborhood || undefined,
+  zip_code: address.zip_code || undefined,
+  street: address.street || undefined,
+  number: address.number || undefined,
+  complement: address.complement || undefined,
+  latitude: address.latitude || undefined,
+  longitude: address.longitude || undefined,
+  service_radius_km: address.service_radius_km || undefined,
+})
 
 interface AddressManagementProps {
   className?: string
@@ -90,12 +93,6 @@ export default function AddressManagement({
     country: 'Brasil',
     state: '',
     city: '',
-    neighborhood: '',
-    zip_code: '',
-    street: '',
-    number: '',
-    complement: '',
-    service_radius_km: 30,
   })
 
   // Load addresses from Supabase
@@ -109,7 +106,7 @@ export default function AddressManagement({
         await nutritionistAddressService.getAddressesByNutritionist(
           currentNutritionistId
         )
-      setAddresses(addressesData)
+      setAddresses(addressesData.map(convertToAddressData))
     } catch (error) {
       // Error loading addresses - handled silently
       toast({
@@ -158,11 +155,6 @@ export default function AddressManagement({
       country: 'Brasil',
       state: '',
       city: '',
-      neighborhood: '',
-      zip_code: '',
-      street: '',
-      number: '',
-      complement: '',
       service_radius_km: 30,
     })
     setEditingIndex(-1) // -1 indicates new address
@@ -185,7 +177,7 @@ export default function AddressManagement({
     }
 
     // Validation
-    if (!formData.state.trim()) {
+    if (!formData.state || !formData.state.trim()) {
       toast({
         title: 'Erro de validação',
         description: 'Estado é obrigatório',
@@ -194,7 +186,7 @@ export default function AddressManagement({
       return
     }
 
-    if (!formData.city.trim()) {
+    if (!formData.city || !formData.city.trim()) {
       toast({
         title: 'Erro de validação',
         description: 'Cidade é obrigatória',
@@ -220,6 +212,12 @@ export default function AddressManagement({
         const addressData = {
           ...formData,
           nutritionist_id: currentNutritionistId,
+          type: formData.type || 'in_person',
+          status: formData.status || 'active',
+          is_main: formData.is_main || false,
+          country: formData.country || 'Brasil',
+          state: formData.state || '',
+          city: formData.city || '',
         }
         await nutritionistAddressService.createAddress(addressData)
         toast({
@@ -228,13 +226,15 @@ export default function AddressManagement({
         })
       } else {
         // Editing existing address
-        const addressId = addresses[editingIndex].id
-        if (addressId) {
-          await nutritionistAddressService.updateAddress(addressId, formData)
-          toast({
-            title: 'Sucesso',
-            description: 'Endereço atualizado com sucesso',
-          })
+        if (editingIndex !== null) {
+          const addressId = addresses[editingIndex]?.id
+          if (addressId) {
+            await nutritionistAddressService.updateAddress(addressId, formData)
+            toast({
+              title: 'Sucesso',
+              description: 'Endereço atualizado com sucesso',
+            })
+          }
         }
       }
 
@@ -254,8 +254,9 @@ export default function AddressManagement({
   }
 
   const handleDeleteAddress = async (index: number) => {
-    const addressId = addresses[index].id
-    if (!addressId) return
+    const address = addresses[index]
+    if (!address?.id) return
+    const addressId = address.id
 
     try {
       setLoading(true)
@@ -281,8 +282,9 @@ export default function AddressManagement({
   }
 
   const handleSetMainAddress = async (index: number) => {
-    const addressId = addresses[index].id
-    if (!addressId) return
+    const address = addresses[index]
+    if (!address?.id) return
+    const addressId = address.id
 
     try {
       setLoading(true)
@@ -464,7 +466,7 @@ export default function AddressManagement({
                 <div>
                   <Label htmlFor="type">Tipo de Atendimento</Label>
                   <Select
-                    value={formData.type}
+                    value={formData.type || ''}
                     onValueChange={(value: 'in_person' | 'teleconsultation') =>
                       setFormData(prev => ({ ...prev, type: value }))
                     }
@@ -484,7 +486,7 @@ export default function AddressManagement({
                 <div>
                   <Label htmlFor="status">Status</Label>
                   <Select
-                    value={formData.status}
+                    value={formData.status || ''}
                     onValueChange={(value: 'active' | 'inactive') =>
                       setFormData(prev => ({ ...prev, status: value }))
                     }
@@ -503,7 +505,7 @@ export default function AddressManagement({
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="is_main"
-                  checked={formData.is_main}
+                  checked={formData.is_main || false}
                   onCheckedChange={checked =>
                     setFormData(prev => ({ ...prev, is_main: !!checked }))
                   }
@@ -526,7 +528,7 @@ export default function AddressManagement({
                 <div>
                   <Label htmlFor="state">Estado *</Label>
                   <Select
-                    value={formData.state}
+                    value={formData.state || ''}
                     onValueChange={value =>
                       setFormData(prev => ({ ...prev, state: value }))
                     }
@@ -548,7 +550,7 @@ export default function AddressManagement({
                   <Label htmlFor="city">Cidade *</Label>
                   <Input
                     id="city"
-                    value={formData.city}
+                    value={formData.city || ''}
                     onChange={e =>
                       setFormData(prev => ({ ...prev, city: e.target.value }))
                     }

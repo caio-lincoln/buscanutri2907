@@ -5,8 +5,8 @@ export async function POST(request: NextRequest) {
   try {
     // Verificar se as variáveis de ambiente estão disponíveis
     if (
-      !process.env.NEXT_PUBLIC_SUPABASE_URL ||
-      !process.env.SUPABASE_SERVICE_ROLE_KEY
+      !process.env['NEXT_PUBLIC_SUPABASE_URL'] ||
+      !process.env['SUPABASE_SERVICE_ROLE_KEY']
     ) {
       // Environment variables not found - silent error handling
       return NextResponse.json(
@@ -17,8 +17,8 @@ export async function POST(request: NextRequest) {
 
     // Criar cliente Supabase com service role
     const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE_KEY,
+      process.env['NEXT_PUBLIC_SUPABASE_URL'],
+      process.env['SUPABASE_SERVICE_ROLE_KEY'],
       {
         auth: {
           autoRefreshToken: false,
@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
     const buffer = new Uint8Array(arrayBuffer)
 
     // Fazer upload do arquivo
-    const { data, error } = await supabase.storage
+    const { error } = await supabase.storage
       .from('blog-images')
       .upload(fileName, buffer, {
         contentType: file.type,

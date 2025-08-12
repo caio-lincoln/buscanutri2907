@@ -4,51 +4,37 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals'
-import { createClient } from '@supabase/supabase-js'
 import {
   normalizeStringArray,
   normalizeLanguages,
   normalizeSpecialties,
-  validateStructuredPayload,
+  safeJsonParse,
   safeStringify,
+  validateStructuredPayload,
 } from '../lib/structured-data-utils'
 
-// Mock do Supabase para testes
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost:54321',
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'test-key'
-)
+// Mock do banco de dados para testes de contrato
+const mockDatabase = {
+  nutritionists: [] as any[],
+  async save(data: any) {
+    this.nutritionists.push(data)
+    return { id: this.nutritionists.length, ...data }
+  },
+  async findById(id: number) {
+    return this.nutritionists[id - 1] || null
+  },
+  clear() {
+    this.nutritionists = []
+  },
+}
 
 describe('Structured Data Contract Tests', () => {
-  let testNutritionistId: string
-
-  beforeEach(async () => {
-    // Criar um nutricionista de teste
-    const { data, error } = await supabase
-      .from('nutritionist_profiles')
-      .insert({
-        user_id: 'test-user-' + Date.now(),
-        name: 'Test Nutritionist',
-        specialties: ['Nutrição Esportiva', 'Emagrecimento'],
-        languages: ['Português', 'Inglês'],
-        services: ['Consulta Online', 'Plano Alimentar'],
-        certifications: ['CRN-1 12345', 'Pós-graduação em Nutrição Esportiva'],
-      })
-      .select('id')
-      .single()
-
-    if (error) throw error
-    testNutritionistId = data.id
+  beforeEach(() => {
+    mockDatabase.clear()
   })
 
-  afterEach(async () => {
-    // Limpar dados de teste
-    if (testNutritionistId) {
-      await supabase
-        .from('nutritionist_profiles')
-        .delete()
-        .eq('id', testNutritionistId)
-    }
+  afterEach(() => {
+    mockDatabase.clear()
   })
 
   describe('Array Field Normalization', () => {

@@ -29,12 +29,12 @@ import { UserProfileModal } from '@/components/user-profile-modal'
 export default function NutritionistProfilePage() {
   const params = useParams()
   const router = useRouter()
-  const { user, loading: authLoading } = useAuth()
+  const { user, nutritionistProfile, loading: authLoading } = useAuth()
   const [loading, setLoading] = useState(true)
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
   
-  const profileId = params.id as string
-  const profile = user?.nutritionistProfile
+  const profileId = params['id'] as string
+  const profile = nutritionistProfile
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -165,7 +165,7 @@ export default function NutritionistProfilePage() {
                       />
                       <Badge variant="outline" className="flex items-center gap-1">
                         <Users className="h-3 w-3" />
-                        {profile.total_views || 0} visualizações
+                        {profile.totalViews || 0} visualizações
                       </Badge>
                     </div>
                   </div>
@@ -211,13 +211,13 @@ export default function NutritionistProfilePage() {
                 </div>
 
                 {/* Especializações */}
-                {profile.specializations && profile.specializations.length > 0 && (
+                {profile.specialties && profile.specialties.length > 0 && (
                   <>
                     <Separator />
                     <div>
                       <h3 className="font-semibold text-[#1E1D40] mb-3">Especializações</h3>
                       <div className="flex flex-wrap gap-2">
-                        {profile.specializations.map((spec, index) => (
+                        {profile.specialties.map((spec, index) => (
                           <Badge key={index} variant="secondary">
                             {spec}
                           </Badge>
@@ -229,35 +229,6 @@ export default function NutritionistProfilePage() {
               </CardContent>
             </Card>
 
-            {/* Experiência Profissional */}
-            {profile.experience && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Award className="h-5 w-5" />
-                    Experiência Profissional
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-gray-700 leading-relaxed">{profile.experience}</p>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Formação Acadêmica */}
-            {profile.education && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <BookOpen className="h-5 w-5" />
-                    Formação Acadêmica
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-gray-700 leading-relaxed">{profile.education}</p>
-                </CardContent>
-              </Card>
-            )}
           </div>
 
           {/* Coluna Lateral - Estatísticas */}
@@ -292,7 +263,7 @@ export default function NutritionistProfilePage() {
                     <span className="text-sm">Visualizações</span>
                   </div>
                   <span className="font-semibold">
-                    {profile.total_views || 0}
+                    {profile.totalViews || 0}
                   </span>
                 </div>
               </CardContent>
@@ -307,8 +278,8 @@ export default function NutritionistProfilePage() {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-sm">Status</span>
-                    <Badge variant={profile.is_available ? 'default' : 'secondary'}>
-                      {profile.is_available ? 'Disponível' : 'Indisponível'}
+                    <Badge variant="default">
+                      Disponível
                     </Badge>
                   </div>
                   {profile.consultation_price && (
@@ -353,9 +324,11 @@ export default function NutritionistProfilePage() {
 
       {/* Modal de Edição de Perfil */}
       <UserProfileModal
-        isOpen={isProfileModalOpen}
-        onClose={() => setIsProfileModalOpen(false)}
+        open={isProfileModalOpen}
+        onOpenChange={setIsProfileModalOpen}
         userType="nutricionista"
+        initialData={profile}
+        userId={profile.user_id}
       />
     </DashboardSidebar>
   )

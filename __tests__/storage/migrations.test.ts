@@ -13,43 +13,41 @@ const mockAdapter = {
 
 describe('Storage Migrations', () => {
   beforeEach(() => {
-    // Limpar mocks antes de cada teste
-    jest.clearAllMocks()
-    mockAdapter.get.mockResolvedValue(null)
-    mockAdapter.set.mockResolvedValue(undefined)
-    mockAdapter.remove.mockResolvedValue(undefined)
-    mockAdapter.clear.mockResolvedValue(undefined)
-    mockAdapter.keys.mockResolvedValue([])
-    mockAdapter.size.mockResolvedValue(0)
+    // Limpar localStorage antes de cada teste
+    if (typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.clear()
+    }
   })
 
   describe('isMigrationNeeded', () => {
     test('deve retornar true quando versões são diferentes', () => {
-      expect(isMigrationNeeded(1, 2)).toBe(true)
-      expect(isMigrationNeeded(2, 1)).toBe(true)
+      expect(isMigrationNeeded('1.0.0', '1.1.0')).toBe(true)
+      expect(isMigrationNeeded('1.0.0', '2.0.0')).toBe(true)
     })
 
     test('deve retornar false quando versões são iguais', () => {
-      expect(isMigrationNeeded(1, 1)).toBe(false)
-      expect(isMigrationNeeded(2, 2)).toBe(false)
+      expect(isMigrationNeeded('1.0.0', '1.0.0')).toBe(false)
+      expect(isMigrationNeeded('2.1.0', '2.1.0')).toBe(false)
     })
   })
 
   describe('runMigrations', () => {
     test('deve executar migração sem erros', async () => {
-      await expect(runMigrations(mockAdapter, 0, 1)).resolves.not.toThrow()
+      await expect(runMigrations()).resolves.not.toThrow()
     })
 
     test('deve pular migrações desnecessárias', async () => {
-      await runMigrations(mockAdapter, 2, 2)
-      // Teste passa se não há erro
-      expect(true).toBe(true)
+      // Simular que já está na versão atual
+      if (typeof window !== 'undefined' && window.localStorage) {
+        window.localStorage.setItem('buscanutri_storage_version', '1.0.0')
+      }
+      await expect(runMigrations()).resolves.not.toThrow()
     })
   })
 
   describe('migrations', () => {
     test('deve ter passos de migração definidos', () => {
-      expect(migrations).toBeTruthy()
+      expect(migrations).toBeDefined()
       expect(Array.isArray(migrations)).toBe(true)
     })
   })

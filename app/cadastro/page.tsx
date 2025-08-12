@@ -247,7 +247,6 @@ export default function CadastroPage() {
           )
 
           if (!certResponse.ok) {
-            const errorData = await certResponse.json()
             // Error uploading certificate - not failing registration
             // Não falha o cadastro por causa dos certificados, apenas loga o erro
             toast({
@@ -640,20 +639,6 @@ export default function CadastroPage() {
       })
     } finally {
       setLoading(false)
-    }
-  }
-
-  // Função para renderizar ícone de validação CRN
-  const renderCRNValidationIcon = () => {
-    switch (crnValidation.status) {
-      case 'validating':
-        return <Clock className="h-4 w-4 text-yellow-500 animate-pulse" />
-      case 'valid':
-        return <CheckCircle className="h-4 w-4 text-green-500" />
-      case 'invalid':
-        return <AlertCircle className="h-4 w-4 text-red-500" />
-      default:
-        return null
     }
   }
 
@@ -1175,7 +1160,7 @@ export default function CadastroPage() {
                   <Checkbox
                     id="terms"
                     checked={acceptTerms}
-                    onCheckedChange={setAcceptTerms}
+                    onCheckedChange={(checked) => setAcceptTerms(checked === true)}
                   />
                   <Label htmlFor="terms" className="text-sm">
                     Aceito os{' '}

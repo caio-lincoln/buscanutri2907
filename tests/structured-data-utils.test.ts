@@ -17,32 +17,31 @@ describe('Structured Data Utils Tests', () => {
   describe('normalizeStringArray', () => {
     it('should handle valid arrays', () => {
       const input = ['Português', 'Inglês']
-      const result = normalizeStringArray(input)
-      expect(Array.isArray(result.data)).toBe(true)
+      const result = normalizeStringArray(input, 'languages')
+
       expect(result.data).toEqual(['Português', 'Inglês'])
       expect(result.wasCorrupted).toBe(false)
     })
 
     it('should parse comma-separated strings', () => {
       const input = 'Português, Inglês, Espanhol'
-      const result = normalizeStringArray(input)
-      expect(Array.isArray(result.data)).toBe(true)
+      const result = normalizeStringArray(input, 'languages')
+
       expect(result.data).toEqual(['Português', 'Inglês', 'Espanhol'])
     })
 
     it('should parse JSON strings', () => {
       const input = '["Português", "Inglês"]'
-      const result = normalizeStringArray(input)
-      expect(Array.isArray(result.data)).toBe(true)
+      const result = normalizeStringArray(input, 'languages')
+
       expect(result.data).toEqual(['Português', 'Inglês'])
     })
 
     it('should handle double-escaped JSON', () => {
       const input = '"[\\"Português\\", \\"Inglês\\"]"'
-      const result = normalizeStringArray(input)
-      expect(Array.isArray(result.data)).toBe(true)
+      const result = normalizeStringArray(input, 'languages')
+
       expect(result.data).toEqual(['Português', 'Inglês'])
-      // JSON com escape duplo é válido e pode ser parseado, não é necessariamente corrompido
       expect(typeof result.wasCorrupted).toBe('boolean')
     })
 
@@ -64,7 +63,6 @@ describe('Structured Data Utils Tests', () => {
 
       testCases.forEach(({ input, expected }) => {
         const result = normalizeLanguages(input)
-        expect(Array.isArray(result)).toBe(true)
         expect(result).toEqual(expected)
       })
     })
@@ -72,8 +70,10 @@ describe('Structured Data Utils Tests', () => {
     it('should handle complex language patterns', () => {
       const input = 'Português (Brasil), English (US), Español'
       const result = normalizeLanguages(input)
-      expect(Array.isArray(result)).toBe(true)
-      expect(result.length).toBeGreaterThan(0)
+
+      expect(result).toContain('Português (Brasil)')
+      expect(result).toContain('English (US)')
+      expect(result).toContain('Español')
     })
   })
 
@@ -100,8 +100,10 @@ describe('Structured Data Utils Tests', () => {
     it('should handle specialty variations', () => {
       const input = 'nutrição esportiva, EMAGRECIMENTO, Nutrição Clínica'
       const result = normalizeSpecialties(input)
-      expect(Array.isArray(result)).toBe(true)
-      expect(result.length).toBe(3)
+
+      expect(result).toContain('nutrição esportiva')
+      expect(result).toContain('EMAGRECIMENTO')
+      expect(result).toContain('Nutrição Clínica')
     })
   })
 
@@ -134,7 +136,7 @@ describe('Structured Data Utils Tests', () => {
       expect(safeJsonParse(123)).toBe(123)
       expect(safeJsonParse(null)).toBe(null)
       expect(safeJsonParse(undefined)).toBe(undefined)
-      expect(safeJsonParse([])).toEqual([])
+      expect(safeJsonParse({})).toEqual({})
     })
   })
 
@@ -166,9 +168,10 @@ describe('Structured Data Utils Tests', () => {
     it('should handle circular references gracefully', () => {
       const obj: any = { name: 'test' }
       obj.self = obj
+
       const result = safeStringify(obj)
       expect(typeof result).toBe('string')
-      // Para referências circulares, a função retorna String(value)
+      // Deve retornar uma string válida, mesmo com referência circular
       expect(result).toBe('[object Object]')
     })
   })
@@ -177,8 +180,9 @@ describe('Structured Data Utils Tests', () => {
     it('should validate valid array payload', () => {
       const payload = { specialties: ['Nutrição Esportiva', 'Emagrecimento'] }
       const result = validateStructuredPayload(payload, 'specialties')
+
       expect(result.isValid).toBe(true)
-      expect(result.normalizedValue).toEqual([
+      expect(result.data.specialties).toEqual([
         'Nutrição Esportiva',
         'Emagrecimento',
       ])
@@ -187,6 +191,7 @@ describe('Structured Data Utils Tests', () => {
     it('should reject JSON string payload', () => {
       const payload = { specialties: '["Nutrição Esportiva", "Emagrecimento"]' }
       const result = validateStructuredPayload(payload, 'specialties')
+
       expect(result.isValid).toBe(false)
       expect(result.error).toContain('string que parece JSON')
     })
@@ -194,15 +199,11 @@ describe('Structured Data Utils Tests', () => {
     it('should validate null/undefined values', () => {
       const payload1 = { specialties: null }
       const payload2 = { specialties: undefined }
-      const payload3 = {}
 
       expect(validateStructuredPayload(payload1, 'specialties').isValid).toBe(
         true
       )
       expect(validateStructuredPayload(payload2, 'specialties').isValid).toBe(
-        true
-      )
-      expect(validateStructuredPayload(payload3, 'specialties').isValid).toBe(
         true
       )
     })

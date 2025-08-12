@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { revalidateTag, revalidatePath } from 'next/cache'
 
 // Chave de segurança para acesso administrativo
-const ADMIN_SECRET = process.env.ADMIN_SECRET || 'admin-secret-key'
+const ADMIN_SECRET = process.env['ADMIN_SECRET'] || 'admin-secret-key'
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const buildId = process.env.BUILD_ID || 'development'
+    const buildId = process.env['BUILD_ID'] || 'development'
     const timestamp = new Date().toISOString()
 
     switch (type) {
@@ -123,7 +123,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const buildId = process.env.BUILD_ID || 'development'
+  const buildId = process.env['BUILD_ID'] || 'development'
   const nodeEnv = process.env.NODE_ENV || 'development'
 
   return NextResponse.json({

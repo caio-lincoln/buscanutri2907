@@ -588,16 +588,16 @@ export function BlogTab() {
                         <span className="text-xs text-gray-500">Badges:</span>
                         <div className="flex items-center gap-1 flex-wrap">
                           {post.badges.slice(0, 2).map((badge, index) => {
-                            const IconComponent = badge.icon
-                              ? eval(badge.icon)
+                            const IconComponent = badge.badge?.icon_url
+                              ? eval(badge.badge.icon_url)
                               : Award
                             return (
                               <div
-                                key={`post-${post.id}-badge-${badge.name}-${index}`}
+                                key={`post-${post.id}-badge-${badge.badge?.name || 'unknown'}-${index}`}
                                 className="flex items-center gap-1 bg-yellow-50 text-yellow-700 px-2 py-1 rounded-full text-xs"
                               >
                                 <IconComponent className="h-3 w-3" />
-                                <span className="truncate">{badge.name}</span>
+                                <span className="truncate">{badge.badge?.name || 'Badge'}</span>
                               </div>
                             )
                           })}

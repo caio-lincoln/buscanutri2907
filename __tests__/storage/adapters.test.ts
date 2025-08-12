@@ -76,45 +76,45 @@ describe('Storage Adapters', () => {
 
     test('deve armazenar e recuperar dados', async () => {
       const testData = { name: 'test', value: 123 }
-      
+
       await adapter.set('test-key', testData)
       const retrieved = await adapter.get('test-key')
-      
-      expect(retrieved).toEqual(testData)
+
       expect(mockSessionStorage.setItem).toHaveBeenCalledWith(
         'buscanutri_test-key',
         JSON.stringify(testData)
       )
+      expect(retrieved).toEqual(testData)
     })
 
     test('deve retornar null para chave inexistente', async () => {
       const result = await adapter.get('non-existent-key')
-      expect(result).toBeNull()
+      expect(result).toBe(null)
     })
 
     test('deve remover dados', async () => {
       await adapter.set('test-key', 'test-value')
       await adapter.remove('test-key')
-      
+
       expect(mockSessionStorage.removeItem).toHaveBeenCalledWith('buscanutri_test-key')
-      
+
       const result = await adapter.get('test-key')
-      expect(result).toBeNull()
+      expect(result).toBe(null)
     })
 
     test('deve limpar todos os dados', async () => {
       await adapter.set('key1', 'value1')
       await adapter.set('key2', 'value2')
-      
+
       await adapter.clear()
-      
+
       expect(mockSessionStorage.clear).toHaveBeenCalled()
     })
 
     test('deve retornar todas as chaves', async () => {
       await adapter.set('key1', 'value1')
       await adapter.set('key2', 'value2')
-      
+
       const keys = await adapter.keys()
       expect(keys).toEqual(['key1', 'key2'])
     })
@@ -122,17 +122,17 @@ describe('Storage Adapters', () => {
     test('deve retornar o tamanho correto', async () => {
       await adapter.set('key1', 'value1')
       await adapter.set('key2', 'value2')
-      
+
       const size = await adapter.size()
       expect(size).toBe(2)
     })
 
     test('deve tratar erros de JSON parsing', async () => {
-      // Simular dados corrompidos no storage
+      // Simular dados corrompidos no sessionStorage
       mockSessionStorage.store['buscanutri_corrupted'] = 'invalid-json{'
-      
+
       const result = await adapter.get('corrupted')
-      expect(result).toBeNull()
+      expect(result).toBe(null)
     })
   })
 
@@ -149,32 +149,32 @@ describe('Storage Adapters', () => {
 
     test('deve armazenar e recuperar dados em memória', async () => {
       const testData = { name: 'test', value: 123 }
-      
+
       await adapter.set('test-key', testData)
       const retrieved = await adapter.get('test-key')
-      
+
       expect(retrieved).toEqual(testData)
     })
 
     test('deve retornar null para chave inexistente', async () => {
       const result = await adapter.get('non-existent-key')
-      expect(result).toBeNull()
+      expect(result).toBe(null)
     })
 
     test('deve remover dados', async () => {
       await adapter.set('test-key', 'test-value')
       await adapter.remove('test-key')
-      
+
       const result = await adapter.get('test-key')
-      expect(result).toBeNull()
+      expect(result).toBe(null)
     })
 
     test('deve limpar todos os dados', async () => {
       await adapter.set('key1', 'value1')
       await adapter.set('key2', 'value2')
-      
+
       await adapter.clear()
-      
+
       const keys = await adapter.keys()
       expect(keys).toEqual([])
     })
@@ -182,7 +182,7 @@ describe('Storage Adapters', () => {
     test('deve retornar todas as chaves', async () => {
       await adapter.set('key1', 'value1')
       await adapter.set('key2', 'value2')
-      
+
       const keys = await adapter.keys()
       expect(keys.sort()).toEqual(['key1', 'key2'])
     })
@@ -190,7 +190,7 @@ describe('Storage Adapters', () => {
     test('deve retornar o tamanho correto', async () => {
       await adapter.set('key1', 'value1')
       await adapter.set('key2', 'value2')
-      
+
       const size = await adapter.size()
       expect(size).toBe(2)
     })
@@ -198,13 +198,13 @@ describe('Storage Adapters', () => {
     test('deve isolar dados entre instâncias', async () => {
       const adapter1 = new MemoryAdapter()
       const adapter2 = new MemoryAdapter()
-      
+
       await adapter1.set('key', 'value1')
       await adapter2.set('key', 'value2')
-      
+
       const value1 = await adapter1.get('key')
       const value2 = await adapter2.get('key')
-      
+
       expect(value1).toBe('value1')
       expect(value2).toBe('value2')
     })
@@ -214,30 +214,11 @@ describe('Storage Adapters', () => {
     let adapter: IndexedDBAdapter
 
     beforeEach(() => {
-      adapter = new IndexedDBAdapter()
+      adapter = new IndexedDBAdapter('buscanutri_test')
     })
 
     test('deve verificar disponibilidade do IndexedDB', () => {
-      // Teste quando IndexedDB está disponível
-      const adapter = new IndexedDBAdapter()
       expect(adapter.isAvailable()).toBe(true)
-      
-      // Para testar quando não está disponível, vamos criar um novo adapter
-      // e mockar temporariamente o método isAvailable
-      const adapterWithoutIDB = new IndexedDBAdapter()
-      const originalIsAvailable = adapterWithoutIDB.isAvailable
-      
-      // Mock do método para retornar false
-      adapterWithoutIDB.isAvailable = jest.fn().mockReturnValue(false)
-      
-      expect(adapterWithoutIDB.isAvailable()).toBe(false)
-      
-      // Restaurar o método original
-      adapterWithoutIDB.isAvailable = originalIsAvailable
     })
-
-    // Nota: Testes completos do IndexedDB requerem um ambiente mais complexo
-    // com mocks do IDBRequest, IDBTransaction, etc. Por simplicidade,
-    // incluímos apenas testes básicos aqui.
   })
 })

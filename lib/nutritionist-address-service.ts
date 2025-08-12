@@ -4,36 +4,36 @@ import type { NutritionistAddress } from './supabase'
 export interface CreateAddressData {
   nutritionist_id: string
   type: 'in_person' | 'teleconsultation'
-  status?: 'active' | 'inactive'
-  is_main?: boolean
-  country?: string
+  status?: 'active' | 'inactive' | undefined
+  is_main?: boolean | undefined
+  country?: string | undefined
   state: string
   city: string
-  neighborhood?: string
-  zip_code?: string
-  street?: string
-  number?: string
-  complement?: string
-  latitude?: number
-  longitude?: number
-  service_radius_km?: number
+  neighborhood?: string | undefined
+  zip_code?: string | undefined
+  street?: string | undefined
+  number?: string | undefined
+  complement?: string | undefined
+  latitude?: number | undefined
+  longitude?: number | undefined
+  service_radius_km?: number | undefined
 }
 
 export interface UpdateAddressData {
-  type?: 'in_person' | 'teleconsultation'
-  status?: 'active' | 'inactive'
-  is_main?: boolean
-  country?: string
-  state?: string
-  city?: string
-  neighborhood?: string
-  zip_code?: string
-  street?: string
-  number?: string
-  complement?: string
-  latitude?: number
-  longitude?: number
-  service_radius_km?: number
+  type?: 'in_person' | 'teleconsultation' | undefined
+  status?: 'active' | 'inactive' | undefined
+  is_main?: boolean | undefined
+  country?: string | undefined
+  state?: string | undefined
+  city?: string | undefined
+  neighborhood?: string | undefined
+  zip_code?: string | undefined
+  street?: string | undefined
+  number?: string | undefined
+  complement?: string | undefined
+  latitude?: number | undefined
+  longitude?: number | undefined
+  service_radius_km?: number | undefined
 }
 
 export interface AddressFilters {

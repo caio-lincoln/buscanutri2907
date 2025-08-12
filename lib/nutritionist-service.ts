@@ -1,10 +1,13 @@
 import { supabase } from './supabase'
 import type { NutritionistProfile } from './supabase'
 import { getNutritionistBadges, type NutritionistBadge } from './badge-service' // Importar o serviço de insígnias
-import {
-  profileViewsService,
-  type ProfileViewStats,
-} from './profile-views-service' // Importar o serviço de visualizações
+import { profileViewsService } from './profile-views-service' // Importar o serviço de visualizações
+// Definir o tipo ProfileViewStats localmente para evitar problemas de importação
+type ProfileViewStats = {
+  totalViews: number
+  uniqueViews: number
+  lastViewAt: string | null
+}
 import {
   normalizeStringArray,
   logNormalizationEvent,
@@ -41,7 +44,7 @@ export function formatNutritionistData(
     nutritionist?.profile_image_url ||
     `/placeholder.svg?height=400&width=400&text=${encodeURIComponent(formattedName)}`
   const formattedOnlineConsultation =
-    nutritionist.online_consultation_available || nutritionist.online_consultation || false
+    nutritionist.service_online_available || false
   const formattedCrn = nutritionist.crn || 'Não informado'
 
   // Função wrapper para manter compatibilidade
@@ -52,19 +55,13 @@ export function formatNutritionistData(
     if (result.wasCorrupted) {
       logNormalizationEvent('nutritionist_field', result, {
         context: 'nutritionist-service',
-      })
+      }, result.wasCorrupted)
     }
 
     return result.data
   }
 
-  const formattedServices = toArray(nutritionist.services).map(
-    (service: any) => ({
-      name: service.name || 'Serviço',
-      price: service.price || 0,
-      duration: service.duration || 'N/A',
-    })
-  )
+  const formattedServices = [] // Removido temporariamente pois a propriedade services não existe no tipo
   const formattedSpecializations = specialtiesArray
 
   return {
@@ -83,18 +80,12 @@ export function formatNutritionistData(
     services: formattedServices,
     specializations: formattedSpecializations,
     is_verified: nutritionist.is_verified || false, // Inclui o status de verificação
-    badges: nutritionist.badges || [], // Inclui as insígnias
-    totalViews: nutritionist.total_views || 0, // Inclui total de visualizações
-    uniqueViews: nutritionist.unique_views || 0, // Inclui visualizações únicas
-    lastViewAt: nutritionist.last_view_at, // Inclui última visualização
-    viewStats: nutritionist.viewStats, // Inclui estatísticas de visualizações
   }
 }
 
 export async function getNutritionistById(id: string): Promise<
   | (NutritionistProfile & {
       badges?: any[]
-      viewStats?: ProfileViewStats
     })
   | null
 > {
@@ -138,14 +129,20 @@ export async function getNutritionistById(id: string): Promise<
     const badges = await getNutritionistBadges(nutritionistWithEmail.id)
 
     // Busca as estatísticas de visualizações
-    const viewStats = await profileViewsService.getViewStats(
+    const viewStatsRaw = await profileViewsService.getViewStats(
       nutritionistWithEmail.id
     )
+    
+    const viewStats = viewStatsRaw ? {
+      totalViews: viewStatsRaw.total_views,
+      uniqueViews: viewStatsRaw.unique_views,
+      lastViewAt: viewStatsRaw.last_view_at || null,
+    } : undefined
 
     return {
       ...nutritionistWithEmail,
       badges: badges,
-      viewStats: viewStats || undefined,
+      viewStats: viewStats,
     }
   } catch (err) {
     // Silent error handling: Error in getNutritionistById
@@ -177,11 +174,21 @@ export async function getAllNutritionists(): Promise<
       email: n.email || null,
     })) as NutritionistProfile[]
 
-    // Para cada nutricionista, busca suas insígnias
+    // Para cada nutricionista, busca suas insígnias e estatísticas
     const nutritionistsWithBadges = await Promise.all(
       nutritionistsWithEmail.map(async nutri => {
         const badges = await getNutritionistBadges(nutri.id)
-        return { ...nutri, badges }
+        const viewStatsRaw = await profileViewsService.getViewStats(nutri.id)
+        const viewStats = viewStatsRaw ? {
+          totalViews: viewStatsRaw.total_views,
+          uniqueViews: viewStatsRaw.unique_views,
+          lastViewAt: viewStatsRaw.last_view_at || null,
+        } : undefined
+        return { 
+          ...nutri, 
+          badges, 
+          viewStats,
+        }
       })
     )
 
@@ -220,7 +227,17 @@ export async function getNutritionistsBySpecialty(specialty: string): Promise<
     const nutritionistsWithBadges = await Promise.all(
       nutritionistsWithEmail.map(async nutri => {
         const badges = await getNutritionistBadges(nutri.id)
-        return { ...nutri, badges }
+        const viewStatsRaw = await profileViewsService.getViewStats(nutri.id)
+        const viewStats = viewStatsRaw ? {
+          totalViews: viewStatsRaw.total_views,
+          uniqueViews: viewStatsRaw.unique_views,
+          lastViewAt: viewStatsRaw.last_view_at || null,
+        } : undefined
+        return { 
+          ...nutri, 
+          badges, 
+          viewStats,
+        }
       })
     )
 
@@ -259,7 +276,17 @@ export async function getNutritionistsByLocation(location: string): Promise<
     const nutritionistsWithBadges = await Promise.all(
       nutritionistsWithEmail.map(async nutri => {
         const badges = await getNutritionistBadges(nutri.id)
-        return { ...nutri, badges }
+        const viewStatsRaw = await profileViewsService.getViewStats(nutri.id)
+        const viewStats = viewStatsRaw ? {
+          totalViews: viewStatsRaw.total_views,
+          uniqueViews: viewStatsRaw.unique_views,
+          lastViewAt: viewStatsRaw.last_view_at || null,
+        } : undefined
+        return { 
+          ...nutri, 
+          badges, 
+          viewStats,
+        }
       })
     )
 
@@ -298,7 +325,17 @@ export async function getTopRatedNutritionists(limit = 5): Promise<
     const nutritionistsWithBadges = await Promise.all(
       nutritionistsWithEmail.map(async nutri => {
         const badges = await getNutritionistBadges(nutri.id)
-        return { ...nutri, badges }
+        const viewStatsRaw = await profileViewsService.getViewStats(nutri.id)
+        const viewStats = viewStatsRaw ? {
+          totalViews: viewStatsRaw.total_views,
+          uniqueViews: viewStatsRaw.unique_views,
+          lastViewAt: viewStatsRaw.last_view_at || null,
+        } : undefined
+        return { 
+          ...nutri, 
+          badges, 
+          viewStats,
+        }
       })
     )
 

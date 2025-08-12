@@ -2,12 +2,11 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Badge } from '@/components/ui/badge'
 import {
   ArrowLeft,
   Send,
@@ -47,10 +46,10 @@ export default function NutritionistChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
   const params = useParams()
-  const conversationId = params.id as string
+  const conversationId = params['id'] as string
 
   // Dashboard stats
-  const { stats, loading: statsLoading } = useDashboardStats({
+  const { stats } = useDashboardStats({
     userType: 'nutricionista',
     userId: user?.id || '',
     enabled: !!user?.id,
@@ -295,9 +294,6 @@ export default function NutritionistChatPage() {
                 {messages.map(message => {
                   const isFromNutritionist =
                     message.sender_type === 'nutritionist'
-                  const senderName = isFromNutritionist
-                    ? userProfile?.full_name || 'Você'
-                    : patient?.full_name || 'Paciente'
 
                   return (
                     <div
