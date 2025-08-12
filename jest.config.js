@@ -8,7 +8,7 @@ const createJestConfig = nextJest({
 // Add any custom config to be passed to Jest
 const customJestConfig = {
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
-  testEnvironment: 'node',
+  testEnvironment: 'jsdom',
   testMatch: ['**/__tests__/**/*.(ts|tsx|js)', '**/*.(test|spec).(ts|tsx|js)'],
   moduleNameMapping: {
     '^@/(.*)$': '<rootDir>/$1',
@@ -17,9 +17,13 @@ const customJestConfig = {
     'lib/**/*.{ts,tsx}',
     'app/**/*.{ts,tsx}',
     'components/**/*.{ts,tsx}',
+    'hooks/**/*.{ts,tsx}',
     '!**/*.d.ts',
     '!**/node_modules/**',
+    '!lib/storage/types.ts', // Apenas tipos
   ],
+  coverageReporters: ['text', 'lcov', 'html'],
+  coverageDirectory: 'coverage',
   testTimeout: 30000, // 30 segundos para testes de contrato
 }
 

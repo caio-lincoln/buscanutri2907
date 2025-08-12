@@ -146,49 +146,57 @@ export class CacheManager {
 /**
  * Hook para invalidar cache local no browser
  */
-export function invalidateBrowserCache() {
+export async function invalidateBrowserCache() {
   if (typeof window !== 'undefined') {
-    // Limpar localStorage relacionado ao cache (verificação segura)
-    if (window.localStorage) {
-      try {
-        const cacheKeys = Object.keys(localStorage).filter(
-          key =>
-            key.startsWith('cache-') ||
-            key.startsWith('build-') ||
-            key.includes('cached')
-        )
+    try {
+      // Usar o novo sistema de storage para limpeza de cache
+      const { storage } = await import('./storage')
+      
+      // Obter todas as chaves e filtrar as relacionadas ao cache
+      const allKeys = await storage.keys()
+      const cacheKeys = allKeys.filter(
+        key =>
+          key.startsWith('cache_') ||
+          key.startsWith('build_') ||
+          key.includes('cached')
+      )
 
-        cacheKeys.forEach(key => {
-          try {
-            localStorage.removeItem(key)
-          } catch (error) {
-            console.warn(`Erro ao remover chave ${key} do localStorage:`, error)
-          }
-        })
-      } catch (error) {
-        console.warn('Erro ao acessar localStorage:', error)
+      // Remover chaves de cache usando o storage service
+      for (const key of cacheKeys) {
+        try {
+          await storage.remove(key)
+          console.log(`Cache removido: ${key}`)
+        } catch (error) {
+          console.warn(`Erro ao remover cache ${key}:`, error)
+        }
       }
-    }
 
-    // Limpar sessionStorage relacionado ao cache (verificação segura)
-    if (window.sessionStorage) {
-      try {
-        const sessionCacheKeys = Object.keys(sessionStorage).filter(
-          key =>
-            key.startsWith('cache-') ||
-            key.startsWith('build-') ||
-            key.includes('cached')
-        )
+      // Executar limpeza automática do storage
+      await storage.cleanup()
+      
+    } catch (error) {
+      console.warn('Erro ao invalidar cache do browser:', error)
+      
+      // Fallback para limpeza manual se o storage falhar
+      if (window.sessionStorage) {
+        try {
+          const sessionCacheKeys = Object.keys(sessionStorage).filter(
+            key =>
+              key.startsWith('cache-') ||
+              key.startsWith('build-') ||
+              key.includes('cached')
+          )
 
-        sessionCacheKeys.forEach(key => {
-          try {
-            sessionStorage.removeItem(key)
-          } catch (error) {
-            console.warn(`Erro ao remover chave ${key} do sessionStorage:`, error)
-          }
-        })
-      } catch (error) {
-        console.warn('Erro ao acessar sessionStorage:', error)
+          sessionCacheKeys.forEach(key => {
+            try {
+              sessionStorage.removeItem(key)
+            } catch (error) {
+              console.warn(`Erro ao remover chave ${key} do sessionStorage:`, error)
+            }
+          })
+        } catch (error) {
+          console.warn('Erro ao acessar sessionStorage:', error)
+        }
       }
     }
   }

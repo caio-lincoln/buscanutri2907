@@ -39,7 +39,8 @@ export function useIsClient() {
 }
 
 /**
- * Hook para acessar localStorage de forma segura no SSR
+ * Hook para acessar storage de forma segura no SSR
+ * DEPRECATED: Use useStorage() do sistema de storage em vez disso
  */
 export function useLocalStorage<T>(
   key: string,
@@ -50,15 +51,32 @@ export function useLocalStorage<T>(
 
   useEffect(() => {
     setIsClient(true)
-    try {
-      const item = window.localStorage.getItem(key)
-      if (item) {
-        setStoredValue(JSON.parse(item))
+    
+    const loadFromStorage = async () => {
+      try {
+        // Usar o novo sistema de storage
+        const { storage } = await import('@/lib/storage')
+        const item = await storage.get<T>(key, initialValue)
+        if (item !== null) {
+          setStoredValue(item)
+        }
+      } catch (error) {
+        console.warn(`Erro ao ler storage para a chave "${key}":`, error)
+        
+        // Fallback para sessionStorage se o novo sistema falhar
+        try {
+          const item = window.sessionStorage.getItem(key)
+          if (item) {
+            setStoredValue(JSON.parse(item))
+          }
+        } catch (fallbackError) {
+          console.warn(`Fallback também falhou para a chave "${key}":`, fallbackError)
+        }
       }
-    } catch (error) {
-      console.warn(`Erro ao ler localStorage para a chave "${key}":`, error)
     }
-  }, [key])
+
+    loadFromStorage()
+  }, [key, initialValue])
 
   const setValue = (value: T | ((val: T) => T)) => {
     try {
@@ -66,10 +84,31 @@ export function useLocalStorage<T>(
       setStoredValue(valueToStore)
       
       if (isClient) {
-        window.localStorage.setItem(key, JSON.stringify(valueToStore))
+        // Usar o novo sistema de storage
+        import('@/lib/storage').then(({ storage }) => {
+          storage.set(key, valueToStore).catch(error => {
+            console.warn(`Erro ao salvar no storage para a chave "${key}":`, error)
+            
+            // Fallback para sessionStorage
+            try {
+              window.sessionStorage.setItem(key, JSON.stringify(valueToStore))
+            } catch (fallbackError) {
+              console.warn(`Fallback de salvamento também falhou para a chave "${key}":`, fallbackError)
+            }
+          })
+        }).catch(error => {
+          console.warn(`Erro ao importar storage para a chave "${key}":`, error)
+          
+          // Fallback direto para sessionStorage
+          try {
+            window.sessionStorage.setItem(key, JSON.stringify(valueToStore))
+          } catch (fallbackError) {
+            console.warn(`Fallback de salvamento também falhou para a chave "${key}":`, fallbackError)
+          }
+        })
       }
     } catch (error) {
-      console.warn(`Erro ao salvar no localStorage para a chave "${key}":`, error)
+      console.warn(`Erro ao processar valor para a chave "${key}":`, error)
     }
   }
 

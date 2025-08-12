@@ -30,11 +30,22 @@ export default function TestNotificationsPage() {
   const loginTestUser = async () => {
     // Simular login do usuário de teste
     if (typeof window !== 'undefined') {
-      localStorage.setItem(
-        'test_user_session',
-        '2d424c6f-ff36-41d5-b65f-62b284d1ceb4'
-      )
-      window.location.reload()
+      try {
+        const { storage } = await import('@/lib/storage')
+        await storage.set(
+          'test_user_session',
+          '2d424c6f-ff36-41d5-b65f-62b284d1ceb4'
+        )
+        window.location.reload()
+      } catch (error) {
+        console.warn('Erro ao salvar sessão de teste, usando fallback:', error)
+        // Fallback para sessionStorage
+        window.sessionStorage.setItem(
+          'test_user_session',
+          '2d424c6f-ff36-41d5-b65f-62b284d1ceb4'
+        )
+        window.location.reload()
+      }
     }
   }
 

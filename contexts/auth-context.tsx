@@ -11,17 +11,16 @@ import React, {
 import { createSupabaseClient } from '@/lib/supabase'
 import { getCurrentUser, getUserProfile } from '@/lib/auth'
 import { useIsClient } from '@/hooks/use-local-storage'
+import { useAuthSync } from '@/hooks/use-auth-sync'
 import type { User } from '@supabase/supabase-js'
-
-interface ExtendedUser extends User {
-  user_type?: string
-  companyProfile?: any
-  nutritionistProfile?: any
-  patientProfile?: any
-}
+import type { UserProfile, NutritionistProfile, PatientProfile, CompanyProfile } from '@/lib/supabase'
 
 interface AuthContextType {
-  user: ExtendedUser | null
+  user: User | null
+  userProfile: UserProfile | null
+  nutritionistProfile: NutritionistProfile | null
+  patientProfile: PatientProfile | null
+  companyProfile: CompanyProfile | null
   loading: boolean
   signOut: () => Promise<void>
   refreshUser: () => Promise<void>
@@ -30,89 +29,102 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<ExtendedUser | null>(null)
+  const [user, setUser] = useState<User | null>(null)
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
+  const [nutritionistProfile, setNutritionistProfile] = useState<NutritionistProfile | null>(null)
+  const [patientProfile, setPatientProfile] = useState<PatientProfile | null>(null)
+  const [companyProfile, setCompanyProfile] = useState<CompanyProfile | null>(null)
   const [loading, setLoading] = useState(true)
+  const supabase = createSupabaseClient()
   const isClient = useIsClient()
-  const supabase = useMemo(() => createSupabaseClient(), [])
+
+  // Função para recarregar dados do usuário
+  const refreshUserData = useCallback(async () => {
+    try {
+      const currentUser = await getCurrentUser()
+      setUser(currentUser)
+      
+      if (currentUser) {
+        const profile = await getUserProfile(currentUser.id)
+        setUserProfile(profile)
+        
+        // Carregar perfis específicos baseado no tipo de usuário
+        if (profile?.user_type === 'nutritionist') {
+          const { data: nutritionist } = await supabase
+            .from('nutritionist_profiles')
+            .select('*')
+            .eq('user_id', currentUser.id)
+            .single()
+          setNutritionistProfile(nutritionist)
+        } else if (profile?.user_type === 'patient') {
+          const { data: patient } = await supabase
+            .from('patient_profiles')
+            .select('*')
+            .eq('user_id', currentUser.id)
+            .single()
+          setPatientProfile(patient)
+        } else if (profile?.user_type === 'company') {
+          const { data: company } = await supabase
+            .from('company_profiles')
+            .select('*')
+            .eq('user_id', currentUser.id)
+            .single()
+          setCompanyProfile(company)
+        }
+      } else {
+        setUserProfile(null)
+        setNutritionistProfile(null)
+        setPatientProfile(null)
+        setCompanyProfile(null)
+      }
+    } catch (error) {
+      console.error('Erro ao recarregar dados do usuário:', error)
+      setUser(null)
+      setUserProfile(null)
+      setNutritionistProfile(null)
+      setPatientProfile(null)
+      setCompanyProfile(null)
+    }
+  }, [supabase])
+
+  // Hook para sincronização entre abas
+  const { broadcastAuthChange } = useAuthSync(refreshUserData)
 
   const loadUser = useCallback(async () => {
     try {
       setLoading(true)
-      const currentUser = await getCurrentUser()
-
-      if (currentUser) {
-        const extendedUser: ExtendedUser = currentUser
-
-        // Carregar perfil específico baseado no tipo de usuário
-        if (currentUser.user_type === 'empresa') {
-          try {
-            const { data: companyProfile } = await getUserProfile(
-              currentUser.id,
-              'empresa'
-            )
-            extendedUser.companyProfile = companyProfile
-          } catch (error) {
-            console.error('Erro ao carregar perfil da empresa:', error)
-          }
-        } else if (currentUser.user_type === 'nutricionista') {
-          try {
-            const { data: nutritionistProfile } = await getUserProfile(
-              currentUser.id,
-              'nutricionista'
-            )
-            extendedUser.nutritionistProfile = nutritionistProfile
-          } catch (error) {
-            console.error('Erro ao carregar perfil do nutricionista:', error)
-          }
-        } else if (currentUser.user_type === 'paciente') {
-          try {
-            const { data: patientProfile } = await getUserProfile(
-              currentUser.id,
-              'paciente'
-            )
-            extendedUser.patientProfile = patientProfile
-          } catch (error) {
-            console.error('Erro ao carregar perfil do paciente:', error)
-          }
-        }
-
-        setUser(extendedUser)
-      } else {
-        setUser(null)
-      }
+      await refreshUserData()
     } catch (error) {
       console.error('Erro ao carregar usuário:', error)
-      setUser(null)
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [refreshUserData])
 
   const handleSignOut = useCallback(async () => {
     try {
-      // Limpar localStorage se existir
+      // Remove admin session if exists
       if (typeof window !== 'undefined') {
-        localStorage.removeItem('admin_session')
+        sessionStorage.removeItem('admin_session')
       }
-
-      const { error } = await supabase.auth.signOut()
-
-      if (error) {
-        console.error('❌ Erro no logout:', error)
-        throw error
-      }
-
+      
+      // Broadcast logout para outras abas
+      broadcastAuthChange('SIGN_OUT')
+      
+      await supabase.auth.signOut()
       setUser(null)
-      console.log('✅ Logout realizado com sucesso')
-    } catch (error: any) {
-      console.error('💥 Erro geral no logout:', error)
-      throw error
+      setUserProfile(null)
+      setNutritionistProfile(null)
+      setPatientProfile(null)
+      setCompanyProfile(null)
+    } catch (error) {
+      console.error('Erro ao fazer logout:', error)
     }
-  }, [supabase])
+  }, [supabase, broadcastAuthChange])
 
   const refreshUser = useCallback(async () => {
-    await loadUser()
-  }, [loadUser])
+    await refreshUserData()
+  }, [refreshUserData])
 
   useEffect(() => {
     if (!isClient) return
@@ -127,9 +139,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log('🔄 Auth state changed:', event, session?.user?.id)
 
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-        await loadUser()
+        await refreshUserData()
       } else if (event === 'SIGNED_OUT') {
         setUser(null)
+        setUserProfile(null)
+        setNutritionistProfile(null)
+        setPatientProfile(null)
+        setCompanyProfile(null)
         setLoading(false)
       }
     })
@@ -137,16 +153,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       subscription.unsubscribe()
     }
-  }, [isClient, loadUser, supabase])
+  }, [isClient, loadUser, supabase, refreshUserData])
 
   const value = useMemo(
     () => ({
       user,
+      userProfile,
+      nutritionistProfile,
+      patientProfile,
+      companyProfile,
       loading,
       signOut: handleSignOut,
       refreshUser,
     }),
-    [user, loading, handleSignOut, refreshUser]
+    [user, userProfile, nutritionistProfile, patientProfile, companyProfile, loading, handleSignOut, refreshUser]
   )
 
   return (

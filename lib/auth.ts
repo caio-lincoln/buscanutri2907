@@ -234,13 +234,13 @@ export async function signOut() {
   try {
     // Silent logging: Performing logout
 
-    // Limpar localStorage se existir (verificação segura para SSR)
-    if (typeof window !== 'undefined' && window.localStorage) {
+    // Limpar sessionStorage se existir (verificação segura para SSR)
+    if (typeof window !== 'undefined' && window.sessionStorage) {
       try {
-        localStorage.removeItem('admin_session')
+        sessionStorage.removeItem('admin_session')
       } catch (error) {
-        // Ignorar erros de localStorage em modo privado/incógnito
-        console.warn('Erro ao limpar localStorage:', error)
+        // Ignorar erros de sessionStorage em modo privado/incógnito
+        console.warn('Erro ao limpar sessionStorage:', error)
       }
     }
 
@@ -266,12 +266,12 @@ export async function isAdmin(email: string): Promise<boolean> {
 export async function signInAdmin(email: string, password: string) {
   if (email === 'iris@buscanutri.com' && password === 'iris123456') {
     // Verificação segura para SSR
-    if (typeof window !== 'undefined' && window.localStorage) {
+    if (typeof window !== 'undefined' && window.sessionStorage) {
       try {
-        localStorage.setItem('admin_session', 'iris@buscanutri.com')
+        sessionStorage.setItem('admin_session', 'iris@buscanutri.com')
       } catch (error) {
-        // Ignorar erros de localStorage em modo privado/incógnito
-        console.warn('Erro ao salvar no localStorage:', error)
+        // Ignorar erros de sessionStorage em modo privado/incógnito
+        console.warn('Erro ao salvar no sessionStorage:', error)
       }
     }
     // Silent logging: Admin login performed
@@ -293,9 +293,9 @@ export async function signInAdmin(email: string, password: string) {
 export async function getCurrentUser() {
   try {
     // Verificar se é admin primeiro (verificação segura para SSR)
-    if (typeof window !== 'undefined' && window.localStorage) {
+    if (typeof window !== 'undefined' && window.sessionStorage) {
       try {
-        const adminSession = localStorage.getItem('admin_session')
+        const adminSession = sessionStorage.getItem('admin_session')
         if (adminSession === 'iris@buscanutri.com') {
           return {
             id: 'admin-001',
@@ -304,8 +304,8 @@ export async function getCurrentUser() {
           }
         }
       } catch (error) {
-        // Ignorar erros de localStorage em modo privado/incógnito
-        console.warn('Erro ao acessar localStorage:', error)
+        // Ignorar erros de sessionStorage em modo privado/incógnito
+        console.warn('Erro ao acessar sessionStorage:', error)
       }
     }
 

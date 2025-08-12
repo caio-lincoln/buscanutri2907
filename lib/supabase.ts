@@ -18,12 +18,26 @@ if (typeof window !== 'undefined' && (!supabaseUrl || !supabaseAnonKey)) {
   // Silent error handling: Environment variables not defined
 }
 
-// Cliente antigo para compatibilidade
-export const supabase = createClient(finalUrl, finalKey)
+// Cliente antigo para compatibilidade com sessionStorage
+export const supabase = createClient(finalUrl, finalKey, {
+  auth: {
+    storage: typeof window !== 'undefined' ? window.sessionStorage : undefined,
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true
+  }
+})
 
-// Novo cliente para autenticação
+// Novo cliente para autenticação com sessionStorage (expira ao fechar o navegador)
 export const createSupabaseClient = () =>
-  createBrowserClient<Database>(finalUrl, finalKey)
+  createBrowserClient<Database>(finalUrl, finalKey, {
+    auth: {
+      storage: typeof window !== 'undefined' ? window.sessionStorage : undefined,
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: true
+    }
+  })
 
 // Export UserType for use in other files
 export type UserType = 'paciente' | 'nutricionista' | 'empresa' | 'admin'
