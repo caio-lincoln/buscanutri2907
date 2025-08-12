@@ -45,31 +45,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(currentUser)
       
       if (currentUser) {
-        const profile = await getUserProfile(currentUser.id)
-        setUserProfile(profile)
+        // Usar o currentUser como userProfile se não houver perfil específico
+        setUserProfile(currentUser)
         
         // Carregar perfis específicos baseado no tipo de usuário
-        if (profile?.user_type === 'nutritionist') {
-          const { data: nutritionist } = await supabase
-            .from('nutritionist_profiles')
-            .select('*')
-            .eq('user_id', currentUser.id)
-            .single()
-          setNutritionistProfile(nutritionist)
-        } else if (profile?.user_type === 'patient') {
-          const { data: patient } = await supabase
-            .from('patient_profiles')
-            .select('*')
-            .eq('user_id', currentUser.id)
-            .single()
-          setPatientProfile(patient)
-        } else if (profile?.user_type === 'company') {
-          const { data: company } = await supabase
-            .from('company_profiles')
-            .select('*')
-            .eq('user_id', currentUser.id)
-            .single()
-          setCompanyProfile(company)
+        if (currentUser.user_type === 'nutricionista') {
+          try {
+            const { data: nutritionist } = await supabase
+              .from('nutritionist_profiles')
+              .select('*')
+              .eq('user_id', currentUser.id)
+              .single()
+            setNutritionistProfile(nutritionist)
+          } catch (error) {
+            console.warn('Perfil de nutricionista não encontrado:', error)
+            setNutritionistProfile(null)
+          }
+        } else if (currentUser.user_type === 'paciente') {
+          try {
+            const { data: patient } = await supabase
+              .from('patient_profiles')
+              .select('*')
+              .eq('user_id', currentUser.id)
+              .single()
+            setPatientProfile(patient)
+          } catch (error) {
+            console.warn('Perfil de paciente não encontrado:', error)
+            setPatientProfile(null)
+          }
+        } else if (currentUser.user_type === 'empresa') {
+          try {
+            const { data: company } = await supabase
+              .from('company_profiles')
+              .select('*')
+              .eq('user_id', currentUser.id)
+              .single()
+            setCompanyProfile(company)
+          } catch (error) {
+            console.warn('Perfil de empresa não encontrado:', error)
+            setCompanyProfile(null)
+          }
         }
       } else {
         setUserProfile(null)

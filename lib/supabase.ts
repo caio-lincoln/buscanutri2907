@@ -55,7 +55,7 @@ export interface UserProfile {
   profile_image_url?: string | null
   created_at: string
   updated_at: string
-  user_type: 'patient' | 'nutritionist' | 'company' | 'admin'
+  user_type: UserType
   // Preferências de notificação
   email_notifications_enabled?: boolean
   in_app_notifications_enabled?: boolean

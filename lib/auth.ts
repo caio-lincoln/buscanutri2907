@@ -393,10 +393,26 @@ export async function getCurrentUser() {
   }
 }
 
-export async function getUserProfile(userId: string, userType: UserType) {
+export async function getUserProfile(userId: string, userType?: UserType) {
+  // Se userType não foi fornecido, buscar na tabela users
+  let resolvedUserType = userType
+  if (!resolvedUserType) {
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('user_type')
+      .eq('id', userId)
+      .single()
+    
+    if (userError || !userData) {
+      return { data: null, error: 'Usuário não encontrado' }
+    }
+    
+    resolvedUserType = userData.user_type as UserType
+  }
+
   let tableName = ''
 
-  switch (userType) {
+  switch (resolvedUserType) {
     case 'nutricionista':
       tableName = 'nutritionist_profiles'
       break
@@ -406,6 +422,9 @@ export async function getUserProfile(userId: string, userType: UserType) {
     case 'empresa':
       tableName = 'company_profiles'
       break
+    case 'admin':
+      // Admin não tem perfil específico
+      return { data: null, error: null }
     default:
       return { data: null, error: 'Tipo de usuário inválido' }
   }
@@ -424,7 +443,7 @@ export async function getUserProfile(userId: string, userType: UserType) {
   // Processar dados para garantir tipos corretos, especialmente para nutricionistas
   let processedData: any = data // Usar "any" temporariamente para flexibilidade no processamento
 
-  if (userType === 'nutricionista') {
+  if (resolvedUserType === 'nutricionista') {
     const nutritionistProfile = processedData as any // Cast para any para acessar propriedades dinamicamente
 
     // Função helper para processar campos que podem estar com escape duplo

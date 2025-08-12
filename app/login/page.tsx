@@ -17,7 +17,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Eye, EyeOff, Loader2, AlertCircle } from 'lucide-react'
-import { signIn, signInAdmin } from '@/lib/auth'
+import { signIn, signInAdmin, getCurrentUser } from '@/lib/auth'
 import { toast } from '@/components/ui/use-toast'
 import { useAuth } from '@/contexts/auth-context'
 
@@ -31,24 +31,26 @@ export default function LoginPage() {
   // Redirect if user is already logged in
   useEffect(() => {
     if (!authLoading && user && user.user_type) {
-      switch (user.user_type) {
-        case 'admin':
-          router.push('/dashboard/admin')
-          break
-        case 'nutricionista':
-          router.push('/dashboard/nutricionistas')
-          break
-        case 'empresa':
-          router.push('/dashboard/empresa')
-          break
-        case 'paciente':
-          router.push('/dashboard/paciente')
-          break
-        default:
-          router.push('/dashboard/paciente')
-      }
+      console.log('🔄 Redirecionando usuário logado:', user.user_type)
+      const redirectPath = getRedirectPath(user.user_type)
+      router.replace(redirectPath)
     }
   }, [user, authLoading, router])
+
+  const getRedirectPath = (userType: string) => {
+    switch (userType) {
+      case 'admin':
+        return '/dashboard/admin'
+      case 'nutricionista':
+        return '/dashboard/nutricionistas'
+      case 'empresa':
+        return '/dashboard/empresa'
+      case 'paciente':
+        return '/dashboard/paciente'
+      default:
+        return '/dashboard/paciente'
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -82,10 +84,30 @@ export default function LoginPage() {
       // Wait a bit to ensure context is updated
       await new Promise(resolve => setTimeout(resolve, 500))
 
-      toast({
-        title: 'Login realizado com sucesso!',
-        description: 'Bem-vindo(a) de volta!',
-      })
+      // Get updated user data
+      const updatedUser = await getCurrentUser()
+      console.log('🔍 Usuário após login:', updatedUser)
+      
+      if (updatedUser && updatedUser.user_type) {
+        console.log('✅ Redirecionando após login para:', updatedUser.user_type)
+        const redirectPath = getRedirectPath(updatedUser.user_type)
+        
+        toast({
+          title: 'Login realizado com sucesso!',
+          description: 'Bem-vindo(a) de volta!',
+        })
+        
+        // Use replace to avoid back button issues
+        router.replace(redirectPath)
+        return // Exit early to prevent further execution
+      } else {
+        console.error('❌ Usuário ou tipo de usuário não encontrado após login')
+        toast({
+          title: 'Erro no redirecionamento',
+          description: 'Tente fazer login novamente.',
+          variant: 'destructive',
+        })
+      }
     } catch (err: any) {
       const errorMessage = err.message || 'Erro desconhecido. Tente novamente.'
       setError(errorMessage)

@@ -2,6 +2,7 @@
 
 import React from 'react'
 import { cn } from '@/lib/utils'
+import DOMPurify from 'dompurify'
 
 interface ContentRendererProps {
   content: string
@@ -96,6 +97,17 @@ export function ContentRenderer({
 
   // 3. Preservar formatação
   processedContent = preserveFormatting(processedContent)
+
+  // 4. Sanitizar o HTML com DOMPurify
+  processedContent = DOMPurify.sanitize(processedContent, {
+    ALLOWED_TAGS: [
+      'div', 'iframe', 'blockquote', 'img', 'br', 'p', 'span', 'strong', 'em', 'u', 'a', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li'
+    ],
+    ALLOWED_ATTR: [
+      'class', 'width', 'height', 'src', 'frameborder', 'allowfullscreen', 'data-instgrm-permalink', 'data-instgrm-version', 'cite', 'data-video-id', 'alt', 'href', 'target'
+    ],
+    ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|cid|xmpp):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i
+  })
 
   return (
     <div

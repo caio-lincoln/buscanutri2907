@@ -2,7 +2,7 @@
 
 import type React from 'react'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -70,19 +70,21 @@ export function BlogTab() {
     fetchUserAndPosts()
   }, [])
 
-  const filteredPosts = myPosts.filter(post => {
-    const matchesCategory =
-      selectedCategory === 'Todos' || post.category === selectedCategory
-    const matchesSearch =
-      post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      post.excerpt.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      post.tags.some(tag =>
-        tag.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-    return matchesCategory && matchesSearch
-  })
+  const filteredPosts = useMemo(() => {
+    return myPosts.filter(post => {
+      const matchesCategory =
+        selectedCategory === 'Todos' || post.category === selectedCategory
+      const matchesSearch =
+        post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        post.excerpt.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        post.tags.some(tag =>
+          tag.toLowerCase().includes(searchTerm.toLowerCase())
+        )
+      return matchesCategory && matchesSearch
+    })
+  }, [myPosts, selectedCategory, searchTerm])
 
-  const handleNewPost = () => {
+  const handleNewPost = useCallback(() => {
     setIsEditing(true)
     setCurrentPost({
       title: '',
@@ -94,14 +96,14 @@ export function BlogTab() {
       featured: false,
       centerImage: false,
     })
-  }
+  }, [])
 
-  const handleEditPost = (post: BlogPost) => {
+  const handleEditPost = useCallback((post: BlogPost) => {
     setIsEditing(true)
     setCurrentPost({ ...post })
-  }
+  }, [])
 
-  const handleDeletePost = async (id: string) => {
+  const handleDeletePost = useCallback(async (id: string) => {
     // Verificação segura para SSR
     if (typeof window === 'undefined' || !window.confirm) {
       return
@@ -142,10 +144,10 @@ export function BlogTab() {
         })
       }
     }
-  }
+  }, [authorId])
 
   // Função para formatar o nome do autor
-  const formatAuthorName = (fullName: string) => {
+  const formatAuthorName = useCallback((fullName: string) => {
     const names = fullName.trim().split(' ')
     if (names.length === 1) {
       return names[0]
@@ -155,7 +157,7 @@ export function BlogTab() {
     }
     // Para nomes com mais de 2 partes, pega o primeiro nome e a primeira letra do segundo
     return `${names[0]} ${names[1][0]}.`
-  }
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -250,13 +252,23 @@ export function BlogTab() {
             Crie, edite e gerencie seus artigos para a comunidade Busca Nutri.
           </p>
         </div>
-        <Button
-          onClick={handleNewPost}
-          className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-lg hover:shadow-xl transition-all duration-300"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Novo Artigo
-        </Button>
+        <div className="flex gap-3">
+          <Link href="/dashboard/nutricionistas/posts">
+            <Button
+              variant="outline"
+              className="border-blue-200 text-blue-600 hover:bg-blue-50 hover:border-blue-300 transition-all duration-200"
+            >
+              Ver todas
+            </Button>
+          </Link>
+          <Button
+            onClick={handleNewPost}
+            className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-lg hover:shadow-xl transition-all duration-300"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Novo Artigo
+          </Button>
+        </div>
       </div>
 
       {isEditing && currentPost ? (
@@ -588,9 +600,8 @@ export function BlogTab() {
                         <span className="text-xs text-gray-500">Badges:</span>
                         <div className="flex items-center gap-1 flex-wrap">
                           {post.badges.slice(0, 2).map((badge, index) => {
-                            const IconComponent = badge.badge?.icon_url
-                              ? eval(badge.badge.icon_url)
-                              : Award
+                            // Usar Award como ícone padrão para evitar eval() inseguro
+                            const IconComponent = Award
                             return (
                               <div
                                 key={`post-${post.id}-badge-${badge.badge?.name || 'unknown'}-${index}`}

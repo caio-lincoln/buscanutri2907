@@ -22,6 +22,7 @@ import {
 import { supabase } from '@/lib/supabase'
 import { JobDetailsModal } from '@/components/job-details-modal'
 import { useAuth } from '@/contexts/auth-context'
+import { toast } from '@/components/ui/use-toast'
 
 interface JobPosting {
   id: string
@@ -161,13 +162,13 @@ export default function VagasPage() {
   const handleApply = async (jobId: string) => {
     try {
       if (!user) {
-        alert('Para se candidatar, você precisa estar logado.')
+        toast.error('Para se candidatar, você precisa estar logado.')
         return
       }
 
       // Verificar se o usuário é nutricionista
       if (user.user_type !== 'nutricionista') {
-        alert('Apenas nutricionistas podem se candidatar às vagas.')
+        toast.error('Apenas nutricionistas podem se candidatar às vagas.')
         return
       }
 
@@ -180,7 +181,7 @@ export default function VagasPage() {
         .single()
 
       if (existingApplication) {
-        alert('Você já se candidatou a esta vaga!')
+        toast.warning('Você já se candidatou a esta vaga!')
         return
       }
 
@@ -194,11 +195,23 @@ export default function VagasPage() {
 
       if (error) throw error
 
-      alert('Candidatura enviada com sucesso!')
+      toast.success(
+        'Candidatura enviada com sucesso. Você pode acompanhar na aba Candidaturas.',
+        {
+          action: {
+            label: 'Ver Candidaturas',
+            onClick: () => {
+              // Redirecionar para a aba de candidaturas no dashboard
+              window.location.href = '/dashboard/nutricionistas?tab=candidaturas'
+            },
+          },
+          duration: 5000,
+        }
+      )
       loadJobs() // Recarregar para atualizar contador
     } catch (error) {
       // Error applying to job - handled silently
-      alert('Erro ao enviar candidatura. Tente novamente.')
+      toast.error('Erro ao enviar candidatura. Tente novamente.')
     }
   }
 

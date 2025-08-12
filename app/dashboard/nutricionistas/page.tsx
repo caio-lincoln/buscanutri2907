@@ -270,6 +270,7 @@ export default function NutritionistDashboard() {
                   variant="ghost"
                   size="sm"
                   className="text-gray-500 hover:text-gray-700"
+                  onClick={() => router.push('/dashboard/nutricionistas/notificacoes')}
                 >
                   Ver todas <ArrowRight className="h-4 w-4 ml-1" />
                 </Button>
@@ -386,6 +387,7 @@ export default function NutritionistDashboard() {
                     variant="ghost"
                     size="sm"
                     className="text-gray-500 hover:text-gray-700"
+                    onClick={() => router.push('/dashboard/nutricionistas/conversas')}
                   >
                     Ver todas <ArrowRight className="h-4 w-4 ml-1" />
                   </Button>
@@ -410,7 +412,7 @@ export default function NutritionistDashboard() {
                     variant="ghost"
                     size="sm"
                     className="text-gray-500 hover:text-gray-700"
-                    onClick={() => setActiveTab('agenda')}
+                    onClick={() => router.push('/dashboard/nutricionistas/consultas')}
                   >
                     Ver agenda completa <ArrowRight className="h-4 w-4 ml-1" />
                   </Button>
