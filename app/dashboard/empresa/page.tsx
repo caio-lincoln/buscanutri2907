@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -52,15 +52,47 @@ export default function CompanyDashboard() {
   const router = useRouter()
   const { user, loading: authLoading, signOut } = useAuth()
 
-  // Hook para estatísticas dinâmicas do dashboard
-  const { stats: dashboardStats, loading: statsLoading } = useDashboardStats({
-    userType: 'empresa',
-    userId: profile?.user_id || '',
-    enabled: !!profile?.user_id,
-  })
+  // Funções definidas antes dos useEffect
+  const loadProfile = async () => {
+    try {
+      if (!user) {
+        router.push('/login')
+        return
+      }
 
-  const menuItems = getMenuItems('empresa', dashboardStats)
+      const { data: profileData } = await getUserProfile(user.id, 'empresa')
+      setProfile(profileData)
+      setLoading(false)
+    } catch {
+      // Error loading profile - handled silently
+      setLoading(false)
+    }
+  }
 
+  const loadOverviewData = useCallback(async () => {
+    if (!profile?.id) return
+
+    setOverviewLoading(true)
+    try {
+      const data = await getCompanyOverviewData(profile.id)
+      setOverviewData(data)
+      setOverviewLoading(false)
+    } catch {
+      // Error loading overview data - handled silently
+      setOverviewLoading(false)
+    }
+  }, [profile?.id])
+
+  const handleSignOut = async () => {
+    try {
+      await signOut()
+      router.push('/')
+    } catch {
+      // Error signing out - handled silently
+    }
+  }
+
+  // useEffect hooks
   useEffect(() => {
     if (!authLoading) {
       loadProfile()
@@ -71,44 +103,16 @@ export default function CompanyDashboard() {
     if (profile?.id && activeTab === 'overview') {
       loadOverviewData()
     }
-  }, [profile?.id, activeTab])
+  }, [profile?.id, activeTab, loadOverviewData])
 
-  const loadProfile = async () => {
-    try {
-      if (!user) {
-        router.push('/login')
-        return
-      }
+  // Hook para estatísticas dinâmicas do dashboard - só executa após profile ser carregado
+  const { stats: dashboardStats } = useDashboardStats({
+    userType: 'empresa',
+    userId: profile?.user_id || '',
+    enabled: !!profile?.user_id && !loading,
+  })
 
-      const { data: profileData } = await getUserProfile(user.id, 'empresa')
-      setProfile(profileData)
-    } catch (error) {
-      // Error loading profile - handled silently
-      setLoading(false)
-    }
-  }
-
-  const loadOverviewData = async () => {
-    if (!profile?.id) return
-
-    setOverviewLoading(true)
-    try {
-      const data = await getCompanyOverviewData(profile.id)
-      setOverviewData(data)
-    } catch (error) {
-      // Error loading overview data - handled silently
-      setOverviewLoading(false)
-    }
-  }
-
-  const handleSignOut = async () => {
-    try {
-      await signOut()
-      router.push('/')
-    } catch (error) {
-      // Error signing out - handled silently
-    }
-  }
+  const menuItems = getMenuItems('empresa', dashboardStats)
 
   if (authLoading || loading) {
     return (

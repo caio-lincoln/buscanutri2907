@@ -148,7 +148,19 @@ export function JobDetailsModal({
       }
 
       // Silent operation - application created successfully
-      toast.success('Candidatura enviada com sucesso!')
+      toast.success(
+        'Candidatura enviada com sucesso. Você pode acompanhar na aba Candidaturas.',
+        {
+          action: {
+            label: 'Ver Candidaturas',
+            onClick: () => {
+              // Redirecionar para a aba de candidaturas no dashboard
+              window.location.href = '/dashboard/nutricionistas?tab=candidaturas'
+            },
+          },
+          duration: 5000,
+        }
+      )
       onClose()
     } catch (error) {
       // Silent error handling - general application error

@@ -443,7 +443,7 @@ export default function NutritionistForumPage() {
                           <div>
                             <div className="flex items-center gap-2">
                               <span className="font-medium text-sm">
-                                {question.author.name}
+                                {question.author.name || 'Usuário Anônimo'}
                               </span>
                               <Badge
                                 variant={
