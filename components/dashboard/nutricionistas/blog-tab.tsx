@@ -49,7 +49,7 @@ export function BlogTab() {
   const [myPosts, setMyPosts] = useState<BlogPost[]>([])
   const [isEditing, setIsEditing] = useState(false)
   const [currentPost, setCurrentPost] = useState<Partial<BlogPost> | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [authorId, setAuthorId] = useState<string | null>(null)
 
   const [searchTerm, setSearchTerm] = useState('')

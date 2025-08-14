@@ -57,7 +57,8 @@ import { RealtimeViewsTest } from '@/components/realtime-views-test'
 export default function NutritionistDashboard() {
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('overview')
-  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
+  const [ isProfileModalOpen, setIsProfileModalOpen ] = useState(false)
+ 
   const [stats, setStats] = useState<NutritionistStats>({
     activePatients: 0,
     scheduledAppointments: 0,
@@ -70,29 +71,18 @@ export default function NutritionistDashboard() {
   const router = useRouter()
   const { user, nutritionistProfile, loading: authLoading, signOut } = useAuth()
 
-  // Usar o perfil do contexto de autenticação
-  const profile = nutritionistProfile
-
-  // Log temporário para debug
-  console.log('Dashboard Debug:', {
-    user: user,
-    profile: profile,
-    profileId: profile?.id,
-    hasProfile: !!profile
-  })
-
-  // Hook para estatísticas dinâmicas do dashboard
+   // Hook para estatísticas dinâmicas do dashboard
   const { stats: dashboardStats } = useDashboardStats({
     userType: 'nutricionista',
-    userId: profile?.user_id || '',
-    enabled: !!profile?.user_id,
+    userId: nutritionistProfile?.user_id || '',
+    enabled: !!nutritionistProfile?.user_id,
   })
 
   // Hook para visualizações em tempo real
-  const { viewStats } = useRealtimeProfileViews(profile?.id || '', {
-    totalViews: profile?.totalViews || 0,
-    uniqueViews: profile?.uniqueViews || 0,
-    lastViewAt: profile?.lastViewAt || null,
+  const { viewStats } = useRealtimeProfileViews(nutritionistProfile?.id || '', {
+    totalViews: nutritionistProfile?.totalViews || 0,
+    uniqueViews: nutritionistProfile?.uniqueViews || 0,
+    lastViewAt: nutritionistProfile?.lastViewAt || null,
   })
 
   const menuItems = getMenuItems('nutricionista', dashboardStats)
@@ -103,24 +93,24 @@ export default function NutritionistDashboard() {
       return
     }
     
-    if (profile?.user_id) {
+    if (nutritionistProfile?.user_id) {
       loadDashboardData()
       setLoading(false)
     }
-  }, [user, authLoading, profile?.user_id])
+  }, [user, authLoading, nutritionistProfile?.user_id])
 
   // Remover a função loadProfile pois agora usamos o perfil do contexto
 
   const loadDashboardData = async () => {
-    if (!profile?.user_id) return
+    if (!nutritionistProfile?.user_id) return
 
     try {
       // Carregar estatísticas
-      const statsData = await getNutritionistStats(profile.user_id)
+      const statsData = await getNutritionistStats(nutritionistProfile.user_id)
       setStats(statsData)
 
       // Carregar próximas consultas
-      const appointmentsData = await getUpcomingAppointments(profile.user_id, 5)
+      const appointmentsData = await getUpcomingAppointments(nutritionistProfile.user_id, 5)
       setUpcomingAppointments(appointmentsData)
     } catch (error) {
       // Error loading dashboard data - handled silently
@@ -150,8 +140,8 @@ export default function NutritionistDashboard() {
   }
 
   const handleItemClick = (itemId: string) => {
-    if (itemId === 'perfil' && profile?.id) {
-      router.push(`/dashboard/nutricionistas/${profile.id}`)
+    if (itemId === 'perfil' && nutritionistProfile?.id) {
+      router.push(`/dashboard/nutricionistas/${nutritionistProfile.id}`)
     } else {
       setActiveTab(itemId)
     }
@@ -160,8 +150,8 @@ export default function NutritionistDashboard() {
   return (
     <DashboardSidebar
       userType="nutricionista"
-      userName={profile?.full_name || 'Nutricionista'}
-      userAvatar={profile?.profile_image_url || '/placeholder.svg'}
+      userName={nutritionistProfile?.full_name || 'Nutricionista'}
+      userAvatar={nutritionistProfile?.profile_image_url || '/placeholder.svg'}
       menuItems={menuItems}
       activeItem={activeTab}
       onItemClick={handleItemClick}
@@ -183,7 +173,7 @@ export default function NutritionistDashboard() {
                     <div>
                       <h1 className="text-3xl lg:text-4xl font-bold">
                         Olá, Dr(a).{' '}
-                        {profile?.full_name?.split(' ')[0] || 'Nutricionista'}!
+                        {nutritionistProfile?.full_name?.split(' ')[0] || 'Nutricionista'}!
                         👋
                       </h1>
                       <p className="text-blue-100 text-lg mt-1">
@@ -205,11 +195,11 @@ export default function NutritionistDashboard() {
                       <p className="text-sm text-blue-100">Avaliação média</p>
                       <div className="flex items-center gap-2">
                         <span className="font-semibold">
-                          {profile?.rating?.toFixed(1) || '5.0'}
+                          {nutritionistProfile?.rating?.toFixed(1) || '5.0'}
                         </span>
                         <RatingDisplay
-                          rating={profile?.rating || 5.0}
-                          totalReviews={profile?.total_reviews || 0}
+                          rating={nutritionistProfile?.rating || 5.0}
+                          totalReviews={nutritionistProfile?.total_reviews || 0}
                           size="sm"
                           showNumber={false}
                           showReviewCount={false}
@@ -395,8 +385,8 @@ export default function NutritionistDashboard() {
 
                 <Card className="border-0 shadow-lg backdrop-blur-sm">
                   <CardContent className="p-6">
-                    {profile?.user_id && (
-                      <NutritionistRecentChatsList userId={profile.user_id} />
+                    {nutritionistProfile?.user_id && (
+                      <NutritionistRecentChatsList userId={nutritionistProfile.user_id} />
                     )}
                   </CardContent>
                 </Card>
@@ -606,8 +596,8 @@ export default function NutritionistDashboard() {
         )}
 
         {/* Agenda (Nova aba dedicada) */}
-        {activeTab === 'agenda' && profile?.user_id && (
-          <AppointmentsTab userId={profile.user_id} />
+        {activeTab === 'agenda' && nutritionistProfile?.user_id && (
+          <AppointmentsTab userId={nutritionistProfile.user_id} />
         )}
 
         {/* Relatórios */}
@@ -672,12 +662,12 @@ export default function NutritionistDashboard() {
               </div>
               <div className="flex flex-col sm:flex-row gap-3">
                 {/* Botão "Ver meu perfil público" - só aparece se o ID existir */}
-                {profile?.id ? (
+                {nutritionistProfile?.id ? (
                   <Button
                     variant="outline"
                     className="hover-lift bg-white/80 backdrop-blur-sm border-gray-200"
                     onClick={() => {
-                      const profileUrl = `/nutricionistas/${profile.id}`
+                      const profileUrl = `/nutricionistas/${nutritionistProfile.id}`
                       window.open(profileUrl, '_blank')
                     }}
                   >
@@ -721,12 +711,12 @@ export default function NutritionistDashboard() {
                     <Avatar className="h-20 w-20 mb-4">
                       <AvatarImage
                         src={
-                          profile?.profile_image_url ||
-                          `/placeholder.svg?height=80&width=80&query=${profile?.full_name || '/placeholder.svg'}`
+                          nutritionistProfile?.profile_image_url ||
+                          `/placeholder.svg?height=80&width=80&query=${nutritionistProfile?.full_name || '/placeholder.svg'}`
                         }
                       />
                       <AvatarFallback className="bg-gray-200 text-gray-600 text-xl font-semibold">
-                        {profile?.full_name?.charAt(0).toUpperCase() || 'U'}
+                        {nutritionistProfile?.full_name?.charAt(0).toUpperCase() || 'U'}
                       </AvatarFallback>
                     </Avatar>
                   </div>
@@ -735,7 +725,7 @@ export default function NutritionistDashboard() {
                       Nome Completo
                     </label>
                     <p className="text-[#1E1D40] font-semibold text-lg">
-                      {profile?.full_name || 'Não informado'}
+                      {nutritionistProfile?.full_name || 'Não informado'}
                     </p>
                   </div>
                   <div>
@@ -743,7 +733,7 @@ export default function NutritionistDashboard() {
                       CRN
                     </label>
                     <p className="text-[#1E1D40] font-semibold">
-                      {profile?.crn || 'Não informado'}
+                      {nutritionistProfile?.crn || 'Não informado'}
                     </p>
                   </div>
                   <div>
@@ -751,7 +741,7 @@ export default function NutritionistDashboard() {
                       Telefone
                     </label>
                     <p className="text-[#1E1D40] font-semibold">
-                      {profile?.phone || 'Não informado'}
+                      {nutritionistProfile?.phone || 'Não informado'}
                     </p>
                   </div>
                   <div>
@@ -791,7 +781,7 @@ export default function NutritionistDashboard() {
                       Biografia
                     </label>
                     <p className="text-[#1E1D40] font-semibold text-sm mt-1">
-                      {profile?.bio || 'Não informado'}
+                      {nutritionistProfile?.bio || 'Não informado'}
                     </p>
                   </div>
                 </CardContent>
@@ -829,7 +819,7 @@ export default function NutritionistDashboard() {
                       Anos de Experiência
                     </label>
                     <p className="text-[#1E1D40] font-semibold">
-                      {profile?.experience_years || 0} anos
+                      {nutritionistProfile?.experience_years || 0} anos
                     </p>
                   </div>
                   <div>
@@ -838,7 +828,7 @@ export default function NutritionistDashboard() {
                     </label>
                     <div className="flex flex-wrap gap-2 mt-2 min-h-[2rem]">
                       {(() => {
-                        if (!profile?.specialties) {
+                        if (!nutritionistProfile?.specialties) {
                           return (
                             <p className="text-sm text-gray-500">
                               Nenhuma informada
@@ -896,7 +886,7 @@ export default function NutritionistDashboard() {
                         }
 
                         const specialtiesArray = processSpecialties(
-                          profile.specialties
+                          nutritionistProfile.specialties
                         )
 
                         if (specialtiesArray.length === 0) {
@@ -946,12 +936,12 @@ export default function NutritionistDashboard() {
                     <Badge
                       variant="outline"
                       className={
-                        profile?.is_verified
+                        nutritionistProfile?.is_verified
                           ? 'bg-green-50 text-green-700 border-green-200'
                           : 'bg-yellow-50 text-yellow-700 border-yellow-200'
                       }
                     >
-                      {profile?.is_verified ? 'Verificado' : 'Pendente'}
+                      {nutritionistProfile?.is_verified ? 'Verificado' : 'Pendente'}
                     </Badge>
                   </div>
                 </CardContent>
@@ -973,8 +963,8 @@ export default function NutritionistDashboard() {
                       Preço da Consulta
                     </label>
                     <p className="text-[#1E1D40] font-semibold">
-                      {profile?.consultation_price
-                        ? `R$ ${profile.consultation_price.toFixed(2)}`
+                      {nutritionistProfile?.consultation_price
+                        ? `R$ ${nutritionistProfile.consultation_price.toFixed(2)}`
                         : 'Não informado'}
                     </p>
                   </div>
@@ -983,8 +973,8 @@ export default function NutritionistDashboard() {
                       Preço de Retorno
                     </label>
                     <p className="text-[#1E1D40] font-semibold">
-                      {profile?.service_followup_price
-                        ? `R$ ${profile.service_followup_price.toFixed(2)}`
+                      {nutritionistProfile?.service_followup_price
+                        ? `R$ ${nutritionistProfile.service_followup_price.toFixed(2)}`
                         : 'Não informado'}
                     </p>
                   </div>
@@ -993,8 +983,8 @@ export default function NutritionistDashboard() {
                       Preço do Plano Alimentar
                     </label>
                     <p className="text-[#1E1D40] font-semibold">
-                      {profile?.service_meal_plan_price
-                        ? `R$ ${profile.service_meal_plan_price.toFixed(2)}`
+                      {nutritionistProfile?.service_meal_plan_price
+                        ? `R$ ${nutritionistProfile.service_meal_plan_price.toFixed(2)}`
                         : 'Não informado'}
                     </p>
                   </div>
@@ -1003,8 +993,8 @@ export default function NutritionistDashboard() {
                       Duração da Consulta
                     </label>
                     <p className="text-[#1E1D40] font-semibold">
-                      {profile?.default_consultation_duration
-                        ? `${profile.default_consultation_duration} minutos`
+                      {nutritionistProfile?.default_consultation_duration
+                        ? `${nutritionistProfile.default_consultation_duration} minutos`
                         : 'Não informado'}
                     </p>
                   </div>
@@ -1013,8 +1003,8 @@ export default function NutritionistDashboard() {
                       Tempo Mínimo entre Consultas
                     </label>
                     <p className="text-[#1E1D40] font-semibold">
-                      {profile?.min_time_between_appointments
-                        ? `${profile.min_time_between_appointments} minutos`
+                      {nutritionistProfile?.min_time_between_appointments
+                        ? `${nutritionistProfile.min_time_between_appointments} minutos`
                         : 'Não informado'}
                     </p>
                   </div>
@@ -1025,12 +1015,12 @@ export default function NutritionistDashboard() {
                     <Badge
                       variant="outline"
                       className={
-                        profile?.service_online_available
+                        nutritionistProfile?.service_online_available
                           ? 'bg-green-50 text-green-700 border-green-200'
                           : 'bg-red-50 text-red-700 border-red-200'
                       }
                     >
-                      {profile?.service_online_available
+                      {nutritionistProfile?.service_online_available
                         ? 'Disponível'
                         : 'Não Disponível'}
                     </Badge>
@@ -1064,12 +1054,12 @@ export default function NutritionistDashboard() {
                     <Badge
                       variant="outline"
                       className={
-                        profile?.service_group_consultation
+                        nutritionistProfile?.service_group_consultation
                           ? 'bg-green-50 text-green-700 border-green-200'
                           : 'bg-red-50 text-red-700 border-red-200'
                       }
                     >
-                      {profile?.service_group_consultation
+                      {nutritionistProfile?.service_group_consultation
                         ? 'Disponível'
                         : 'Não Disponível'}
                     </Badge>
@@ -1081,12 +1071,12 @@ export default function NutritionistDashboard() {
                     <Badge
                       variant="outline"
                       className={
-                        profile?.accepts_insurance
+                        nutritionistProfile?.accepts_insurance
                           ? 'bg-green-50 text-green-700 border-green-200'
                           : 'bg-red-50 text-red-700 border-red-200'
                       }
                     >
-                      {profile?.accepts_insurance ? 'Sim' : 'Não'}
+                      {nutritionistProfile?.accepts_insurance ? 'Sim' : 'Não'}
                     </Badge>
                   </div>
                   <div>
@@ -1096,12 +1086,12 @@ export default function NutritionistDashboard() {
                     <Badge
                       variant="outline"
                       className={
-                        profile?.emergency_consultation
+                        nutritionistProfile?.emergency_consultation
                           ? 'bg-green-50 text-green-700 border-green-200'
                           : 'bg-red-50 text-red-700 border-red-200'
                       }
                     >
-                      {profile?.emergency_consultation
+                      {nutritionistProfile?.emergency_consultation
                         ? 'Disponível'
                         : 'Não Disponível'}
                     </Badge>
@@ -1113,12 +1103,12 @@ export default function NutritionistDashboard() {
                     <Badge
                       variant="outline"
                       className={
-                        profile?.aceita_cupons
+                        nutritionistProfile?.aceita_cupons
                           ? 'bg-green-50 text-green-700 border-green-200'
                           : 'bg-gray-50 text-gray-700 border-gray-200'
                       }
                     >
-                      {profile?.aceita_cupons ? 'Sim' : 'Não'}
+                      {nutritionistProfile?.aceita_cupons ? 'Sim' : 'Não'}
                     </Badge>
                   </div>
                 </CardContent>
@@ -1140,7 +1130,7 @@ export default function NutritionistDashboard() {
                       Endereço do Consultório
                     </label>
                     <p className="text-[#1E1D40] font-semibold break-words">
-                      {profile?.address || 'Não informado'}
+                      {nutritionistProfile?.address || 'Não informado'}
                     </p>
                   </div>
                   <div>
@@ -1148,7 +1138,7 @@ export default function NutritionistDashboard() {
                       Localização
                     </label>
                     <p className="text-[#1E1D40] font-semibold">
-                      {profile?.location || 'Não informado'}
+                      {nutritionistProfile?.location || 'Não informado'}
                     </p>
                   </div>
                   <div>
@@ -1156,14 +1146,14 @@ export default function NutritionistDashboard() {
                       Website
                     </label>
                     <p className="text-[#1E1D40] font-semibold text-sm mt-1">
-                      {profile?.website_url ? (
+                      {nutritionistProfile?.website_url ? (
                         <a
-                          href={profile.website_url}
+                          href={nutritionistProfile.website_url}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-blue-600 hover:underline"
                         >
-                          {profile.website_url}
+                          {nutritionistProfile.website_url}
                         </a>
                       ) : (
                         'Não informado'
@@ -1175,9 +1165,9 @@ export default function NutritionistDashboard() {
                       Idiomas de Atendimento
                     </label>
                     <div className="flex flex-wrap gap-2 mt-2 min-h-[2rem]">
-                      {profile?.consultation_languages ? (
-                        typeof profile.consultation_languages === 'string' ? (
-                          profile.consultation_languages
+                      {nutritionistProfile?.consultation_languages ? (
+                        typeof nutritionistProfile.consultation_languages === 'string' ? (
+                          nutritionistProfile.consultation_languages
                             .split(', ')
                             .map((lang: string, i: number) => (
                               <Badge
@@ -1205,7 +1195,7 @@ export default function NutritionistDashboard() {
                       Métodos de Pagamento
                     </label>
                     <p className="text-[#1E1D40] font-semibold text-sm mt-1">
-                      {profile?.payment_methods || 'Não informado'}
+                      {nutritionistProfile?.payment_methods || 'Não informado'}
                     </p>
                   </div>
                   <div>
@@ -1213,7 +1203,7 @@ export default function NutritionistDashboard() {
                       Política de Cancelamento
                     </label>
                     <p className="text-[#1E1D40] font-semibold text-sm mt-1">
-                      {profile?.cancellation_policy || 'Não informado'}
+                      {nutritionistProfile?.cancellation_policy || 'Não informado'}
                     </p>
                   </div>
                 </CardContent>
@@ -1235,14 +1225,14 @@ export default function NutritionistDashboard() {
                       Instagram
                     </label>
                     <p className="text-[#1E1D40] font-semibold text-sm mt-1">
-                      {profile?.instagram_username ? (
+                      {nutritionistProfile?.instagram_username ? (
                         <a
-                          href={`https://instagram.com/${profile.instagram_username}`}
+                          href={`https://instagram.com/${nutritionistProfile.instagram_username}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-pink-600 hover:underline"
                         >
-                          @{profile.instagram_username}
+                          @{nutritionistProfile.instagram_username}
                         </a>
                       ) : (
                         'Não informado'
@@ -1254,14 +1244,14 @@ export default function NutritionistDashboard() {
                       LinkedIn
                     </label>
                     <p className="text-[#1E1D40] font-semibold text-sm mt-1">
-                      {profile?.linkedin_username ? (
+                      {nutritionistProfile?.linkedin_username ? (
                         <a
-                          href={`https://linkedin.com/in/${profile.linkedin_username}`}
+                          href={`https://linkedin.com/in/${nutritionistProfile.linkedin_username}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-blue-700 hover:underline"
                         >
-                          {profile.linkedin_username}
+                          {nutritionistProfile.linkedin_username}
                         </a>
                       ) : (
                         'Não informado'
@@ -1273,14 +1263,14 @@ export default function NutritionistDashboard() {
                       Facebook
                     </label>
                     <p className="text-[#1E1D40] font-semibold text-sm mt-1">
-                      {profile?.facebook_username ? (
+                      {nutritionistProfile?.facebook_username ? (
                         <a
-                          href={`https://facebook.com/${profile.facebook_username}`}
+                          href={`https://facebook.com/${nutritionistProfile.facebook_username}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-blue-600 hover:underline"
                         >
-                          {profile.facebook_username}
+                          {nutritionistProfile.facebook_username}
                         </a>
                       ) : (
                         'Não informado'
@@ -1292,14 +1282,14 @@ export default function NutritionistDashboard() {
                       YouTube
                     </label>
                     <p className="text-[#1E1D40] font-semibold text-sm mt-1">
-                      {profile?.youtube_channel ? (
+                      {nutritionistProfile?.youtube_channel ? (
                         <a
-                          href={profile.youtube_channel}
+                          href={nutritionistProfile.youtube_channel}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-red-600 hover:underline"
                         >
-                          {profile.youtube_channel}
+                          {nutritionistProfile.youtube_channel}
                         </a>
                       ) : (
                         'Não informado'
@@ -1311,14 +1301,14 @@ export default function NutritionistDashboard() {
                       TikTok
                     </label>
                     <p className="text-[#1E1D40] font-semibold text-sm mt-1">
-                      {profile?.tiktok_username ? (
+                      {nutritionistProfile?.tiktok_username ? (
                         <a
-                          href={`https://tiktok.com/@${profile.tiktok_username}`}
+                          href={`https://tiktok.com/@${nutritionistProfile.tiktok_username}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-black hover:underline"
                         >
-                          @{profile.tiktok_username}
+                          @{nutritionistProfile.tiktok_username}
                         </a>
                       ) : (
                         'Não informado'
@@ -1345,37 +1335,37 @@ export default function NutritionistDashboard() {
                         Segunda:
                       </span>
                       <p className="text-[#1E1D40]">
-                        {profile?.monday_hours || 'Não informado'}
+                        {nutritionistProfile?.monday_hours || 'Não informado'}
                       </p>
                     </div>
                     <div>
                       <span className="font-medium text-gray-600">Terça:</span>
                       <p className="text-[#1E1D40]">
-                        {profile?.tuesday_hours || 'Não informado'}
+                        {nutritionistProfile?.tuesday_hours || 'Não informado'}
                       </p>
                     </div>
                     <div>
                       <span className="font-medium text-gray-600">Quarta:</span>
                       <p className="text-[#1E1D40]">
-                        {profile?.wednesday_hours || 'Não informado'}
+                        {nutritionistProfile?.wednesday_hours || 'Não informado'}
                       </p>
                     </div>
                     <div>
                       <span className="font-medium text-gray-600">Quinta:</span>
                       <p className="text-[#1E1D40]">
-                        {profile?.thursday_hours || 'Não informado'}
+                        {nutritionistProfile?.thursday_hours || 'Não informado'}
                       </p>
                     </div>
                     <div>
                       <span className="font-medium text-gray-600">Sexta:</span>
                       <p className="text-[#1E1D40]">
-                        {profile?.friday_hours || 'Não informado'}
+                        {nutritionistProfile?.friday_hours || 'Não informado'}
                       </p>
                     </div>
                     <div>
                       <span className="font-medium text-gray-600">Sábado:</span>
                       <p className="text-[#1E1D40]">
-                        {profile?.saturday_hours || 'Não informado'}
+                        {nutritionistProfile?.saturday_hours || 'Não informado'}
                       </p>
                     </div>
                     <div className="col-span-2">
@@ -1383,7 +1373,7 @@ export default function NutritionistDashboard() {
                         Domingo:
                       </span>
                       <p className="text-[#1E1D40]">
-                        {profile?.sunday_hours || 'Não informado'}
+                        {nutritionistProfile?.sunday_hours || 'Não informado'}
                       </p>
                     </div>
                     <div className="col-span-2">
@@ -1391,7 +1381,7 @@ export default function NutritionistDashboard() {
                         Horário de Almoço:
                       </span>
                       <p className="text-[#1E1D40]">
-                        {profile?.break_time || 'Não informado'}
+                        {nutritionistProfile?.break_time || 'Não informado'}
                       </p>
                     </div>
                   </div>
@@ -1400,7 +1390,7 @@ export default function NutritionistDashboard() {
                       Máximo de Pacientes por Dia
                     </label>
                     <p className="text-[#1E1D40] font-semibold">
-                      {profile?.max_patients_per_day || 'Não definido'}
+                      {nutritionistProfile?.max_patients_per_day || 'Não definido'}
                     </p>
                   </div>
                 </CardContent>
@@ -1424,10 +1414,10 @@ export default function NutritionistDashboard() {
                     <div className="flex items-center gap-2">
                       <Star className="h-4 w-4 text-yellow-500 fill-current" />
                       <span className="text-[#1E1D40] font-semibold">
-                        {profile?.rating ? profile.rating.toFixed(1) : '0.0'}
+                        {nutritionistProfile?.rating ? nutritionistProfile.rating.toFixed(1) : '0.0'}
                       </span>
                       <span className="text-gray-500 text-sm">
-                        ({profile?.total_reviews || 0} avaliações)
+                        ({nutritionistProfile?.total_reviews || 0} avaliações)
                       </span>
                     </div>
                   </div>
@@ -1474,11 +1464,11 @@ export default function NutritionistDashboard() {
               </Card>
 
               {/* Teste de Visualizações em Tempo Real */}
-              {profile?.id && (
+              {nutritionistProfile?.id && (
                 <div className="lg:col-span-3">
                   <div className="flex justify-center">
                     <RealtimeViewsTest
-                      nutritionistId={profile.id}
+                      nutritionistId={nutritionistProfile.id}
                       initialStats={{
                         totalViews: viewStats.totalViews,
                         uniqueViews: viewStats.uniqueViews,
@@ -1529,17 +1519,17 @@ export default function NutritionistDashboard() {
         )}
       </div>
 
-      {profile && (
+      {nutritionistProfile && (
         <UserProfileModal
           open={isProfileModalOpen}
           onOpenChange={setIsProfileModalOpen}
           userType="nutricionista"
-          initialData={profile}
+          initialData={nutritionistProfile}
           onProfileUpdate={() => {
             // Recarregar a página para atualizar o perfil
             window.location.reload()
           }}
-          userId={profile.user_id}
+          userId={nutritionistProfile.user_id}
         />
       )}
     </DashboardSidebar>

@@ -20,22 +20,22 @@ import { Eye, EyeOff, Loader2, AlertCircle } from 'lucide-react'
 import { signIn, signInAdmin, getCurrentUser } from '@/lib/auth'
 import { toast } from '@/components/ui/use-toast'
 import { useAuth } from '@/contexts/auth-context'
+import { User } from '@supabase/supabase-js'
 
 export default function LoginPage() {
-  const [showPassword, setShowPassword] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  const [ showPassword, setShowPassword ] = useState(false)
+  const [ loading, setLoading ] = useState(false)
+  const [ error, setError ] = useState('')
   const router = useRouter()
-  const { user, loading: authLoading, refreshUser } = useAuth()
+  const { user, loading: authLoading, refreshUser, setUser, setUserProfile } = useAuth()
 
   // Redirect if user is already logged in
   useEffect(() => {
     if (!authLoading && user && user.user_type) {
-      console.log('🔄 Redirecionando usuário logado:', user.user_type)
       const redirectPath = getRedirectPath(user.user_type)
       router.replace(redirectPath)
     }
-  }, [user, authLoading, router])
+  }, [ user, authLoading, router ])
 
   const getRedirectPath = (userType: string) => {
     switch (userType) {
@@ -73,30 +73,30 @@ export default function LoginPage() {
       } else {
         result = await signIn(email, password)
       }
+      console.log("🚀 ~ handleSubmit ~ result:", result)
 
       if (result.error) {
         throw new Error(result.error)
       }
-
       // Update auth context
-      await refreshUser()
+      await refreshUser(result.data.user as User)
 
       // Wait a bit to ensure context is updated
-      await new Promise(resolve => setTimeout(resolve, 500))
+      await new Promise(resolve => setTimeout(resolve, 1000))
 
       // Get updated user data
-      const updatedUser = await getCurrentUser()
-      console.log('🔍 Usuário após login:', updatedUser)
-      
-      if (updatedUser && updatedUser.user_type) {
-        console.log('✅ Redirecionando após login para:', updatedUser.user_type)
-        const redirectPath = getRedirectPath(updatedUser.user_type)
-        
+      // const updatedUser = await getCurrentUser()
+      // console.log('🔍 Usuário após login:', updatedUser)
+
+      if (result && result.data?.user) {
+        setUser(result.data.user as User)
+        const redirectPath = getRedirectPath(result.data?.user.user_metadata.user_type)
+
         toast({
           title: 'Login realizado com sucesso!',
           description: 'Bem-vindo(a) de volta!',
         })
-        
+
         // Use replace to avoid back button issues
         router.replace(redirectPath)
         return // Exit early to prevent further execution
