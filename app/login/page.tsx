@@ -21,13 +21,15 @@ import { signIn, signInAdmin, getCurrentUser } from '@/lib/auth'
 import { toast } from '@/components/ui/use-toast'
 import { useAuth } from '@/contexts/auth-context'
 import { User } from '@supabase/supabase-js'
+import { useAuthSync } from '../../hooks/use-auth-sync'
 
 export default function LoginPage() {
   const [ showPassword, setShowPassword ] = useState(false)
   const [ loading, setLoading ] = useState(false)
   const [ error, setError ] = useState('')
   const router = useRouter()
-  const { user, loading: authLoading, refreshUser, setUser, setUserProfile } = useAuth()
+  const { user, loading: authLoading } = useAuth()
+  const {broadcastAuthChange} = useAuthSync()
 
   // Redirect if user is already logged in
   useEffect(() => {
@@ -73,23 +75,22 @@ export default function LoginPage() {
       } else {
         result = await signIn(email, password)
       }
-      console.log("🚀 ~ handleSubmit ~ result:", result)
 
       if (result.error) {
         throw new Error(result.error)
       }
       // Update auth context
-      await refreshUser(result.data.user as User)
+      // await refreshUser(result.data.user as User)
 
       // Wait a bit to ensure context is updated
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      // await new Promise(resolve => setTimeout(resolve, 1000))
 
       // Get updated user data
       // const updatedUser = await getCurrentUser()
       // console.log('🔍 Usuário após login:', updatedUser)
 
       if (result && result.data?.user) {
-        setUser(result.data.user as User)
+        broadcastAuthChange('SIGN_IN')
         const redirectPath = getRedirectPath(result.data?.user.user_metadata.user_type)
 
         toast({

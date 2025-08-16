@@ -47,49 +47,33 @@ interface RichTextEditorProps {
 }
 
 const MenuBar = ({ editor }: { editor: any }) => {
-  const [linkUrl, setLinkUrl] = React.useState('')
-  const [imageUrl, setImageUrl] = React.useState('')
-  const [youtubeUrl, setYoutubeUrl] = React.useState('')
-  const [showLinkInput, setShowLinkInput] = React.useState(false)
-  const [showImageInput, setShowImageInput] = React.useState(false)
-  const [showYoutubeInput, setShowYoutubeInput] = React.useState(false)
+  const [ linkUrl, setLinkUrl ] = React.useState('')
+  const [ imageUrl, setImageUrl ] = React.useState('')
+  const [ youtubeUrl, setYoutubeUrl ] = React.useState('')
+  const [ showLinkInput, setShowLinkInput ] = React.useState(false)
+  const [ showImageInput, setShowImageInput ] = React.useState(false)
+  const [ showYoutubeInput, setShowYoutubeInput ] = React.useState(false)
 
-  if (!editor) {
-    return null
-  }
+  const addLink = React.useCallback(() => {
+    if (!editor || !linkUrl) return;
+    editor.chain().focus().extendMarkRange('link').setLink({ href: linkUrl }).run();
+    setLinkUrl('');
+    setShowLinkInput(false);
+  }, [editor, linkUrl]);
 
-  const addLink = useCallback(() => {
-    if (linkUrl) {
-      editor
-        .chain()
-        .focus()
-        .extendMarkRange('link')
-        .setLink({ href: linkUrl })
-        .run()
-      setLinkUrl('')
-      setShowLinkInput(false)
-    }
-  }, [editor, linkUrl])
+  const addImage = React.useCallback(() => {
+    if (!editor || !imageUrl) return;
+    editor.chain().focus().setImage({ src: imageUrl }).run();
+    setImageUrl('');
+    setShowImageInput(false);
+  }, [editor, imageUrl]);
 
-  const addImage = useCallback(() => {
-    if (imageUrl) {
-      editor.chain().focus().setImage({ src: imageUrl }).run()
-      setImageUrl('')
-      setShowImageInput(false)
-    }
-  }, [editor, imageUrl])
-
-  const addYoutube = useCallback(() => {
-    if (youtubeUrl) {
-      editor.commands.setYoutubeVideo({
-        src: youtubeUrl,
-        width: 640,
-        height: 480,
-      })
-      setYoutubeUrl('')
-      setShowYoutubeInput(false)
-    }
-  }, [editor, youtubeUrl])
+  const addYoutube = React.useCallback(() => {
+    if (!editor || !youtubeUrl) return;
+    editor.commands.setYoutubeVideo({ src: youtubeUrl, width: 640, height: 480 });
+    setYoutubeUrl('');
+    setShowYoutubeInput(false);
+  }, [editor, youtubeUrl]);
 
   const detectAndConvertLinks = useCallback(
     (text: string) => {
@@ -104,7 +88,7 @@ const MenuBar = ({ editor }: { editor: any }) => {
       if (youtubeRegex.test(text)) {
         const match = text.match(youtubeRegex)
         if (match) {
-          const videoId = match[1]
+          const videoId = match[ 1 ]
           const embedUrl = `https://www.youtube.com/watch?v=${videoId}`
           editor.commands.setYoutubeVideo({
             src: embedUrl,
@@ -123,8 +107,12 @@ const MenuBar = ({ editor }: { editor: any }) => {
 
       return false
     },
-    [editor]
+    [ editor ]
   )
+
+  if (!editor) {
+    return null
+  }
 
   return (
     <div className="border-b border-gray-200 p-2 space-y-2">
@@ -441,7 +429,7 @@ export function RichTextEditor({
     extensions: [
       StarterKit.configure({
         heading: {
-          levels: [1, 2, 3],
+          levels: [ 1, 2, 3 ],
         },
       }),
       Image.configure({
@@ -456,7 +444,7 @@ export function RichTextEditor({
         },
       }),
       TextAlign.configure({
-        types: ['heading', 'paragraph'],
+        types: [ 'heading', 'paragraph' ],
       }),
       Youtube.configure({
         controls: false,
@@ -470,6 +458,7 @@ export function RichTextEditor({
       }),
     ],
     content,
+    immediatelyRender: false,
     onUpdate: ({ editor }) => {
       onChange(editor.getHTML())
     },
@@ -502,7 +491,7 @@ export function RichTextEditor({
     if (editor && content !== editor.getHTML()) {
       editor.commands.setContent(content)
     }
-  }, [content, editor])
+  }, [ content, editor ])
 
   return (
     <div

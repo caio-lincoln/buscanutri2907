@@ -19,9 +19,11 @@ import {
   type ContentEngagementStats,
 } from '@/lib/content-engagement-service'
 import { Skeleton } from '@/components/ui/skeleton'
+import { useAuth } from '../../../contexts/auth-context'
 
 export function ReportsTab() {
-  const { user } = useUser()
+  // const { user } = useUser()
+  const {user} = useAuth()
   const [engagementStats, setEngagementStats] =
     useState<ContentEngagementStats | null>(null)
   const [loading, setLoading] = useState(true)
@@ -33,6 +35,7 @@ export function ReportsTab() {
       try {
         setLoading(true)
         const stats = await getContentEngagementStats(user.id)
+        console.log("🚀 ~ loadEngagementData ~ stats:", stats)
         setEngagementStats(stats)
       } catch (error) {
         // Silent error handling: Error loading engagement data

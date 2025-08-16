@@ -254,7 +254,6 @@ export function Navbar() {
                 Cadastrar
               </Link>
             </>
-          )}
         </div>
 
         {/* Menu Hamburguer (Mobile) */}

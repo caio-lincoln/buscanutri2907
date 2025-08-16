@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { signOut } from '@/lib/auth'
 import { DashboardSidebar } from '@/components/dashboard-sidebar'
 import { getMenuItems } from '@/components/dashboard-sidebar'
 import { useDashboardStats } from '@/hooks/use-dashboard-stats'

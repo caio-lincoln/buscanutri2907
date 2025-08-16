@@ -32,6 +32,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { getCurrentUser } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
+import { useAuth } from '../../../../../contexts/auth-context'
 
 interface Author {
   id: string
@@ -67,10 +68,10 @@ interface ForumReply {
 export default function NutritionistForumQuestionPage() {
   const params = useParams()
   const router = useRouter()
-  const questionId = params['id'] as string
+  const questionId = params[ 'id' ] as string
+  const {user: currentUser} = useAuth()
 
   // User and auth states
-  const [currentUser, setCurrentUser] = useState<any>(null)
 
   // Filter and search states for replies
   const [searchTerm, setSearchTerm] = useState('')
@@ -101,17 +102,13 @@ export default function NutritionistForumQuestionPage() {
     const loadData = async () => {
       try {
         setLoading(true)
-
-        const user = await getCurrentUser()
-        setCurrentUser(user)
-
         // Fetch question from Supabase
         const { data: questionData, error: questionError } = await supabase
-          .from('forum_questions')
-          .select('*')
-          .eq('id', questionId)
-          .single()
-
+        .from('forum_questions')
+        .select('*')
+        .eq('id', questionId)
+        .single()
+        
         if (questionError) {
           throw questionError
         }
@@ -125,28 +122,29 @@ export default function NutritionistForumQuestionPage() {
             const { data: patientProfile } = await supabase
               .from('patient_profiles')
               .select('id, full_name, profile_image_url, user_id')
-              .eq('user_id', questionData.patient_id)
+              .eq('id', questionData.patient_id)
               .single()
+            
             profile = patientProfile
             isPatient = true
           } else if (questionData.nutritionist_id) {
             const { data: nutritionistProfile } = await supabase
-              .from('nutritionist_profiles')
-              .select('id, full_name, profile_image_url, crn, user_id')
-              .eq('user_id', questionData.nutritionist_id)
-              .single()
+            .from('nutritionist_profiles')
+            .select('id, full_name, profile_image_url, crn, user_id')
+            .eq('id', questionData.nutritionist_id)
+            .single()
             profile = nutritionistProfile
             isPatient = false
           }
 
           // Check if current user has liked this question
           let hasLikedQuestion = false
-          if (user) {
+          if (currentUser) {
             const { data: questionLike } = await supabase
               .from('forum_question_likes')
               .select('id')
               .eq('question_id', questionData.id)
-              .eq('user_id', user.id)
+              .eq('user_id', currentUser.id)
               .single()
             hasLikedQuestion = !!questionLike
           }
@@ -191,9 +189,10 @@ export default function NutritionistForumQuestionPage() {
           )
 
           // Load replies
-          await loadReplies(user)
+          await loadReplies(currentUser)
         }
       } catch (err) {
+        console.log("🚀 ~ loadData ~ err:", err)
         // Silent error handling for data loading
         setError('Erro ao carregar a pergunta')
       } finally {
