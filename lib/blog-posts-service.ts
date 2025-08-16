@@ -1,3 +1,4 @@
+import { SupabaseClient } from '@supabase/supabase-js'
 import { supabase } from './supabase'
 import { BlogPost } from './supabase'
 
@@ -373,26 +374,29 @@ export class BlogPostsService {
   }
 
   // Obter estatísticas dos posts do usuário
-  static async getMyPostsStats(): Promise<{ data: BlogPostStats | null; error: any }> {
+  static async getMyPostsStats(sb: SupabaseClient): Promise<{ data: BlogPostStats | null; error: any }> {
     try {
       console.log('Verificando autenticação para estatísticas...')
       
-      // Primeiro verificar se há uma sessão ativa
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+      // // Primeiro verificar se há uma sessão ativa
+      // const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+      // console.log("🚀 ~ BlogPostsService ~ getMyPostsStats ~ user:", user)
+      // console.log("🚀 ~ BlogPostsService ~ getMyPostsStats ~ session:", session)
       
-      if (sessionError) {
-        console.error('Erro ao obter sessão:', sessionError)
-        return { data: null, error: { message: 'Erro ao verificar sessão: ' + sessionError.message } }
-      }
+      // if (sessionError) {
+      //   console.error('Erro ao obter sessão:', sessionError)
+      //   return { data: null, error: { message: 'Erro ao verificar sessão: ' + sessionError.message } }
+      // }
       
-      if (!session) {
-        console.error('Nenhuma sessão ativa encontrada')
-        return { data: null, error: { message: 'Nenhuma sessão ativa encontrada' } }
-      }
+      // if (!user) {
+      //   console.error('Nenhuma sessão ativa encontrada')
+      //   return { data: null, error: { message: 'Nenhuma sessão ativa encontrada' } }
+      // }
       
       console.log('Sessão ativa encontrada, obtendo usuário...')
       
-      const { data: { user }, error: userError } = await supabase.auth.getUser()
+      const { data: { user }, error: userError } = await sb.auth.getUser()
+      console.log("🚀 ~ BlogPostsService ~ getMyPostsStats ~ user:", user)
       
       if (userError) {
         console.error('Erro ao obter usuário:', userError)
@@ -406,7 +410,7 @@ export class BlogPostsService {
       
       console.log('Usuário autenticado:', user.id)
 
-      const { data, error } = await supabase
+      const { data, error } = await sb
         .from('blog_posts')
         .select('id, published, views')
         .eq('author_id', user.id)
@@ -417,19 +421,19 @@ export class BlogPostsService {
       }
 
       // Buscar estatísticas de curtidas
-      const { data: likesData } = await supabase
+      const { data: likesData } = await sb
         .from('blog_post_likes')
         .select('post_id')
         .in('post_id', data.map(p => p.id) || [])
 
       // Buscar estatísticas de comentários
-      const { data: commentsData } = await supabase
+      const { data: commentsData } = await sb
         .from('blog_post_comments')
         .select('post_id')
         .in('post_id', data.map(p => p.id) || [])
 
       // Buscar estatísticas de compartilhamentos
-      const { data: sharesData } = await supabase
+      const { data: sharesData } = await sb
         .from('blog_post_shares')
         .select('post_id')
         .in('post_id', data.map(p => p.id) || [])

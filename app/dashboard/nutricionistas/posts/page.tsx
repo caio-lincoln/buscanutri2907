@@ -51,7 +51,7 @@ import { useAuth } from '@/contexts/auth-context'
 import { DashboardSidebar, getMenuItems } from '@/components/dashboard-sidebar'
 import { useDashboardStats } from '@/hooks/use-dashboard-stats'
 import { BlogPostsService, CreateBlogPostData, BlogPostStats } from '@/lib/blog-posts-service'
-import { BlogPost } from '@/lib/supabase'
+import { BlogPost, createSupabaseClient } from '@/lib/supabase'
 import { toast } from 'sonner'
 
 export default function PostsPage() {
@@ -90,7 +90,7 @@ export default function PostsPage() {
     userId: profile?.user_id || '',
     enabled: !!profile?.user_id,
   })
-
+  const supabase = createSupabaseClient()
   const menuItems = getMenuItems('nutricionista', dashboardStats)
 
   useEffect(() => {
@@ -152,7 +152,8 @@ export default function PostsPage() {
 
   const loadStats = async () => {
     try {
-      const { data, error } = await BlogPostsService.getMyPostsStats()
+      const { data, error } = await BlogPostsService.getMyPostsStats(supabase)
+      console.log("🚀 ~ loadStats ~ data:", data)
       
       if (error) {
         console.error('Erro ao carregar estatísticas:', error)
