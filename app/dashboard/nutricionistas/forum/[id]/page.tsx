@@ -33,6 +33,7 @@ import {
 import { getCurrentUser } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '../../../../../contexts/auth-context'
+import { User } from '@supabase/supabase-js'
 
 interface Author {
   id: string
@@ -69,7 +70,15 @@ export default function NutritionistForumQuestionPage() {
   const params = useParams()
   const router = useRouter()
   const questionId = params[ 'id' ] as string
-  const {user: currentUser} = useAuth()
+  const { user } = useAuth()
+  
+  const [ currentUser, setCurrentUser ] = useState<User | null>(null)
+
+  useEffect(() => {
+    if (user) {
+      setCurrentUser(user)
+    }
+  }, [user])
 
   // User and auth states
 
@@ -136,6 +145,7 @@ export default function NutritionistForumQuestionPage() {
             profile = nutritionistProfile
             isPatient = false
           }
+          console.log("🚀 ~ loadData ~ profile:", profile)
 
           // Check if current user has liked this question
           let hasLikedQuestion = false

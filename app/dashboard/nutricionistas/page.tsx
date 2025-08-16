@@ -1483,18 +1483,7 @@ export default function NutritionistDashboard() {
         )}
 
         {/* Conteúdo padrão para outras abas que não foram detalhadas acima */}
-        {![
-          'overview',
-          'agenda',
-          'iris',
-          'notificacoes',
-          'perfil',
-          'relatorios',
-          'cursos',
-          'vagas',
-          'forum',
-          'blog',
-        ].includes(activeTab) && (
+        {activeTab === 'teleconsultas' && (
           <div className="space-y-8">
             <div className="text-center space-y-6 py-16">
               <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-3xl flex items-center justify-center mx-auto shadow-2xl">

@@ -2,7 +2,7 @@
 
 import type React from 'react'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -191,6 +191,30 @@ export default function CadastroPage() {
   }>({ status: 'idle', message: '' })
 
   const router = useRouter()
+
+  useEffect(() => {
+    const loadSpecialties = async () => {
+      try {
+        setLoading(true)
+        setError(null)
+
+        const response = await fetch('/api/specialties')
+        if (!response.ok) {
+          throw new Error('Erro ao carregar especialidades')
+        }
+
+        const data = await response.json()
+        setSpecialties(data.specialties || [])
+      } catch (err) {
+        // Silent error handling - error loading specialties
+        setError('Erro ao carregar especialidades')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadSpecialties()
+  }, [])
 
   // Função para upload de documentos
   const uploadNutritionistDocuments = async (
