@@ -30,6 +30,13 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
+type UserType =  'nutricionista' | 'paciente' | 'empresa'
+
+const PROFILE_TABLE_BY_TYPE: Record<Exclude<UserType, 'admin'>, string> = {
+  nutricionista: 'nutritionist_profiles',
+  paciente: 'patient_profiles',
+  empresa: 'company_profiles',
+}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [ user, setUser ] = useState<User | null>(null)
@@ -38,16 +45,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [ patientProfile, setPatientProfile ] = useState<PatientProfile | null>(null)
   const [ companyProfile, setCompanyProfile ] = useState<CompanyProfile | null>(null)
   const [ loading, setLoading ] = useState(true)
-  const supabase = createSupabaseClient()
+  const supabase = useMemo(() => createSupabaseClient(), [])
   const isClient = useIsClient()
+  const resetSubProfiles = useCallback(() => {
+    setNutritionistProfile(null)
+    setPatientProfile(null)
+    setCompanyProfile(null)
+  }, [])
 
-  // Função para recarregar dados do usuário
   const refreshUserData = useCallback(async (user?: User) => {
     try {
-      const currentUser = user ? user : await getCurrentUser()
+      const currentUser = supabase.auth.getUser()
+      console.log("🚀 ~ AuthProvider ~ currentUser:", currentUser)
 
       if (currentUser) {
-        // Usar o currentUser como userProfile se não houver perfil específico
         setUserProfile(currentUser)
         setUser(currentUser)
 
@@ -105,28 +116,55 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [ supabase ])
 
-  // Hook para sincronização entre abas
   const { broadcastAuthChange } = useAuthSync()
 
   const loadUser = useCallback(async () => {
     try {
       setLoading(true)
-      await refreshUserData()
+      const sessionUser = await supabase.auth.getUser()
+
+      if (!sessionUser.data?.user) {
+        setUser(null)
+        setUserProfile(null)
+        resetSubProfiles()
+        return
+      }
+
+      setUser(sessionUser.data.user)
+
+      const { data: row } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', sessionUser.data.user.id)
+        .maybeSingle()
+      
+        const utype = row.user_type
+        const table = PROFILE_TABLE_BY_TYPE[ utype as UserType ]
+      
+      if (table) {
+        const { data: spec } = await supabase
+          .from(table)
+          .select('*')
+          .eq('user_id', row.id)
+          .maybeSingle()
+          
+          if (utype === 'nutricionista') setNutritionistProfile(spec ?? null)
+          if (utype === 'paciente') setPatientProfile(spec ?? null)
+          if (utype === 'empresa') setCompanyProfile(spec ?? null)
+      }
     } catch (error) {
       console.error('Erro ao carregar usuário:', error)
     } finally {
       setLoading(false)
     }
-  }, [ refreshUserData ])
+  }, [ ])
 
   const handleSignOut = useCallback(async () => {
     try {
-      // Remove admin session if exists
       if (typeof window !== 'undefined') {
         sessionStorage.removeItem('admin_session')
       }
 
-      // Broadcast logout para outras abas
       broadcastAuthChange('SIGN_OUT')
 
       await supabase.auth.signOut()
@@ -147,16 +185,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const subscribedRef = useRef(false);
   const handledSignOutRef = useRef(false);
 
-useEffect(() => {
+  useEffect(() => {
   if (!isClient || subscribedRef.current) return;
-  subscribedRef.current = true;
-
-  loadUser?.();
-
+    subscribedRef.current = true;
+    
   const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event) => {
-    if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+    
+    if (event === 'SIGNED_IN') {
+      loadUser()
+      setLoading(false)
       handledSignOutRef.current = false; // reset
-      await refreshUserData?.();
     } else if (event === 'SIGNED_OUT') {
       if (handledSignOutRef.current) return; // dedupe do SIGNED_OUT
       handledSignOutRef.current = true;
@@ -173,7 +211,11 @@ useEffect(() => {
     subscribedRef.current = false;
     subscription.unsubscribe();
   };
-}, [isClient, supabase]);
+  }, [ isClient, supabase ]);
+  
+  useEffect(() => {
+    loadUser()
+  }, [])
 
   const value = useMemo(
     () => ({

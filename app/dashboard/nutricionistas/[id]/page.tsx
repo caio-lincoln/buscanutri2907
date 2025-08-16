@@ -35,6 +35,7 @@ export default function NutritionistProfilePage() {
   
   const profileId = params['id'] as string
   const profile = nutritionistProfile
+  console.log("🚀 ~ NutritionistProfilePage ~ profile:", profile)
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -211,7 +212,7 @@ export default function NutritionistProfilePage() {
                 </div>
 
                 {/* Especializações */}
-                {profile.specialties && profile.specialties.length > 0 && (
+                {/* {profile.specialties && profile.specialties.length > 0 && (
                   <>
                     <Separator />
                     <div>
@@ -225,7 +226,7 @@ export default function NutritionistProfilePage() {
                       </div>
                     </div>
                   </>
-                )}
+                )} */}
               </CardContent>
             </Card>
 
@@ -245,7 +246,7 @@ export default function NutritionistProfilePage() {
                     <span className="text-sm">Avaliação</span>
                   </div>
                   <span className="font-semibold">
-                    {profile.rating?.toFixed(1) || '5.0'}
+                    {profile.rating?.toFixed(1) || '0'}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">

@@ -309,22 +309,6 @@ export async function getCurrentUser() {
       }
     }
 
-    // Verificar se há uma sessão ativa primeiro
-    const {
-      data: { session },
-      error: sessionError,
-    } = await supabase.auth.getSession()
-
-    if (sessionError) {
-      // Silent error handling: Error getting session
-      return null
-    }
-
-    if (!session) {
-      // Silent logging: No active session
-      return null
-    }
-
     // Obter usuário atual do Supabase
     const {
       data: { user },
