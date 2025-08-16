@@ -337,13 +337,13 @@ export const getMenuItems = (
     case 'paciente':
       return [
         { id: 'overview', label: 'Início', icon: Home },
-        // Telemedicina temporariamente removida
-        // {
-        //   id: "telemedicina",
-        //   label: "Minhas Consultas",
-        //   icon: Video,
-        //   badge: upcomingAppointments > 0 ? { count: upcomingAppointments, variant: "default" } : undefined,
-        // },
+        {
+          id: 'teleconsultas',
+          label: 'Teleconsultas',
+          icon: Video,
+          href: '/dashboard/paciente/teleconsultas',
+          badge: upcomingAppointments > 0 ? { count: upcomingAppointments, variant: 'default' } : undefined,
+        },
         { id: 'buscar', label: 'Buscar', icon: Search },
         { id: 'chat', label: 'Chat', icon: MessageSquare },
         { id: 'duvidas', label: 'Fórum', icon: HelpCircle },
@@ -367,10 +367,17 @@ export const getMenuItems = (
           id: 'agenda',
           label: 'Agenda',
           icon: Calendar,
+          href: '/dashboard/nutricionistas/agenda',
           badge:
             upcomingAppointments > 0
               ? { count: upcomingAppointments, variant: 'default' }
               : undefined,
+        },
+        {
+          id: 'teleconsultas',
+          label: 'Teleconsultas',
+          icon: Video,
+          href: '/dashboard/nutricionistas/teleconsultas',
         },
         { id: 'blog', label: 'Blog', icon: BookOpen },
         { id: 'forum', label: 'Fórum', icon: MessageSquare },

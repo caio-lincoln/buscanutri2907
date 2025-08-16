@@ -244,7 +244,7 @@ export function useRealtimeNutritionists(
         console.log('🔌 Desconectado das atualizações de nutricionistas')
       }
     }
-  }, [loadNutritionists, supabase])
+  }, [])
 
   // Função para atualizar manualmente
   const refreshNutritionists = useCallback(() => {
