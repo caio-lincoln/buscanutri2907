@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/src/lib/supabase/server'
 import { cookies } from 'next/headers'
 import { v4 as uuidv4 } from 'uuid'
 import { withErrorHandling, validateAuth, ValidationError, ConflictError } from '@/src/lib/middleware/error-handler'
 import { createTeleconsultaSessionSchema } from '@/src/lib/validations/teleconsulta'
 import { createNotification } from '@/lib/notifications-service'
+import { createClient } from '../../../../lib/supabase/server'
 
 // GET - Listar sessões de teleconsulta
 export const GET = withErrorHandling(async (request: NextRequest) => {
@@ -55,8 +55,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
 
 // POST - Criar nova sessão de teleconsulta
 export const POST = withErrorHandling(async (request: NextRequest) => {
-  const cookieStore = cookies()
-  const supabase = createClient(cookieStore)
+  const supabase = await createClient()
   
   // Verificar autenticação
   const { data: { user }, error: authError } = await supabase.auth.getUser()

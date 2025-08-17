@@ -47,6 +47,8 @@ const DAYS_OF_WEEK = [
   { value: 6, label: 'Sábado' },
 ]
 
+const toHHmm = (t: string) => t.replace(/^(\d{1,2}):(\d{2}).*$/, '$1:$2')
+
 export function AvailabilityManager({
   availability,
   onAdd,
@@ -231,7 +233,7 @@ export function AvailabilityManager({
                       <div>
                         <p className="font-medium">{getDayName(slot.day_of_week)}</p>
                         <p className="text-sm text-muted-foreground">
-                          {slot.start_time} - {slot.end_time}
+                          {toHHmm(slot.start_time)} - {toHHmm(slot.end_time)}
                         </p>
                       </div>
                     </div>

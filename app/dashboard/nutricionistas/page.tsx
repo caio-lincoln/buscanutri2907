@@ -53,6 +53,7 @@ import {
 import { useDashboardStats } from '@/hooks/use-dashboard-stats'
 import { useRealtimeProfileViews } from '@/hooks/use-realtime-profile-views'
 import { RealtimeViewsTest } from '@/components/realtime-views-test'
+import NutricionistaTeleconsultasPage from './teleconsultas/page'
 
 export default function NutritionistDashboard() {
   const [loading, setLoading] = useState(true)
@@ -1485,25 +1486,7 @@ export default function NutritionistDashboard() {
         {/* Conteúdo padrão para outras abas que não foram detalhadas acima */}
         {activeTab === 'teleconsultas' && (
           <div className="space-y-8">
-            <div className="text-center space-y-6 py-16">
-              <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-3xl flex items-center justify-center mx-auto shadow-2xl">
-                <Settings className="h-10 w-10 text-white" />
-              </div>
-              <div>
-                <h2 className="text-3xl font-bold text-[#1E1D40] mb-2 capitalize">
-                  {activeTab}
-                </h2>
-                <p className="text-gray-600 text-lg">
-                  Esta funcionalidade será implementada em breve.
-                </p>
-              </div>
-              <Button
-                variant="outline"
-                className="hover-lift bg-white/80 backdrop-blur-sm border-gray-200"
-              >
-                Voltar ao início
-              </Button>
-            </div>
+            <NutricionistaTeleconsultasPage/>
           </div>
         )}
       </div>

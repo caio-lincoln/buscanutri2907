@@ -1,59 +1,27 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
+
+
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
-import { TeleconsultaCard } from '@/components/teleconsulta/TeleconsultaCard'
-import { TeleconsultaFilters } from '@/components/teleconsulta/TeleconsultaFilters'
-import { AvailabilityManager } from '@/components/teleconsulta/AvailabilityManager'
-import {
-  Calendar,
-  Clock,
+
   Video,
-  User,
-  Phone,
-  MessageSquare,
-  Settings,
-  Plus,
-  Search,
-  Filter,
-  MoreHorizontal,
-  Play,
-  Pause,
-  CheckCircle,
-  XCircle,
-  AlertCircle,
-  Edit,
-  Trash2,
-  Save,
-  X,
+
 } from 'lucide-react'
 import { format, parseISO, addDays, startOfWeek, endOfWeek } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { toast } from 'sonner'
+import { TeleconsultaCard } from '../../../../src/components/teleconsulta/TeleconsultaCard'
+import { TeleconsultaFilters } from '../../../../src/components/teleconsulta/TeleconsultaFilters'
+import { AvailabilityManager } from '../../../../src/components/teleconsulta/AvailabilityManager'
+import { useAuth } from '../../../../contexts/auth-context'
+import { supabase } from '../../../../lib/supabase'
 
 interface TeleconsultaSession {
   id: string
@@ -92,47 +60,30 @@ interface AvailabilitySlot {
   is_available: boolean
 }
 
-
-
 export default function NutricionistaTeleconsultasPage() {
   const router = useRouter()
-  const supabase = createClientComponentClient()
-  const [user, setUser] = useState<any>(null)
-  const [teleconsultas, setTeleconsultas] = useState<TeleconsultaSession[]>([])
-  const [availability, setAvailability] = useState<AgendaAvailability[]>([])
-  const [loading, setLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [statusFilter, setStatusFilter] = useState<string>('all')
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date())
-
-  useEffect(() => {
-    checkUser()
-  }, [])
-
-  useEffect(() => {
-    if (user) {
-      loadTeleconsultas()
-      loadAvailability()
-    }
-  }, [user, selectedDate])
+  const [ teleconsultas, setTeleconsultas ] = useState<TeleconsultaSession[]>([])
+  const [ availability, setAvailability ] = useState<AgendaAvailability[]>([])
+  const [ loading, setLoading ] = useState(true)
+  const [ searchTerm, setSearchTerm ] = useState('')
+  const [ statusFilter, setStatusFilter ] = useState<string>('all')
+  const [ selectedDate, setSelectedDate ] = useState<Date>(new Date())
+  const { user, loading: authLoading, nutritionistProfile } = useAuth()
 
   const checkUser = async () => {
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      if (!user) {
+
+      if (!authLoading && !user) {
         router.push('/login')
         return
       }
-      setUser(user)
     } catch (error) {
       console.error('Erro ao verificar usuário:', error)
       router.push('/login')
     }
   }
 
-  const loadTeleconsultas = async () => {
+  const loadTeleconsultas = useCallback(async () => {
     try {
       setLoading(true)
       const startDate = startOfWeek(selectedDate, { locale: ptBR })
@@ -141,14 +92,9 @@ export default function NutricionistaTeleconsultasPage() {
       const { data, error } = await supabase
         .from('teleconsulta_sessions')
         .select(`
-          *,
-          patient_profiles!inner(
-            full_name,
-            phone,
-            email
-          )
+          *
         `)
-        .eq('nutritionist_id', user.id)
+        .eq('nutritionist_id', nutritionistProfile.id)
         .gte('scheduled_at', startDate.toISOString())
         .lte('scheduled_at', endDate.toISOString())
         .order('scheduled_at', { ascending: true })
@@ -161,14 +107,14 @@ export default function NutricionistaTeleconsultasPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  const loadAvailability = async () => {
+  const loadAvailability = useCallback(async () => {
     try {
       const { data, error } = await supabase
-        .from('agenda_availability')
+        .from('nutritionist_availability')
         .select('*')
-        .eq('nutritionist_id', user.id)
+        .eq('nutritionist_id', nutritionistProfile.id)
         .eq('is_available', true)
         .order('day_of_week', { ascending: true })
         .order('start_time', { ascending: true })
@@ -179,7 +125,18 @@ export default function NutricionistaTeleconsultasPage() {
       console.error('Erro ao carregar disponibilidade:', error)
       toast.error('Erro ao carregar disponibilidade')
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    if (user) {
+      loadTeleconsultas()
+      loadAvailability()
+    }
+  }, [ user, loadAvailability, loadTeleconsultas ])
+
+  useEffect(() => {
+    checkUser()
+  }, [])
 
   const handleStartTeleconsulta = async (sessionId: string) => {
     try {
@@ -281,6 +238,7 @@ export default function NutricionistaTeleconsultasPage() {
       const response = await fetch(`/api/teleconsulta/agenda/${id}`, {
         method: 'DELETE',
       })
+      console.log("🚀 ~ handleDeleteAvailability ~ response:", response)
 
       if (!response.ok) {
         const error = await response.json()
@@ -303,8 +261,8 @@ export default function NutricionistaTeleconsultasPage() {
   })
 
   const getDayName = (dayOfWeek: number) => {
-    const days = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
-    return days[dayOfWeek]
+    const days = [ 'Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado' ]
+    return days[ dayOfWeek ]
   }
 
   if (loading) {
@@ -376,6 +334,7 @@ export default function NutricionistaTeleconsultasPage() {
             availability={availability}
             onAdd={handleAddAvailability}
             onUpdate={handleUpdateAvailability}
+
             onDelete={handleDeleteAvailability}
           />
         </TabsContent>
