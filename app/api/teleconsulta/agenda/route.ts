@@ -6,26 +6,31 @@ import { createClient } from '../../../../lib/supabase/server'
 
 // GET /api/teleconsulta/agenda - Listar agenda do nutricionista
 export const GET = withErrorHandling(async (request: NextRequest) => {
+  const supabase = await createClient()
+  
   // Verificar autenticação
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   const userId = validateAuth(authError ? null : user?.id || null)
 
-  // Verificar se é nutricionista
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('user_type')
-    .eq('id', userId)
+  const { searchParams } = new URL(request.url)
+  const nutritionistUserId = searchParams.get('nutritionistId') || userId
+
+  // Buscar perfil do nutricionista
+  const { data: nutritionist, error: nutritionistError } = await supabase
+    .from('nutritionist_profiles')
+    .select('id')
+    .eq('user_id', nutritionistUserId)
     .single()
 
-  if (!profile || profile.user_type !== 'nutritionist') {
-    throw new ForbiddenError('Apenas nutricionistas podem acessar a agenda')
+  if (nutritionistError || !nutritionist) {
+    throw new ValidationError('Perfil de nutricionista não encontrado')
   }
 
   // Buscar horários de disponibilidade
   const { data: availability, error } = await supabase
-    .from('nutritionist_availability')
+    .from('agenda_availability')
     .select('*')
-    .eq('nutritionist_id', userId)
+    .eq('nutritionist_id', nutritionist.id)
     .order('day_of_week')
     .order('start_time')
 
@@ -38,27 +43,31 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
 
 // POST /api/teleconsulta/agenda - Adicionar horário de disponibilidade
 export const POST = withErrorHandling(async (request: NextRequest) => {
+  const supabase = await createClient()
+  
   // Verificar autenticação
-const supabase = await createClient()
-
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   const userId = validateAuth(authError ? null : user?.id || null)
 
-  // Verificar se é nutricionista
-  const profile = user?.user_metadata['user_type']
+  // Buscar perfil do nutricionista
+  const { data: nutritionist, error: nutritionistError } = await supabase
+    .from('nutritionist_profiles')
+    .select('id')
+    .eq('user_id', userId)
+    .single()
 
-  if (!profile || profile !== 'nutricionista') {
-    throw new ForbiddenError('Apenas nutricionistas podem gerenciar a agenda')
+  if (nutritionistError || !nutritionist) {
+    throw new ValidationError('Perfil de nutricionista não encontrado')
   }
 
   const body = await request.json()
-  const { day_of_week, start_time, end_time } = availabilitySlotSchema.parse(body)
+  const { day_of_week, start_time, end_time, is_available } = availabilitySlotSchema.parse(body)
 
   // Verificar se já existe um horário conflitante
   const { data: existingSlot } = await supabase
-    .from('nutritionist_availability')
+    .from('agenda_availability')
     .select('*')
-    .eq('nutritionist_id', userId)
+    .eq('nutritionist_id', nutritionist.id)
     .eq('day_of_week', day_of_week)
     .or(`start_time.lte.${start_time}.and.end_time.gt.${start_time},start_time.lt.${end_time}.and.end_time.gte.${end_time}`)
 
@@ -66,22 +75,19 @@ const supabase = await createClient()
     throw new ValidationError('Já existe um horário conflitante neste período')
   }
 
-  const {data: nutritionistProfile} = await supabase.from('nutritionist_profiles').select("id").eq("user_id", userId).maybeSingle()
-  console.log("🚀 ~ nutritionistProfile:", nutritionistProfile)
-
   // Criar novo horário
   const { data: newSlot, error } = await supabase
-  .from('nutritionist_availability')
-  .insert({
-    nutritionist_id: nutritionistProfile.id,
-    day_of_week,
-    start_time,
-    end_time
-  })
-  .select()
-  .single()
+    .from('agenda_availability')
+    .insert({
+      nutritionist_id: nutritionist.id,
+      day_of_week,
+      start_time,
+      end_time,
+      is_available: is_available ?? true
+    })
+    .select()
+    .single()
   
-  console.log("🚀 ~ error:", error)
   if (error) {
     throw new ValidationError('Erro ao criar horário')
   }
@@ -91,39 +97,40 @@ const supabase = await createClient()
 
 // PUT - Atualizar disponibilidade em lote
 export const PUT = withErrorHandling(async (request: NextRequest) => {
+  const supabase = await createClient()
   
   // Verificar autenticação
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   const userId = validateAuth(authError ? null : user?.id || null)
 
-  // Verificar se é nutricionista
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('user_type')
-    .eq('id', userId)
+  // Buscar perfil do nutricionista
+  const { data: nutritionist, error: nutritionistError } = await supabase
+    .from('nutritionist_profiles')
+    .select('id')
+    .eq('user_id', userId)
     .single()
 
-  if (!profile || profile.user_type !== 'nutritionist') {
-    throw new ForbiddenError('Apenas nutricionistas podem gerenciar a agenda')
+  if (nutritionistError || !nutritionist) {
+    throw new ValidationError('Perfil de nutricionista não encontrado')
   }
 
   const body = await request.json()
-  const { availability_slots } = body
+  const { availability } = body
   
-  if (!Array.isArray(availability_slots)) {
-    throw new ValidationError('availability_slots deve ser um array')
+  if (!Array.isArray(availability)) {
+    throw new ValidationError('availability deve ser um array')
   }
 
   // Validar cada slot
-  const validatedSlots = availability_slots.map(slot => 
+  const validatedSlots = availability.map(slot => 
     availabilitySlotSchema.parse(slot)
   )
 
   // Remover todas as disponibilidades existentes do nutricionista
   const { error: deleteError } = await supabase
-    .from('nutritionist_availability')
+    .from('agenda_availability')
     .delete()
-    .eq('nutritionist_id', userId)
+    .eq('nutritionist_id', nutritionist.id)
 
   if (deleteError) {
     throw new ValidationError('Erro ao atualizar disponibilidades')
@@ -132,14 +139,15 @@ export const PUT = withErrorHandling(async (request: NextRequest) => {
   // Inserir novas disponibilidades
   if (validatedSlots.length > 0) {
     const slotsToInsert = validatedSlots.map(slot => ({
-      nutritionist_id: userId,
+      nutritionist_id: nutritionist.id,
       day_of_week: slot.day_of_week,
       start_time: slot.start_time,
-      end_time: slot.end_time
+      end_time: slot.end_time,
+      is_available: slot.is_available
     }))
 
     const { data: newAvailability, error: insertError } = await supabase
-      .from('nutritionist_availability')
+      .from('agenda_availability')
       .insert(slotsToInsert)
       .select()
 

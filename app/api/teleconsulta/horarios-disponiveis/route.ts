@@ -2,17 +2,15 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { cookies } from 'next/headers'
 import { withErrorHandling } from '@/lib/api-middleware'
-import { requireAuth } from '@/lib/auth-utils'
-import { ValidationError } from '@/lib/errors'
-import { addDays, format, startOfWeek, endOfWeek, parseISO, isAfter, isBefore, addMinutes } from 'date-fns'
+import { validateAuth } from '@/src/lib/middleware/error-handler'
+import { addDays, format, parseISO, isAfter, isBefore, addMinutes } from 'date-fns'
 import { z } from 'zod'
 
 // Schema de validação
 const availableTimesQuerySchema = z.object({
-  nutritionist_id: z.string().uuid('ID do nutricionista inválido'),
-  start_date: z.string().optional(),
-  end_date: z.string().optional(),
-  duration: z.string().transform(val => parseInt(val)).pipe(z.number().min(15).max(180)).optional()
+  nutritionistId: z.string().uuid('ID do nutricionista inválido'),
+  startDate: z.string().optional(),
+  endDate: z.string().optional()
 })
 
 // GET /api/teleconsulta/horarios-disponiveis - Buscar horários disponíveis
@@ -26,80 +24,62 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
 
   const { searchParams } = new URL(request.url)
   const queryParams = {
-    nutritionist_id: searchParams.get('nutritionist_id'),
-    date: searchParams.get('date')
+    nutritionistId: searchParams.get('nutritionistId'),
+    startDate: searchParams.get('startDate'),
+    endDate: searchParams.get('endDate')
   }
 
   // Validar parâmetros de query
-  const { nutritionist_id, date } = availableTimesQuerySchema.parse(queryParams)
+  const { nutritionistId, startDate, endDate } = availableTimesQuerySchema.parse(queryParams)
+  
+  // Definir datas padrão se não fornecidas
+  const start = startDate ? parseISO(startDate) : new Date()
+  const end = endDate ? parseISO(endDate) : addDays(new Date(), 14)
 
-  // Buscar disponibilidade do nutricionista para o dia
-  const dayOfWeek = new Date(date).getDay()
+  // Buscar perfil do nutricionista
+  const { data: nutritionist, error: nutritionistError } = await supabase
+    .from('nutritionist_profiles')
+    .select('id, user_id')
+    .eq('user_id', nutritionistId)
+    .single()
+
+  if (nutritionistError || !nutritionist) {
+    throw new Error('Nutricionista não encontrado')
+  }
+
+  // Buscar disponibilidade do nutricionista
   const { data: availability, error: availabilityError } = await supabase
-    .from('nutritionist_availability')
+    .from('agenda_availability')
     .select('*')
-    .eq('nutritionist_id', nutritionist_id)
-    .eq('day_of_week', dayOfWeek)
+    .eq('nutritionist_id', nutritionist.id)
     .eq('is_available', true)
 
   if (availabilityError) {
     throw new Error('Erro ao buscar disponibilidade')
   }
 
-  // Buscar teleconsultas já agendadas para o dia
-  const startOfDay = new Date(date)
-  startOfDay.setHours(0, 0, 0, 0)
-  const endOfDay = new Date(date)
-  endOfDay.setHours(23, 59, 59, 999)
-
+  // Buscar teleconsultas já agendadas no período
   const { data: bookedSessions, error: sessionsError } = await supabase
     .from('teleconsulta_sessions')
-    .select('scheduled_for, duration_minutes')
-    .eq('nutritionist_id', nutritionist_id)
-    .eq('current_status', 'scheduled')
-    .gte('scheduled_for', startOfDay.toISOString())
-    .lte('scheduled_for', endOfDay.toISOString())
+    .select('scheduled_at, duration_minutes')
+    .eq('nutritionist_id', nutritionist.id)
+    .in('status', ['scheduled', 'in_progress'])
+    .gte('scheduled_at', start.toISOString())
+    .lte('scheduled_at', end.toISOString())
 
   if (sessionsError) {
     throw new Error('Erro ao buscar sessões agendadas')
   }
 
-  // Calcular horários disponíveis
-  const availableSlots = []
-  
-  for (const slot of availability) {
-    const startTime = new Date(`${date}T${slot.start_time}`)
-    const endTime = new Date(`${date}T${slot.end_time}`)
-    
-    // Gerar slots de 30 em 30 minutos
-    let currentTime = new Date(startTime)
-    while (currentTime < endTime) {
-      const slotEnd = new Date(currentTime.getTime() + 30 * 60000) // 30 minutos
-      
-      // Verificar se o slot não conflita com sessões agendadas
-      const isBooked = bookedSessions.some(session => {
-        const sessionStart = new Date(session.scheduled_for)
-        const sessionEnd = new Date(sessionStart.getTime() + session.duration_minutes * 60000)
-        
-        return (
-          (currentTime >= sessionStart && currentTime < sessionEnd) ||
-          (slotEnd > sessionStart && slotEnd <= sessionEnd) ||
-          (currentTime <= sessionStart && slotEnd >= sessionEnd)
-        )
-      })
-      
-      if (!isBooked && slotEnd <= endTime) {
-        availableSlots.push({
-          start_time: currentTime.toISOString(),
-          end_time: slotEnd.toISOString()
-        })
-      }
-      
-      currentTime = new Date(currentTime.getTime() + 30 * 60000)
-    }
-  }
+  // Gerar horários disponíveis
+  const availableSlots = generateAvailableSlots(
+    availability || [],
+    bookedSessions || [],
+    start,
+    end
+  )
 
-  return NextResponse.json({ available_slots: availableSlots })
+  return NextResponse.json({ availableSlots })
 })
 
 function generateAvailableSlots(

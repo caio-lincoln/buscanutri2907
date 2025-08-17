@@ -16,32 +16,59 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
   const userId = validateAuth(authError ? null : user?.id || null)
 
   const { searchParams } = new URL(request.url)
+  const userType = searchParams.get('userType') || 'patient'
   const status = searchParams.get('status')
   const startDate = searchParams.get('startDate')
   const endDate = searchParams.get('endDate')
+
+  // Buscar o ID do perfil baseado no tipo de usuário
+  let profileId: string
+  if (userType === 'nutritionist') {
+    const { data: nutritionist, error: nutritionistError } = await supabase
+      .from('nutritionist_profiles')
+      .select('id')
+      .eq('user_id', userId)
+      .single()
+    
+    if (nutritionistError || !nutritionist) {
+      throw new Error('Perfil de nutricionista não encontrado')
+    }
+    profileId = nutritionist.id
+  } else {
+    const { data: patient, error: patientError } = await supabase
+      .from('patient_profiles')
+      .select('id')
+      .eq('user_id', userId)
+      .single()
+    
+    if (patientError || !patient) {
+      throw new Error('Perfil de paciente não encontrado')
+    }
+    profileId = patient.id
+  }
 
   // Construir query base
   let query = supabase
     .from('teleconsulta_sessions')
     .select(`
       *,
-      patient:patient_id(id, name, email),
-      nutritionist:nutritionist_id(id, name, email, specialties)
+      patient_profiles!patient_id(id, full_name, email),
+      nutritionist_profiles!nutritionist_id(id, full_name, email, specialties)
     `)
-    .or(`patient_id.eq.${userId},nutritionist_id.eq.${userId}`)
-    .order('scheduled_for', { ascending: true })
+    .eq(userType === 'nutritionist' ? 'nutritionist_id' : 'patient_id', profileId)
+    .order('scheduled_at', { ascending: true })
 
   // Aplicar filtros
   if (status) {
-    query = query.eq('current_status', status)
+    query = query.eq('status', status)
   }
 
   if (startDate) {
-    query = query.gte('scheduled_for', startDate)
+    query = query.gte('scheduled_at', startDate)
   }
 
   if (endDate) {
-    query = query.lte('scheduled_for', endDate)
+    query = query.lte('scheduled_at', endDate)
   }
 
   const { data: sessions, error: sessionsError } = await query
@@ -74,12 +101,23 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   // Verificar se o nutricionista existe
   const { data: nutritionist, error: nutritionistError } = await supabase
     .from('nutritionist_profiles')
-    .select('id')
-    .eq('id', nutritionist_id)
+    .select('id, user_id')
+    .eq('user_id', nutritionist_id)
     .single()
 
   if (nutritionistError || !nutritionist) {
     throw new ValidationError('Nutricionista não encontrado')
+  }
+
+  // Buscar perfil do paciente
+  const { data: patient, error: patientError } = await supabase
+    .from('patient_profiles')
+    .select('id, user_id')
+    .eq('user_id', userId)
+    .single()
+
+  if (patientError || !patient) {
+    throw new ValidationError('Perfil do paciente não encontrado')
   }
 
   // Verificar se já existe uma sessão no mesmo horário
@@ -87,10 +125,10 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   const { data: existingSessions, error: sessionError } = await supabase
     .from('teleconsulta_sessions')
     .select('id')
-    .eq('nutritionist_id', nutritionist_id)
-    .eq('current_status', 'scheduled')
-    .gte('scheduled_for', scheduled_for)
-    .lt('scheduled_for', endTime.toISOString())
+    .eq('nutritionist_id', nutritionist.id)
+    .eq('status', 'scheduled')
+    .gte('scheduled_at', scheduled_for)
+    .lt('scheduled_at', endTime.toISOString())
 
   if (sessionError) {
     throw new Error('Erro ao verificar disponibilidade')
@@ -109,16 +147,14 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     .from('teleconsulta_sessions')
     .insert({
       session_token: sessionToken,
-      patient_id: userId,
-      nutritionist_id,
-      scheduled_for,
+      patient_id: patient.id,
+      nutritionist_id: nutritionist.id,
+      scheduled_at: scheduled_for,
       duration_minutes,
       price,
       notes,
-      current_status: 'scheduled',
-      join_url: joinUrl,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      status: 'scheduled',
+      join_url: joinUrl
     })
     .select()
     .single()

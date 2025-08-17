@@ -204,8 +204,8 @@ export default function TeleconsultasPage() {
             <p className="text-gray-600">Gerencie suas consultas online</p>
           </div>
         </div>
-        <Link href="/dashboard/paciente">
-          <Button className="flex items-center gap-2">
+        <Link href="/dashboard/paciente/agendar">
+          <Button className="flex items-center gap-2 bg-[#4AB0D9] hover:bg-[#4AB0D9]/90">
             <Plus className="h-4 w-4" />
             Agendar Nova Consulta
           </Button>
@@ -268,8 +268,8 @@ export default function TeleconsultasPage() {
               <p className="text-gray-600 mb-4">
                 Você ainda não possui consultas online realizadas.
               </p>
-              <Link href="/dashboard/paciente">
-                <Button>
+              <Link href="/dashboard/paciente/agendar">
+                <Button className="bg-[#4AB0D9] hover:bg-[#4AB0D9]/90">
                   Agendar Primeira Consulta
                 </Button>
               </Link>
