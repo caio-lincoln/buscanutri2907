@@ -76,9 +76,9 @@ export function AvailabilityManager({
   onSave,
   className
 }: AvailabilityManagerProps) {
-  const [availability, setAvailability] = useState<AvailabilityData>(() => {
+  const [ availability, setAvailability ] = useState<AvailabilityData>(() => {
     if (initialData) return initialData
-    
+
     return {
       nutritionist_id: nutritionistId,
       weekly_schedule: daysOfWeek.map(day => ({
@@ -94,8 +94,8 @@ export function AvailabilityManager({
     }
   })
 
-  const [isSaving, setIsSaving] = useState(false)
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date())
+  const [ isSaving, setIsSaving ] = useState(false)
+  const [ selectedDate, setSelectedDate ] = useState<Date>(new Date())
 
   const updateAvailability = (updates: Partial<AvailabilityData>) => {
     setAvailability(prev => ({ ...prev, ...updates }))
@@ -114,17 +114,17 @@ export function AvailabilityManager({
     const day = availability.weekly_schedule.find(d => d.day_of_week === dayOfWeek)
     if (!day) return
 
-    const lastSlot = day.time_slots[day.time_slots.length - 1]
+    const lastSlot = day.time_slots[ day.time_slots.length - 1 ]
     const newSlot: TimeSlot = {
       ...defaultTimeSlot,
       start_time: lastSlot ? lastSlot.end_time : '09:00',
-      end_time: lastSlot ? 
+      end_time: lastSlot ?
         format(new Date(`2000-01-01T${lastSlot.end_time}:00`).getTime() + 60 * 60 * 1000, 'HH:mm') :
         '10:00'
     }
 
     updateDayAvailability(dayOfWeek, {
-      time_slots: [...day.time_slots, newSlot]
+      time_slots: [ ...day.time_slots, newSlot ]
     })
   }
 
@@ -157,7 +157,7 @@ export function AvailabilityManager({
       weekly_schedule: prev.weekly_schedule.map(day => ({
         ...day,
         is_available: sourceDay.is_available,
-        time_slots: [...sourceDay.time_slots]
+        time_slots: [ ...sourceDay.time_slots ]
       }))
     }))
 
@@ -167,7 +167,8 @@ export function AvailabilityManager({
   const handleSave = async () => {
     setIsSaving(true)
     try {
-      await onSave(availability)
+      console.log("🚀 ~ handleSave ~ availability:", availability)
+      // await onSave(availability)
       toast.success('Disponibilidade salva com sucesso!')
     } catch (error) {
       toast.error('Erro ao salvar disponibilidade')
@@ -232,7 +233,7 @@ export function AvailabilityManager({
               />
             </div>
           </div>
-          
+
           <div className="space-y-2">
             <Label>Observações</Label>
             <Textarea
@@ -242,7 +243,7 @@ export function AvailabilityManager({
               rows={3}
             />
           </div>
-          
+
           <div className="flex items-center space-x-2">
             <Switch
               checked={availability.is_active}
@@ -281,7 +282,7 @@ export function AvailabilityManager({
                       </Badge>
                     )}
                   </div>
-                  
+
                   {daySchedule.is_available && (
                     <div className="flex space-x-2">
                       <Button
@@ -341,7 +342,7 @@ export function AvailabilityManager({
                     ))}
                   </div>
                 )}
-                
+
                 {dayInfo.value < 6 && <Separator />}
               </div>
             )

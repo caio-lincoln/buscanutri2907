@@ -1,70 +1,58 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { cookies } from 'next/headers'
-import { withErrorHandling } from '@/lib/api-middleware'
-import { requireAuth } from '@/lib/auth-utils'
-import { ValidationError, AuthorizationError, ConflictError } from '@/lib/errors'
-import { z } from 'zod'
-
-// Schemas de validação
-const availabilitySlotSchema = z.object({
-  start_time: z.string().regex(/^\d{2}:\d{2}$/, 'Formato de hora inválido'),
-  end_time: z.string().regex(/^\d{2}:\d{2}$/, 'Formato de hora inválido'),
-  is_available: z.boolean()
-})
-
-const idParamSchema = z.object({
-  id: z.string().uuid('ID inválido')
-})
+import { withErrorHandling, validateAuth, validateResourceExists,  ConflictError } from '@/src/lib/middleware/error-handler'
+import { availabilitySlotSchema, idParamSchema } from '@/src/lib/validations/teleconsulta'
+import { createClient } from '../../../../../lib/supabase/server'
 
 // DELETE /api/teleconsulta/agenda/[id] - Deletar horário de disponibilidade
 export const DELETE = withErrorHandling(async (
   request: NextRequest,
   { params }: { params: { id: string } }
 ) => {
-  const cookieStore = cookies()
-  const supabase = createClient(cookieStore)
-  
+  const supabase = await createClient()
+
   // Verificar autenticação
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   const userId = validateAuth(authError ? null : user?.id || null)
 
   // Validar parâmetros
-  const { id: availabilityId } = idParamSchema.parse(params)
+  const { id: availabilityId } = idParamSchema.parse(await params)
+  // const availabilityId = await params.id
+
+  const { data: nutritionistProfile } = await supabase.from('nutritionist_profiles').select("id").eq("user_id", userId).maybeSingle()
 
   // Verificar se a disponibilidade existe e pertence ao usuário
   const { data: availability, error: availabilityError } = await supabase
-    .from('agenda_availability')
+    .from('nutritionist_availability')
     .select('*')
     .eq('id', availabilityId)
-    .eq('nutritionist_id', userId)
+    .eq('nutritionist_id', nutritionistProfile?.id)
     .single()
 
   const validAvailability = validateResourceExists(
-    availabilityError ? null : availability, 
+    availabilityError ? null : availability,
     'Horário de disponibilidade não encontrado'
   )
 
   // Verificar se há teleconsultas agendadas neste horário
-  const { data: sessions, error: sessionsError } = await supabase
-    .from('teleconsulta_sessions')
-    .select('id')
-    .eq('nutritionist_id', userId)
-    .eq('current_status', 'scheduled')
-    .gte('scheduled_for', validAvailability.start_time)
-    .lt('scheduled_for', validAvailability.end_time)
+  const { data: conflicts, error: sessionsError } = await supabase.rpc('teleconsulta_overlaps_by_time', {
+    p_nutritionist_id: nutritionistProfile.id,
+    p_isodow: validAvailability.day_of_week,
+    p_start: validAvailability.start_time,
+    p_end: validAvailability.end_time,
+    p_tz: 'America/Sao_Paulo',
+  })
 
   if (sessionsError) {
     throw new Error('Erro ao verificar agendamentos')
   }
 
-  if (sessions && sessions.length > 0) {
+  if (conflicts && conflicts.length > 0) {
     throw new ConflictError('Não é possível deletar horário com teleconsultas agendadas')
   }
 
   // Deletar disponibilidade
   const { error: deleteError } = await supabase
-    .from('agenda_availability')
+    .from('nutritionist_availability')
     .delete()
     .eq('id', availabilityId)
 
@@ -80,26 +68,27 @@ export const PUT = withErrorHandling(async (
   request: NextRequest,
   { params }: { params: { id: string } }
 ) => {
-  const cookieStore = cookies()
-  const supabase = createClient(cookieStore)
-  
+  const supabase = await createClient()
+
   // Verificar autenticação
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   const userId = validateAuth(authError ? null : user?.id || null)
 
   // Validar parâmetros
-  const { id: availabilityId } = idParamSchema.parse(params)
-  
+  const { id: availabilityId } = idParamSchema.parse(await params)
+
+  const { data: nutritionistProfile } = await supabase.from('nutritionist_profiles').select("id").eq("user_id", userId).maybeSingle()
+  const toHHmm = (t: string) => t.replace(/^(\d{1,2}):(\d{2}).*$/, '$1:$2')
+
   // Validar dados do corpo da requisição
   const body = await request.json()
-  const { day_of_week, start_time, end_time } = availabilitySlotSchema.parse(body)
-
+  const { day_of_week, start_time, end_time } = availabilitySlotSchema.parse({...body, start_time: toHHmm(body.start_time), end_time: toHHmm(body.end_time)})
   // Verificar se a disponibilidade existe e pertence ao usuário
   const { data: availability, error: availabilityError } = await supabase
-    .from('agenda_availability')
+    .from('nutritionist_availability')
     .select('*')
     .eq('id', availabilityId)
-    .eq('nutritionist_id', userId)
+    .eq('nutritionist_id', nutritionistProfile.id)
     .single()
 
   const validAvailability = validateResourceExists(
@@ -108,16 +97,15 @@ export const PUT = withErrorHandling(async (
   )
 
   // Verificar conflitos com outros horários do mesmo nutricionista
-  const { data: conflicts, error: conflictError } = await supabase
-    .from('agenda_availability')
-    .select('id')
-    .eq('nutritionist_id', userId)
-    .eq('day_of_week', day_of_week)
-    .neq('id', availabilityId)
-    .or(`start_time.lte.${start_time},start_time.lt.${end_time}`)
-    .or(`end_time.gt.${start_time},end_time.gte.${end_time}`)
+  const { data: conflicts, error: sessionsError } = await supabase.rpc('teleconsulta_overlaps_by_time', {
+    p_nutritionist_id: nutritionistProfile.id,
+    p_isodow: validAvailability.day_of_week,
+    p_start: toHHmm(validAvailability.start_time),
+    p_end: toHHmm(validAvailability.end_time),
+    p_tz: 'America/Sao_Paulo',
+  })
 
-  if (conflictError) {
+  if (sessionsError) {
     throw new Error('Erro ao verificar conflitos')
   }
 
@@ -127,7 +115,7 @@ export const PUT = withErrorHandling(async (
 
   // Atualizar disponibilidade
   const { data: updatedAvailability, error: updateError } = await supabase
-    .from('agenda_availability')
+    .from('nutritionist_availability')
     .update({
       day_of_week,
       start_time,

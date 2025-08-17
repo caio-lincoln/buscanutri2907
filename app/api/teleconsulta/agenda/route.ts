@@ -1,14 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { cookies } from 'next/headers'
 import { withErrorHandling, validateAuth, ValidationError, ForbiddenError } from '@/src/lib/middleware/error-handler'
 import { availabilitySlotSchema } from '@/src/lib/validations/teleconsulta'
+import { createClient } from '../../../../lib/supabase/server'
+
 
 // GET /api/teleconsulta/agenda - Listar agenda do nutricionista
 export const GET = withErrorHandling(async (request: NextRequest) => {
-  const cookieStore = cookies()
-  const supabase = createClient(cookieStore)
-  
   // Verificar autenticação
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   const userId = validateAuth(authError ? null : user?.id || null)
@@ -41,21 +38,16 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
 
 // POST /api/teleconsulta/agenda - Adicionar horário de disponibilidade
 export const POST = withErrorHandling(async (request: NextRequest) => {
-  const cookieStore = cookies()
-  const supabase = createClient(cookieStore)
-  
   // Verificar autenticação
+const supabase = await createClient()
+
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   const userId = validateAuth(authError ? null : user?.id || null)
 
   // Verificar se é nutricionista
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('user_type')
-    .eq('id', userId)
-    .single()
+  const profile = user?.user_metadata['user_type']
 
-  if (!profile || profile.user_type !== 'nutritionist') {
+  if (!profile || profile !== 'nutricionista') {
     throw new ForbiddenError('Apenas nutricionistas podem gerenciar a agenda')
   }
 
@@ -74,18 +66,22 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     throw new ValidationError('Já existe um horário conflitante neste período')
   }
 
+  const {data: nutritionistProfile} = await supabase.from('nutritionist_profiles').select("id").eq("user_id", userId).maybeSingle()
+  console.log("🚀 ~ nutritionistProfile:", nutritionistProfile)
+
   // Criar novo horário
   const { data: newSlot, error } = await supabase
-    .from('nutritionist_availability')
-    .insert({
-      nutritionist_id: userId,
-      day_of_week,
-      start_time,
-      end_time
-    })
-    .select()
-    .single()
-
+  .from('nutritionist_availability')
+  .insert({
+    nutritionist_id: nutritionistProfile.id,
+    day_of_week,
+    start_time,
+    end_time
+  })
+  .select()
+  .single()
+  
+  console.log("🚀 ~ error:", error)
   if (error) {
     throw new ValidationError('Erro ao criar horário')
   }
@@ -95,8 +91,6 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
 
 // PUT - Atualizar disponibilidade em lote
 export const PUT = withErrorHandling(async (request: NextRequest) => {
-  const cookieStore = cookies()
-  const supabase = createClient(cookieStore)
   
   // Verificar autenticação
   const { data: { user }, error: authError } = await supabase.auth.getUser()
