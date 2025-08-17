@@ -1,9 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/src/lib/supabase/server'
+import { createClient } from '@/lib/supabase/server'
 import { cookies } from 'next/headers'
-import { withErrorHandling, validateAuth, ValidationError } from '@/src/lib/middleware/error-handler'
-import { availableTimesQuerySchema } from '@/src/lib/validations/teleconsulta'
+import { withErrorHandling } from '@/lib/api-middleware'
+import { requireAuth } from '@/lib/auth-utils'
+import { ValidationError } from '@/lib/errors'
 import { addDays, format, startOfWeek, endOfWeek, parseISO, isAfter, isBefore, addMinutes } from 'date-fns'
+import { z } from 'zod'
+
+// Schema de validação
+const availableTimesQuerySchema = z.object({
+  nutritionist_id: z.string().uuid('ID do nutricionista inválido'),
+  start_date: z.string().optional(),
+  end_date: z.string().optional(),
+  duration: z.string().transform(val => parseInt(val)).pipe(z.number().min(15).max(180)).optional()
+})
 
 // GET /api/teleconsulta/horarios-disponiveis - Buscar horários disponíveis
 export const GET = withErrorHandling(async (request: NextRequest) => {

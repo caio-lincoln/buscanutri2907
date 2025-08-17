@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { withErrorHandling, validateAuth, validateResourceExists, ValidationError, ForbiddenError, ConflictError } from '@/src/lib/middleware/error-handler'
+import { withErrorHandling, validateAuth, validateResourceExists,  ConflictError } from '@/src/lib/middleware/error-handler'
 import { availabilitySlotSchema, idParamSchema } from '@/src/lib/validations/teleconsulta'
 import { createClient } from '../../../../../lib/supabase/server'
 

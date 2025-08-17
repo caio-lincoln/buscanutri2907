@@ -3,6 +3,9 @@ export { VideoCall } from './VideoCall'
 export { ChatPanel } from './ChatPanel'
 export { MediaControls, MobileMediaControls } from './MediaControls'
 export { ParticipantStatus } from './ParticipantStatus'
+export { TeleconsultaCard } from './TeleconsultaCard'
+export { TeleconsultaFilters } from './TeleconsultaFilters'
+export { AvailabilityManager } from './AvailabilityManager'
 
 // Tipos e interfaces
 export type {
@@ -24,3 +27,20 @@ export type {
   Participant,
   ParticipantStatusProps
 } from './ParticipantStatus'
+
+export type {
+  TeleconsultaSession,
+  TeleconsultaCardProps
+} from './TeleconsultaCard'
+
+export type {
+  TeleconsultaFilters as TeleconsultaFiltersType,
+  TeleconsultaFiltersProps
+} from './TeleconsultaFilters'
+
+export type {
+  TimeSlot,
+  DayAvailability,
+  AvailabilityData,
+  AvailabilityManagerProps
+} from './AvailabilityManager'

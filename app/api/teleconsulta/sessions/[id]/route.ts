@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/src/lib/supabase/server'
+import { createClient } from '@/lib/supabase/server'
 import { cookies } from 'next/headers'
 import { withErrorHandling, validateAuth, validateResourceExists, ValidationError, ForbiddenError } from '@/src/lib/middleware/error-handler'
 import { updateSessionStatusSchema, idParamSchema } from '@/src/lib/validations/teleconsulta'
