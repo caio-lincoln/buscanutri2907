@@ -17,11 +17,10 @@ import {
 import { format, parseISO, addDays, startOfWeek, endOfWeek } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { toast } from 'sonner'
-import { TeleconsultaCard } from '../../../../src/components/teleconsulta/TeleconsultaCard'
-import { TeleconsultaFilters } from '../../../../src/components/teleconsulta/TeleconsultaFilters'
-import { AvailabilityManager } from '../../../../src/components/teleconsulta/AvailabilityManager'
+// import { AvailabilityManager } from '../../../../src/components/teleconsulta/AvailabilityManager'
 import { useAuth } from '../../../../contexts/auth-context'
 import { supabase } from '../../../../lib/supabase'
+import { AvailabilityManager, TeleconsultaCard, TeleconsultaFilters } from '../../../../components/teleconsulta'
 
 interface TeleconsultaSession {
   id: string
@@ -293,6 +292,16 @@ export default function NutricionistaTeleconsultasPage() {
         <TabsContent value="teleconsultas" className="space-y-6">
           <TeleconsultaFilters
             searchTerm={searchTerm}
+            filters={{
+              search: '',
+              dateFrom: '',
+              dateTo: '',
+              nutritionist: "",
+              patient: '',
+              priceMax: '',
+              priceMin: '',
+              status: ''
+            }}
             onSearchChange={setSearchTerm}
             statusFilter={statusFilter}
             onStatusChange={setStatusFilter}

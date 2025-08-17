@@ -83,6 +83,7 @@ import { useRealtimeNutritionists } from '@/hooks/use-realtime-nutritionists'
 
 import { format, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+import TeleconsultasPage from './teleconsultas/page'
 
 // Adicionar interfaces para nutricionistas (movidas de app/nutricionistas/page.tsx)
 interface NutritionistService {
@@ -196,53 +197,53 @@ const priceRanges = [
 ]
 
 export default function PatientDashboard() {
-  const [profile, setProfile] = useState<PatientProfile | null>(null)
-  const [consultations, setConsultations] = useState<Consultation[]>([])
-  const [favoriteNutritionists, setFavoriteNutritionists] = useState<
+  const [ profile, setProfile ] = useState<PatientProfile | null>(null)
+  const [ consultations, setConsultations ] = useState<Consultation[]>([])
+  const [ favoriteNutritionists, setFavoriteNutritionists ] = useState<
     FavoriteNutritionist[]
   >([])
-  const [stats, setStats] = useState<PatientStats>({
+  const [ stats, setStats ] = useState<PatientStats>({
     totalConsultations: 0,
     scheduledConsultations: 0,
     completedConsultations: 0,
     favoriteNutritionists: 0,
     averageRating: 0,
   })
-  const [chatConversations, setChatConversations] = useState<
+  const [ chatConversations, setChatConversations ] = useState<
     ChatConversation[]
   >([])
-  const [forumQuestions, setForumQuestions] = useState<ForumQuestion[]>([])
-  const [patientForumQuestions, setPatientForumQuestions] = useState<
+  const [ forumQuestions, setForumQuestions ] = useState<ForumQuestion[]>([])
+  const [ patientForumQuestions, setPatientForumQuestions ] = useState<
     ForumQuestion[]
   >([])
-  const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState('overview')
-  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
-  const [isAnamneseModalOpen, setIsAnamneseModalOpen] = useState(false)
-  const [anamneseData, setAnamneseData] = useState<any>(null)
+  const [ loading, setLoading ] = useState(true)
+  const [ activeTab, setActiveTab ] = useState('overview')
+  const [ isProfileModalOpen, setIsProfileModalOpen ] = useState(false)
+  const [ isAnamneseModalOpen, setIsAnamneseModalOpen ] = useState(false)
+  const [ anamneseData, setAnamneseData ] = useState<any>(null)
   const router = useRouter()
   const { user, loading: authLoading, signOut } = useAuth()
 
   // Estados para a aba "Buscar Nutricionistas"
-  const [searchNutritionistTerm, setSearchNutritionistTerm] = useState('')
-  const [selectedNutritionistSpecialty, setSelectedNutritionistSpecialty] =
+  const [ searchNutritionistTerm, setSearchNutritionistTerm ] = useState('')
+  const [ selectedNutritionistSpecialty, setSelectedNutritionistSpecialty ] =
     useState('Todas')
-  const [selectedNutritionistState, setSelectedNutritionistState] =
+  const [ selectedNutritionistState, setSelectedNutritionistState ] =
     useState('Todas')
-  const [selectedNutritionistPriceRange, setSelectedNutritionistPriceRange] =
-    useState(priceRanges[0])
-  const [onlineOnlyNutritionist, setOnlineOnlyNutritionist] = useState(false)
-  const [showVerifiedOnlyNutritionist, setShowVerifiedOnlyNutritionist] =
+  const [ selectedNutritionistPriceRange, setSelectedNutritionistPriceRange ] =
+    useState(priceRanges[ 0 ])
+  const [ onlineOnlyNutritionist, setOnlineOnlyNutritionist ] = useState(false)
+  const [ showVerifiedOnlyNutritionist, setShowVerifiedOnlyNutritionist ] =
     useState(false)
-  const [sortByNutritionist, setSortByNutritionist] = useState('rating')
-  const [viewModeNutritionist, setViewModeNutritionist] = useState<
+  const [ sortByNutritionist, setSortByNutritionist ] = useState('rating')
+  const [ viewModeNutritionist, setViewModeNutritionist ] = useState<
     'grid' | 'list'
   >('grid')
-  const [availableSpecialties, setAvailableSpecialties] = useState<Specialty[]>(
+  const [ availableSpecialties, setAvailableSpecialties ] = useState<Specialty[]>(
     []
   )
-  const [availableLocations, setAvailableLocations] = useState<string[]>([])
-  const [favoritedNutritionists, setFavoritedNutritionists] = useState<
+  const [ availableLocations, setAvailableLocations ] = useState<string[]>([])
+  const [ favoritedNutritionists, setFavoritedNutritionists ] = useState<
     Set<string>
   >(new Set())
 
@@ -263,8 +264,8 @@ export default function PatientDashboard() {
   })
 
   // Estados para o modal de avaliação
-  const [isRatingModalOpen, setIsRatingModalOpen] = useState(false)
-  const [selectedConsultationForRating, setSelectedConsultationForRating] =
+  const [ isRatingModalOpen, setIsRatingModalOpen ] = useState(false)
+  const [ selectedConsultationForRating, setSelectedConsultationForRating ] =
     useState<Consultation | null>(null)
 
   const upcomingConsultations = consultations
@@ -289,21 +290,21 @@ export default function PatientDashboard() {
     if (!authLoading) {
       loadProfile()
     }
-  }, [user, authLoading])
+  }, [ user, authLoading ])
 
   useEffect(() => {
     if (activeTab === 'buscar') {
       loadAvailableSpecialties()
       loadAvailableLocations()
     }
-  }, [activeTab])
+  }, [ activeTab ])
 
   // Recarregar dados quando a aba perfil for ativada
   useEffect(() => {
     if (activeTab === 'perfil' && profile?.user_id) {
       loadAnamneseData(profile.user_id)
     }
-  }, [activeTab, profile?.user_id])
+  }, [ activeTab, profile?.user_id ])
 
   const loadProfile = async () => {
     try {
@@ -434,7 +435,7 @@ export default function PatientDashboard() {
       } else {
         const success = await addFavoriteNutritionist(user.id, nutritionistId)
         if (success) {
-          setFavoritedNutritionists(prev => new Set([...prev, nutritionistId]))
+          setFavoritedNutritionists(prev => new Set([ ...prev, nutritionistId ]))
           // Recarregar favoritos para atualizar a lista
           const updatedFavorites = await getPatientFavoriteNutritionists(
             user.id
@@ -580,7 +581,7 @@ export default function PatientDashboard() {
                       <h1 className="text-3xl lg:text-4xl font-bold">
                         Olá,{' '}
                         {profile?.full_name
-                          ? profile.full_name.split(' ')[0] || 'Paciente'
+                          ? profile.full_name.split(' ')[ 0 ] || 'Paciente'
                           : 'Paciente'}
                         !
                       </h1>
@@ -595,7 +596,7 @@ export default function PatientDashboard() {
                       <p className="text-sm text-red-100">Próxima consulta</p>
                       <p className="font-semibold">
                         {upcomingConsultations.length > 0
-                          ? formatDate(upcomingConsultations[0].start_time)
+                          ? formatDate(upcomingConsultations[ 0 ].start_time)
                           : 'Nenhuma agendada'}
                       </p>
                     </div>
@@ -859,9 +860,9 @@ export default function PatientDashboard() {
                           <AvatarFallback className="bg-gradient-to-br from-green-500 to-green-600 text-white font-semibold">
                             {nutritionist.nutritionist_profiles?.full_name
                               ? nutritionist.nutritionist_profiles.full_name
-                                  .split(' ')
-                                  .map(n => n[0])
-                                  .join('') || 'N'
+                                .split(' ')
+                                .map(n => n[ 0 ])
+                                .join('') || 'N'
                               : 'N'}
                           </AvatarFallback>
                         </Avatar>
@@ -937,7 +938,7 @@ export default function PatientDashboard() {
                   setSearchNutritionistTerm('')
                   setSelectedNutritionistSpecialty('Todas')
                   setSelectedNutritionistState('Todas')
-                  setSelectedNutritionistPriceRange(priceRanges[0])
+                  setSelectedNutritionistPriceRange(priceRanges[ 0 ])
                   setOnlineOnlyNutritionist(false)
                   setShowVerifiedOnlyNutritionist(false)
                   setSortByNutritionist('rating')
@@ -1128,9 +1129,8 @@ export default function PatientDashboard() {
                       return (
                         <Card
                           key={nutritionist.id}
-                          className={`group hover-lift transition-all duration-300 border-0 shadow-lg hover:shadow-xl backdrop-blur-sm ${
-                            viewModeNutritionist === 'list' ? 'flex' : ''
-                          }`}
+                          className={`group hover-lift transition-all duration-300 border-0 shadow-lg hover:shadow-xl backdrop-blur-sm ${viewModeNutritionist === 'list' ? 'flex' : ''
+                            }`}
                         >
                           <CardContent className="p-6">
                             <div className="flex items-start gap-4">
@@ -1192,10 +1192,10 @@ export default function PatientDashboard() {
                                       'Nutrição Geral'
                                     ) === 'string'
                                       ? (
-                                          getSpecialtiesText(nutritionist) ||
-                                          'Nutrição Geral'
-                                        ).split(', ')
-                                      : ['Nutrição Geral']
+                                        getSpecialtiesText(nutritionist) ||
+                                        'Nutrição Geral'
+                                      ).split(', ')
+                                      : [ 'Nutrição Geral' ]
                                     )
                                       .slice(0, 2)
                                       .map((specialty, index) => (
@@ -1221,26 +1221,26 @@ export default function PatientDashboard() {
                                     {getMinPrice(
                                       nutritionist.nutritionist_services
                                     ) !== null && (
-                                      <div className="flex items-center gap-1 text-sm">
-                                        <span className="text-gray-600">
-                                          A partir de
-                                        </span>
-                                        <span className="font-bold text-[#1E1D40] text-lg">
-                                          R${' '}
-                                          {getMinPrice(
-                                            nutritionist.nutritionist_services
-                                          )}
-                                        </span>
-                                      </div>
-                                    )}
+                                        <div className="flex items-center gap-1 text-sm">
+                                          <span className="text-gray-600">
+                                            A partir de
+                                          </span>
+                                          <span className="font-bold text-[#1E1D40] text-lg">
+                                            R${' '}
+                                            {getMinPrice(
+                                              nutritionist.nutritionist_services
+                                            )}
+                                          </span>
+                                        </div>
+                                      )}
                                     {hasOnlineConsultation(
                                       nutritionist.nutritionist_services
                                     ) && (
-                                      <div className="flex items-center gap-1 text-sm text-green-600">
-                                        <Video className="h-4 w-4" />
-                                        <span>Online</span>
-                                      </div>
-                                    )}
+                                        <div className="flex items-center gap-1 text-sm text-green-600">
+                                          <Video className="h-4 w-4" />
+                                          <span>Online</span>
+                                        </div>
+                                      )}
                                   </div>
                                 </div>
 
@@ -1273,25 +1273,23 @@ export default function PatientDashboard() {
                                   <Button
                                     size="sm"
                                     variant="outline"
-                                    className={`hover-lift bg-white/80 backdrop-blur-sm transition-all duration-300 ${
-                                      favoritedNutritionists.has(
-                                        nutritionist.id
-                                      )
+                                    className={`hover-lift bg-white/80 backdrop-blur-sm transition-all duration-300 ${favoritedNutritionists.has(
+                                      nutritionist.id
+                                    )
                                         ? 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100'
                                         : 'hover:bg-red-50 hover:text-red-600 hover:border-red-200'
-                                    }`}
+                                      }`}
                                     onClick={() =>
                                       handleToggleFavorite(nutritionist.id)
                                     }
                                   >
                                     <Heart
-                                      className={`h-4 w-4 ${
-                                        favoritedNutritionists.has(
-                                          nutritionist.id
-                                        )
+                                      className={`h-4 w-4 ${favoritedNutritionists.has(
+                                        nutritionist.id
+                                      )
                                           ? 'fill-current'
                                           : ''
-                                      }`}
+                                        }`}
                                     />
                                   </Button>
                                 </div>
@@ -1317,7 +1315,7 @@ export default function PatientDashboard() {
                         setSearchNutritionistTerm('')
                         setSelectedNutritionistSpecialty('Todas')
                         setSelectedNutritionistState('Todas')
-                        setSelectedNutritionistPriceRange(priceRanges[0])
+                        setSelectedNutritionistPriceRange(priceRanges[ 0 ])
                         setOnlineOnlyNutritionist(false)
                         setShowVerifiedOnlyNutritionist(false)
                         setSortByNutritionist('rating')
@@ -1513,7 +1511,7 @@ export default function PatientDashboard() {
                           Localização
                         </label>
                         <p className="text-[#1E1D40] font-semibold">
-                          {[anamneseData?.cidade, anamneseData?.estado]
+                          {[ anamneseData?.cidade, anamneseData?.estado ]
                             .filter(Boolean)
                             .join(', ') || 'Não informado'}
                         </p>
@@ -1598,7 +1596,7 @@ export default function PatientDashboard() {
                           Objetivos Nutricionais
                         </label>
                         {anamneseData.objetivos_nutricionais &&
-                        anamneseData.objetivos_nutricionais.length > 0 ? (
+                          anamneseData.objetivos_nutricionais.length > 0 ? (
                           <div className="flex flex-wrap gap-2 mt-2">
                             {anamneseData.objetivos_nutricionais.map(
                               (objetivo: string, i: number) => (
@@ -1618,15 +1616,15 @@ export default function PatientDashboard() {
                                           : objetivo === 'intolerancia_alergia'
                                             ? 'Intolerância/alergia alimentar'
                                             : objetivo ===
-                                                'performance_esportiva'
+                                              'performance_esportiva'
                                               ? 'Performance esportiva'
                                               : objetivo ===
-                                                  'reeducacao_alimentar'
+                                                'reeducacao_alimentar'
                                                 ? 'Reeducação alimentar'
                                                 : objetivo === 'saude_geral'
                                                   ? 'Saúde geral'
                                                   : objetivo ===
-                                                      'saude_intestinal'
+                                                    'saude_intestinal'
                                                     ? 'Saúde intestinal'
                                                     : objetivo === 'outro'
                                                       ? 'Outro'
@@ -1697,75 +1695,75 @@ export default function PatientDashboard() {
                                           : condition === 'desnutricao'
                                             ? 'Desnutrição'
                                             : condition ===
-                                                'diabetes_mellitus_1'
+                                              'diabetes_mellitus_1'
                                               ? 'Diabetes mellitus tipo 1'
                                               : condition ===
-                                                  'diabetes_mellitus_2'
+                                                'diabetes_mellitus_2'
                                                 ? 'Diabetes mellitus tipo 2'
                                                 : condition === 'dislipidemia'
                                                   ? 'Dislipidemia'
                                                   : condition ===
-                                                      'doenca_cardiaca'
+                                                    'doenca_cardiaca'
                                                     ? 'Doença cardíaca'
                                                     : condition ===
-                                                        'doenca_celiaca'
+                                                      'doenca_celiaca'
                                                       ? 'Doença celíaca'
                                                       : condition ===
-                                                          'doenca_crohn'
+                                                        'doenca_crohn'
                                                         ? 'Doença de Crohn'
                                                         : condition ===
-                                                            'doenca_hashimoto'
+                                                          'doenca_hashimoto'
                                                           ? 'Doença de Hashimoto'
                                                           : condition ===
-                                                              'doenca_hepatica_cronica'
+                                                            'doenca_hepatica_cronica'
                                                             ? 'Doença hepática crônica'
                                                             : condition ===
-                                                                'doenca_renal_cronica'
+                                                              'doenca_renal_cronica'
                                                               ? 'Doença renal crônica'
                                                               : condition ===
-                                                                  'doencas_neurodegenerativas'
+                                                                'doencas_neurodegenerativas'
                                                                 ? 'Doenças neurodegenerativas'
                                                                 : condition ===
-                                                                    'gastrite'
+                                                                  'gastrite'
                                                                   ? 'Gastrite'
                                                                   : condition ===
-                                                                      'hipertensao_arterial'
+                                                                    'hipertensao_arterial'
                                                                     ? 'Hipertensão arterial'
                                                                     : condition ===
-                                                                        'hipertiroidismo'
+                                                                      'hipertiroidismo'
                                                                       ? 'Hipertiroidismo'
                                                                       : condition ===
-                                                                          'hipotiroidismo'
+                                                                        'hipotiroidismo'
                                                                         ? 'Hipotiroidismo'
                                                                         : condition ===
-                                                                            'intolerancia_alergia_lactose'
+                                                                          'intolerancia_alergia_lactose'
                                                                           ? 'Intolerância à lactose'
                                                                           : condition ===
-                                                                              'lupus'
+                                                                            'lupus'
                                                                             ? 'Lúpus'
                                                                             : condition ===
-                                                                                'neoplasia'
+                                                                              'neoplasia'
                                                                               ? 'Neoplasia'
                                                                               : condition ===
-                                                                                  'obesidade'
+                                                                                'obesidade'
                                                                                 ? 'Obesidade'
                                                                                 : condition ===
-                                                                                    'osteoporose'
+                                                                                  'osteoporose'
                                                                                   ? 'Osteoporose'
                                                                                   : condition ===
-                                                                                      'refluxo_gastroesofagico'
+                                                                                    'refluxo_gastroesofagico'
                                                                                     ? 'Refluxo gastroesofágico'
                                                                                     : condition ===
-                                                                                        'sindrome_intestino_irritavel'
+                                                                                      'sindrome_intestino_irritavel'
                                                                                       ? 'Síndrome do intestino irritável'
                                                                                       : condition ===
-                                                                                          'sindrome_metabolica'
+                                                                                        'sindrome_metabolica'
                                                                                         ? 'Síndrome metabólica'
                                                                                         : condition ===
-                                                                                            'transtorno_alimentar'
+                                                                                          'transtorno_alimentar'
                                                                                           ? 'Transtorno alimentar'
                                                                                           : condition ===
-                                                                                              'ulcera_peptica'
+                                                                                            'ulcera_peptica'
                                                                                             ? 'Úlcera péptica'
                                                                                             : condition
 
@@ -1876,8 +1874,8 @@ export default function PatientDashboard() {
                             Medicamentos em Uso
                           </label>
                           {anamneseData.medicacoes_uso &&
-                          Array.isArray(anamneseData.medicacoes_uso) &&
-                          anamneseData.medicacoes_uso.length > 0 ? (
+                            Array.isArray(anamneseData.medicacoes_uso) &&
+                            anamneseData.medicacoes_uso.length > 0 ? (
                             <div className="flex flex-wrap gap-2 mt-2">
                               {anamneseData.medicacoes_uso.map(
                                 (medicamento: string, i: number) => (
@@ -1905,8 +1903,8 @@ export default function PatientDashboard() {
                             Suplementação
                           </label>
                           {anamneseData.suplementacao_atual &&
-                          Array.isArray(anamneseData.suplementacao_atual) &&
-                          anamneseData.suplementacao_atual.length > 0 ? (
+                            Array.isArray(anamneseData.suplementacao_atual) &&
+                            anamneseData.suplementacao_atual.length > 0 ? (
                             <div className="flex flex-wrap gap-2 mt-2">
                               {anamneseData.suplementacao_atual.map(
                                 (suplemento: string, i: number) => (
@@ -2118,9 +2116,9 @@ export default function PatientDashboard() {
                             setProfile(prev =>
                               prev
                                 ? {
-                                    ...prev,
-                                    email_notifications_enabled: checked,
-                                  }
+                                  ...prev,
+                                  email_notifications_enabled: checked,
+                                }
                                 : null
                             )
                           }
@@ -2142,9 +2140,9 @@ export default function PatientDashboard() {
                             setProfile(prev =>
                               prev
                                 ? {
-                                    ...prev,
-                                    in_app_notifications_enabled: checked,
-                                  }
+                                  ...prev,
+                                  in_app_notifications_enabled: checked,
+                                }
                                 : null
                             )
                           }
@@ -2174,29 +2172,10 @@ export default function PatientDashboard() {
           'chat',
           'duvidas',
         ].includes(activeTab) && (
-          <div className="space-y-8">
-            <div className="text-center space-y-6 py-16">
-              <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-3xl flex items-center justify-center mx-auto shadow-2xl">
-                <Bot className="h-10 w-10 text-white" />
-              </div>
-              <div>
-                <h2 className="text-3xl font-bold text-[#1E1D40] mb-2 capitalize">
-                  {activeTab}
-                </h2>
-                <p className="text-gray-600 text-lg">
-                  Esta funcionalidade será implementada em breve.
-                </p>
-              </div>
-              <Button
-                variant="outline"
-                className="hover-lift bg-white/80 backdrop-blur-sm border-gray-200"
-                onClick={() => setActiveTab('overview')}
-              >
-                Voltar ao início
-              </Button>
+            <div className="space-y-8">
+              <TeleconsultasPage />
             </div>
-          </div>
-        )}
+          )}
       </div>
 
       {profile && (

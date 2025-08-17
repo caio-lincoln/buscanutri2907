@@ -62,11 +62,11 @@ interface TeleconsultaSession {
 
 
 export default function TeleconsultasPage() {
-  const [profile, setProfile] = useState<PatientProfile | null>(null)
-  const [sessions, setSessions] = useState<TeleconsultaSession[]>([])
-  const [loading, setLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [statusFilter, setStatusFilter] = useState('all')
+  const [ profile, setProfile ] = useState<PatientProfile | null>(null)
+  const [ sessions, setSessions ] = useState<TeleconsultaSession[]>([])
+  const [ loading, setLoading ] = useState(true)
+  const [ searchTerm, setSearchTerm ] = useState('')
+  const [ statusFilter, setStatusFilter ] = useState('all')
   const router = useRouter()
   const { user, loading: authLoading } = useAuth()
 
@@ -74,13 +74,13 @@ export default function TeleconsultasPage() {
     if (!authLoading) {
       loadProfile()
     }
-  }, [user, authLoading])
+  }, [ user, authLoading ])
 
   useEffect(() => {
     if (profile?.user_id) {
       loadSessions()
     }
-  }, [profile])
+  }, [ profile ])
 
   const loadProfile = async () => {
     try {
@@ -103,7 +103,7 @@ export default function TeleconsultasPage() {
       const response = await fetch(
         `/api/teleconsulta/sessions?userId=${profile.user_id}&userType=patient`
       )
-      
+
       if (!response.ok) {
         throw new Error('Erro ao carregar sessões')
       }
@@ -173,8 +173,8 @@ export default function TeleconsultasPage() {
   )
 
   const pastSessions = filteredSessions.filter(
-    session => session.status === 'completed' || 
-    (session.status === 'scheduled' && parseISO(session.scheduled_at) <= new Date())
+    session => session.status === 'completed' ||
+      (session.status === 'scheduled' && parseISO(session.scheduled_at) <= new Date())
   )
 
   if (loading) {
@@ -214,6 +214,16 @@ export default function TeleconsultasPage() {
 
       {/* Filtros */}
       <TeleconsultaFilters
+        filters={{
+          search: '',
+          dateFrom: '',
+          dateTo: '',
+          nutritionist: "",
+          patient: '',
+          priceMax: '',
+          priceMin: '',
+          status: ''
+        }}
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
         statusFilter={statusFilter}
