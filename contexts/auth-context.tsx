@@ -143,11 +143,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       if (table) {
         const { data: spec } = await supabase
-          .from(table)
-          .select('*')
-          .eq('user_id', row.id)
-          .maybeSingle()
-          
+        .from(table)
+        .select('*')
+        .eq('user_id', row.id)
+        .maybeSingle()
+        
           if (utype === 'nutricionista') setNutritionistProfile(spec ?? null)
           if (utype === 'paciente') setPatientProfile(spec ?? null)
           if (utype === 'empresa') setCompanyProfile(spec ?? null)

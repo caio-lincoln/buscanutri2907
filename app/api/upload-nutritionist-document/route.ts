@@ -138,7 +138,7 @@ export async function POST(request: NextRequest) {
 
     // Fazer upload do arquivo
     const { error: uploadError } = await supabase.storage
-      .from('documentos-nutricionistas')
+      .from('nutritionist-documents')
       .upload(storagePath, file, {
         cacheControl: '3600',
         upsert: false,
@@ -154,7 +154,7 @@ export async function POST(request: NextRequest) {
 
     // Obter URL pública (mesmo sendo bucket privado, precisamos da URL para referência)
     const { data: urlData } = supabase.storage
-      .from('documentos-nutricionistas')
+      .from('nutritionist-documents')
       .getPublicUrl(storagePath)
 
     // Salvar metadados no banco de dados
@@ -182,7 +182,7 @@ export async function POST(request: NextRequest) {
       if (existingDoc) {
         // Deletar arquivo antigo do storage
         await supabase.storage
-          .from('documentos-nutricionistas')
+          .from('nutritionist-documents')
           .remove([existingDoc.storage_path])
 
         // Atualizar registro existente
@@ -221,7 +221,7 @@ export async function POST(request: NextRequest) {
 
       // Limpar arquivo do storage em caso de erro
       await supabase.storage
-        .from('documentos-nutricionistas')
+        .from('nutritionist-documents')
         .remove([storagePath])
 
       return NextResponse.json(

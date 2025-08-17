@@ -49,9 +49,11 @@ import {
 import { useAuth } from '@/contexts/auth-context'
 
 export default function Home() {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  const [stats, setStats] = useState<PlatformStats | null>(null)
+  const [ isMobileMenuOpen, setIsMobileMenuOpen ] = useState(false)
+  const [ stats, setStats ] = useState<PlatformStats | null>(null)
+  console.log("🚀 ~ Home ~ stats:", stats)
   const { user, loading, signOut } = useAuth()
+
 
   const closeMobileMenu = useCallback(() => {
     setIsMobileMenuOpen(false)
@@ -70,7 +72,7 @@ export default function Home() {
 
   useEffect(() => {
     loadStats()
-  }, [loadStats])
+  }, [ loadStats ])
 
   // Handle logout
   const handleLogout = useCallback(async () => {
@@ -80,7 +82,7 @@ export default function Home() {
     } catch (error) {
       // Error signing out - handled silently
     }
-  }, [signOut])
+  }, [ signOut ])
 
   // Get dashboard URL based on user type
   const getDashboardUrl = useCallback((userType: UserType) => {
@@ -100,10 +102,9 @@ export default function Home() {
 
   // Memoize dashboard URL for current user
   const currentDashboardUrl = useMemo(() => {
-    return user?.user_type
-      ? getDashboardUrl(user.user_type)
-      : '/dashboard/paciente'
-  }, [user?.user_type, getDashboardUrl])
+    return getDashboardUrl(user?.user_metadata[ 'user_type' ])
+
+  }, [ user?.user_type, getDashboardUrl ])
 
   // Toggle mobile menu
   const toggleMobileMenu = useCallback(() => {
@@ -121,7 +122,7 @@ export default function Home() {
     return () => {
       document.body.style.overflow = 'unset'
     }
-  }, [isMobileMenuOpen])
+  }, [ isMobileMenuOpen ])
 
   return (
     <div className="flex flex-col min-h-screen bg-white">
@@ -252,7 +253,7 @@ export default function Home() {
           <div className="flex items-center gap-3">
             {loading ? (
               <div className="w-20 h-9 bg-gray-200 animate-pulse rounded" />
-            ) : user && user.user_type ? (
+            ) : user && user.user_metadata[ 'user_type' ] ? (
               // User is logged in - show dashboard and logout buttons
               <>
                 <Link href={currentDashboardUrl}>
@@ -992,7 +993,7 @@ export default function Home() {
                 </p>
                 <div className="flex gap-4">
                   <div className="flex text-yellow-400">
-                    {[...Array(5)].map((_, i) => (
+                    {[ ...Array(5) ].map((_, i) => (
                       <svg
                         key={i}
                         className="w-4 h-4 fill-current"

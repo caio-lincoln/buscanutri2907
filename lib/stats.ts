@@ -22,15 +22,16 @@ export async function getPlatformStats(): Promise<PlatformStats> {
   try {
     // Usar função RPC para contornar políticas RLS
     const { data, error } = await supabase.rpc('get_platform_stats')
+    console.log("🚀 ~ getPlatformStats ~ data:", data)
 
     if (error) {
       throw error
     }
 
     const stats: PlatformStats = {
-      totalNutricionistas: data.totalNutricionistas || 0,
-      totalPacientes: data.totalPacientes || 0,
-      averageRating: data.averageRating || 0,
+      totalNutricionistas: data.total_nutritionists || 0,
+      totalPacientes: data.total_patients || 0,
+      averageRating: data.rating || 0,
       totalAvaliacoes: data.totalAvaliacoes || 0,
     }
 

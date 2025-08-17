@@ -87,17 +87,17 @@ const priceRanges = [
 ]
 
 export default function NutricionistasPage() {
-  const [nutritionists, setNutritionists] = useState<NutritionistProfile[]>([])
-  const [loading, setLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [selectedSpecialty, setSelectedSpecialty] = useState('Todas')
-  const [selectedState, setSelectedState] = useState('Todas')
-  const [selectedPriceRange, setSelectedPriceRange] = useState(priceRanges[0])
-  const [onlineOnly, setOnlineOnly] = useState(false)
-  const [aceitaCupons, setAceitaCupons] = useState(false)
-  const [sortBy, setSortBy] = useState('rating')
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [ nutritionists, setNutritionists ] = useState<NutritionistProfile[]>([])
+  const [ loading, setLoading ] = useState(true)
+  const [ searchTerm, setSearchTerm ] = useState('')
+  const [ selectedSpecialty, setSelectedSpecialty ] = useState('Todas')
+  const [ selectedState, setSelectedState ] = useState('Todas')
+  const [ selectedPriceRange, setSelectedPriceRange ] = useState(priceRanges[ 0 ])
+  const [ onlineOnly, setOnlineOnly ] = useState(false)
+  const [ aceitaCupons, setAceitaCupons ] = useState(false)
+  const [ sortBy, setSortBy ] = useState('rating')
+  const [ viewMode, setViewMode ] = useState<'grid' | 'list'>('grid')
+  const [ mobileMenuOpen, setMobileMenuOpen ] = useState(false)
 
   // Carregar nutricionistas do banco de dados
   useEffect(() => {
@@ -128,7 +128,7 @@ export default function NutricionistasPage() {
     return () => {
       document.body.style.overflow = 'unset'
     }
-  }, [mobileMenuOpen])
+  }, [ mobileMenuOpen ])
 
   // Filtrar e ordenar nutricionistas
   const filteredNutritionists = useMemo(() => {
@@ -351,9 +351,8 @@ export default function NutricionistasPage() {
 
         {/* Mobile Menu */}
         <div
-          className={`fixed top-0 right-0 z-50 h-full w-80 bg-white shadow-2xl transform transition-transform duration-300 ease-in-out md:hidden overflow-hidden ${
-            mobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
-          }`}
+          className={`fixed top-0 right-0 z-50 h-full w-80 bg-white shadow-2xl transform transition-transform duration-300 ease-in-out md:hidden overflow-hidden ${mobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
+            }`}
         >
           {/* Header do Menu Mobile */}
           <div className="flex items-center justify-between p-4 border-b border-gray-100 bg-white">
@@ -542,11 +541,11 @@ export default function NutricionistasPage() {
                 <div className="text-3xl font-bold text-[#4AB0D9]">
                   {nutritionists.length > 0
                     ? (
-                        nutritionists.reduce(
-                          (acc, n) => acc + (n.rating || 0),
-                          0
-                        ) / nutritionists.length
-                      ).toFixed(1)
+                      nutritionists.reduce(
+                        (acc, n) => acc + (n.rating || 0),
+                        0
+                      ) / nutritionists.length
+                    ).toFixed(1)
                     : '4.8'}
                 </div>
                 <div className="text-sm text-[#1E1D40]/70">Avaliação Média</div>
@@ -732,9 +731,8 @@ export default function NutricionistasPage() {
                 return (
                   <Card
                     key={nutritionist.id}
-                    className={`group hover:shadow-xl transition-all duration-300 border-0 shadow-lg ${
-                      viewMode === 'list' ? 'flex' : ''
-                    }`}
+                    className={`group hover:shadow-xl transition-all duration-300 border-0 shadow-lg ${viewMode === 'list' ? 'flex' : ''
+                      }`}
                   >
                     <div className={viewMode === 'list' ? 'flex w-full' : ''}>
                       {/* Imagem */}
@@ -746,9 +744,8 @@ export default function NutricionistasPage() {
                           alt={formatted.name}
                           width={400}
                           height={400}
-                          className={`object-cover rounded-full ${
-                            viewMode === 'list' ? 'w-32 h-32' : 'w-40 h-40'
-                          }`}
+                          className={`object-cover rounded-full ${viewMode === 'list' ? 'w-32 h-32' : 'w-40 h-40'
+                            }`}
                         />
                         {formatted.onlineConsultation && (
                           <Badge className="absolute top-3 right-3 bg-green-500 text-white">
@@ -856,16 +853,16 @@ export default function NutricionistasPage() {
                                       })}
                                     {nutritionist.badges.length >
                                       (nutritionist.aceita_cupons ? 1 : 2) && (
-                                      <div className="flex items-center gap-1 px-2 py-1 bg-gray-100 rounded-full">
-                                        <span className="text-xs font-medium text-gray-600">
-                                          +
-                                          {nutritionist.badges.length -
-                                            (nutritionist.aceita_cupons
-                                              ? 1
-                                              : 2)}
-                                        </span>
-                                      </div>
-                                    )}
+                                        <div className="flex items-center gap-1 px-2 py-1 bg-gray-100 rounded-full">
+                                          <span className="text-xs font-medium text-gray-600">
+                                            +
+                                            {nutritionist.badges.length -
+                                              (nutritionist.aceita_cupons
+                                                ? 1
+                                                : 2)}
+                                          </span>
+                                        </div>
+                                      )}
                                   </>
                                 )}
                             </div>

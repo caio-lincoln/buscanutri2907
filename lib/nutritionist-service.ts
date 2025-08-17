@@ -105,24 +105,24 @@ export async function getNutritionistById(id: string): Promise<
       return null
     }
 
-    const { data, error } = await supabase.rpc('get_nutritionists_safe', {
-      p_nutritionist_id: id,
-    })
+    const { data, error } = await supabase.rpc('get_nutritionist_by_id', {
+      p_id: id,
+    }).maybeSingle()
 
     if (error) {
       // Silent error handling: Error fetching nutritionist by ID
       return null
     }
 
-    if (!data || data.length === 0) {
+    if (!data) {
       return null
     }
 
-    const nutritionist = data[0]
+    const nutritionist = data
     // Adiciona o email do usuário ao objeto do nutricionista
     const nutritionistWithEmail = {
       ...nutritionist,
-      email: nutritionist.email || null,
+      email:  null,
     } as NutritionistProfile
 
     // Busca as insígnias do nutricionista

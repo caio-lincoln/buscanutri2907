@@ -145,7 +145,6 @@ export default function NutritionistForumQuestionPage() {
             profile = nutritionistProfile
             isPatient = false
           }
-          console.log("🚀 ~ loadData ~ profile:", profile)
 
           // Check if current user has liked this question
           let hasLikedQuestion = false
@@ -724,7 +723,7 @@ export default function NutritionistForumQuestionPage() {
       return
     }
 
-    if (currentUser.user_type !== 'nutricionista') {
+    if (currentUser.user_metadata['user_type'] !== 'nutricionista') {
       alert('Apenas nutricionistas podem responder no fórum.')
       return
     }
@@ -826,7 +825,7 @@ export default function NutritionistForumQuestionPage() {
               </h1>
             </div>
 
-            {currentUser?.user_type === 'nutricionista' && (
+            {/* {currentUser?.user_metadata['user_type'] === 'nutricionista' && (
               <Button
                 variant="outline"
                 size="sm"
@@ -836,7 +835,7 @@ export default function NutritionistForumQuestionPage() {
                 <Trash2 className="h-4 w-4 mr-2" />
                 Limpar Dados Órfãos
               </Button>
-            )}
+            )} */}
           </div>
 
           {/* Question Card */}
@@ -949,7 +948,7 @@ export default function NutritionistForumQuestionPage() {
           </Card>
 
           {/* Reply Form - Only for nutritionists */}
-          {currentUser?.user_type === 'nutricionista' && (
+          {currentUser?.user_metadata['user_type'] === 'nutricionista' &&(
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">Sua Resposta</CardTitle>
@@ -978,7 +977,7 @@ export default function NutritionistForumQuestionPage() {
           )}
 
           {/* Access restriction message for non-nutritionists */}
-          {currentUser?.user_type !== 'nutricionista' && (
+          {currentUser?.user_metadata['user_type'] !== 'nutricionista' && (
             <div className="flex items-center gap-2 text-sm text-blue-600 bg-blue-50 px-3 py-2 rounded-md border border-blue-200">
               <Shield className="h-4 w-4" />
               <span className="font-medium">

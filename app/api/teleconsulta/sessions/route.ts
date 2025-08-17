@@ -1,15 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
 import { v4 as uuidv4 } from 'uuid'
 import { withErrorHandling, validateAuth, ValidationError, ConflictError } from '@/src/lib/middleware/error-handler'
 import { createTeleconsultaSessionSchema } from '@/src/lib/validations/teleconsulta'
 import { createNotification } from '@/lib/notifications-service'
 import { createClient } from '../../../../lib/supabase/server'
+import { format, parseISO } from 'date-fns'
 
 // GET - Listar sessões de teleconsulta
 export const GET = withErrorHandling(async (request: NextRequest) => {
-  const cookieStore = cookies()
-  const supabase = createClient(cookieStore)
+  const supabase = await createClient()
   
   // Verificar autenticação
   const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -100,21 +99,21 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
 
   // Verificar se o nutricionista existe
   const { data: nutritionist, error: nutritionistError } = await supabase
-    .from('nutritionist_profiles')
-    .select('id, user_id')
-    .eq('user_id', nutritionist_id)
-    .single()
-
+  .from('nutritionist_profiles')
+  .select('id, user_id')
+  .eq('id', nutritionist_id)
+  .single()
+  
   if (nutritionistError || !nutritionist) {
     throw new ValidationError('Nutricionista não encontrado')
   }
 
   // Buscar perfil do paciente
   const { data: patient, error: patientError } = await supabase
-    .from('patient_profiles')
-    .select('id, user_id')
-    .eq('user_id', userId)
-    .single()
+  .from('patient_profiles')
+  .select('id, user_id')
+  .eq('user_id', userId)
+  .single()
 
   if (patientError || !patient) {
     throw new ValidationError('Perfil do paciente não encontrado')
@@ -123,12 +122,13 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   // Verificar se já existe uma sessão no mesmo horário
   const endTime = new Date(scheduledDate.getTime() + duration_minutes * 60000)
   const { data: existingSessions, error: sessionError } = await supabase
-    .from('teleconsulta_sessions')
-    .select('id')
-    .eq('nutritionist_id', nutritionist.id)
-    .eq('status', 'scheduled')
-    .gte('scheduled_at', scheduled_for)
-    .lt('scheduled_at', endTime.toISOString())
+  .from('teleconsulta_sessions')
+  .select('id')
+  .eq('nutritionist_id', nutritionist.id)
+  .eq('status', 'scheduled')
+  .gte('scheduled_at', scheduled_for)
+  .lt('scheduled_at', endTime.toISOString())
+  console.log("🚀 ~ existingSessions:", existingSessions)
 
   if (sessionError) {
     throw new Error('Erro ao verificar disponibilidade')
@@ -140,7 +140,8 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
 
   // Gerar token único para a sessão
   const sessionToken = uuidv4()
-  const joinUrl = `${process.env.NEXT_PUBLIC_APP_URL}/teleconsulta/${sessionToken}`
+  const origin = new URL(request.url).origin;   
+  const joinUrl = `${origin}/teleconsulta/${sessionToken}`
 
   // Criar sessão
   const { data: session, error: createError } = await supabase
@@ -159,6 +160,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     .select()
     .single()
 
+  console.log("🚀 ~ createError:", createError)
   if (createError) {
     throw new Error('Erro ao criar sessão de teleconsulta')
   }

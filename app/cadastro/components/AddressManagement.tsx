@@ -195,14 +195,15 @@ export default function AddressManagement({
       return
     }
 
-    if (formData.zip_code && !/^d{5}-?d{3}$/.test(formData.zip_code)) {
-      toast({
-        title: 'Erro de validação',
-        description: 'CEP deve estar no formato 00000-000',
-        variant: 'destructive',
-      })
-      return
-    }
+    console.log("🚀 ~ handleSaveAddress ~ formData:", formData)
+    // if (formData.zip_code) {
+    //   toast({
+    //     title: 'Erro de validação',
+    //     description: 'CEP deve estar no formato 00000-000',
+    //     variant: 'destructive',
+    //   })
+    //   return
+    // }
 
     try {
       setLoading(true)
@@ -242,6 +243,7 @@ export default function AddressManagement({
       await loadAddresses()
       setEditingIndex(null)
     } catch (error) {
+      console.log("🚀 ~ handleSaveAddress ~ error:", error)
       // Error saving address - handled silently
       toast({
         title: 'Erro',

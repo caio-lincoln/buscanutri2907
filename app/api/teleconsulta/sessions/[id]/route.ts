@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
 import { cookies } from 'next/headers'
 import { withErrorHandling, validateAuth, validateResourceExists, ValidationError, ForbiddenError } from '@/src/lib/middleware/error-handler'
 import { updateSessionStatusSchema, idParamSchema } from '@/src/lib/validations/teleconsulta'
 import { createNotification } from '@/lib/notifications-service'
+import { createClient } from '../../../../../lib/supabase/server'
 
 // PUT /api/teleconsulta/sessions/[id] - Atualizar status da sessão
 export const PUT = withErrorHandling(async (
@@ -184,36 +184,34 @@ export const GET = withErrorHandling(async (
   request: NextRequest,
   { params }: { params: { id: string } }
 ) => {
-  const cookieStore = cookies()
-  const supabase = createClient(cookieStore)
+  const supabase = await createClient()
   
   // Verificar autenticação
   const { data: { user }, error: authError } = await supabase.auth.getUser()
+  console.log("🚀 ~ user:", user?.identities[0]?.identity_data)
   const userId = validateAuth(authError ? null : user?.id || null)
 
   // Validar parâmetros
-  const { id: sessionId } = idParamSchema.parse(params)
+  const { id: sessionId } = idParamSchema.parse(await params)
 
   // Buscar sessão com dados relacionados
   const { data: session, error: sessionError } = await supabase
     .from('teleconsulta_sessions')
     .select(`
-      *,
-      patient_profiles!inner(
-        full_name,
-        phone,
-        email
+      id, session_token, scheduled_at, started_at, ended_at,
+      duration_minutes, price, status, join_url,
+  
+      nutritionist:nutritionist_profiles!teleconsulta_sessions_nutritionist_id_fkey (
+        id, user_id, full_name
       ),
-      nutritionist_profiles!inner(
-        full_name,
-        phone,
-        email,
-        specialties
+  
+      patient:patient_profiles!teleconsulta_sessions_patient_id_fkey (
+        id, user_id, full_name, phone
       )
     `)
-    .eq('id', sessionId)
-    .or(`nutritionist_id.eq.${userId},patient_id.eq.${userId}`)
-    .single()
+    .eq('session_token', sessionId)
+    // .or(`nutritionist_id.eq.${userId},patient_id.eq.${userId}`)
+    .maybeSingle()
 
   const validSession = validateResourceExists(sessionError ? null : session, 'Sessão não encontrada')
 

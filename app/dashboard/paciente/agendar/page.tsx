@@ -131,7 +131,6 @@ export default function AgendarPage() {
   const loadNutritionists = async () => {
     try {
       setLoading(true)
-      
       const params = new URLSearchParams({
         search: searchTerm,
         specialty: selectedSpecialty,
@@ -185,7 +184,7 @@ export default function AgendarPage() {
   const handleSelectNutritionist = (nutritionist: NutritionistProfile) => {
     setSelectedNutritionist(nutritionist)
     setStep('schedule')
-    loadAvailableSlots(nutritionist.user_id)
+    loadAvailableSlots(nutritionist.id)
   }
 
   const handleBooking = async () => {
@@ -202,7 +201,7 @@ export default function AgendarPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          nutritionist_id: selectedNutritionist.user_id,
+          nutritionist_id: selectedNutritionist.id,
           scheduled_for: selectedSlot.datetime,
           duration_minutes: selectedSlot.duration,
           price: selectedNutritionist.consultation_price,

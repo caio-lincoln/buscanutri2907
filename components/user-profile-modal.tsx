@@ -1149,8 +1149,8 @@ export function UserProfileModal({
                   className="w-full"
                   aspectRatio={16 / 5}
                   cropType="cover"
-                  minWidth={2000}
-                  minHeight={700}
+                  minWidth={1500}
+                  minHeight={500}
                   title="Upload de Capa do Perfil"
                   description="Selecione uma imagem para a capa do seu perfil"
                 />

@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { NutritionistProfile } from '../../../lib/supabase'
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
     const { searchParams } = new URL(request.url)
 
     // Parâmetros de filtro
     const searchTerm = searchParams.get('search') || ''
     const specialty = searchParams.get('specialty') || ''
+    console.log("🚀 ~ GET ~ specialty:", specialty)
     const state = searchParams.get('state') || ''
     const minPrice = parseFloat(searchParams.get('minPrice') || '0')
     const maxPrice = parseFloat(searchParams.get('maxPrice') || '1000')
@@ -25,17 +27,14 @@ export async function GET(request: NextRequest) {
         user_id,
         full_name,
         bio,
-        specialties,
-        city,
-        state,
-        address,
+        specialties::jsonb,
         profile_image_url,
         crn,
         rating,
         total_reviews,
         experience_years,
         consultation_price,
-        offers_online_consultation,
+        online_consultation,
         service_online_available,
         is_verified,
         created_at
@@ -44,13 +43,13 @@ export async function GET(request: NextRequest) {
 
     // Filtro por consulta online
     if (onlineOnly) {
-      query = query.eq('offers_online_consultation', true)
+      query = query.eq('online_consultation', true)
     }
 
     // Filtro por estado
-    if (state && state !== 'Todas') {
-      query = query.eq('state', state)
-    }
+    // if (state && state !== 'Todas') {
+    //   query = query.eq('state', state)
+    // }
 
     // Filtro por preço
     if (minPrice > 0 || maxPrice < 1000) {
@@ -61,7 +60,7 @@ export async function GET(request: NextRequest) {
 
     // Filtro por especialidade
     if (specialty && specialty !== 'Todas') {
-      query = query.contains('specialties', [specialty])
+      query = query.contains('specialties::jsonb', [ specialty ])
     }
 
     // Filtro por termo de busca (nome, bio, cidade)
@@ -95,7 +94,36 @@ export async function GET(request: NextRequest) {
     // Paginação
     query = query.range(offset, offset + limit - 1)
 
-    const { data: nutritionists, error, count } = await query
+
+    let nutritionists: {
+      id: any;
+      user_id: any;
+      full_name: any;
+      bio: any;
+      specialties_text: string;
+      profile_image_url: any;
+      crn: any;
+      rating: any;
+      total_reviews: any;
+      experience_years: any;
+      consultation_price: any;
+      online_consultation: any;
+      service_online_available: any;
+      is_verified: any;
+      created_at: any;
+    }[] = []
+    const { data, error, count } = await query
+    console.log("🚀 ~ GET ~ data:", data)
+
+    if (data) {
+      nutritionists = data
+      // const nutritionistsWithAddress = nutritionists?.map((nutritionist) => {
+      // console.log("🚀 ~ GET ~ nutritionist:", nutritionist)
+
+      //   return {...nutritionist, specialties: nutritionist.specialties_text}
+      // })
+
+    }
 
     if (error) {
       console.error('Erro ao buscar nutricionistas:', error)

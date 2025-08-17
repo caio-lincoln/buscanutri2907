@@ -59,19 +59,19 @@ class NutritionistAddressService {
    */
   async createAddress(data: CreateAddressData): Promise<NutritionistAddress> {
     const { data: address, error } = await supabase
-      .from('nutritionist_addresses')
-      .insert({
-        nutritionist_id: data.nutritionist_id,
-        type: data.type,
-        status: data.status || 'active',
-        is_main: data.is_main || false,
-        country: data.country || 'Brasil',
-        state: data.state,
-        city: data.city,
-        neighborhood: data.neighborhood,
-        zip_code: data.zip_code,
-        street: data.street,
-        number: data.number,
+    .from('nutritionist_addresses')
+    .insert({
+      nutritionist_id: data.nutritionist_id,
+      type: data.type,
+      status: data.status || 'active',
+      is_main: data.is_main || false,
+      country: data.country || 'Brasil',
+      state: data.state,
+      city: data.city,
+      neighborhood: data.neighborhood,
+      zip_code: data.zip_code,
+      street: data.street,
+      number: data.number,
         complement: data.complement,
         latitude: data.latitude,
         longitude: data.longitude,
@@ -79,6 +79,7 @@ class NutritionistAddressService {
       })
       .select()
       .single()
+      console.log("🚀 ~ NutritionistAddressService ~ createAddress ~ error:", error)
 
     if (error) {
       throw new Error(`Failed to create address: ${error.message}`)

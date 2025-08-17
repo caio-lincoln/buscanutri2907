@@ -32,9 +32,11 @@ import {
   Menu,
   X,
   Eye,
+  LayoutDashboard,
+  LogOut,
 } from 'lucide-react'
-import { useState, useEffect } from 'react'
-import type { NutritionistProfile } from '@/lib/supabase' // Importa a interface real
+import { useState, useEffect, useCallback, useMemo } from 'react'
+import type { NutritionistProfile, UserType } from '@/lib/supabase' // Importa a interface real
 import { useRealtimeProfileViews } from '@/hooks/use-realtime-profile-views'
 import {
   generateImageVariants,
@@ -47,6 +49,7 @@ import {
   normalizeLanguages,
   logNormalizationEvent,
 } from '@/lib/structured-data-utils'
+import { useAuth } from '../../../contexts/auth-context'
 
 // Garante que o valor retornado seja sempre um array
 function toArray(value: unknown): string[] {
@@ -68,6 +71,10 @@ function toArray(value: unknown): string[] {
   return []
 }
 
+
+
+
+
 // Função específica para processar idiomas com múltiplos escapes
 function processLanguages(value: unknown): string[] {
   if (Array.isArray(value)) return value
@@ -82,7 +89,7 @@ function processLanguages(value: unknown): string[] {
 
     if (languageMatches && languageMatches.length > 0) {
       // Remove duplicatas e retorna apenas os idiomas encontrados
-      return [...new Set(languageMatches)]
+      return [ ...new Set(languageMatches) ]
     }
 
     // Se não encontrou padrões específicos, tenta o processamento normal
@@ -115,25 +122,27 @@ interface NutritionistProfileClientProps {
 export default function NutritionistProfilePageClient({
   nutritionist,
 }: NutritionistProfileClientProps) {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [ mobileMenuOpen, setMobileMenuOpen ] = useState(false)
   const { viewStats, recordView } = useRealtimeProfileViews(nutritionist.id, {
     totalViews: nutritionist.total_views || 0,
     uniqueViews: nutritionist.unique_views || 0,
     lastViewAt: nutritionist.last_view_at || null,
   })
+  const { user } = useAuth()
+  console.log("🚀 ~ NutritionistProfilePageClient ~ user:", user)
 
   if (!nutritionist) {
-    notFound() // Should ideally be handled by the server component
+    notFound()
   }
 
   // Registra a visualização quando o componente é montado
   useEffect(() => {
     recordView()
-  }, [recordView])
+  }, [ recordView ])
 
   // Formatações para exibição, usando dados reais ou placeholders
   const formattedName = nutritionist.full_name || 'Nutricionista Desconhecido'
-  const formattedSpecialty = nutritionist.specialties?.[0] || 'Nutrição'
+  const formattedSpecialty = nutritionist.specialties?.[ 0 ] || 'Nutrição'
   const formattedLocation = nutritionist.address || 'Localização não informada'
   const formattedRating = nutritionist.rating?.toFixed(1) || '0.0'
   const formattedReviews = nutritionist.total_reviews || 0
@@ -192,30 +201,30 @@ export default function NutritionistProfilePageClient({
   const formattedServices = [
     ...(nutritionist.service_consultation_price
       ? [
-          {
-            name: 'Consulta Nutricional',
-            price: nutritionist.service_consultation_price,
-            description: 'Consulta completa com avaliação nutricional',
-          },
-        ]
+        {
+          name: 'Consulta Nutricional',
+          price: nutritionist.service_consultation_price,
+          description: 'Consulta completa com avaliação nutricional',
+        },
+      ]
       : []),
     ...(nutritionist.service_followup_price
       ? [
-          {
-            name: 'Consulta de Retorno',
-            price: nutritionist.service_followup_price,
-            description: 'Acompanhamento e ajustes no plano alimentar',
-          },
-        ]
+        {
+          name: 'Consulta de Retorno',
+          price: nutritionist.service_followup_price,
+          description: 'Acompanhamento e ajustes no plano alimentar',
+        },
+      ]
       : []),
     ...(nutritionist.service_meal_plan_price
       ? [
-          {
-            name: 'Plano Alimentar',
-            price: nutritionist.service_meal_plan_price,
-            description: 'Elaboração de plano alimentar personalizado',
-          },
-        ]
+        {
+          name: 'Plano Alimentar',
+          price: nutritionist.service_meal_plan_price,
+          description: 'Elaboração de plano alimentar personalizado',
+        },
+      ]
       : []),
   ]
 
@@ -228,6 +237,26 @@ export default function NutritionistProfilePageClient({
 
   // Testimonials removidos - campo JSON não existe mais
   const formattedTestimonials: any[] = []
+
+  const getDashboardUrl = useCallback((userType: UserType) => {
+    switch (userType) {
+      case 'paciente':
+        return '/dashboard/paciente'
+      case 'nutricionista':
+        return '/dashboard/nutricionistas'
+      case 'empresa':
+        return '/dashboard/empresa'
+      case 'admin':
+        return '/dashboard/admin'
+      default:
+        return '/dashboard/paciente'
+    }
+  }, [])
+  
+  const currentDashboardUrl = useMemo(() => {
+    return getDashboardUrl(user?.user_metadata[ 'user_type' ])
+  
+  }, [ user?.user_type, getDashboardUrl ])
 
   return (
     <>
@@ -277,19 +306,49 @@ export default function NutritionistProfilePageClient({
             </nav>
 
             <div className="flex items-center gap-3">
-              <Link href="/login">
-                <Button
-                  variant="ghost"
-                  className="hidden md:flex text-[#1E1D40] hover:text-[#4AB0D9]"
-                >
-                  Entrar
-                </Button>
-              </Link>
-              <Link href="/cadastro?tipo=paciente">
-                <Button className="bg-[#4AB0D9] hover:bg-[#4AB0D9]/90 text-white">
-                  Cadastrar
-                </Button>
-              </Link>
+
+              {
+                user && user.user_metadata[ 'user_type' ] ? (
+                  // User is logged in - show dashboard and logout buttons
+                  <>
+                    <Link href={currentDashboardUrl}>
+                      <Button
+                        variant="ghost"
+                        className="hidden md:flex items-center gap-2 text-[#1E1D40] hover:text-[#4AB0D9] hover:bg-[#4AB0D9]/5"
+                      >
+                        <LayoutDashboard className="h-4 w-4" />
+                        Dashboard
+                      </Button>
+                    </Link>
+                    <Button
+                      variant="ghost"
+                      onClick={() => { }}
+                      className="hidden md:flex items-center gap-2 text-[#1E1D40] hover:text-red-600 hover:bg-red-50"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Sair
+                    </Button>
+                  </>
+                ) : (
+                  // User is not logged in - show login and register buttons
+                  <>
+                    <Link href="/login">
+                      <Button
+                        variant="ghost"
+                        className="hidden md:flex text-[#1E1D40] hover:text-[#4AB0D9] hover:bg-[#4AB0D9]/5"
+                      >
+                        Entrar
+                      </Button>
+                    </Link>
+                    <Link href="/cadastro?tipo=paciente">
+                      <Button className="bg-[#4AB0D9] hover:bg-[#4AB0D9]/90 text-white shadow-sm hover:shadow-md transition-all duration-300">
+                        Cadastrar
+                      </Button>
+                    </Link>
+                  </>
+                )
+              }
+            
 
               {/* Mobile Menu Button */}
               <Button
@@ -314,9 +373,8 @@ export default function NutritionistProfilePageClient({
 
         {/* Mobile Menu */}
         <div
-          className={`fixed top-0 right-0 z-70 h-full w-80 bg-white transform transition-transform duration-300 md:hidden ${
-            mobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
-          }`}
+          className={`fixed top-0 right-0 z-[999] h-full w-80 bg-white transform transition-transform duration-300 md:hidden ${mobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
+            }`}
         >
           <div className="flex items-center justify-between p-4 border-b">
             <Image
@@ -795,7 +853,7 @@ export default function NutritionistProfilePageClient({
                                   {testimonial.name}
                                 </h5>
                                 <div className="flex items-center gap-1">
-                                  {[...Array(testimonial.rating)].map(
+                                  {[ ...Array(testimonial.rating) ].map(
                                     (_, i) => (
                                       <Star
                                         key={i}
@@ -993,7 +1051,7 @@ export default function NutritionistProfilePageClient({
                   <CardContent>
                     <div className="space-y-2">
                       {Object.entries(formattedWorkingHours).map(
-                        ([day, hours]) => (
+                        ([ day, hours ]) => (
                           <div
                             key={day}
                             className="flex items-center justify-between text-sm"
@@ -1074,44 +1132,44 @@ export default function NutritionistProfilePageClient({
               {/* Redes Sociais */}
               {(formattedSocialMedia.instagram ||
                 formattedSocialMedia.linkedin) && (
-                <Card className="shadow-lg border-0">
-                  <CardHeader>
-                    <CardTitle className="text-xl">Redes Sociais</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    {formattedSocialMedia.instagram && (
-                      <a
-                        href={`https://instagram.com/${formattedSocialMedia.instagram.replace('@', '')}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-3 text-sm hover:text-[#4AB0D9] transition-colors"
-                      >
-                        <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
-                          <span className="text-white text-xs font-bold">
-                            IG
-                          </span>
-                        </div>
-                        <span>{formattedSocialMedia.instagram}</span>
-                      </a>
-                    )}
-                    {formattedSocialMedia.linkedin && (
-                      <a
-                        href={`https://linkedin.com/in/${formattedSocialMedia.linkedin}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-3 text-sm hover:text-[#4AB0D9] transition-colors"
-                      >
-                        <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                          <span className="text-white text-xs font-bold">
-                            in
-                          </span>
-                        </div>
-                        <span>LinkedIn</span>
-                      </a>
-                    )}
-                  </CardContent>
-                </Card>
-              )}
+                  <Card className="shadow-lg border-0">
+                    <CardHeader>
+                      <CardTitle className="text-xl">Redes Sociais</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {formattedSocialMedia.instagram && (
+                        <a
+                          href={`https://instagram.com/${formattedSocialMedia.instagram.replace('@', '')}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-3 text-sm hover:text-[#4AB0D9] transition-colors"
+                        >
+                          <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
+                            <span className="text-white text-xs font-bold">
+                              IG
+                            </span>
+                          </div>
+                          <span>{formattedSocialMedia.instagram}</span>
+                        </a>
+                      )}
+                      {formattedSocialMedia.linkedin && (
+                        <a
+                          href={`https://linkedin.com/in/${formattedSocialMedia.linkedin}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-3 text-sm hover:text-[#4AB0D9] transition-colors"
+                        >
+                          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                            <span className="text-white text-xs font-bold">
+                              in
+                            </span>
+                          </div>
+                          <span>LinkedIn</span>
+                        </a>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
 
               {/* CTA Final */}
               <Card className="bg-gradient-to-br from-[#4AB0D9]/10 to-[#4AB0D9]/5 border-[#4AB0D9]/20 shadow-lg">

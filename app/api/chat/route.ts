@@ -6,7 +6,7 @@ export async function POST(req: Request) {
     const { messages } = await req.json()
 
     // Inicializar o cliente do Gemini
-    const genAI = new GoogleGenerativeAI(process.env['GEMINI_API_KEY']!)
+    const genAI = new GoogleGenerativeAI('AIzaSyAZ32QZi4obYEwz19jdpLwkN_oq6_Xe5gE')
     const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
 
     // Configurar o prompt do sistema

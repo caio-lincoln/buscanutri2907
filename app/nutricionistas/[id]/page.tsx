@@ -40,7 +40,7 @@ export async function generateMetadata({ params }: PageProps) {
   }
 
   return {
-    title: `${nutritionist.full_name} - Nutricionista em ${nutritionist.address || nutritionist.specialties?.[0]}`,
+    title: `${nutritionist.full_name} - Nutricionista em ${nutritionist.address || nutritionist.specialties?.[ 0 ]}`,
     description: nutritionist.bio,
     openGraph: {
       title: `${nutritionist.full_name} - Busca Nutri`,
@@ -99,30 +99,30 @@ export default async function NutritionistProfilePage({ params }: PageProps) {
   const formattedServices = [
     ...(nutritionist.service_consultation_price
       ? [
-          {
-            name: 'Consulta Nutricional',
-            price: nutritionist.service_consultation_price,
-            description: 'Consulta completa com avaliação nutricional',
-          },
-        ]
+        {
+          name: 'Consulta Nutricional',
+          price: nutritionist.service_consultation_price,
+          description: 'Consulta completa com avaliação nutricional',
+        },
+      ]
       : []),
     ...(nutritionist.service_followup_price
       ? [
-          {
-            name: 'Consulta de Retorno',
-            price: nutritionist.service_followup_price,
-            description: 'Acompanhamento e ajustes no plano alimentar',
-          },
-        ]
+        {
+          name: 'Consulta de Retorno',
+          price: nutritionist.service_followup_price,
+          description: 'Acompanhamento e ajustes no plano alimentar',
+        },
+      ]
       : []),
     ...(nutritionist.service_meal_plan_price
       ? [
-          {
-            name: 'Plano Alimentar',
-            price: nutritionist.service_meal_plan_price,
-            description: 'Elaboração de plano alimentar personalizado',
-          },
-        ]
+        {
+          name: 'Plano Alimentar',
+          price: nutritionist.service_meal_plan_price,
+          description: 'Elaboração de plano alimentar personalizado',
+        },
+      ]
       : []),
   ]
 
@@ -137,9 +137,9 @@ export default async function NutritionistProfilePage({ params }: PageProps) {
     address: {
       '@type': 'PostalAddress',
       streetAddress: formattedAddress,
-      addressLocality: nutritionist.address?.split(',')[0]?.trim() || '',
+      addressLocality: nutritionist.address?.split(',')[ 0 ]?.trim() || '',
       addressRegion:
-        nutritionist.address?.split(',').pop()?.trim().split(' ')[0]?.trim() ||
+        nutritionist.address?.split(',').pop()?.trim().split(' ')[ 0 ]?.trim() ||
         '',
     },
     telephone: formattedPhone,
@@ -162,7 +162,7 @@ export default async function NutritionistProfilePage({ params }: PageProps) {
     knowsAbout: formattedSpecializations,
     alumniOf: {
       '@type': 'Organization',
-      name: formattedEducation.split(' - ')[0] || 'Instituição de Ensino',
+      name: formattedEducation.split(' - ')[ 0 ] || 'Instituição de Ensino',
     },
     hasCredential: {
       '@type': 'EducationalOccupationalCredential',

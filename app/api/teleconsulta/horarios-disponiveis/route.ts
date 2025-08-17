@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
 import { cookies } from 'next/headers'
 import { withErrorHandling } from '@/lib/api-middleware'
 import { validateAuth } from '@/src/lib/middleware/error-handler'
 import { addDays, format, parseISO, isAfter, isBefore, addMinutes } from 'date-fns'
 import { z } from 'zod'
+import { createClient } from '../../../../lib/supabase/server'
 
 // Schema de validação
 const availableTimesQuerySchema = z.object({
@@ -15,8 +15,7 @@ const availableTimesQuerySchema = z.object({
 
 // GET /api/teleconsulta/horarios-disponiveis - Buscar horários disponíveis
 export const GET = withErrorHandling(async (request: NextRequest) => {
-  const cookieStore = cookies()
-  const supabase = createClient(cookieStore)
+  const supabase = await createClient()
   
   // Verificar autenticação
   const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -38,22 +37,23 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
 
   // Buscar perfil do nutricionista
   const { data: nutritionist, error: nutritionistError } = await supabase
-    .from('nutritionist_profiles')
-    .select('id, user_id')
-    .eq('user_id', nutritionistId)
-    .single()
-
+  .from('nutritionist_profiles')
+  .select('id, user_id')
+  .eq('id', nutritionistId)
+  .single()
+  
   if (nutritionistError || !nutritionist) {
     throw new Error('Nutricionista não encontrado')
   }
 
   // Buscar disponibilidade do nutricionista
   const { data: availability, error: availabilityError } = await supabase
-    .from('agenda_availability')
-    .select('*')
-    .eq('nutritionist_id', nutritionist.id)
-    .eq('is_available', true)
-
+  .from('nutritionist_availability')
+  .select('*')
+  .eq('nutritionist_id', nutritionist.id)
+  .eq('is_available', true)
+  console.log("🚀 ~ availability:", availability)
+  
   if (availabilityError) {
     throw new Error('Erro ao buscar disponibilidade')
   }

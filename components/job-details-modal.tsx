@@ -86,7 +86,7 @@ export function JobDetailsModal({
       }
 
       // Verificar se o usuário é nutricionista
-      if (user.user_type !== 'nutricionista') {
+      if (user.user_metadata['user_type'] !== 'nutricionista') {
         // Silent operation - user is not a nutritionist
         toast.error('Apenas nutricionistas podem se candidatar às vagas.')
         return
