@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withErrorHandling } from '@/lib/api-middleware'
-import { validateAuth } from '@/lib/auth-utils'
+import { requireAuth } from '@/lib/auth-utils'
 import { createNotification, getUserNotifications, markNotificationAsRead, markAllNotificationsAsRead, getUnreadNotificationsCount } from '@/lib/notifications-service'
 import { z } from 'zod'
 import { ValidationError } from '@/lib/errors'

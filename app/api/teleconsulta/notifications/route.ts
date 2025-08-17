@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withErrorHandling } from '@/lib/api-middleware'
-import { validateAuth } from '@/lib/auth-utils'
+import { requireAuth } from '@/lib/auth-utils'
 import { createNotification } from '@/lib/notifications-service'
 import { createSupabaseClient } from '@/lib/supabase'
 import { z } from 'zod'

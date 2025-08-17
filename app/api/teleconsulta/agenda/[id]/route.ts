@@ -1,8 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/src/lib/supabase/server'
+import { createClient } from '@/lib/supabase/server'
 import { cookies } from 'next/headers'
-import { withErrorHandling, validateAuth, validateResourceExists, ValidationError, ForbiddenError, ConflictError } from '@/src/lib/middleware/error-handler'
-import { availabilitySlotSchema, idParamSchema } from '@/src/lib/validations/teleconsulta'
+import { withErrorHandling } from '@/lib/api-middleware'
+import { requireAuth } from '@/lib/auth-utils'
+import { ValidationError, AuthorizationError, ConflictError } from '@/lib/errors'
+import { z } from 'zod'
+
+// Schemas de validação
+const availabilitySlotSchema = z.object({
+  start_time: z.string().regex(/^\d{2}:\d{2}$/, 'Formato de hora inválido'),
+  end_time: z.string().regex(/^\d{2}:\d{2}$/, 'Formato de hora inválido'),
+  is_available: z.boolean()
+})
+
+const idParamSchema = z.object({
+  id: z.string().uuid('ID inválido')
+})
 
 // DELETE /api/teleconsulta/agenda/[id] - Deletar horário de disponibilidade
 export const DELETE = withErrorHandling(async (
