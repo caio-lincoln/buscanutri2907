@@ -53,19 +53,22 @@ import {
   getCompanyJobs,
   createCompanyJob,
   type JobData,
+  deleteCompanyJob,
 } from '@/lib/company-data-service'
 import { useUser } from '@/hooks/use-user'
+import { useAuth } from '../../../contexts/auth-context'
+import { toast } from '../../ui/use-toast'
 
 export function JobsTab() {
   const { user } = useUser()
-  const [jobs, setJobs] = useState<JobData[]>([])
-  const [loading, setLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [statusFilter, setStatusFilter] = useState<string>('all')
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
-  const [selectedJob, setSelectedJob] = useState<JobData | null>(null)
-  const [isViewModalOpen, setIsViewModalOpen] = useState(false)
-  const [isCandidatesModalOpen, setIsCandidatesModalOpen] = useState(false)
+  const [ jobs, setJobs ] = useState<JobData[]>([])
+  const [ loading, setLoading ] = useState(true)
+  const [ searchTerm, setSearchTerm ] = useState('')
+  const [ statusFilter, setStatusFilter ] = useState<string>('all')
+  const [ isCreateModalOpen, setIsCreateModalOpen ] = useState(false)
+  const [ selectedJob, setSelectedJob ] = useState<JobData | null>(null)
+  const [ isViewModalOpen, setIsViewModalOpen ] = useState(false)
+  const [ isCandidatesModalOpen, setIsCandidatesModalOpen ] = useState(false)
 
   useEffect(() => {
     async function loadJobs() {
@@ -83,7 +86,7 @@ export function JobsTab() {
     }
 
     loadJobs()
-  }, [user?.companyProfile?.id])
+  }, [ user?.companyProfile?.id ])
 
   const filteredJobs = jobs.filter(job => {
     const matchesSearch =
@@ -116,7 +119,13 @@ export function JobsTab() {
     setIsCandidatesModalOpen(true)
   }
 
-  const handleDeleteJob = (jobId: string) => {
+  const handleDeleteJob = async (jobId: string) => {
+    await deleteCompanyJob(jobId)
+    toast({
+      title: 'Vaga deletada',
+      description: `Deletado com sucesso`,
+      variant: 'default',
+    })
     setJobs(jobs.filter(job => job.id !== jobId))
   }
 
@@ -251,13 +260,13 @@ export function JobsTab() {
                 <p className="text-3xl font-bold text-orange-700">
                   {jobs.length > 0
                     ? Math.round(
-                        (jobs.reduce(
-                          (sum, job) => sum + job.applicationsCount,
-                          0
-                        ) /
-                          jobs.length) *
-                          100
-                      ) / 100
+                      (jobs.reduce(
+                        (sum, job) => sum + job.applicationsCount,
+                        0
+                      ) /
+                        jobs.length) *
+                      100
+                    ) / 100
                     : 0}
                   %
                 </p>
@@ -548,9 +557,9 @@ function CreateJobForm({
   onClose: () => void
   onJobCreated: () => void
 }) {
-  const { user } = useUser()
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [formData, setFormData] = useState({
+  const { user, companyProfile } = useAuth()
+  const [ isSubmitting, setIsSubmitting ] = useState(false)
+  const [ formData, setFormData ] = useState({
     title: '',
     location: '',
     description: '',
@@ -565,7 +574,7 @@ function CreateJobForm({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!user?.companyProfile?.id) {
+    if (!companyProfile?.id) {
       alert('Erro: Perfil da empresa não encontrado')
       return
     }
@@ -598,7 +607,7 @@ function CreateJobForm({
           : [],
       }
 
-      const result = await createCompanyJob(user.companyProfile.id, jobData)
+      const result = await createCompanyJob(companyProfile.id, jobData)
 
       if (result.success) {
         alert('Vaga criada com sucesso!')
@@ -608,6 +617,7 @@ function CreateJobForm({
         alert(`Erro ao criar vaga: ${result.error}`)
       }
     } catch (error) {
+      console.log("🚀 ~ handleSubmit ~ error:", error)
       // Silent error handling - error creating job
       alert('Erro interno. Tente novamente.')
     } finally {

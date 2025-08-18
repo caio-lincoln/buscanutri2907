@@ -80,14 +80,14 @@ export async function createCompanyJob(
         location: jobData.location,
         job_type: jobData.jobType,
         level: jobData.level,
-        salary_min: jobData.salaryMin,
-        salary_max: jobData.salaryMax,
-        requirements: jobData.requirements,
-        benefits: jobData.benefits,
+        salary_min: jobData.salaryMin ?? null,
+        salary_max: jobData.salaryMax ?? null,
+        requirements: jobData.requirements ?? [],
+        benefits: jobData.benefits ?? [],
         status: 'ativa',
       })
       .select('id')
-      .single()
+      .single();
 
     if (error) {
       // Silent error handling: Error creating job
@@ -147,6 +147,15 @@ export async function getCompanyJobs(companyId: string): Promise<JobData[]> {
   } catch (error) {
     // Silent error handling: Error in getCompanyJobs
     return []
+  }
+}
+
+export async function deleteCompanyJob(jobId: string): Promise<void> {
+  try {
+    const { data } = await supabase.from('job_postings').delete().eq('id', jobId)
+  } catch (error) {
+    console.log("🚀 ~ deleteCompanyJob ~ error:", error)
+
   }
 }
 
@@ -347,12 +356,12 @@ function mapStageToEnum(
   stage: string
 ): 'triagem' | 'entrevista' | 'teste_tecnico' | 'aprovado' | 'rejeitado' {
   const stageMap: {
-    [key: string]:
-      | 'triagem'
-      | 'entrevista'
-      | 'teste_tecnico'
-      | 'aprovado'
-      | 'rejeitado'
+    [ key: string ]:
+    | 'triagem'
+    | 'entrevista'
+    | 'teste_tecnico'
+    | 'aprovado'
+    | 'rejeitado'
   } = {
     Triagem: 'triagem',
     'Análise de Currículo': 'triagem',
@@ -366,7 +375,7 @@ function mapStageToEnum(
     Cancelado: 'rejeitado',
   }
 
-  return stageMap[stage] || 'triagem'
+  return stageMap[ stage ] || 'triagem'
 }
 
 /**

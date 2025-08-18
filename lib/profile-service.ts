@@ -139,6 +139,7 @@ export async function updateUserProfile(
     .select()
     .single()
 
+  console.log("🚀 ~ updateUserProfile ~ error:", error)
   if (error) {
     throw new Error(`Erro ao atualizar perfil: ${error.message}`)
   }

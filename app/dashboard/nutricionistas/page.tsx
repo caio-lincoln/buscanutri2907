@@ -89,7 +89,7 @@ export default function NutritionistDashboard() {
   const menuItems = getMenuItems('nutricionista', dashboardStats)
 
   useEffect(() => {
-    if (!authLoading && !user) {
+    if ((!authLoading && !user) || user?.user_metadata['user_type'] !== 'nutricionista') {
       router.push('/login')
       return
     }

@@ -53,68 +53,68 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setCompanyProfile(null)
   }, [])
 
-  const refreshUserData = useCallback(async (user?: User) => {
-    try {
-      const currentUser = supabase.auth.getUser()
-      console.log("🚀 ~ AuthProvider ~ currentUser:", currentUser)
+  // const refreshUserData = useCallback(async (user?: User) => {
+  //   try {
+  //     const currentUser = supabase.auth.getUser()
+  //     console.log("🚀 ~ AuthProvider ~ currentUser:", currentUser)
 
-      if (currentUser) {
-        setUserProfile(currentUser)
-        setUser(currentUser)
+  //     if (currentUser) {
+  //       setUserProfile(currentUser)
+  //       setUser(currentUser)
 
-        // Carregar perfis específicos baseado no tipo de usuário
-        if (currentUser.user_type === 'nutricionista' || user?.user_metadata?.user_type === 'nutricionista') {
-          try {
-            const { data: nutritionist } = await supabase
-            .from('nutritionist_profiles')
-            .select('*')
-            .eq('user_id', currentUser.id)
-            .single()
-            setNutritionistProfile(nutritionist)
-          } catch (error) {
-            console.warn('Perfil de nutricionista não encontrado:', error)
-            setNutritionistProfile(null)
-          }
-        } else if (currentUser.user_type === 'paciente' || user?.user_metadata?.user_type === 'paciente') {
-          try {
-            const { data: patient } = await supabase
-              .from('patient_profiles')
-              .select('*')
-              .eq('user_id', currentUser.id)
-              .single()
-            setPatientProfile(patient)
-          } catch (error) {
-            console.warn('Perfil de paciente não encontrado:', error)
-            setPatientProfile(null)
-          }
-        } else if (currentUser.user_type === 'empresa' || user?.user_metadata?.user_type === 'empresa') {
-          try {
-            const { data: company } = await supabase
-              .from('company_profiles')
-              .select('*')
-              .eq('user_id', currentUser.id)
-              .single()
-            setCompanyProfile(company)
-          } catch (error) {
-            console.warn('Perfil de empresa não encontrado:', error)
-            setCompanyProfile(null)
-          }
-        }
-      } else {
-        setUserProfile(null)
-        setNutritionistProfile(null)
-        setPatientProfile(null)
-        setCompanyProfile(null)
-      }
-    } catch (error) {
-      console.error('Erro ao recarregar dados do usuário:', error)
-      setUser(null)
-      setUserProfile(null)
-      setNutritionistProfile(null)
-      setPatientProfile(null)
-      setCompanyProfile(null)
-    }
-  }, [ supabase ])
+  //       // Carregar perfis específicos baseado no tipo de usuário
+  //       if (currentUser.user_type === 'nutricionista' || user?.user_metadata?.user_type === 'nutricionista') {
+  //         try {
+  //           const { data: nutritionist } = await supabase
+  //           .from('nutritionist_profiles')
+  //           .select('*')
+  //           .eq('user_id', currentUser.id)
+  //           .single()
+  //           setNutritionistProfile(nutritionist)
+  //         } catch (error) {
+  //           console.warn('Perfil de nutricionista não encontrado:', error)
+  //           setNutritionistProfile(null)
+  //         }
+  //       } else if (currentUser.user_type === 'paciente' || user?.user_metadata?.user_type === 'paciente') {
+  //         try {
+  //           const { data: patient } = await supabase
+  //             .from('patient_profiles')
+  //             .select('*')
+  //             .eq('user_id', currentUser.id)
+  //             .single()
+  //           setPatientProfile(patient)
+  //         } catch (error) {
+  //           console.warn('Perfil de paciente não encontrado:', error)
+  //           setPatientProfile(null)
+  //         }
+  //       } else if (currentUser.user_type === 'empresa' || user?.user_metadata?.user_type === 'empresa') {
+  //         try {
+  //           const { data: company } = await supabase
+  //             .from('company_profiles')
+  //             .select('*')
+  //             .eq('user_id', currentUser.id)
+  //             .single()
+  //           setCompanyProfile(company)
+  //         } catch (error) {
+  //           console.warn('Perfil de empresa não encontrado:', error)
+  //           setCompanyProfile(null)
+  //         }
+  //       }
+  //     } else {
+  //       setUserProfile(null)
+  //       setNutritionistProfile(null)
+  //       setPatientProfile(null)
+  //       setCompanyProfile(null)
+  //     }
+  //   } catch (error) {
+  //     console.error('Erro ao recarregar dados do usuário:', error)
+  //     setUser(null)
+  //     setUserProfile(null)
+  //     setNutritionistProfile(null)
+  //     setPatientProfile(null)
+  //     setCompanyProfile(null)
+  //   }
+  // }, [ supabase ])
 
   const { broadcastAuthChange } = useAuthSync()
 
@@ -131,7 +131,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       setUser(sessionUser.data.user)
-
+      setUserProfile(sessionUser.data.user)
       const { data: row } = await supabase
         .from('users')
         .select('*')
@@ -157,7 +157,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setLoading(false)
     }
-  }, [ ])
+  }, [supabase ])
 
   const handleSignOut = useCallback(async () => {
     try {
@@ -178,9 +178,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [ supabase, broadcastAuthChange ])
 
-  const refreshUser = useCallback(async (user?: User) => {
-    await refreshUserData(user)
-  }, [ refreshUserData ])
+  // const refreshUser = useCallback(async (user?: User) => {
+  //   await refreshUserData(user)
+  // }, [ refreshUserData ])
 
   const subscribedRef = useRef(false);
   const handledSignOutRef = useRef(false);
@@ -193,7 +193,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     if (event === 'SIGNED_IN') {
       loadUser()
-      setLoading(false)
       handledSignOutRef.current = false; // reset
     } else if (event === 'SIGNED_OUT') {
       if (handledSignOutRef.current) return; // dedupe do SIGNED_OUT
@@ -203,7 +202,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setNutritionistProfile(null);
       setPatientProfile(null);
       setCompanyProfile(null);
-      setLoading(false);
     }
   });
 
@@ -228,9 +226,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUserProfile,
       setUser,
       signOut: handleSignOut,
-      refreshUser,
+      refreshUser: async () => {},
     }),
-    [ user, userProfile, nutritionistProfile, patientProfile, companyProfile, loading, handleSignOut, refreshUser ]
+    [ user, userProfile, nutritionistProfile, patientProfile, companyProfile, loading, handleSignOut ]
   )
 
   return (

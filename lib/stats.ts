@@ -22,7 +22,6 @@ export async function getPlatformStats(): Promise<PlatformStats> {
   try {
     // Usar função RPC para contornar políticas RLS
     const { data, error } = await supabase.rpc('get_platform_stats')
-    console.log("🚀 ~ getPlatformStats ~ data:", data)
 
     if (error) {
       throw error

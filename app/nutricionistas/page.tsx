@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
@@ -28,24 +28,16 @@ import {
   X,
   Loader2,
   Award,
+  LogOut,
+  LayoutDashboard,
 } from 'lucide-react'
 import {
   getAllNutritionists,
   formatNutritionistData,
 } from '@/lib/nutritionist-service'
-import type { NutritionistProfile } from '@/lib/supabase' // Importa a interface real
-
-const specialties = [
-  'Todas',
-  'Nutrição Clínica',
-  'Nutrição Esportiva',
-  'Nutrição Infantil',
-  'Emagrecimento',
-  'Nutrição Vegana',
-  'Distúrbios Alimentares',
-  'Nutrição Geriátrica',
-  'Nutrição Funcional',
-]
+import type { NutritionistProfile, Specialty } from '@/lib/supabase' // Importa a interface real
+import { useAuth } from '../../contexts/auth-context'
+import { normalizeText } from '../../lib/utils/normalize'
 
 const states = [
   'Todas',
@@ -98,6 +90,8 @@ export default function NutricionistasPage() {
   const [ sortBy, setSortBy ] = useState('rating')
   const [ viewMode, setViewMode ] = useState<'grid' | 'list'>('grid')
   const [ mobileMenuOpen, setMobileMenuOpen ] = useState(false)
+  const { user, signOut } = useAuth()
+  const [ specialties, setSpecialties ] = useState<Specialty[]>([])
 
   // Carregar nutricionistas do banco de dados
   useEffect(() => {
@@ -116,6 +110,28 @@ export default function NutricionistasPage() {
     loadNutritionists()
   }, [])
 
+  useEffect(() => {
+    const loadSpecialties = async () => {
+      try {
+        setLoading(true)
+
+        const response = await fetch('/api/specialties')
+        if (!response.ok) {
+          throw new Error('Erro ao carregar especialidades')
+        }
+
+        const data = await response.json()
+        setSpecialties(data.specialties || [])
+      } catch (err) {
+        // Silent error handling - error loading specialties
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadSpecialties()
+  }, [])
+
   // Gerenciar overflow do body quando o menu mobile está aberto
   useEffect(() => {
     if (mobileMenuOpen) {
@@ -129,6 +145,35 @@ export default function NutricionistasPage() {
       document.body.style.overflow = 'unset'
     }
   }, [ mobileMenuOpen ])
+
+
+  const handleLogout = useCallback(async () => {
+    try {
+      await signOut()
+    } catch (error) {
+      // Error signing out - handled silently
+    }
+  }, [ signOut ])
+
+  const getDashboardUrl = useCallback((userType: UserType) => {
+    switch (userType) {
+      case 'paciente':
+        return '/dashboard/paciente'
+      case 'nutricionista':
+        return '/dashboard/nutricionistas'
+      case 'empresa':
+        return '/dashboard/empresa'
+      case 'admin':
+        return '/dashboard/admin'
+      default:
+        return '/dashboard/paciente'
+    }
+  }, [])
+
+  const currentDashboardUrl = useMemo(() => {
+    return getDashboardUrl(user?.user_metadata[ 'user_type' ])
+
+  }, [ user?.user_type, getDashboardUrl ])
 
   // Filtrar e ordenar nutricionistas
   const filteredNutritionists = useMemo(() => {
@@ -150,7 +195,7 @@ export default function NutricionistasPage() {
         if (typeof nutritionist.specialties === 'string') {
           specialtiesArray = JSON.parse(nutritionist.specialties)
         } else if (Array.isArray(nutritionist.specialties)) {
-          specialtiesArray = nutritionist.specialties
+          specialtiesArray = nutritionist.specialties.map(specialities => specialities.toLowerCase())
         }
       } catch (e) {
         specialtiesArray = []
@@ -158,7 +203,7 @@ export default function NutricionistasPage() {
 
       const matchesSpecialty =
         selectedSpecialty === 'Todas' ||
-        specialtiesArray.includes(selectedSpecialty)
+        specialtiesArray.includes(normalizeText(selectedSpecialty) )
 
       // O filtro por estado agora verifica se a string do estado está contida no endereço
       const matchesState =
@@ -314,19 +359,46 @@ export default function NutricionistasPage() {
             </nav>
 
             <div className="flex items-center gap-3">
-              <Link href="/login">
-                <Button
-                  variant="ghost"
-                  className="hidden md:flex text-[#1E1D40] hover:text-[#4AB0D9]"
-                >
-                  Entrar
-                </Button>
-              </Link>
-              <Link href="/cadastro?tipo=paciente">
-                <Button className="bg-[#4AB0D9] hover:bg-[#4AB0D9]/90 text-white">
-                  Cadastrar
-                </Button>
-              </Link>
+              {user && user.user_metadata[ 'user_type' ] ? (
+                // User is logged in - show dashboard and logout buttons
+                <>
+                  <Link href={currentDashboardUrl}>
+                    <Button
+                      variant="ghost"
+                      className="hidden md:flex items-center gap-2 text-[#1E1D40] hover:text-[#4AB0D9] hover:bg-[#4AB0D9]/5"
+                    >
+                      <LayoutDashboard className="h-4 w-4" />
+                      Dashboard
+                    </Button>
+                  </Link>
+                  <Button
+                    variant="ghost"
+                    onClick={handleLogout}
+                    className="hidden md:flex items-center gap-2 text-[#1E1D40] hover:text-red-600 hover:bg-red-50"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Sair
+                  </Button>
+                </>
+              ) : (
+                // User is not logged in - show login and register buttons
+                <>
+                  <Link href="/login">
+                    <Button
+                      variant="ghost"
+                      className="hidden md:flex text-[#1E1D40] hover:text-[#4AB0D9] hover:bg-[#4AB0D9]/5"
+                    >
+                      Entrar
+                    </Button>
+                  </Link>
+                  <Link href="/cadastro?tipo=paciente">
+                    <Button className="bg-[#4AB0D9] hover:bg-[#4AB0D9]/90 text-white shadow-sm hover:shadow-md transition-all duration-300">
+                      Cadastrar
+                    </Button>
+                  </Link>
+                </>
+              )}
+
 
               {/* Mobile Menu Button */}
               <Button
@@ -587,9 +659,12 @@ export default function NutricionistasPage() {
                     <SelectValue placeholder="Especialidade" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value={"Todas"}>
+                      Todas
+                    </SelectItem>
                     {specialties.map(specialty => (
-                      <SelectItem key={specialty} value={specialty}>
-                        {specialty}
+                      <SelectItem key={specialty.id} value={specialty.name}>
+                        {specialty.name}
                       </SelectItem>
                     ))}
                   </SelectContent>

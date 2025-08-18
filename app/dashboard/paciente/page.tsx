@@ -223,6 +223,7 @@ export default function PatientDashboard() {
   const [ anamneseData, setAnamneseData ] = useState<any>(null)
   const router = useRouter()
   const { user, loading: authLoading, signOut } = useAuth()
+  console.log("🚀 ~ PatientDashboard ~ user:", user)
 
   // Estados para a aba "Buscar Nutricionistas"
   const [ searchNutritionistTerm, setSearchNutritionistTerm ] = useState('')
@@ -287,9 +288,12 @@ export default function PatientDashboard() {
   const menuItems = getMenuItems('paciente', dashboardStats)
 
   useEffect(() => {
-    if (!authLoading) {
-      loadProfile()
+    if (!authLoading && !user) {
+      console.log("Caiu aqui")
+      router.push('/login')
+      return
     }
+    loadProfile()
   }, [ user, authLoading ])
 
   useEffect(() => {
@@ -308,11 +312,6 @@ export default function PatientDashboard() {
 
   const loadProfile = async () => {
     try {
-      if (!user) {
-        router.push('/login')
-        return
-      }
-
       const { data: profileData } = await getUserProfile(user.id, 'paciente')
       setProfile(profileData)
 

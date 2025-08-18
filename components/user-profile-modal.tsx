@@ -1,7 +1,7 @@
 'use client'
 
 import type React from 'react'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -41,7 +41,7 @@ import type {
   CompanyProfile,
   UserType,
 } from '@/lib/supabase'
-import { supabase } from '@/lib/supabase'
+import { createSupabaseClient } from '@/lib/supabase'
 import { updateUserProfile } from '@/lib/profile-service'
 import { getNutritionistAvailability } from '@/lib/availability-service'
 import {
@@ -217,45 +217,46 @@ export function UserProfileModal({
   userId,
   onProfileUpdate,
 }: UserProfileModalProps) {
-  const [formData, setFormData] = useState<any>(initialData)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [crnValue, setCrnValue] = useState('')
-  const [crnValidation, setCrnValidation] = useState<{
+  const supabase = useMemo(() => createSupabaseClient(), [])
+  const [ formData, setFormData ] = useState<any>(initialData)
+  const [ loading, setLoading ] = useState(false)
+  const [ error, setError ] = useState<string | null>(null)
+  const [ crnValue, setCrnValue ] = useState('')
+  const [ crnValidation, setCrnValidation ] = useState<{
     status: 'idle' | 'validating' | 'valid' | 'invalid'
     message: string
   }>({ status: 'idle', message: '' })
 
-  const [cnpjValidation, setCnpjValidation] = useState<{
+  const [ cnpjValidation, setCnpjValidation ] = useState<{
     status: 'idle' | 'validating' | 'valid' | 'invalid'
     message: string
   }>({ status: 'idle', message: '' })
 
-  const [cpfValue, setCpfValue] = useState('')
-  const [cpfValidation, setCpfValidation] = useState<{
+  const [ cpfValue, setCpfValue ] = useState('')
+  const [ cpfValidation, setCpfValidation ] = useState<{
     status: 'idle' | 'validating' | 'valid' | 'invalid'
     message: string
   }>({ status: 'idle', message: '' })
 
-  const [rgValue, setRgValue] = useState('')
-  const [rgValidation, setRgValidation] = useState<{
+  const [ rgValue, setRgValue ] = useState('')
+  const [ rgValidation, setRgValidation ] = useState<{
     status: 'idle' | 'validating' | 'valid' | 'invalid'
     message: string
   }>({ status: 'idle', message: '' })
 
   // Estado para paginação
-  const [currentPage, setCurrentPage] = useState(1)
+  const [ currentPage, setCurrentPage ] = useState(1)
   const totalPages =
     userType === 'paciente' ? 3 : userType === 'nutricionista' ? 2 : 1
 
   // Estado para controlar se está editando (modo de edição)
-  const [isEditing] = useState(true)
+  const [ isEditing ] = useState(true)
 
   // Estado para especialidades selecionadas (nutricionistas)
-  const [selectedSpecialties, setSelectedSpecialties] = useState<string[]>([])
+  const [ selectedSpecialties, setSelectedSpecialties ] = useState<string[]>([])
 
   // Estados para anamnese nutricional (apenas para pacientes)
-  const [anamneseData, setAnamneseData] = useState<any>({
+  const [ anamneseData, setAnamneseData ] = useState<any>({
     patient_id: userId,
     objetivos_nutricionais: [],
     objetivo_personalizado: '',
@@ -263,6 +264,8 @@ export function UserProfileModal({
     alergias_alimentares: [],
     suplementacao_atual: [],
     medicacoes_uso: [],
+    peso_atual: '',
+    altura: ''
   })
 
   useEffect(() => {
@@ -301,11 +304,11 @@ export function UserProfileModal({
           initialData?.available_times
         )
           ? JSON.stringify({
-              monday: initialData.available_times.map((time: string) => ({
-                start: time,
-                end: time,
-              })),
-            })
+            monday: initialData.available_times.map((time: string) => ({
+              start: time,
+              end: time,
+            })),
+          })
           : typeof initialData?.available_times === 'string'
             ? initialData.available_times
             : typeof initialData?.available_times === 'object'
@@ -323,7 +326,7 @@ export function UserProfileModal({
 
         safeFormData.services_offered =
           initialData?.services_offered &&
-          typeof initialData.services_offered === 'object'
+            typeof initialData.services_offered === 'object'
             ? JSON.stringify(initialData.services_offered)
             : initialData?.services_offered || ''
 
@@ -382,7 +385,7 @@ export function UserProfileModal({
         loadNutritionistAvailability()
       }
     }
-  }, [open, userType, initialData?.id])
+  }, [ open, userType, initialData?.id ])
 
   // Função para carregar especialidades do nutricionista
   const loadNutritionistSpecialties = async () => {
@@ -478,18 +481,18 @@ export function UserProfileModal({
     const checked = (e.target as HTMLInputElement).checked
     setFormData(prev => ({
       ...prev,
-      [id]: type === 'checkbox' ? checked : value,
+      [ id ]: type === 'checkbox' ? checked : value,
     }))
   }
 
   const handleImageUploaded = (imageUrl: string) => {
     const imageField = userType === 'empresa' ? 'logo_url' : 'profile_image_url'
-    setFormData(prev => ({ ...prev, [imageField]: imageUrl }))
+    setFormData(prev => ({ ...prev, [ imageField ]: imageUrl }))
   }
 
   const handleImageRemoved = () => {
     const imageField = userType === 'empresa' ? 'logo_url' : 'profile_image_url'
-    setFormData(prev => ({ ...prev, [imageField]: '' }))
+    setFormData(prev => ({ ...prev, [ imageField ]: '' }))
   }
 
   const handleCoverImageUploaded = (imageUrl: string) => {
@@ -600,9 +603,10 @@ export function UserProfileModal({
 
   // Funções para anamnese nutricional
   const handleAnamneseChange = (field: string, value: any) => {
+   
     setAnamneseData((prev: any) => ({
       ...prev,
-      [field]: value,
+      [ field ]: value,
     }))
 
     // Sincronizar preferências alimentares com o perfil do paciente
@@ -615,37 +619,46 @@ export function UserProfileModal({
   }
 
   // Função para formatar peso automaticamente
-  const formatPeso = (value: string) => {
-    // Remove caracteres não numéricos
-    const numericValue = value.replace(/[^d]/g, '')
+  const formatPeso = (value: string): string => {
+    // mantém só dígitos
+    const digits = (value ?? '').replace(/\D/g, '');
+    if (!digits) return '';
 
-    if (numericValue.length === 0) return ''
-    if (numericValue.length === 1) return numericValue
-    if (numericValue.length === 2) return numericValue
+    // última casa é a decimal
+    const decimal = digits.slice(-1);
+    let integer = digits.slice(0, -1);
 
-    // Adiciona ponto antes do último dígito para valores com 3+ dígitos
-    const integerPart = numericValue.slice(0, -1)
-    const decimalPart = numericValue.slice(-1)
+    // se não tiver parte inteira, usa 0
+    if (integer.length === 0) integer = '0';
 
-    return `${integerPart}.${decimalPart}`
-  }
+    // remove zeros à esquerda (ex.: "000" -> "0")
+    integer = String(Number(integer));
+
+    return `${integer}.${decimal}`;   // se quiser vírgula: `${integer},${decimal}`
+  };
 
   // Função para formatar altura automaticamente
-  const formatAltura = (value: string) => {
-    // Remove caracteres não numéricos
-    const numericValue = value.replace(/[^d]/g, '')
-
-    if (numericValue.length === 0) return ''
-    if (numericValue.length === 1) return `1.${numericValue}`
-    if (numericValue.length === 2) return `1.${numericValue}`
-
-    // Para valores com 3 dígitos, formato 1.XX
-    if (numericValue.length === 3) {
-      return `${numericValue[0]}.${numericValue.slice(1)}`
+  const formatAltura = (raw: string): string => {
+    if (!raw) return '';
+  
+    // mantém apenas dígitos e ponto
+    let v = raw.replace(/[^\d.]/g, '');
+  
+    // Se o usuário já tem ponto, respeite o que vem depois dele
+    if (v.includes('.')) {
+      const parts = v.split('.');
+      const decimals = (parts[1] ?? '').replace(/\D/g, '').slice(0, 2);
+      // força o metro a ser 1; permite o estado intermediário "1."
+      return decimals.length ? `${parts[0]}.${decimals}` : v;
     }
-
-    return value
-  }
+  
+    // Sem ponto: interpreta como fluxo de dígitos
+    const digits = v.replace(/\D/g, '');
+    if (digits.length === 0) return '';
+    if (digits.length === 1) return `${digits[0]}`;                 // só "1"
+    if (digits.length === 2) return `${digits[0]}.${digits[1]}`;    // "17" -> "1.7"
+    return `${digits[0]}.${digits.slice(1, 3)}`;                    // "170" -> "1.70"
+  };
 
   // Handlers específicos para peso e altura
   const handlePesoAnamneseChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -657,7 +670,6 @@ export function UserProfileModal({
       return
     }
 
-    // Aplicar formatação apenas se necessário
     const formattedValue = formatPeso(rawValue)
 
     // Atualizar com o valor formatado para exibição
@@ -699,7 +711,7 @@ export function UserProfileModal({
         setAnamneseData((prev: any) => ({ ...prev, imc }))
       }
     }
-  }, [anamneseData.peso_atual, anamneseData.altura, anamneseData.imc])
+  }, [ anamneseData.peso_atual, anamneseData.altura, anamneseData.imc ])
 
   const handleComorbilidadesChange = (values: string[]) => {
     setAnamneseData((prev: any) => ({ ...prev, comorbidades: values }))
@@ -826,7 +838,7 @@ export function UserProfileModal({
             return normalizeLanguages(field)
           } else {
             const result = normalizeStringArray(field)
-            
+
             // Log eventos de normalização para telemetria
             if (result.wasCorrupted) {
               logNormalizationEvent(
@@ -903,16 +915,17 @@ export function UserProfileModal({
           const anamneseToSave = {
             ...anamneseData,
             patient_id: userId,
-            parte1_concluida: true,
-            parte2_concluida: true,
+            parte_1_completa: true,
+            parte_2_completa: true,
             updated_at: new Date().toISOString(),
           }
+          console.log("🚀 ~ handleSubmit ~ anamneseToSave:", anamneseToSave)
 
           if (existingAnamnese) {
             await supabase
               .from('anamnese_nutricional')
               .update(anamneseToSave)
-              .eq('patient_id', userId)
+              .eq('id', existingAnamnese.id)
           } else {
             await supabase.from('anamnese_nutricional').insert(anamneseToSave)
           }
@@ -1023,9 +1036,9 @@ export function UserProfileModal({
                   src={
                     userType === 'empresa'
                       ? formData?.logo_url ||
-                        '/placeholder.svg?height=96&width=96&query=company logo'
+                      '/placeholder.svg?height=96&width=96&query=company logo'
                       : formData?.profile_image_url ||
-                        '/placeholder.svg?height=96&width=96&query=user profile'
+                      '/placeholder.svg?height=96&width=96&query=user profile'
                   }
                   alt={
                     userType === 'empresa'
@@ -1050,13 +1063,13 @@ export function UserProfileModal({
               {(userType === 'empresa'
                 ? formData?.logo_url
                 : formData?.profile_image_url) && (
-                <p className="text-xs text-gray-500 text-center max-w-xs truncate">
-                  Imagem atual:{' '}
-                  {userType === 'empresa'
-                    ? formData?.logo_url
-                    : formData?.profile_image_url}
-                </p>
-              )}
+                  <p className="text-xs text-gray-500 text-center max-w-xs truncate">
+                    Imagem atual:{' '}
+                    {userType === 'empresa'
+                      ? formData?.logo_url
+                      : formData?.profile_image_url}
+                  </p>
+                )}
             </div>
 
             <div className="max-w-md mx-auto">
@@ -1404,23 +1417,23 @@ export function UserProfileModal({
                       {anamneseData?.objetivos_nutricionais?.includes(
                         'outro'
                       ) && (
-                        <div className="mt-2">
-                          <Label htmlFor="objetivo_personalizado">
-                            Especifique seu objetivo personalizado
-                          </Label>
-                          <Input
-                            id="objetivo_personalizado"
-                            value={anamneseData?.objetivo_personalizado || ''}
-                            onChange={e =>
-                              handleAnamneseChange(
-                                'objetivo_personalizado',
-                                e.target.value
-                              )
-                            }
-                            placeholder="Descreva seu objetivo específico..."
-                          />
-                        </div>
-                      )}
+                          <div className="mt-2">
+                            <Label htmlFor="objetivo_personalizado">
+                              Especifique seu objetivo personalizado
+                            </Label>
+                            <Input
+                              id="objetivo_personalizado"
+                              value={anamneseData?.objetivo_personalizado || ''}
+                              onChange={e =>
+                                handleAnamneseChange(
+                                  'objetivo_personalizado',
+                                  e.target.value
+                                )
+                              }
+                              placeholder="Descreva seu objetivo específico..."
+                            />
+                          </div>
+                        )}
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1744,16 +1757,16 @@ export function UserProfileModal({
                       options={LANGUAGE_OPTIONS}
                       selected={
                         formData?.consultation_languages &&
-                        typeof formData.consultation_languages === 'string'
+                          typeof formData.consultation_languages === 'string'
                           ? formData.consultation_languages
-                              .split(', ')
-                              .filter(Boolean)
-                              .map(
-                                (label: string) =>
-                                  LANGUAGE_OPTIONS.find(
-                                    opt => opt.label === label
-                                  )?.value || label
-                              )
+                            .split(', ')
+                            .filter(Boolean)
+                            .map(
+                              (label: string) =>
+                                LANGUAGE_OPTIONS.find(
+                                  opt => opt.label === label
+                                )?.value || label
+                            )
                           : []
                       }
                       onChange={handleLanguagesChange}
@@ -1769,16 +1782,16 @@ export function UserProfileModal({
                       options={PAYMENT_METHOD_OPTIONS}
                       selected={
                         formData?.payment_methods &&
-                        typeof formData.payment_methods === 'string'
+                          typeof formData.payment_methods === 'string'
                           ? formData.payment_methods
-                              .split(', ')
-                              .filter(Boolean)
-                              .map(
-                                (label: string) =>
-                                  PAYMENT_METHOD_OPTIONS.find(
-                                    opt => opt.label === label
-                                  )?.value || label
-                              )
+                            .split(', ')
+                            .filter(Boolean)
+                            .map(
+                              (label: string) =>
+                                PAYMENT_METHOD_OPTIONS.find(
+                                  opt => opt.label === label
+                                )?.value || label
+                            )
                           : []
                       }
                       onChange={handlePaymentMethodsChange}

@@ -51,7 +51,6 @@ import { useAuth } from '@/contexts/auth-context'
 export default function Home() {
   const [ isMobileMenuOpen, setIsMobileMenuOpen ] = useState(false)
   const [ stats, setStats ] = useState<PlatformStats | null>(null)
-  console.log("🚀 ~ Home ~ stats:", stats)
   const { user, loading, signOut } = useAuth()
 
 
