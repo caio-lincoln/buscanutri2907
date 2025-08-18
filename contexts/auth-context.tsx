@@ -30,7 +30,7 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
-type UserType =  'nutricionista' | 'paciente' | 'empresa'
+type UserType = 'nutricionista' | 'paciente' | 'empresa'
 
 const PROFILE_TABLE_BY_TYPE: Record<Exclude<UserType, 'admin'>, string> = {
   nutricionista: 'nutritionist_profiles',
@@ -120,7 +120,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const loadUser = useCallback(async () => {
     try {
-      setLoading(true)
       const sessionUser = await supabase.auth.getUser()
 
       if (!sessionUser.data?.user) {
@@ -137,27 +136,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .select('*')
         .eq('id', sessionUser.data.user.id)
         .maybeSingle()
-      
-        const utype = row.user_type
-        const table = PROFILE_TABLE_BY_TYPE[ utype as UserType ]
-      
+
+      const utype = row.user_type
+      const table = PROFILE_TABLE_BY_TYPE[ utype as UserType ]
+
       if (table) {
         const { data: spec } = await supabase
-        .from(table)
-        .select('*')
-        .eq('user_id', row.id)
-        .maybeSingle()
-        
-          if (utype === 'nutricionista') setNutritionistProfile(spec ?? null)
-          if (utype === 'paciente') setPatientProfile(spec ?? null)
-          if (utype === 'empresa') setCompanyProfile(spec ?? null)
+          .from(table)
+          .select('*')
+          .eq('user_id', row.id)
+          .maybeSingle()
+
+        if (utype === 'nutricionista') setNutritionistProfile(spec ?? null)
+        if (utype === 'paciente') setPatientProfile(spec ?? null)
+        if (utype === 'empresa') setCompanyProfile(spec ?? null)
       }
     } catch (error) {
       console.error('Erro ao carregar usuário:', error)
     } finally {
       setLoading(false)
     }
-  }, [supabase ])
+  }, [ supabase ])
 
   const handleSignOut = useCallback(async () => {
     try {
@@ -186,31 +185,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const handledSignOutRef = useRef(false);
 
   useEffect(() => {
-  if (!isClient || subscribedRef.current) return;
+    if (!isClient || subscribedRef.current) return;
     subscribedRef.current = true;
-    
-  const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event) => {
-    
-    if (event === 'SIGNED_IN') {
-      loadUser()
-      handledSignOutRef.current = false; // reset
-    } else if (event === 'SIGNED_OUT') {
-      if (handledSignOutRef.current) return; // dedupe do SIGNED_OUT
-      handledSignOutRef.current = true;
-      setUser(null);
-      setUserProfile(null);
-      setNutritionistProfile(null);
-      setPatientProfile(null);
-      setCompanyProfile(null);
-    }
-  });
 
-  return () => {
-    subscribedRef.current = false;
-    subscription.unsubscribe();
-  };
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event) => {
+
+      if (event === 'SIGNED_IN') {
+        setLoading(true)
+
+        loadUser()
+        handledSignOutRef.current = false; // reset
+      } else if (event === 'SIGNED_OUT') {
+        if (handledSignOutRef.current) return; // dedupe do SIGNED_OUT
+        handledSignOutRef.current = true;
+        setUser(null);
+        setUserProfile(null);
+        setNutritionistProfile(null);
+        setPatientProfile(null);
+        setCompanyProfile(null);
+      }
+    });
+
+    return () => {
+      subscribedRef.current = false;
+      subscription.unsubscribe();
+    };
   }, [ isClient, supabase ]);
-  
+
   useEffect(() => {
     loadUser()
   }, [])
@@ -226,9 +227,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUserProfile,
       setUser,
       signOut: handleSignOut,
-      refreshUser: async () => {},
+      refreshUser: async () => { loadUser()},
     }),
-    [ user, userProfile, nutritionistProfile, patientProfile, companyProfile, loading, handleSignOut ]
+    [ user, userProfile, nutritionistProfile, patientProfile, companyProfile, loading, handleSignOut, loadUser]
   )
 
   return (

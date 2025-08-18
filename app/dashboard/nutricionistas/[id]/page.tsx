@@ -35,7 +35,6 @@ export default function NutritionistProfilePage() {
   
   const profileId = params['id'] as string
   const profile = nutritionistProfile
-  console.log("🚀 ~ NutritionistProfilePage ~ profile:", profile)
 
   useEffect(() => {
     if (!authLoading && !user) {

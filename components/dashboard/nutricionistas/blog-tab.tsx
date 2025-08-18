@@ -91,7 +91,7 @@ export function BlogTab() {
       excerpt: '',
       content: '',
       category: '',
-      image: '/placeholder.svg?height=400&width=800',
+      image: '',
       tags: [],
       featured: false,
       centerImage: false,

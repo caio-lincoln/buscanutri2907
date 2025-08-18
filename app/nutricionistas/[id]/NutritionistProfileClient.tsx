@@ -129,7 +129,6 @@ export default function NutritionistProfilePageClient({
     lastViewAt: nutritionist.last_view_at || null,
   })
   const { user } = useAuth()
-  console.log("🚀 ~ NutritionistProfilePageClient ~ user:", user)
 
   if (!nutritionist) {
     notFound()

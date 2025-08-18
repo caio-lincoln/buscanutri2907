@@ -23,7 +23,10 @@ import {
   Users,
   Clock,
   AlertCircle,
-  Send
+  Send,
+  User,
+  Minimize,
+  Maximize
 } from 'lucide-react'
 
 interface TeleconsultaSession {

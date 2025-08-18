@@ -37,7 +37,7 @@ export async function getNutritionistStats(
 ): Promise<NutritionistStats> {
   try {
     const { data, error } = await supabase.rpc('get_nutritionist_stats', {
-      nutritionist_user_id: nutritionistId,
+      nutritionist_id: nutritionistId,
     })
 
     if (error) {

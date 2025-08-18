@@ -30,6 +30,7 @@ import {
 import { getCurrentUser } from '@/lib/auth'
 import { getBlogPostById, updateBlogPost, type BlogPost } from '@/lib/blog-data'
 import { toast } from '@/components/ui/use-toast'
+import { useAuth } from '../../../../../contexts/auth-context'
 
 export default function NutritionistBlogPostPage() {
   const router = useRouter()
@@ -48,8 +49,9 @@ export default function NutritionistBlogPostPage() {
     image: '',
   })
   const [saving, setSaving] = useState(false)
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
-  const [currentUser, setCurrentUser] = useState<any>(null)
+  const [ currentUserId, setCurrentUserId ] = useState<string | null>(null)
+  const {user: currentUser, nutritionistProfile} = useAuth()
+  
 
   // Dashboard stats
   const { stats } = useDashboardStats({
@@ -66,18 +68,8 @@ export default function NutritionistBlogPostPage() {
 
   useEffect(() => {
     loadPost()
-    loadCurrentUser()
-  }, [postId])
-
-  const loadCurrentUser = async () => {
-    try {
-      const user = await getCurrentUser()
-      setCurrentUserId(user?.id || null)
-      setCurrentUser(user)
-    } catch (error) {
-      // Error loading user - handled silently
-    }
-  }
+    setCurrentUserId(currentUser?.id as string)
+  }, [postId, currentUser])
 
   const loadPost = async () => {
     try {
@@ -198,9 +190,9 @@ export default function NutritionistBlogPostPage() {
   return (
     <DashboardSidebar
       userType="nutricionista"
-      userName={currentUser?.user_metadata?.full_name || 'Nutricionista'}
+      userName={nutritionistProfile?.full_name || 'Nutricionista'}
       userAvatar={
-        currentUser?.user_metadata?.profile_image_url || '/placeholder.svg'
+        nutritionistProfile?.profile_image_url || '/placeholder.svg'
       }
       menuItems={menuItems}
       activeItem="blog"

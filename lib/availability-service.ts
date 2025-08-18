@@ -67,12 +67,14 @@ export async function saveNutritionistAvailability(
   schedule: DaySchedule
 ): Promise<void> {
   try {
+    console.log("🚀 ~ saveNutritionistAvailability ~ schedule:", schedule)
     // Primeiro, remove todos os horários existentes do nutricionista
     const { error: deleteError } = await supabase
       .from('nutritionist_availability')
       .delete()
       .eq('nutritionist_id', nutritionistId)
 
+    console.log("🚀 ~ saveNutritionistAvailability ~ deleteError:", deleteError)
     if (deleteError) {
       throw new Error(
         `Erro ao limpar horários existentes: ${deleteError.message}`
@@ -91,6 +93,7 @@ export async function saveNutritionistAvailability(
         .from('nutritionist_availability')
         .insert(availabilitySlots)
 
+      console.log("🚀 ~ saveNutritionistAvailability ~ insertError:", insertError)
       if (insertError) {
         throw new Error(`Erro ao salvar novos horários: ${insertError.message}`)
       }
@@ -109,12 +112,12 @@ export async function getNutritionistAvailability(
 ): Promise<DaySchedule> {
   try {
     const { data, error } = await supabase
-      .from('nutritionist_availability')
-      .select('*')
-      .eq('nutritionist_id', nutritionistId)
-      .eq('is_available', true)
-      .order('day_of_week')
-      .order('start_time')
+    .from('nutritionist_availability')
+    .select('*')
+    .eq('nutritionist_id', nutritionistId)
+    .eq('is_available', true)
+    .order('day_of_week')
+    .order('start_time')
 
     if (error) {
       throw new Error(`Erro ao buscar horários: ${error.message}`)
@@ -139,8 +142,8 @@ export async function getNutritionistAvailability(
           schedule[dayKey] = []
         }
         schedule[dayKey].push({
-          start: slot.start_time,
-          end: slot.end_time,
+          start: slot.start_time.split(":").length > 2 ? slot.start_time.slice(0, -3) : slot.start_time,
+          end: slot.end_time.split(":").length > 2 ? slot.end_time.slice(0, -3) : slot.end_time ,
         })
       }
     })

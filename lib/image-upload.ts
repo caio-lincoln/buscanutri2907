@@ -61,45 +61,49 @@ export async function uploadBlogImage(
       }
     }
 
-    // Criar cliente com service role para contornar RLS
-    const serviceSupabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
-      }
-    )
 
-    // Listar arquivos do usuário usando service role
-    const { data, error } = await serviceSupabase.storage
-      .from('blog-images')
-      .list(userId, {
-        limit: 100,
-        sortBy: { column: 'created_at', order: 'desc' },
-      })
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('userId', userId)
+    formData.append('accessToken', session.access_token)
 
-    if (error) {
-      // Silent error handling - error listing images
-      return {
-        success: false,
-        error: 'Erro ao listar imagens.',
-      }
-    }
+    // Silent logging - sending file to upload API
 
-    // Converter para URLs públicas
-    const imageUrls = data.map(file => {
-      const { data: urlData } = serviceSupabase.storage
-        .from('blog-images')
-        .getPublicUrl(`${userId}/${file.name}`)
-      return urlData.publicUrl
+    // Fazer upload através da API route
+    const response = await fetch('/api/upload-blog-image', {
+      method: 'POST',
+      body: formData,
     })
+    const data = await response.json()
+
+    // // Listar arquivos do usuário usando service role
+    // const { data, error } = await serviceSupabase.storage
+    // .from('blog-images')
+    // .list(userId, {
+    //   limit: 100,
+    //   sortBy: { column: 'created_at', order: 'desc' },
+    // })
+    // console.log("🚀 ~ uploadBlogImage ~ data:", data)
+
+    // if (error) {
+    //   // Silent error handling - error listing images
+    //   return {
+    //     success: false,
+    //     error: 'Erro ao listar imagens.',
+    //   }
+    // }
+
+    // // Converter para URLs públicas
+    // const imageUrls = data.map(file => {
+    //   const { data: urlData } = serviceSupabase.storage
+    //     .from('blog-images')
+    //     .getPublicUrl(`${userId}/${file.name}`)
+    //   return urlData.publicUrl
+    // })
 
     return {
       success: true,
-      images: imageUrls,
+      ...data
     }
   } catch (error) {
     // Silent error handling - unexpected list error
@@ -454,7 +458,7 @@ export async function deleteProfileImage(
 
     // Extrair o nome do arquivo da URL
     const urlParts = imageUrl.split('/')
-    const fileName = urlParts[urlParts.length - 1]
+    const fileName = urlParts[ urlParts.length - 1 ]
     const folderName =
       userType === 'company'
         ? 'logos'
@@ -466,7 +470,7 @@ export async function deleteProfileImage(
     // Excluir o arquivo do Supabase Storage usando service role
     const { error } = await serviceSupabase.storage
       .from(bucketName)
-      .remove([filePath])
+      .remove([ filePath ])
 
     if (error) {
       // Silent error handling: Image deletion error

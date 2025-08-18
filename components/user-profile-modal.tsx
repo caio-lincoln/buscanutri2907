@@ -43,7 +43,7 @@ import type {
 } from '@/lib/supabase'
 import { createSupabaseClient } from '@/lib/supabase'
 import { updateUserProfile } from '@/lib/profile-service'
-import { getNutritionistAvailability } from '@/lib/availability-service'
+import { getNutritionistAvailability, saveNutritionistAvailability } from '@/lib/availability-service'
 import {
   validateCRNFormat,
   validateCRNWithAPI,
@@ -63,6 +63,7 @@ import {
   normalizeLanguages,
   logNormalizationEvent,
 } from '@/lib/structured-data-utils'
+import { useAuth } from '../contexts/auth-context'
 
 // Interface para opções do MultiSelect
 interface Option {
@@ -206,7 +207,7 @@ interface UserProfileModalProps {
   userType: UserType
   initialData: PatientProfile | NutritionistProfile | CompanyProfile
   userId: string
-  onProfileUpdate?: () => void
+  // onProfileUpdate?: () => void
 }
 
 export function UserProfileModal({
@@ -215,9 +216,10 @@ export function UserProfileModal({
   userType,
   initialData,
   userId,
-  onProfileUpdate,
 }: UserProfileModalProps) {
   const supabase = useMemo(() => createSupabaseClient(), [])
+  const { refreshUser, nutritionistProfile } = useAuth()
+  console.log("🚀 ~ UserProfileModal ~ nutritionistProfile:", nutritionistProfile)
   const [ formData, setFormData ] = useState<any>(initialData)
   const [ loading, setLoading ] = useState(false)
   const [ error, setError ] = useState<string | null>(null)
@@ -300,20 +302,20 @@ export function UserProfileModal({
           ? initialData.specialties.join(', ')
           : initialData?.specialties || ''
         // Para horários disponíveis, convertemos array do banco em objeto para o ScheduleSelector
-        safeFormData.available_times = Array.isArray(
-          initialData?.available_times
-        )
-          ? JSON.stringify({
-            monday: initialData.available_times.map((time: string) => ({
-              start: time,
-              end: time,
-            })),
-          })
-          : typeof initialData?.available_times === 'string'
-            ? initialData.available_times
-            : typeof initialData?.available_times === 'object'
-              ? JSON.stringify(initialData.available_times)
-              : '{}'
+        // safeFormData.available_times = Array.isArray(
+        //   initialData?.available_times
+        // )
+        //   ? JSON.stringify({
+        //     monday: initialData.available_times.map((time: string) => ({
+        //       start: time,
+        //       end: time,
+        //     })),
+        //   })
+        //   : typeof initialData?.available_times === 'string'
+        //     ? initialData.available_times
+        //     : typeof initialData?.available_times === 'object'
+        //       ? JSON.stringify(initialData.available_times)
+        //       : '{}'
         safeFormData.languages = Array.isArray(initialData?.languages)
           ? initialData.languages.join(', ')
           : initialData?.languages || ''
@@ -403,7 +405,7 @@ export function UserProfileModal({
           )
         `
         )
-        .eq('nutritionist_id', userId)
+        .eq('nutritionist_id', nutritionistProfile?.id)
 
       if (data && !error) {
         const specialtyIds = data.map(item => item.specialty_id)
@@ -419,7 +421,7 @@ export function UserProfileModal({
     if (userType !== 'nutricionista') return
 
     try {
-      const schedule = await getNutritionistAvailability(userId)
+      const schedule = await getNutritionistAvailability(nutritionistProfile?.id as string)
 
       // Atualizar o formData com os horários carregados da tabela
       if (Object.keys(schedule).length > 0) {
@@ -603,7 +605,7 @@ export function UserProfileModal({
 
   // Funções para anamnese nutricional
   const handleAnamneseChange = (field: string, value: any) => {
-   
+
     setAnamneseData((prev: any) => ({
       ...prev,
       [ field ]: value,
@@ -640,24 +642,24 @@ export function UserProfileModal({
   // Função para formatar altura automaticamente
   const formatAltura = (raw: string): string => {
     if (!raw) return '';
-  
+
     // mantém apenas dígitos e ponto
     let v = raw.replace(/[^\d.]/g, '');
-  
+
     // Se o usuário já tem ponto, respeite o que vem depois dele
     if (v.includes('.')) {
       const parts = v.split('.');
-      const decimals = (parts[1] ?? '').replace(/\D/g, '').slice(0, 2);
+      const decimals = (parts[ 1 ] ?? '').replace(/\D/g, '').slice(0, 2);
       // força o metro a ser 1; permite o estado intermediário "1."
-      return decimals.length ? `${parts[0]}.${decimals}` : v;
+      return decimals.length ? `${parts[ 0 ]}.${decimals}` : v;
     }
-  
+
     // Sem ponto: interpreta como fluxo de dígitos
     const digits = v.replace(/\D/g, '');
     if (digits.length === 0) return '';
-    if (digits.length === 1) return `${digits[0]}`;                 // só "1"
-    if (digits.length === 2) return `${digits[0]}.${digits[1]}`;    // "17" -> "1.7"
-    return `${digits[0]}.${digits.slice(1, 3)}`;                    // "170" -> "1.70"
+    if (digits.length === 1) return `${digits[ 0 ]}`;                 // só "1"
+    if (digits.length === 2) return `${digits[ 0 ]}.${digits[ 1 ]}`;    // "17" -> "1.7"
+    return `${digits[ 0 ]}.${digits.slice(1, 3)}`;                    // "170" -> "1.70"
   };
 
   // Handlers específicos para peso e altura
@@ -802,31 +804,31 @@ export function UserProfileModal({
         }
 
         // Para horários disponíveis, convertemos o objeto do ScheduleSelector em um array simples de horários:
-        if (typeof dataToSubmit.available_times === 'string') {
-          try {
-            // Tenta fazer parse do JSON do ScheduleSelector
-            const parsed = JSON.parse(dataToSubmit.available_times)
-            // Converte o objeto de dias/horários em array simples de horários
-            const timeSlots: string[] = []
-            Object.values(parsed).forEach((daySlots: any) => {
-              if (Array.isArray(daySlots)) {
-                daySlots.forEach((slot: any) => {
-                  if (slot.start && !timeSlots.includes(slot.start)) {
-                    timeSlots.push(slot.start)
-                  }
-                  if (slot.end && !timeSlots.includes(slot.end)) {
-                    timeSlots.push(slot.end)
-                  }
-                })
-              }
-            })
-            // Ordena os horários e remove duplicatas
-            dataToSubmit.available_times = timeSlots.sort()
-          } catch {
-            // Se falhar, usa array vazio
-            dataToSubmit.available_times = []
-          }
-        }
+        // if (typeof dataToSubmit.available_times === 'string') {
+        //   try {
+        //     // Tenta fazer parse do JSON do ScheduleSelector
+        //     const parsed = JSON.parse(dataToSubmit.available_times)
+        //     // Converte o objeto de dias/horários em array simples de horários
+        //     const timeSlots: string[] = []
+        //     Object.values(parsed).forEach((daySlots: any) => {
+        //       if (Array.isArray(daySlots)) {
+        //         daySlots.forEach((slot: any) => {
+        //           if (slot.start && !timeSlots.includes(slot.start)) {
+        //             timeSlots.push(slot.start)
+        //           }
+        //           if (slot.end && !timeSlots.includes(slot.end)) {
+        //             timeSlots.push(slot.end)
+        //           }
+        //         })
+        //       }
+        //     })
+        //     // Ordena os horários e remove duplicatas
+        //     dataToSubmit.available_times = timeSlots.sort()
+        //   } catch {
+        //     // Se falhar, usa array vazio
+        //     dataToSubmit.available_times = []
+        //   }
+        // }
 
         // Função helper para processar campos que podem estar com escape duplo
         const processStringField = (
@@ -872,7 +874,10 @@ export function UserProfileModal({
           )
         }
       }
-
+      console.log(nutritionistProfile?.id)
+      await saveNutritionistAvailability(nutritionistProfile?.id as string, dataToSubmit.available_times)
+      delete dataToSubmit.specialties
+      delete dataToSubmit.available_times
       await updateUserProfile(userId, userType, dataToSubmit)
 
       // Salvar especialidades se for nutricionista
@@ -884,7 +889,7 @@ export function UserProfileModal({
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              nutritionist_id: userId,
+              nutritionist_id: nutritionistProfile?.id,
               specialty_ids: selectedSpecialties,
             }),
           })
@@ -919,7 +924,6 @@ export function UserProfileModal({
             parte_2_completa: true,
             updated_at: new Date().toISOString(),
           }
-          console.log("🚀 ~ handleSubmit ~ anamneseToSave:", anamneseToSave)
 
           if (existingAnamnese) {
             await supabase
@@ -949,8 +953,8 @@ export function UserProfileModal({
         title: 'Perfil atualizado!',
         description: 'Suas informações foram salvas com sucesso.',
       })
-
-      onProfileUpdate?.()
+      await refreshUser()
+      // onProfileUpdate?.()
       onOpenChange(false)
     } catch (err: any) {
       setError(err.message || 'Erro ao salvar perfil.')

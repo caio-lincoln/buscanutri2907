@@ -58,7 +58,7 @@ export function useCacheManager() {
       const registration = await navigator.serviceWorker.getRegistration()
       if (registration?.waiting) {
         registration.waiting.postMessage({ type: 'SKIP_WAITING' })
-        window.location.reload()
+        // window.location.reload()
       }
     }
   }, [])

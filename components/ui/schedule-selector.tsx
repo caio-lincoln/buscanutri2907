@@ -19,7 +19,7 @@ interface TimeSlot {
 }
 
 interface DaySchedule {
-  [key: string]: TimeSlot[]
+  [ key: string ]: TimeSlot[]
 }
 
 interface ScheduleSelectorProps {
@@ -48,12 +48,12 @@ export function ScheduleSelector({
   onChange,
   placeholder,
 }: ScheduleSelectorProps) {
-  const [schedule, setSchedule] = useState<DaySchedule>({})
+  const [ schedule, setSchedule ] = useState<DaySchedule>({})
   const isInitializing = useRef(true)
 
   // Parse do valor inicial apenas uma vez
   useEffect(() => {
-    if (value && isInitializing.current) {
+    if (value) {
       try {
         const parsed = JSON.parse(value)
         setSchedule(parsed)
@@ -61,12 +61,8 @@ export function ScheduleSelector({
         // Se não conseguir fazer parse, inicializa vazio
         setSchedule({})
       }
-      isInitializing.current = false
-    } else if (!value && isInitializing.current) {
-      setSchedule({})
-      isInitializing.current = false
     }
-  }, [value])
+  }, [ value ])
 
   // Função para atualizar o schedule e notificar o pai
   const updateSchedule = useCallback(
@@ -76,21 +72,24 @@ export function ScheduleSelector({
         onChange(JSON.stringify(newSchedule))
       }
     },
-    [onChange]
+    [ onChange ]
   )
 
   const addTimeSlot = (dayKey: string) => {
-    const newSchedule = {
-      ...schedule,
-      [dayKey]: [...(schedule[dayKey] || []), { start: '08:00', end: '17:00' }],
+    if ((schedule[ dayKey ]?.length ?? 0) < 2) {
+      const newSchedule = {
+        ...schedule,
+        [ dayKey ]: [ ...(schedule[ dayKey ] || []), { start: '08:00', end: '17:00' } ],
+      }
+      updateSchedule(newSchedule)
     }
-    updateSchedule(newSchedule)
+
   }
 
   const removeTimeSlot = (dayKey: string, index: number) => {
     const newSchedule = {
       ...schedule,
-      [dayKey]: schedule[dayKey]?.filter((_, i) => i !== index) || [],
+      [ dayKey ]: schedule[ dayKey ]?.filter((_, i) => i !== index) || [],
     }
     updateSchedule(newSchedule)
   }
@@ -103,9 +102,9 @@ export function ScheduleSelector({
   ) => {
     const newSchedule = {
       ...schedule,
-      [dayKey]:
-        schedule[dayKey]?.map((slot, i) =>
-          i === index ? { ...slot, [field]: value } : slot
+      [ dayKey ]:
+        schedule[ dayKey ]?.map((slot, i) =>
+          i === index ? { ...slot, [ field ]: value } : slot
         ) || [],
     }
     updateSchedule(newSchedule)
@@ -113,12 +112,12 @@ export function ScheduleSelector({
 
   const formatScheduleDisplay = () => {
     const activeDays = Object.entries(schedule).filter(
-      ([_, slots]) => Array.isArray(slots) && slots.length > 0
+      ([ _, slots ]) => Array.isArray(slots) && slots.length > 0
     )
     if (activeDays.length === 0) return 'Nenhum horário configurado'
 
     return activeDays
-      .map(([dayKey, slots]) => {
+      .map(([ dayKey, slots ]) => {
         const dayLabel =
           DAYS_OF_WEEK.find(d => d.key === dayKey)?.label || dayKey
         const timesText = Array.isArray(slots)
@@ -154,7 +153,7 @@ export function ScheduleSelector({
               </div>
 
               <div className="space-y-2">
-                {schedule[day.key]?.map((slot, index) => (
+                {schedule[ day.key ]?.map((slot, index) => (
                   <div key={index} className="flex items-center gap-2">
                     <div className="flex items-center gap-2 flex-1">
                       <Select
@@ -207,10 +206,10 @@ export function ScheduleSelector({
                     </Button>
                   </div>
                 )) || (
-                  <div className="text-sm text-gray-500 italic">
-                    Nenhum horário configurado para este dia
-                  </div>
-                )}
+                    <div className="text-sm text-gray-500 italic">
+                      Nenhum horário configurado para este dia
+                    </div>
+                  )}
               </div>
             </CardContent>
           </Card>

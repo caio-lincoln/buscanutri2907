@@ -70,7 +70,7 @@ export default function NutritionistDashboard() {
     ScheduledAppointment[]
   >([])
   const router = useRouter()
-  const { user, nutritionistProfile, loading: authLoading, signOut } = useAuth()
+  const { user, nutritionistProfile, loading: authLoading, signOut, refreshUser} = useAuth()
 
    // Hook para estatísticas dinâmicas do dashboard
   const { stats: dashboardStats } = useDashboardStats({
@@ -1497,11 +1497,8 @@ export default function NutritionistDashboard() {
           onOpenChange={setIsProfileModalOpen}
           userType="nutricionista"
           initialData={nutritionistProfile}
-          onProfileUpdate={() => {
-            // Recarregar a página para atualizar o perfil
-            window.location.reload()
-          }}
-          userId={nutritionistProfile.user_id}
+          
+          userId={nutritionistProfile.id}
         />
       )}
     </DashboardSidebar>
