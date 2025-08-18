@@ -118,8 +118,8 @@ export function ImageCropUpload({
   // Função para validar dimensões da imagem
   const validateImageDimensions = (img: HTMLImageElement): string | null => {
     if (cropType === 'cover') {
-      if (img.naturalWidth < 2000 || img.naturalHeight < 700) {
-        return `Dimensao minima para capa: 2000x700px. Sua imagem: ${img.naturalWidth}x${img.naturalHeight}px`
+      if (img.naturalWidth < minWidth || img.naturalHeight < minHeight) {
+        return `Dimensao minima para capa: ${minWidth}x${minHeight}px. Sua imagem: ${img.naturalWidth}x${img.naturalHeight}px`
       }
     } else if (cropType === 'avatar') {
       if (img.naturalWidth < 600 || img.naturalHeight < 600) {

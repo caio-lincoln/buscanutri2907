@@ -219,7 +219,6 @@ export function UserProfileModal({
 }: UserProfileModalProps) {
   const supabase = useMemo(() => createSupabaseClient(), [])
   const { refreshUser, nutritionistProfile } = useAuth()
-  console.log("🚀 ~ UserProfileModal ~ nutritionistProfile:", nutritionistProfile)
   const [ formData, setFormData ] = useState<any>(initialData)
   const [ loading, setLoading ] = useState(false)
   const [ error, setError ] = useState<string | null>(null)
@@ -789,6 +788,7 @@ export function UserProfileModal({
     }
 
     try {
+      console.log("🚀 ~ handleSubmit ~ formData:", formData)
       const dataToSubmit = { ...formData }
 
       // Processamento específico para pacientes foi removido pois os dados
@@ -874,8 +874,7 @@ export function UserProfileModal({
           )
         }
       }
-      console.log(nutritionistProfile?.id)
-      await saveNutritionistAvailability(nutritionistProfile?.id as string, dataToSubmit.available_times)
+      await saveNutritionistAvailability(nutritionistProfile?.id as string, JSON.parse(dataToSubmit.available_times))
       delete dataToSubmit.specialties
       delete dataToSubmit.available_times
       await updateUserProfile(userId, userType, dataToSubmit)
@@ -1809,12 +1808,12 @@ export function UserProfileModal({
                     </Label>
                     <ScheduleSelector
                       value={formData?.available_times || '{}'}
-                      onChange={value =>
+                      onChange={value =>{
                         setFormData((prev: any) => ({
                           ...prev,
-                          available_times: value,
+                          available_times:value,
                         }))
-                      }
+                      }}
                       placeholder="Configure seus horários de atendimento"
                     />
                   </div>

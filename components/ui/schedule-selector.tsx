@@ -49,7 +49,6 @@ export function ScheduleSelector({
   placeholder,
 }: ScheduleSelectorProps) {
   const [ schedule, setSchedule ] = useState<DaySchedule>({})
-  const isInitializing = useRef(true)
 
   // Parse do valor inicial apenas uma vez
   useEffect(() => {
@@ -68,9 +67,7 @@ export function ScheduleSelector({
   const updateSchedule = useCallback(
     (newSchedule: DaySchedule) => {
       setSchedule(newSchedule)
-      if (!isInitializing.current) {
-        onChange(JSON.stringify(newSchedule))
-      }
+      onChange(JSON.stringify(newSchedule))
     },
     [ onChange ]
   )
@@ -81,6 +78,7 @@ export function ScheduleSelector({
         ...schedule,
         [ dayKey ]: [ ...(schedule[ dayKey ] || []), { start: '08:00', end: '17:00' } ],
       }
+      console.log("🚀 ~ addTimeSlot ~ newSchedule:", newSchedule)
       updateSchedule(newSchedule)
     }
 

@@ -122,6 +122,7 @@ interface NutritionistProfileClientProps {
 export default function NutritionistProfilePageClient({
   nutritionist,
 }: NutritionistProfileClientProps) {
+  console.log("🚀 ~ NutritionistProfilePageClient ~ nutritionist:", nutritionist)
   const [ mobileMenuOpen, setMobileMenuOpen ] = useState(false)
   const { viewStats, recordView } = useRealtimeProfileViews(nutritionist.id, {
     totalViews: nutritionist.total_views || 0,

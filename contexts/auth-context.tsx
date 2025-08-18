@@ -15,6 +15,7 @@ import { useIsClient } from '@/hooks/use-local-storage'
 import { useAuthSync } from '@/hooks/use-auth-sync'
 import type { User } from '@supabase/supabase-js'
 import type { UserProfile, NutritionistProfile, PatientProfile, CompanyProfile } from '@/lib/supabase'
+import { useRouter } from 'next/navigation'
 
 interface AuthContextType {
   user: User | null
@@ -52,7 +53,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setPatientProfile(null)
     setCompanyProfile(null)
   }, [])
-
+  const router = useRouter()
   // const refreshUserData = useCallback(async (user?: User) => {
   //   try {
   //     const currentUser = supabase.auth.getUser()
@@ -163,7 +164,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (typeof window !== 'undefined') {
         sessionStorage.removeItem('admin_session')
       }
-
+      router.replace('/')
       broadcastAuthChange('SIGN_OUT')
 
       await supabase.auth.signOut()
@@ -172,6 +173,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setNutritionistProfile(null)
       setPatientProfile(null)
       setCompanyProfile(null)
+      
     } catch (error) {
       console.error('Erro ao fazer logout:', error)
     }

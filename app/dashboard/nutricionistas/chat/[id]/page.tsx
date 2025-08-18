@@ -44,7 +44,7 @@ export default function NutritionistChatPage() {
   const [sending, setSending] = useState(false)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const router = useRouter()
+  paci
   const params = useParams()
   const conversationId = params['id'] as string
 

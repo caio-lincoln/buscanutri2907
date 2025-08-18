@@ -66,20 +66,8 @@ export async function saveNutritionistAvailability(
   nutritionistId: string,
   schedule: DaySchedule
 ): Promise<void> {
+  
   try {
-    console.log("🚀 ~ saveNutritionistAvailability ~ schedule:", schedule)
-    // Primeiro, remove todos os horários existentes do nutricionista
-    const { error: deleteError } = await supabase
-      .from('nutritionist_availability')
-      .delete()
-      .eq('nutritionist_id', nutritionistId)
-
-    console.log("🚀 ~ saveNutritionistAvailability ~ deleteError:", deleteError)
-    if (deleteError) {
-      throw new Error(
-        `Erro ao limpar horários existentes: ${deleteError.message}`
-      )
-    }
 
     // Converte o schedule para slots de disponibilidade
     const availabilitySlots = convertScheduleToAvailability(
@@ -89,11 +77,11 @@ export async function saveNutritionistAvailability(
 
     // Se há slots para inserir, insere todos de uma vez
     if (availabilitySlots.length > 0) {
-      const { error: insertError } = await supabase
-        .from('nutritionist_availability')
-        .insert(availabilitySlots)
-
-      console.log("🚀 ~ saveNutritionistAvailability ~ insertError:", insertError)
+      const { error: insertError } = await supabase.rpc('save_nutritionist_availability', {
+        p_nutritionist_id: nutritionistId,
+        p_slots: availabilitySlots
+      })
+      
       if (insertError) {
         throw new Error(`Erro ao salvar novos horários: ${insertError.message}`)
       }
