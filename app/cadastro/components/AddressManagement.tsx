@@ -96,32 +96,32 @@ export default function AddressManagement({
   })
 
   // Load addresses from Supabase
-  const loadAddresses = async () => {
-    const currentNutritionistId = nutritionistId || user?.id
-    if (!currentNutritionistId) return
+  // const loadAddresses = async () => {
+  //   const currentNutritionistId = nutritionistId || user?.id
+  //   if (!currentNutritionistId) return
 
-    try {
-      setLoading(true)
-      const addressesData =
-        await nutritionistAddressService.getAddressesByNutritionist(
-          currentNutritionistId
-        )
-      setAddresses(addressesData.map(convertToAddressData))
-    } catch (error) {
-      // Error loading addresses - handled silently
-      toast({
-        title: 'Erro',
-        description: 'Erro ao carregar endereços',
-        variant: 'destructive',
-      })
-    } finally {
-      setLoading(false)
-    }
-  }
+  //   try {
+  //     setLoading(true)
+  //     const addressesData =
+  //       await nutritionistAddressService.getAddressesByNutritionist(
+  //         currentNutritionistId
+  //       )
+  //     setAddresses(addressesData.map(convertToAddressData))
+  //   } catch (error) {
+  //     // Error loading addresses - handled silently
+  //     toast({
+  //       title: 'Erro',
+  //       description: 'Erro ao carregar endereços',
+  //       variant: 'destructive',
+  //     })
+  //   } finally {
+  //     setLoading(false)
+  //   }
+  // }
 
   // Load addresses on component mount
   useEffect(() => {
-    loadAddresses()
+    // loadAddresses()
   }, [nutritionistId, user?.id])
 
   // Notify parent component of address changes
@@ -166,15 +166,15 @@ export default function AddressManagement({
   }
 
   const handleSaveAddress = async () => {
-    const currentNutritionistId = nutritionistId || user?.id
-    if (!currentNutritionistId) {
-      toast({
-        title: 'Erro',
-        description: 'ID do nutricionista não encontrado',
-        variant: 'destructive',
-      })
-      return
-    }
+    // const currentNutritionistId = nutritionistId || user?.id
+    // if (!currentNutritionistId) {
+    //   toast({
+    //     title: 'Erro',
+    //     description: 'ID do nutricionista não encontrado',
+    //     variant: 'destructive',
+    //   })
+    //   return
+    // }
 
     // Validation
     if (!formData.state || !formData.state.trim()) {
@@ -212,7 +212,6 @@ export default function AddressManagement({
         // Adding new address
         const addressData = {
           ...formData,
-          nutritionist_id: currentNutritionistId,
           type: formData.type || 'in_person',
           status: formData.status || 'active',
           is_main: formData.is_main || false,
@@ -220,28 +219,30 @@ export default function AddressManagement({
           state: formData.state || '',
           city: formData.city || '',
         }
-        await nutritionistAddressService.createAddress(addressData)
+        onAddressesChange && onAddressesChange([addressData])
+        // await nutritionistAddressService.createAddress(addressData)
         toast({
           title: 'Sucesso',
-          description: 'Endereço adicionado com sucesso',
+          description: 'Endereço salvo para cadastro',
         })
-      } else {
-        // Editing existing address
-        if (editingIndex !== null) {
-          const addressId = addresses[editingIndex]?.id
-          if (addressId) {
-            await nutritionistAddressService.updateAddress(addressId, formData)
-            toast({
-              title: 'Sucesso',
-              description: 'Endereço atualizado com sucesso',
-            })
-          }
-        }
       }
+      // else {
+      //   // Editing existing address
+      //   if (editingIndex !== null) {
+      //     const addressId = addresses[editingIndex]?.id
+      //     if (addressId) {
+      //       await nutritionistAddressService.updateAddress(addressId, formData)
+      //       toast({
+      //         title: 'Sucesso',
+      //         description: 'Endereço atualizado com sucesso',
+      //       })
+      //     }
+      //   }
+      // }
 
       // Reload addresses from database
-      await loadAddresses()
-      setEditingIndex(null)
+      // await loadAddresses()
+      // setEditingIndex(null)
     } catch (error) {
       console.log("🚀 ~ handleSaveAddress ~ error:", error)
       // Error saving address - handled silently
@@ -265,7 +266,7 @@ export default function AddressManagement({
       await nutritionistAddressService.deleteAddress(addressId)
 
       // Reload addresses from database
-      await loadAddresses()
+      // await loadAddresses()
 
       toast({
         title: 'Sucesso',
@@ -293,7 +294,7 @@ export default function AddressManagement({
       await nutritionistAddressService.setMainAddress(addressId)
 
       // Reload addresses from database
-      await loadAddresses()
+      // await loadAddresses()
 
       toast({
         title: 'Sucesso',
@@ -663,9 +664,7 @@ export default function AddressManagement({
                 >
                   {loading
                     ? 'Salvando...'
-                    : editingIndex === -1
-                      ? 'Adicionar'
-                      : 'Salvar'}
+                    :  'Salvar'}
                 </Button>
               </div>
             </CardContent>

@@ -122,6 +122,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const loadUser = useCallback(async () => {
     try {
       const sessionUser = await supabase.auth.getUser()
+      console.log("🚀 ~ AuthProvider ~ sessionUser:", sessionUser)
 
       if (!sessionUser.data?.user) {
         setUser(null)
@@ -133,24 +134,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(sessionUser.data.user)
       setUserProfile(sessionUser.data.user)
       const { data: row } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', sessionUser.data.user.id)
-        .maybeSingle()
-
-      const utype = row.user_type
-      const table = PROFILE_TABLE_BY_TYPE[ utype as UserType ]
-
-      if (table) {
-        const { data: spec } = await supabase
-          .from(table)
-          .select('*')
-          .eq('user_id', row.id)
-          .maybeSingle()
-
-        if (utype === 'nutricionista') setNutritionistProfile(spec ?? null)
-        if (utype === 'paciente') setPatientProfile(spec ?? null)
-        if (utype === 'empresa') setCompanyProfile(spec ?? null)
+      .from('users')
+      .select('*')
+      .eq('id', sessionUser.data.user.id)
+      .maybeSingle()
+      
+      console.log("🚀 ~ AuthProvider ~ row:", row)
+      const utype = row?.user_type
+      if (utype) {
+        const table = PROFILE_TABLE_BY_TYPE[ utype as UserType ]
+  
+        if (table) {
+          const { data: spec } = await supabase
+            .from(table)
+            .select('*')
+            .eq('user_id', row.id)
+            .maybeSingle()
+  
+          if (utype === 'nutricionista') setNutritionistProfile(spec ?? null)
+          if (utype === 'paciente') setPatientProfile(spec ?? null)
+          if (utype === 'empresa') setCompanyProfile(spec ?? null)
+        }
+        
       }
     } catch (error) {
       console.error('Erro ao carregar usuário:', error)

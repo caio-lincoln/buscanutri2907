@@ -31,148 +31,116 @@ interface ConsultationPricingConfigProps {
   setPricingConfig: (config: PricingConfig) => void
 }
 
+const formatCurrency = (value: string): string => {
+  if (!value) return ''
+  const digits = value.replace(/\D/g, '')
+  if (!digits) return ''
+  const n = Number(digits) / 100
+  return n.toLocaleString('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+    minimumFractionDigits: 2,
+  })
+}
+
+const PriceInput = ({
+  label,
+  value,
+  onChange,
+  placeholder = 'R$ 0,00',
+}: {
+  label: string
+  value: string
+  onChange: (value: string) => void
+  placeholder?: string
+}) => {
+  
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const inputValue = e.target.value
+    const formatted = formatCurrency(inputValue)
+    onChange(formatted)
+  }
+  return (
+    <div className="space-y-2">
+      <Label htmlFor={label.toLowerCase().replace(/s+/g, '-')}>
+        {label}
+      </Label>
+      <Input
+        id={label.toLowerCase().replace(/s+/g, '-')}
+        inputMode="numeric"              // melhor UX em mobile
+        value={value ?? ''}
+        onChange={handleChange}
+        placeholder={placeholder}
+        className="text-right"
+      />
+    </div>
+  )
+}
+
 export default function ConsultationPricingConfig({
   pricingConfig,
   setPricingConfig,
 }: ConsultationPricingConfigProps) {
-  const [errors, setErrors] = useState<string[]>([])
+  const [ errors, setErrors ] = useState<string[]>([])
 
   // Função para formatar valor como moeda BRL
-  const formatCurrency = (value: string): string => {
-    if (!value) return ''
-    const numericValue = value.replace(/D/g, '')
-    if (!numericValue) return ''
-    const floatValue = parseFloat(numericValue) / 100
-    return floatValue.toLocaleString('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-      minimumFractionDigits: 2,
-    })
-  }
 
   // Função para converter valor formatado para número
   const parseCurrency = (value: string): number | null => {
     if (!value) return null
-    const numericValue = value.replace(/[^d,]/g, '').replace(',', '.')
-    const parsed = parseFloat(numericValue)
-    return isNaN(parsed) ? null : parsed
+    const normalized = value.replace(/[^\d,]/g, '').replace(',', '.')
+    const n = Number(normalized)
+    return Number.isFinite(n) ? n : null
   }
 
   // Validação dos dados
-  const validatePricing = (): string[] => {
-    const validationErrors: string[] = []
+  const validatePricing = (cfg: PricingConfig): string[] => {
+    const errs: string[] = []
 
-    // Verificar se pelo menos uma modalidade está ativa
-    if (!pricingConfig.inPerson.enabled && !pricingConfig.online.enabled) {
-      validationErrors.push(
-        'Pelo menos uma modalidade (Presencial ou Online) deve estar configurada.'
-      )
+    if (!cfg.inPerson.enabled && !cfg.online.enabled) {
+      errs.push('Pelo menos uma modalidade (Presencial ou Online) deve estar configurada.')
     }
 
-    // Validar preços presenciais
-    if (pricingConfig.inPerson.enabled) {
-      if (pricingConfig.inPerson.pricingType === 'combined') {
-        const price = parseCurrency(pricingConfig.inPerson.combinedPrice)
-        if (price === null || price < 0) {
-          validationErrors.push(
-            'Preço único presencial deve ser maior ou igual a R$ 0,00.'
-          )
-        }
-      } else if (pricingConfig.inPerson.pricingType === 'separate') {
-        const consultationPrice = parseCurrency(
-          pricingConfig.inPerson.consultationPrice
-        )
-        const followupPrice = parseCurrency(
-          pricingConfig.inPerson.followupPrice
-        )
-
-        if (consultationPrice === null || consultationPrice < 0) {
-          validationErrors.push(
-            'Preço da consulta presencial deve ser maior ou igual a R$ 0,00.'
-          )
-        }
-        if (followupPrice === null || followupPrice < 0) {
-          validationErrors.push(
-            'Preço do retorno presencial deve ser maior ou igual a R$ 0,00.'
-          )
-        }
+    if (cfg.inPerson.enabled) {
+      if (cfg.inPerson.pricingType === 'combined') {
+        const p = parseCurrency(cfg.inPerson.combinedPrice)
+        if (p === null || p < 0) errs.push('Preço único presencial deve ser maior ou igual a R$ 0,00.')
+      } else {
+        const c = parseCurrency(cfg.inPerson.consultationPrice)
+        const f = parseCurrency(cfg.inPerson.followupPrice)
+        if (c === null || c < 0) errs.push('Preço da consulta presencial deve ser maior ou igual a R$ 0,00.')
+        if (f === null || f < 0) errs.push('Preço do retorno presencial deve ser maior ou igual a R$ 0,00.')
       }
     }
 
-    // Validar preços online
-    if (pricingConfig.online.enabled) {
-      if (pricingConfig.online.pricingType === 'combined') {
-        const price = parseCurrency(pricingConfig.online.combinedPrice)
-        if (price === null || price < 0) {
-          validationErrors.push(
-            'Preço único online deve ser maior ou igual a R$ 0,00.'
-          )
-        }
-      } else if (pricingConfig.online.pricingType === 'separate') {
-        const consultationPrice = parseCurrency(
-          pricingConfig.online.consultationPrice
-        )
-        const followupPrice = parseCurrency(pricingConfig.online.followupPrice)
-
-        if (consultationPrice === null || consultationPrice < 0) {
-          validationErrors.push(
-            'Preço da consulta online deve ser maior ou igual a R$ 0,00.'
-          )
-        }
-        if (followupPrice === null || followupPrice < 0) {
-          validationErrors.push(
-            'Preço do retorno online deve ser maior ou igual a R$ 0,00.'
-          )
-        }
+    if (cfg.online.enabled) {
+      if (cfg.online.pricingType === 'combined') {
+        const p = parseCurrency(cfg.online.combinedPrice)
+        if (p === null || p < 0) errs.push('Preço único online deve ser maior ou igual a R$ 0,00.')
+      } else {
+        const c = parseCurrency(cfg.online.consultationPrice)
+        const f = parseCurrency(cfg.online.followupPrice)
+        if (c === null || c < 0) errs.push('Preço da consulta online deve ser maior ou igual a R$ 0,00.')
+        if (f === null || f < 0) errs.push('Preço do retorno online deve ser maior ou igual a R$ 0,00.')
       }
     }
 
-    return validationErrors
+    return errs
   }
 
   // Atualizar configuração
   const updateConfig = (updates: Partial<PricingConfig>) => {
-    const newConfig = { ...pricingConfig, ...updates }
-    setPricingConfig(newConfig)
-
-    const validationErrors = validatePricing()
-    setErrors(validationErrors)
+    setPricingConfig(prev => {
+      const next = { ...prev, ...updates }
+      // setErrors(validatePricing(next))
+      return next
+    })
   }
 
   // Componente para input de preço
-  const PriceInput = ({
-    label,
-    value,
-    onChange,
-    placeholder = 'R$ 0,00',
-  }: {
-    label: string
-    value: string
-    onChange: (value: string) => void
-    placeholder?: string
-  }) => {
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const inputValue = e.target.value
-      const formatted = formatCurrency(inputValue)
-      onChange(formatted)
-    }
+ 
 
-    return (
-      <div className="space-y-2">
-        <Label htmlFor={label.toLowerCase().replace(/s+/g, '-')}>
-          {label}
-        </Label>
-        <Input
-          id={label.toLowerCase().replace(/s+/g, '-')}
-          type="text"
-          value={value}
-          onChange={handleChange}
-          placeholder={placeholder}
-          className="text-right"
-        />
-      </div>
-    )
-  }
+  const [ priceValue, setPriceValue ] = useState('')
 
   return (
     <Card className="w-full">
@@ -249,15 +217,17 @@ export default function ConsultationPricingConfig({
                 <div className="ml-6 space-y-4">
                   <PriceInput
                     label="Preço único (consulta + retorno)"
-                    value={pricingConfig.inPerson.combinedPrice}
-                    onChange={value =>
+                    value={priceValue}
+                    onChange={value => {
+                      setPriceValue(value)
+                      console.log("🚀 ~ value:", value)
                       updateConfig({
                         inPerson: {
                           ...pricingConfig.inPerson,
                           combinedPrice: value,
                         },
                       })
-                    }
+                    }}
                   />
                 </div>
               )}
@@ -417,7 +387,7 @@ export default function ConsultationPricingConfig({
                 <div>
                   <strong>Presencial:</strong>{' '}
                   {pricingConfig.inPerson.pricingType === 'combined' &&
-                  pricingConfig.inPerson.combinedPrice
+                    pricingConfig.inPerson.combinedPrice
                     ? `Preço único: ${pricingConfig.inPerson.combinedPrice}`
                     : pricingConfig.inPerson.pricingType === 'separate'
                       ? `Consulta: ${pricingConfig.inPerson.consultationPrice || 'Não definido'}, Retorno: ${pricingConfig.inPerson.followupPrice || 'Não definido'}`
@@ -428,7 +398,7 @@ export default function ConsultationPricingConfig({
                 <div>
                   <strong>Online:</strong>{' '}
                   {pricingConfig.online.pricingType === 'combined' &&
-                  pricingConfig.online.combinedPrice
+                    pricingConfig.online.combinedPrice
                     ? `Preço único: ${pricingConfig.online.combinedPrice}`
                     : pricingConfig.online.pricingType === 'separate'
                       ? `Consulta: ${pricingConfig.online.consultationPrice || 'Não definido'}, Retorno: ${pricingConfig.online.followupPrice || 'Não definido'}`

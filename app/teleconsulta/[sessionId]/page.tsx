@@ -75,6 +75,7 @@ export default function TeleconsultaRoom() {
   const params = useParams()
   const router = useRouter()
   const { user } = useAuth()
+
   const sessionToken = params.sessionId as string
 
   // Session state
@@ -116,9 +117,11 @@ export default function TeleconsultaRoom() {
 
   // Helpers: quem sou eu / quem é o outro
   const myId = user?.id ?? ''
+ 
   const otherId = session
     ? (myId === session.nutritionist.user_id ? session.patient.user_id : session.nutritionist.user_id)
     : ''
+
 
   const channelName = useMemo(
     () => (session ? `teleconsulta_${session.id}_${session.session_token}` : null),
@@ -153,8 +156,9 @@ export default function TeleconsultaRoom() {
   useEffect(() => {
     if (session && myId && otherId) {
       (async () => {
+    
         await initializeWebRTC()
-        // await ensureChannel()
+        await ensureChannel()
         await makeOffer()
       })()
     }
@@ -312,7 +316,7 @@ export default function TeleconsultaRoom() {
 
       pc.ontrack = (event) => {
         const track = event.track
-        console.log("🚀 ~ initializeWebRTC ~ track:", track)
+        
         if (track.kind === 'video') {
           const [ rs ] = event.streams
           setRemoteStream(rs as MediaStream)

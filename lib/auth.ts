@@ -40,7 +40,7 @@ export async function signUp(
         },
       },
     })
-
+    
     if (authError) {
       // Silent error handling: Error in auth.signUp
       throw new Error(authError.message)
@@ -57,12 +57,13 @@ export async function signUp(
 
     // 4. Fazer login automático (agora deve funcionar pois o usuário está confirmado)
     const { data: signInData, error: signInError } =
-      await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
-
+    await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
+    
     if (signInError) {
+      console.log("🚀 ~ signUp ~ signInError:", signInError)
       // Silent error handling: Error in automatic login
       // Se o login falhar, pode ser que o usuário ainda não esteja confirmado
       // Vamos tentar confirmar manualmente
@@ -106,13 +107,15 @@ export async function signUp(
       .select()
       .single()
 
-    if (userError) {
+      if (userError) {
+      console.log("🚀 ~ signUp ~ userError:", userError)
       // Silent error handling: Error creating user record
     } else {
       // Silent logging: User record created in users table
     }
 
     // 6. Criar perfil específico baseado no tipo de usuário
+    let outProfileData: any = ''
     try {
       if (userType === 'nutricionista') {
         const { data: profileData, error: profileError } = await supabase
@@ -141,8 +144,9 @@ export async function signUp(
           })
           .select()
           .single()
-
+          outProfileData = profileData
         if (profileError) {
+            
           // Silent error handling: Error creating nutritionist profile
         } else {
           // Silent logging: Nutritionist profile created
@@ -158,7 +162,7 @@ export async function signUp(
           })
           .select()
           .single()
-
+          outProfileData = profileData
         if (profileError) {
           // Silent error handling: Error creating patient profile
         } else {
@@ -177,7 +181,8 @@ export async function signUp(
           })
           .select()
           .single()
-
+        
+          outProfileData = profileData
         if (profileError) {
           // Silent error handling: Error creating company profile
         } else {
@@ -185,11 +190,12 @@ export async function signUp(
         }
       }
     } catch (profileError) {
+      console.log("🚀 ~ signUp ~ profileError:", profileError)
       // Silent error handling: General error creating profile
     }
 
     // Silent logging: Signup with auto-confirmation completed successfully
-    return { data: authData, error: null }
+    return { data: authData, profileData: outProfileData, error: null }
   } catch (error: any) {
     // Silent error handling: General signup error
     return {

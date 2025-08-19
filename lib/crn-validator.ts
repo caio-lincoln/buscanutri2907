@@ -24,21 +24,16 @@ const CRN_REGIONS = {
   '12': 'Acre, Amazonas, Rondônia e Roraima',
 }
 
+const CRN_REGEX = /^CRN[\s-]?(\d{1,2})[\s-]?(\d{4,6})$/i
+
+
 export function validateCRNFormat(crn: string): CRNValidationResult {
   if (!crn || typeof crn !== 'string') {
-    return {
-      isValid: false,
-      message: 'CRN é obrigatório',
-    }
+    return { isValid: false, message: 'CRN é obrigatório' }
   }
 
-  // Remove espaços e converte para maiúsculo
-  const cleanCRN = crn.trim().toUpperCase()
-
-  // Verifica formato básico: CRN + número da região + espaço/hífen + número
-  const crnRegex = /^CRN(d{1,2})[s-]?(d{4,6})$/
-  const match = cleanCRN.match(crnRegex)
-
+  const clean = crn.trim().toUpperCase()
+  const match = clean.match(CRN_REGEX)
   if (!match) {
     return {
       isValid: false,
@@ -46,18 +41,17 @@ export function validateCRNFormat(crn: string): CRNValidationResult {
     }
   }
 
-  const region = match[1]
-  const number = match[2]
+  const region = match[1] // "1".."12"
+  const number = match[2] // 4..6 dígitos
 
-  // Verifica se a região existe
-  if (!CRN_REGIONS[region as keyof typeof CRN_REGIONS]) {
+  if (!CRN_REGIONS[region]) {
     return {
       isValid: false,
       message: `Região CRN${region} não existe. Regiões válidas: 1-12`,
     }
   }
 
-  // Verifica se o número tem tamanho adequado
+  // number já tem 4..6 pela regex, mas deixo aqui por clareza:
   if (number.length < 4 || number.length > 6) {
     return {
       isValid: false,
@@ -67,7 +61,7 @@ export function validateCRNFormat(crn: string): CRNValidationResult {
 
   return {
     isValid: true,
-    message: `CRN válido - ${CRN_REGIONS[region as keyof typeof CRN_REGIONS]}`,
+    message: `CRN válido - ${CRN_REGIONS[region]}`,
     region,
     number,
   }
@@ -121,21 +115,22 @@ export async function validateCRNWithAPI(
   }
 }
 
-// Função para formatar CRN automaticamente
 export function formatCRN(value: string): string {
-  if (!value) return ''
-
-  // Remove tudo que não é letra ou número
+  if (!value || value === "CRN") return ''
+  // Remove não alfanuméricos e padroniza
   const clean = value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase()
 
-  // Se não começa com CRN, adiciona
-  let formatted = clean.startsWith('CRN') ? clean : 'CRN' + clean
+  // Garante prefixo CRN
+  const withPrefix = clean.startsWith('CRN') ? clean : `CRN${clean}`
 
-  // Aplica formatação: CRN + região + espaço + número
-  const match = formatted.match(/^CRN(d{1,2})(d{4,6})$/)
-  if (match) {
-    formatted = `CRN${match[1]} ${match[2]}`
+  // Se tiver região+numero completos, formata; senão retorna como está
+  const m = withPrefix.match(/^CRN(\d{1,2})(\d{4,6})$/)
+  if (m) {
+    return `CRN-${m[1]}-${m[2]}`
   }
+  // Se tiver só região (1–2 dígitos), ainda não há número: CRN-<região>
+  const partial = withPrefix.match(/^CRN(\d{1,2})$/)
+  if (partial) return `CRN-${partial[1]}`
 
-  return formatted
+  return withPrefix
 }

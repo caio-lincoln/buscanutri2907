@@ -156,11 +156,12 @@ export default function CadastroPage() {
       length: password.length >= 8,
       uppercase: /[A-Z]/.test(password),
       lowercase: /[a-z]/.test(password),
-      number: /d/.test(password),
-      // special: /[!@#$%^&*()_+-=[]{};':"\|,.<>\/?]/g.test(password),
+      number: /\d/.test(password),
+      special: /[!@#$%^&*()\-_=+\[\]{};:'"\\|,.<>\/?]/.test(password),
     }
 
     const score = Object.values(requirements).filter(Boolean).length
+    console.log("🚀 ~ validatePasswordStrength ~ score:", score)
 
     let strength: PasswordStrength = 'weak'
     let message = ''
@@ -280,6 +281,7 @@ export default function CadastroPage() {
   // Função para validar CRN em tempo real
   const handleCRNChange = async (value: string) => {
     const formatted = formatCRN(value)
+    // const formatted = value
     setCrnValue(formatted)
 
     if (!formatted || formatted.length < 6) {
@@ -372,7 +374,6 @@ export default function CadastroPage() {
         setError('CRN deve ser validado antes de continuar')
         return
       }
-      console.log("Válido")
 
       if (!crnProofFile) {
         setError('Comprovante de CRN é obrigatório')
@@ -440,17 +441,35 @@ export default function CadastroPage() {
         }
 
         // Converter preços para números
-        const parsePrice = (price: string) => {
+        const parsePrice = (price: string): number | null => {
           if (!price) return null
-          const numericValue = parseFloat(
-            price.replace(/[^d,]/g, '').replace(',', '.')
-          )
-          return isNaN(numericValue) ? null : numericValue
+        
+          const raw = price.replace(/[^\d,.\-]/g, '')
+          if (!raw) return null
+        
+          let normalized: string
+          if (raw.includes(',') && !raw.includes('.')) {
+            normalized = raw.replace(/\./g, '').replace(',', '.')
+          } else if (raw.includes('.') && !raw.includes(',')) {
+            normalized = raw.replace(/,/g, '')
+          } else if (raw.includes(',') && raw.includes('.')) {
+            const lastComma = raw.lastIndexOf(',')
+            const lastDot = raw.lastIndexOf('.')
+            normalized =
+              lastComma > lastDot
+                ? raw.replace(/\./g, '').replace(',', '.')
+                : raw.replace(/,/g, '')
+          } else {
+            normalized = raw
+          }
+        
+          const n = Number(normalized)
+          return Number.isFinite(n) ? n : null
         }
 
         additionalData = {
           full_name,
-          crn: crnValue, // Usa o valor formatado e validado
+          crn: crnValue, 
           phone,
           accepts_corporate_plans: acceptsCorporatePlans,
           in_person_pricing_type: pricingConfig.inPerson.enabled
@@ -531,17 +550,15 @@ export default function CadastroPage() {
       }
 
       // Processing registration data
-      console.log("🚀 ~ handleSubmit ~ additionalData:", additionalData)
 
-      const { data, error: signUpError } = await signUp(
+      const { data, profileData,  error: signUpError } = await signUp(
         email,
         password,
         userType as any,
         additionalData
       )
 
-      console.log("🚀 ~ handleSubmit ~ signUpError:", signUpError)
-      console.log("🚀 ~ handleSubmit ~ data:", data)
+
       if (signUpError) {
         throw new Error(signUpError)
       }
@@ -553,7 +570,7 @@ export default function CadastroPage() {
         addresses.length > 0
       ) {
         try {
-          await saveNutritionistAddresses(data.user.id, addresses)
+          await saveNutritionistAddresses(profileData.id, addresses)
           // Addresses saved successfully
         } catch (addressError) {
           // Error saving addresses
@@ -580,6 +597,7 @@ export default function CadastroPage() {
           )
           // Documents uploaded successfully
         } catch (documentError) {
+          console.log("🚀 ~ handleSubmit ~ documentError:", documentError)
           // Error uploading documents
           // Falha o cadastro se não conseguir fazer upload do comprovante de CRN
           throw new Error(
@@ -591,7 +609,7 @@ export default function CadastroPage() {
       // Salvar especialidades para nutricionistas
       if (
         userType === 'nutricionista' &&
-        data?.user?.id &&
+        profileData?.id &&
         selectedSpecialties.length > 0
       ) {
         try {
@@ -599,10 +617,9 @@ export default function CadastroPage() {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              Authorization: `Bearer ${data?.session?.access_token}`,
             },
             body: JSON.stringify({
-              nutritionist_id: data.user.id,
+              nutritionist_id: profileData.id,
               specialty_ids: selectedSpecialties,
             }),
           })
@@ -1206,18 +1223,18 @@ export default function CadastroPage() {
                       ? 'bg-[#D90D32] hover:bg-[#D90D32]/90'
                       : 'bg-[#1E1D40] hover:bg-[#1E1D40]/90'
                     } text-white`}
-                  // disabled={
-                  //   !acceptTerms ||
-                  //   loading ||
-                  //   documentsUploading ||
-                  //   (userType === 'nutricionista' &&
-                  //     crnValidation.status !== 'valid') ||
-                  //   (userType === 'nutricionista' && !crnProofFile) ||
-                  //   (userType === 'empresa' &&
-                  //     cnpjValidation.status !== 'valid') ||
-                  //   passwordValidation.strength === 'weak' ||
-                  //   !password
-                  // }
+                  disabled={
+                    !acceptTerms ||
+                    loading ||
+                    documentsUploading ||
+                    (userType === 'nutricionista' &&
+                      crnValidation.status !== 'valid') ||
+                    (userType === 'nutricionista' && !crnProofFile) ||
+                    (userType === 'empresa' &&
+                      cnpjValidation.status !== 'valid') ||
+                    passwordValidation.strength === 'weak' ||
+                    !password
+                  }
                 >
                   {loading || documentsUploading ? (
                     <>

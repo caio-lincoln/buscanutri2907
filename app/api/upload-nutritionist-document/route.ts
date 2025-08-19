@@ -100,12 +100,12 @@ export async function POST(request: NextRequest) {
     // Para CRN proof, verificar se já existe um documento
     if (documentType === 'crn_proof') {
       const { data: existingDoc, error: checkError } = await supabase
-        .from('nutritionist_documents')
-        .select('id')
-        .eq('nutritionist_id', userId)
-        .eq('document_type', 'crn_proof')
-        .single()
-
+      .from('nutritionist_documents')
+      .select('id')
+      .eq('nutritionist_id', userId)
+      .eq('document_type', 'crn_proof')
+      .single()
+      
       if (checkError && checkError.code !== 'PGRST116') {
         // Silent error handling - error checking existing document
         return NextResponse.json(
@@ -144,7 +144,7 @@ export async function POST(request: NextRequest) {
         upsert: false,
       })
 
-    if (uploadError) {
+      if (uploadError) {
       // Silent error handling - upload error
       return NextResponse.json(
         { error: 'Erro ao fazer upload do arquivo' },
@@ -240,6 +240,7 @@ export async function POST(request: NextRequest) {
           : 'Certificado enviado com sucesso',
     })
   } catch (error) {
+    console.log("🚀 ~ POST ~ error:", error)
     // Silent error handling - general upload error
     return NextResponse.json(
       { error: 'Erro interno do servidor' },

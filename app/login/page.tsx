@@ -33,8 +33,8 @@ export default function LoginPage() {
 
   // Redirect if user is already logged in
   useEffect(() => {
-    if (!authLoading && user && user.user_type) {
-      const redirectPath = getRedirectPath(user.user_type)
+    if (!authLoading && user && user.user_metadata['user_type']) {
+      const redirectPath = getRedirectPath(user.user_metadata['user_type'])
       router.replace(redirectPath)
     }
   }, [ user, authLoading, router ])
@@ -91,7 +91,7 @@ export default function LoginPage() {
 
       if (result && result.data?.user) {
         broadcastAuthChange('SIGN_IN')
-        const redirectPath = getRedirectPath(result.data?.user.user_metadata.user_type)
+        const redirectPath = getRedirectPath(result.data?.user?.user_metadata['user_type'])
 
         toast({
           title: 'Login realizado com sucesso!',
@@ -99,6 +99,7 @@ export default function LoginPage() {
         })
 
         // Use replace to avoid back button issues
+        console.log("redirecionado", redirectPath)
         router.replace(redirectPath)
         return // Exit early to prevent further execution
       } else {
