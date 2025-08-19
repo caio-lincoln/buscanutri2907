@@ -254,7 +254,7 @@ export default function TeleconsultaRoom() {
     })
 
     ch.on('broadcast', { event: 'chatMessage' }, async ({ payload }) => {
-    console.log("🚀 ~ ensureChannel ~ payload:", payload)
+      if(chatMessages.some(message => message.id === payload.id)) return
 
       try {
         setChatMessages(prev => [ ...prev, payload ])
