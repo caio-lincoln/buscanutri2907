@@ -132,7 +132,6 @@ export default function AgendarPage() {
     try {
       setLoading(true)
       const params = new URLSearchParams({
-        search: searchTerm,
         specialty: selectedSpecialty,
         state: selectedState,
         minPrice: selectedPriceRange.min.toString(),
@@ -608,6 +607,7 @@ export default function AgendarPage() {
                           {slots.map((slot, index) => (
                             <Button
                               key={index}
+                              disabled={!slot.available}
                               variant={selectedSlot?.datetime === slot.datetime ? 'default' : 'outline'}
                               onClick={() => setSelectedSlot(slot)}
                               className="h-12 flex items-center justify-center"

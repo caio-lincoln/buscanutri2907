@@ -52,7 +52,6 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
   .select('*')
   .eq('nutritionist_id', nutritionist.id)
   .eq('is_available', true)
-  console.log("🚀 ~ availability:", availability)
   
   if (availabilityError) {
     throw new Error('Erro ao buscar disponibilidade')
@@ -64,8 +63,8 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
     .select('scheduled_at, duration_minutes')
     .eq('nutritionist_id', nutritionist.id)
     .in('status', ['scheduled', 'in_progress'])
-    .gte('scheduled_at', start.toISOString())
-    .lte('scheduled_at', end.toISOString())
+    // .gte('scheduled_at', start.toISOString())
+  // .lte('scheduled_at', end.toISOString())
 
   if (sessionsError) {
     throw new Error('Erro ao buscar sessões agendadas')
@@ -78,75 +77,109 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
     start,
     end
   )
+  console.log("🚀 ~ availableSlots:", availableSlots)
 
   return NextResponse.json({ availableSlots })
 })
 
-function generateAvailableSlots(
-  availability: any[],
-  bookedSessions: any[],
-  startDate: Date,
-  endDate: Date
-) {
-  const slots: any[] = []
-  const slotDuration = 60 // 60 minutos por slot
-  
-  // Converter sessões agendadas para array de períodos ocupados
-  const bookedPeriods = bookedSessions.map(session => ({
-    start: parseISO(session.scheduled_at),
-    end: addMinutes(parseISO(session.scheduled_at), session.duration_minutes)
-  }))
+type RawAvailability = Record<string, any>;
+type Booked = { scheduled_at: string; duration_minutes: number };
 
-  // Iterar por cada dia no período
-  let currentDate = new Date(startDate)
-  while (currentDate <= endDate) {
-    const dayOfWeek = currentDate.getDay()
-    
-    // Buscar disponibilidade para este dia da semana
-    const dayAvailability = availability.filter(av => av.day_of_week === dayOfWeek)
-    
-    dayAvailability.forEach(av => {
-      // Converter horários de string para Date
-      const [startHour, startMinute] = av.start_time.split(':').map(Number)
-      const [endHour, endMinute] = av.end_time.split(':').map(Number)
-      
-      const slotStart = new Date(currentDate)
-      slotStart.setHours(startHour, startMinute, 0, 0)
-      
-      const slotEnd = new Date(currentDate)
-      slotEnd.setHours(endHour, endMinute, 0, 0)
-      
-      // Gerar slots de 60 minutos dentro do período disponível
-      let currentSlot = new Date(slotStart)
-      while (addMinutes(currentSlot, slotDuration) <= slotEnd) {
-        const slotEndTime = addMinutes(currentSlot, slotDuration)
-        
-        // Verificar se não está no passado
-        if (isAfter(currentSlot, new Date())) {
-          // Verificar se não conflita com sessões agendadas
-          const isBooked = bookedPeriods.some(period => 
-            (isAfter(currentSlot, period.start) && isBefore(currentSlot, period.end)) ||
-            (isAfter(slotEndTime, period.start) && isBefore(slotEndTime, period.end)) ||
-            (isBefore(currentSlot, period.start) && isAfter(slotEndTime, period.end))
-          )
-          
-          if (!isBooked) {
-            slots.push({
-              datetime: currentSlot.toISOString(),
-              date: format(currentSlot, 'yyyy-MM-dd'),
-              time: format(currentSlot, 'HH:mm'),
-              duration: slotDuration,
-              available: true
-            })
-          }
-        }
-        
-        currentSlot = addMinutes(currentSlot, slotDuration)
-      }
+function getField<T=any>(obj: any, keys: string[], def?: T): T {
+  for (const k of keys) if (k in obj) return obj[k];
+  return def as T;
+}
+function normWeekday(v: number) {
+  // aceita 0..6 (dom..sáb) ou 1..7 (seg..dom)
+  if (v >= 1 && v <= 7) return v % 7;      // 7 -> 0
+  if (v >= 0 && v <= 6) return v;
+  throw new Error(`weekday inválido: ${v}`);
+}
+function parseHM(hhmm: string) {
+  const [h, m] = hhmm.split(':').map(Number);
+  return { h, m };
+}
+function setUTCYMD(date: Date, h: number, m: number) {
+  return new Date(Date.UTC(
+    date.getUTCFullYear(),
+    date.getUTCMonth(),
+    date.getUTCDate(),
+    h, m, 0, 0
+  ));
+}
+function overlaps(aStart: number, aEnd: number, bStart: number, bEnd: number) {
+  return Math.max(aStart, bStart) < Math.min(aEnd, bEnd); // [start,end)
+}
+
+export function generateAvailableSlots(
+  availabilityRows: RawAvailability[],
+  bookedSessions: Booked[],
+  start: Date,
+  end: Date
+) {
+  // 1) normaliza disponibilidade
+  const availability = (availabilityRows ?? [])
+    .filter(r => getField(r, ['is_available', 'available'], true))
+    .map(r => {
+      const weekdayRaw = getField<number>(r, ['weekday', 'day_of_week', 'week_day', 'day']);
+      const startStr = getField<string>(r, ['start_time', 'start', 'from', 'opens_at']);
+      const endStr   = getField<string>(r, ['end_time', 'end', 'to', 'closes_at']);
+      const dur      = getField<number>(r, ['slot_duration_minutes', 'slot_duration', 'duration_minutes'], 60);
+      if (weekdayRaw == null || !startStr || !endStr) return null;
+      return {
+        weekday: normWeekday(Number(weekdayRaw)),
+        start_time: startStr,
+        end_time: endStr,
+        slot_duration_minutes: Number(dur),
+      };
     })
-    
-    currentDate = addDays(currentDate, 1)
+    .filter(Boolean) as { weekday: number; start_time: string; end_time: string; slot_duration_minutes: number; }[];
+
+  // 2) normaliza agendamentos [start,end) em ms UTC
+  const bookedRanges = (bookedSessions ?? []).map(b => {
+    const s = new Date(b.scheduled_at).getTime();
+    const e = s + b.duration_minutes * 60_000;
+    return [s, e] as const;
+  });
+
+  const slots: Array<{ datetime: string; date: string; time: string; duration: number; available: boolean }> = [];
+
+  // percorre dia a dia em UTC
+  const cursor = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate()));
+  const endUTC = new Date(Date.UTC(end.getUTCFullYear(), end.getUTCMonth(), end.getUTCDate()));
+
+  while (cursor <= endUTC) {
+    const wd = cursor.getUTCDay(); // 0..6 (dom..sáb)
+    const rules = availability.filter(a => a.weekday === wd);
+
+    for (const rule of rules) {
+      const { h: sh, m: sm } = parseHM(rule.start_time);
+      const { h: eh, m: em } = parseHM(rule.end_time);
+      const slotMs = rule.slot_duration_minutes * 60_000;
+
+      let slotStart = setUTCYMD(cursor, sh, sm).getTime();
+      const dayEnd  = setUTCYMD(cursor, eh, em).getTime();
+
+      while (slotStart + slotMs <= dayEnd) {
+        const slotEnd = slotStart + slotMs;
+        const busy = bookedRanges.some(([bs, be]) => overlaps(slotStart, slotEnd, bs, be));
+        const past = slotStart < Date.now();
+
+        const dt = new Date(slotStart);
+        slots.push({
+          datetime: dt.toISOString(),                 // UTC
+          date: dt.toISOString().slice(0, 10),        // YYYY-MM-DD
+          time: dt.toISOString().slice(11, 16),       // HH:mm (UTC -> formate no front p/ fuso do usuário)
+          duration: rule.slot_duration_minutes,
+          available: !busy && !past,
+        });
+
+        slotStart += slotMs;
+      }
+    }
+
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
   }
-  
-  return slots.sort((a, b) => new Date(a.datetime).getTime() - new Date(b.datetime).getTime())
+
+  return slots.sort((a, b) => a.datetime.localeCompare(b.datetime));
 }

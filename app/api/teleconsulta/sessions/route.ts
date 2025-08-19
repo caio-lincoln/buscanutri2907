@@ -9,7 +9,7 @@ import { format, parseISO } from 'date-fns'
 // GET - Listar sessões de teleconsulta
 export const GET = withErrorHandling(async (request: NextRequest) => {
   const supabase = await createClient()
-  
+
   // Verificar autenticação
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   const userId = validateAuth(authError ? null : user?.id || null)
@@ -28,7 +28,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
       .select('id')
       .eq('user_id', userId)
       .single()
-    
+
     if (nutritionistError || !nutritionist) {
       throw new Error('Perfil de nutricionista não encontrado')
     }
@@ -39,7 +39,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
       .select('id')
       .eq('user_id', userId)
       .single()
-    
+
     if (patientError || !patient) {
       throw new Error('Perfil de paciente não encontrado')
     }
@@ -82,7 +82,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
 // POST - Criar nova sessão de teleconsulta
 export const POST = withErrorHandling(async (request: NextRequest) => {
   const supabase = await createClient()
-  
+
   // Verificar autenticação
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   const userId = validateAuth(authError ? null : user?.id || null)
@@ -93,6 +93,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
 
   // Validar se a data é futura
   const scheduledDate = new Date(scheduled_for)
+  console.log("🚀 ~ scheduledDate:", scheduledDate)
   if (scheduledDate <= new Date()) {
     throw new ValidationError('Data deve ser futura')
   }
@@ -110,10 +111,10 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
 
   // Buscar perfil do paciente
   const { data: patient, error: patientError } = await supabase
-  .from('patient_profiles')
-  .select('id, user_id')
-  .eq('user_id', userId)
-  .single()
+    .from('patient_profiles')
+    .select('id, user_id')
+    .eq('user_id', userId)
+    .single()
 
   if (patientError || !patient) {
     throw new ValidationError('Perfil do paciente não encontrado')
@@ -128,8 +129,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   .eq('status', 'scheduled')
   .gte('scheduled_at', scheduled_for)
   .lt('scheduled_at', endTime.toISOString())
-  console.log("🚀 ~ existingSessions:", existingSessions)
-
+  
   if (sessionError) {
     throw new Error('Erro ao verificar disponibilidade')
   }
@@ -140,7 +140,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
 
   // Gerar token único para a sessão
   const sessionToken = uuidv4()
-  const origin = new URL(request.url).origin;   
+  const origin = new URL(request.url).origin;
   const joinUrl = `${origin}/teleconsulta/${sessionToken}`
 
   // Criar sessão
@@ -168,7 +168,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   // Enviar notificações para paciente e nutricionista
   try {
     const scheduledDateTime = new Date(scheduled_for).toLocaleString('pt-BR')
-    
+
     // Notificação para o paciente
     await createNotification({
       userId: userId,

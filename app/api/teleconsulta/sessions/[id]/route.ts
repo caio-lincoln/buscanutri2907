@@ -188,8 +188,7 @@ export const GET = withErrorHandling(async (
   
   // Verificar autenticação
   const { data: { user }, error: authError } = await supabase.auth.getUser()
-  console.log("🚀 ~ user:", user?.identities[0]?.identity_data)
-  const userId = validateAuth(authError ? null : user?.id || null)
+  validateAuth(authError ? null : user?.id || null)
 
   // Validar parâmetros
   const { id: sessionId } = idParamSchema.parse(await params)
@@ -202,11 +201,11 @@ export const GET = withErrorHandling(async (
       duration_minutes, price, status, join_url,
   
       nutritionist:nutritionist_profiles!teleconsulta_sessions_nutritionist_id_fkey (
-        id, user_id, full_name
+        id, user_id, full_name, profile_image_url
       ),
   
       patient:patient_profiles!teleconsulta_sessions_patient_id_fkey (
-        id, user_id, full_name, phone
+        id, user_id, full_name, phone, profile_image_url
       )
     `)
     .eq('session_token', sessionId)

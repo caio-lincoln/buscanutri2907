@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { useAuth } from '@/hooks/useAuth'
+
 import {
   Video,
   VideoOff,
@@ -28,6 +28,7 @@ import {
   Minimize,
   Maximize
 } from 'lucide-react'
+import { useAuth } from '../../contexts/auth-context'
 
 interface TeleconsultaSession {
   id: string
@@ -104,24 +105,24 @@ export default function TeleconsultaRoom() {
   const sessionToken = params.sessionId as string
 
   // Session state
-  const [session, setSession] = useState<TeleconsultaSession | null>(null)
-  const [participants, setParticipants] = useState<Participant[]>([])
-  const [loading, setLoading] = useState(true)
-  const [sessionStartTime, setSessionStartTime] = useState<Date | null>(null)
-  const [sessionDuration, setSessionDuration] = useState(0)
+  const [ session, setSession ] = useState<TeleconsultaSession | null>(null)
+  const [ participants, setParticipants ] = useState<Participant[]>([])
+  const [ loading, setLoading ] = useState(true)
+  const [ sessionStartTime, setSessionStartTime ] = useState<Date | null>(null)
+  const [ sessionDuration, setSessionDuration ] = useState(0)
 
   // Media state
-  const [localStream, setLocalStream] = useState<MediaStream | null>(null)
-  const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null)
-  const [isVideoEnabled, setIsVideoEnabled] = useState(true)
-  const [isAudioEnabled, setIsAudioEnabled] = useState(true)
-  const [isConnected, setIsConnected] = useState(false)
-  const [isFullscreen, setIsFullscreen] = useState(false)
+  const [ localStream, setLocalStream ] = useState<MediaStream | null>(null)
+  const [ remoteStream, setRemoteStream ] = useState<MediaStream | null>(null)
+  const [ isVideoEnabled, setIsVideoEnabled ] = useState(true)
+  const [ isAudioEnabled, setIsAudioEnabled ] = useState(true)
+  const [ isConnected, setIsConnected ] = useState(false)
+  const [ isFullscreen, setIsFullscreen ] = useState(false)
 
   // Chat state
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
-  const [newMessage, setNewMessage] = useState('')
-  const [isChatOpen, setIsChatOpen] = useState(false)
+  const [ chatMessages, setChatMessages ] = useState<ChatMessage[]>([])
+  const [ newMessage, setNewMessage ] = useState('')
+  const [ isChatOpen, setIsChatOpen ] = useState(false)
 
   // WebRTC refs
   const localVideoRef = useRef<HTMLVideoElement>(null)
@@ -142,48 +143,49 @@ export default function TeleconsultaRoom() {
     return () => {
       if (interval) clearInterval(interval)
     }
-  }, [sessionStartTime, session?.status])
+  }, [ sessionStartTime, session?.status ])
 
   // Load session data
   useEffect(() => {
     if (sessionToken) {
       loadSessionData()
     }
-  }, [sessionToken])
+  }, [ sessionToken ])
 
   // Initialize Socket.io server
-  useEffect(() => {
-    const initializeSocket = async () => {
-      try {
-        await fetch('/api/socket')
-      } catch (error) {
-        console.error('Erro ao inicializar Socket.io:', error)
-      }
-    }
+  // useEffect(() => {
+  //   const initializeSocket = async () => {
+  //     try {
+  //       await fetch('/api/socket')
+  //     } catch (error) {
+  //       console.error('Erro ao inicializar Socket.io:', error)
+  //     }
+  //   }
 
-    initializeSocket()
-  }, [])
+  //   initializeSocket()
+  // }, [])
 
   // Update video refs when streams change
   useEffect(() => {
     if (localVideoRef.current && localStream) {
       localVideoRef.current.srcObject = localStream
     }
-  }, [localStream])
+  }, [ localStream ])
 
   useEffect(() => {
     if (remoteVideoRef.current && remoteStream) {
       remoteVideoRef.current.srcObject = remoteStream
     }
-  }, [remoteStream])
+  }, [ remoteStream ])
 
   // Auto-start call when session is ready
   useEffect(() => {
     if (session && user && session.status === 'scheduled') {
+      console.log("Caiu aqui")
       initializeWebRTC()
-      joinSession()
+      // joinSession()
     }
-  }, [session, user])
+  }, [ session, user ])
 
   // Handle WebRTC errors
   useEffect(() => {
@@ -191,34 +193,36 @@ export default function TeleconsultaRoom() {
       console.error('WebRTC Error:', webrtcError)
       // You can show a toast or error message here
     }
-  }, [webrtcError])
+  }, [ webrtcError ])
 
   // Auto-scroll chat
   useEffect(() => {
     if (chatScrollRef.current) {
       chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight
     }
-  }, [chatMessages])
+  }, [ chatMessages ])
 
   const loadSessionData = async () => {
     try {
       const response = await fetch(`/api/teleconsulta/sessions/${sessionToken}`)
-      
+
       if (!response.ok) {
         throw new Error('Sessão não encontrada')
       }
 
       const data = await response.json()
+     
+      console.log("🚀 ~ loadSessionData ~ data:", data)
       setSession(data.session)
       setParticipants(data.participants || [])
-      
+
       if (data.session.status === 'in_progress') {
         setSessionStartTime(new Date())
       }
     } catch (error) {
       console.error('Erro ao carregar sessão:', error)
       toast.error('Erro ao carregar dados da sessão')
-      router.push('/dashboard')
+      router.push('/')
     } finally {
       setLoading(false)
     }
@@ -231,9 +235,9 @@ export default function TeleconsultaRoom() {
         video: true,
         audio: true,
       })
-      
+
       setLocalStream(stream)
-      
+
       if (localVideoRef.current) {
         localVideoRef.current.srcObject = stream
       }
@@ -245,7 +249,7 @@ export default function TeleconsultaRoom() {
           { urls: 'stun:stun1.l.google.com:19302' },
         ],
       }
-      
+
       const peerConnection = new RTCPeerConnection(configuration)
       peerConnectionRef.current = peerConnection
 
@@ -256,21 +260,22 @@ export default function TeleconsultaRoom() {
 
       // Handle remote stream
       peerConnection.ontrack = (event) => {
-        const [remoteStream] = event.streams
-        setRemoteStream(remoteStream)
-        
+        const [ remoteStream ] = event.streams
+        setRemoteStream(remoteStream as MediaStream)
+
         if (remoteVideoRef.current) {
-          remoteVideoRef.current.srcObject = remoteStream
+          remoteVideoRef.current.srcObject = remoteStream ?? null
         }
       }
 
+      console.log(getOtherParticipantId())
       // Handle ICE candidates
       peerConnection.onicecandidate = (event) => {
         if (event.candidate) {
           sendWebRTCSignal({
             type: 'ice-candidate',
             data: event.candidate,
-            from_user_id: user!.id,
+            from_user_id: user?.id as string,
             to_user_id: getOtherParticipantId(),
           })
         }
@@ -292,7 +297,7 @@ export default function TeleconsultaRoom() {
       if (!user || !session) return
 
       const userType = user.id === session.nutritionist_id ? 'nutritionist' : 'patient'
-      
+
       const response = await fetch('/api/teleconsulta/participants', {
         method: 'POST',
         headers: {
@@ -337,7 +342,7 @@ export default function TeleconsultaRoom() {
 
       const data = await response.json()
       setSession(data.session)
-      
+
       if (status === 'in_progress') {
         setSessionStartTime(new Date())
       }
@@ -365,7 +370,7 @@ export default function TeleconsultaRoom() {
 
   const toggleVideo = () => {
     if (localStream) {
-      const videoTrack = localStream.getVideoTracks()[0]
+      const videoTrack = localStream.getVideoTracks()[ 0 ]
       if (videoTrack) {
         videoTrack.enabled = !videoTrack.enabled
         setIsVideoEnabled(videoTrack.enabled)
@@ -375,7 +380,7 @@ export default function TeleconsultaRoom() {
 
   const toggleAudio = () => {
     if (localStream) {
-      const audioTrack = localStream.getAudioTracks()[0]
+      const audioTrack = localStream.getAudioTracks()[ 0 ]
       if (audioTrack) {
         audioTrack.enabled = !audioTrack.enabled
         setIsAudioEnabled(audioTrack.enabled)
@@ -386,7 +391,7 @@ export default function TeleconsultaRoom() {
   const handleEndCall = () => {
     endCall()
     updateSessionStatus('completed')
-    
+
     // Redirect after a delay
     setTimeout(() => {
       router.push('/dashboard')
@@ -404,13 +409,13 @@ export default function TeleconsultaRoom() {
       timestamp: new Date().toISOString(),
     }
 
-    setChatMessages(prev => [...prev, message])
+    setChatMessages(prev => [ ...prev, message ])
     setNewMessage('')
   }
 
   const getOtherParticipantId = () => {
     if (!session || !user) return ''
-    return user.id === session.nutritionist_id ? session.patient_id : session.nutritionist_id
+    return user.id === session.nutritionist.user_id ? session.patient.id : session.nutritionist.id
   }
 
   const formatDuration = (seconds: number) => {
@@ -445,7 +450,7 @@ export default function TeleconsultaRoom() {
       <div className="flex items-center justify-center min-h-screen bg-gray-900">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-white mb-4">Sessão não encontrada</h1>
-          <Button onClick={() => router.push('/dashboard')}>
+          <Button onClick={() => router.push('/')}>
             Voltar ao Dashboard
           </Button>
         </div>
@@ -473,8 +478,8 @@ export default function TeleconsultaRoom() {
             <div>
               <h1 className="text-xl font-semibold">{otherParticipant.full_name}</h1>
               <div className="flex items-center gap-2 text-sm text-gray-400">
-                <Badge className={statusColors[session.status]}>
-                  {statusLabels[session.status]}
+                <Badge className={statusColors[ session.status ]}>
+                  {statusLabels[ session.status ]}
                 </Badge>
                 {session.status === 'in_progress' && (
                   <>
@@ -577,12 +582,10 @@ export default function TeleconsultaRoom() {
 
           {/* Connection Status */}
           <div className="absolute top-4 left-4">
-            <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm ${
-              isConnected ? 'bg-green-600' : 'bg-red-600'
-            }`}>
-              <div className={`w-2 h-2 rounded-full ${
-                isConnected ? 'bg-green-300' : 'bg-red-300'
-              }`} />
+            <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm ${isConnected ? 'bg-green-600' : 'bg-red-600'
+              }`}>
+              <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-300' : 'bg-red-300'
+                }`} />
               {isConnected ? 'Conectado' : 'Conectando...'}
             </div>
           </div>
@@ -597,7 +600,7 @@ export default function TeleconsultaRoom() {
                 Chat da Consulta
               </h3>
             </div>
-            
+
             <ScrollArea className="flex-1 p-4" ref={chatScrollRef}>
               <div className="space-y-4">
                 {chatMessages.map((message) => (
@@ -606,11 +609,10 @@ export default function TeleconsultaRoom() {
                     className={`flex ${message.sender_id === user?.id ? 'justify-end' : 'justify-start'}`}
                   >
                     <div
-                      className={`max-w-xs px-3 py-2 rounded-lg ${
-                        message.sender_id === user?.id
-                          ? 'bg-green-600 text-white'
-                          : 'bg-gray-700 text-gray-100'
-                      }`}
+                      className={`max-w-xs px-3 py-2 rounded-lg ${message.sender_id === user?.id
+                        ? 'bg-green-600 text-white'
+                        : 'bg-gray-700 text-gray-100'
+                        }`}
                     >
                       <p className="text-sm">{message.message}</p>
                       <p className="text-xs opacity-70 mt-1">
@@ -621,7 +623,7 @@ export default function TeleconsultaRoom() {
                 ))}
               </div>
             </ScrollArea>
-            
+
             <div className="p-4 border-t border-gray-700">
               <div className="flex gap-2">
                 <Input

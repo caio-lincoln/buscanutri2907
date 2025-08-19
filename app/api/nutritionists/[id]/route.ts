@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createClient } from '../../../../lib/supabase/server'
 
 // GET - Buscar dados de um nutricionista específico
 export async function GET(
@@ -7,7 +7,7 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
     const nutritionistId = params.id
 
     if (!nutritionistId) {
@@ -55,9 +55,9 @@ export async function GET(
 
     // Buscar especialidades
     const { data: specialties } = await supabase
-      .from('nutritionist_specialties')
-      .select(`
-        specialty:specialties(name)
+    .from('nutritionist_specialties')
+    .select(`
+      specialty:specialties(name)
       `)
       .eq('nutritionist_id', nutritionistId)
 

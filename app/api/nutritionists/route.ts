@@ -10,7 +10,6 @@ export async function GET(request: NextRequest) {
     // Parâmetros de filtro
     const searchTerm = searchParams.get('search') || ''
     const specialty = searchParams.get('specialty') || ''
-    console.log("🚀 ~ GET ~ specialty:", specialty)
     const state = searchParams.get('state') || ''
     const minPrice = parseFloat(searchParams.get('minPrice') || '0')
     const maxPrice = parseFloat(searchParams.get('maxPrice') || '1000')
@@ -27,7 +26,11 @@ export async function GET(request: NextRequest) {
         user_id,
         full_name,
         bio,
-        specialties::jsonb,
+        specialties_join:nutritionist_specialties (
+          specialty:specialties (
+            id, name
+          )
+        ),
         profile_image_url,
         crn,
         rating,
@@ -112,9 +115,13 @@ export async function GET(request: NextRequest) {
       is_verified: any;
       created_at: any;
     }[] = []
-    const { data, error, count } = await query
-    console.log("🚀 ~ GET ~ data:", data)
+    const { data: queryData, error, count } = await query
 
+    const data = queryData?.map(query => {
+      const { specialties_join, ...rest } = query
+      return {...rest, specialties: specialties_join.map(specialties => specialties.specialty.name)}
+    })
+    console.log("🚀 ~ GET ~ data:", data)
     if (data) {
       nutritionists = data
       // const nutritionistsWithAddress = nutritionists?.map((nutritionist) => {

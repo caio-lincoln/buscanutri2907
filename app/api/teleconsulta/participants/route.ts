@@ -1,19 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
 import { cookies } from 'next/headers'
 import { withErrorHandling, validateAuth, ValidationError } from '@/src/lib/middleware/error-handler'
 import { createNotification } from '@/lib/notifications-service'
+import { createAdminClient, createClient } from '../../../../lib/supabase/server'
 
 // POST /api/teleconsulta/participants - Adicionar participante à sessão
 export const POST = withErrorHandling(async (request: NextRequest) => {
-  const cookieStore = cookies()
-  const supabase = createClient(cookieStore)
-  
+  const supabase = await createClient()
+  const supabaseAdmin = createAdminClient()
+
   // Verificar autenticação
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   validateAuth(authError ? null : user?.id || null)
 
   const { session_id, user_id, role } = await request.json()
+
 
   if (!session_id || !user_id || !role) {
     throw new ValidationError('session_id, user_id e role são obrigatórios')
@@ -32,7 +33,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   }
 
   // Adicionar participante
-  const { data: participant, error: insertError } = await supabase
+  const { data: participant, error: insertError } = await supabaseAdmin
     .from('teleconsulta_participants')
     .insert({
       session_id,
@@ -42,10 +43,12 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
       is_connected: false
     })
     .select(`
-      *,
-      user:user_id(id, name, email)
+    *,
+    user:user_id(id, email)
     `)
     .single()
+  console.log("🚀 ~ participant:", participant)
+
 
   if (insertError) {
     throw new Error('Erro ao adicionar participante')
@@ -68,11 +71,11 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
         .single()
 
       const userName = userData?.full_name || 'Um participante'
-      
+
       // Notificar outros participantes da sessão
-      const participantsToNotify = [session.patient_id, session.nutritionist_id]
+      const participantsToNotify = [ session.patient_id, session.nutritionist_id ]
         .filter(id => id !== user_id) // Não notificar quem entrou
-      
+
       for (const participantId of participantsToNotify) {
         await createNotification({
           userId: participantId,
@@ -99,7 +102,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
 export const GET = withErrorHandling(async (request: NextRequest) => {
   const cookieStore = cookies()
   const supabase = createClient(cookieStore)
-  
+
   // Verificar autenticação
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   validateAuth(authError ? null : user?.id || null)
@@ -131,7 +134,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
 export const DELETE = withErrorHandling(async (request: NextRequest) => {
   const cookieStore = cookies()
   const supabase = createClient(cookieStore)
-  
+
   // Verificar autenticação
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   validateAuth(authError ? null : user?.id || null)
@@ -145,20 +148,20 @@ export const DELETE = withErrorHandling(async (request: NextRequest) => {
   // Buscar dados antes de remover para notificações
   let userName = 'Um participante'
   let sessionData = null
-  
+
   try {
     const { data: userData } = await supabase
       .from('profiles')
       .select('full_name')
       .eq('id', user_id)
       .single()
-    
+
     const { data: session } = await supabase
       .from('teleconsulta_sessions')
       .select('patient_id, nutritionist_id')
       .eq('id', session_id)
       .single()
-    
+
     userName = userData?.full_name || 'Um participante'
     sessionData = session
   } catch (error) {
@@ -179,9 +182,9 @@ export const DELETE = withErrorHandling(async (request: NextRequest) => {
   // Enviar notificações sobre saída do participante
   try {
     if (sessionData) {
-      const participantsToNotify = [sessionData.patient_id, sessionData.nutritionist_id]
+      const participantsToNotify = [ sessionData.patient_id, sessionData.nutritionist_id ]
         .filter(id => id !== user_id) // Não notificar quem saiu
-      
+
       for (const participantId of participantsToNotify) {
         await createNotification({
           userId: participantId,
