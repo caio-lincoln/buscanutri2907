@@ -122,11 +122,11 @@ export default function TeleconsultaRoom() {
     ? (myId === session.nutritionist.user_id ? session.patient.user_id : session.nutritionist.user_id)
     : ''
 
-
   const channelName = useMemo(
     () => (session ? `teleconsulta_${session.id}_${session.session_token}` : null),
     [ session ]
   )
+  console.log("🚀 ~ TeleconsultaRoom ~ channelName:", channelName)
 
   // Timer effect
   useEffect(() => {
@@ -252,6 +252,17 @@ export default function TeleconsultaRoom() {
         console.error('Erro manipulando sinal WebRTC:', err)
       }
     })
+
+    ch.on('broadcast', { event: 'chatMessage' }, async ({ payload }) => {
+    console.log("🚀 ~ ensureChannel ~ payload:", payload)
+
+      try {
+        setChatMessages(prev => [ ...prev, payload ])
+      } catch (err) {
+        console.error('Erro manipulando sinal WebRTC:', err)
+      }
+    })
+
 
     await new Promise<void>((resolve) => {
       ch.subscribe((status) => status === 'SUBSCRIBED' && resolve())
@@ -458,6 +469,10 @@ export default function TeleconsultaRoom() {
       message: newMessage.trim(),
       timestamp: new Date().toISOString(),
     }
+    channelRef.current?.send({
+      type: 'broadcast', event: "chatMessage", payload: message
+    })
+    
     setChatMessages(prev => [ ...prev, message ])
     setNewMessage('')
   }

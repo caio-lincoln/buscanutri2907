@@ -597,7 +597,6 @@ export default function CadastroPage() {
           )
           // Documents uploaded successfully
         } catch (documentError) {
-          console.log("🚀 ~ handleSubmit ~ documentError:", documentError)
           // Error uploading documents
           // Falha o cadastro se não conseguir fazer upload do comprovante de CRN
           throw new Error(
