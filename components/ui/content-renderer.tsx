@@ -3,6 +3,7 @@
 import React from 'react'
 import { cn } from '@/lib/utils'
 import DOMPurify from 'dompurify'
+import { marked } from 'marked'
 
 interface ContentRendererProps {
   content: string
@@ -10,103 +11,105 @@ interface ContentRendererProps {
   centerImages?: boolean
 }
 
-// Função para detectar e converter links de vídeo em embeds
-const processVideoEmbeds = (html: string): string => {
-  // YouTube
-  const youtubeRegex =
-    /(?:https?:\/\/)?(?:www.)?(?:youtube.com\/watch?v=|youtu.be\/|youtube.com\/embed\/)([a-zA-Z0-9_-]{11})/g
-  html = html.replace(youtubeRegex, (match, videoId) => {
-    return `<div class="video-embed youtube-embed">
-      <iframe 
-        src="https://www.youtube.com/embed/${videoId}" 
-        frameborder="0" 
-        allowfullscreen
-        class="w-full aspect-video rounded-lg"
-      ></iframe>
-    </div>`
+// Config do parser Markdown
+marked.setOptions({
+  gfm: true,
+  breaks: true,      // linha simples vira <br>
+  headerIds: false,  // sem ids automáticos nos headings
+  mangle: false,
+})
+
+/** Converte links de vídeo em embeds (após o Markdown virar HTML) */
+function embedVideos(html: string): string {
+  // YouTube – link sozinho no parágrafo ou <a> dentro do <p>
+  const yt =
+    /<p>\s*(?:<a[^>]*href="(https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([\w-]{11}))"[^>]*>.*?<\/a>|(https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([\w-]{11})))\s*<\/p>/gi
+  html = html.replace(yt, (_, url1, id1, url2, id2) => {
+    const id = id1 || id2
+    return `
+      <div class="video-embed youtube-embed">
+        <iframe
+          src="https://www.youtube.com/embed/${id}"
+          loading="lazy"
+          referrerpolicy="no-referrer"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowfullscreen
+          class="w-full aspect-video rounded-lg"
+        ></iframe>
+      </div>`
   })
 
-  // Instagram (usando oEmbed approach simplificado)
-  const instagramRegex =
-    /(?:https?:\/\/)?(?:www.)?instagram.com\/(?:p|reel)\/([a-zA-Z0-9_-]+)/g
-  html = html.replace(instagramRegex, (match, postId) => {
-    return `<div class="video-embed instagram-embed">
-      <blockquote class="instagram-media" data-instgrm-permalink="${match}" data-instgrm-version="14">
-        <a href="${match}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 underline">
-          Ver post no Instagram
-        </a>
-      </blockquote>
-    </div>`
+  // Instagram – link sozinho
+  const ig =
+    /<p>\s*(https?:\/\/(?:www\.)?instagram\.com\/(?:p|reel)\/[A-Za-z0-9_-]+\/?)\s*<\/p>/gi
+  html = html.replace(ig, (_, url) => {
+    return `
+      <div class="video-embed instagram-embed">
+        <blockquote class="instagram-media" data-instgrm-permalink="${url}" data-instgrm-version="14">
+          <a href="${url}" target="_blank" rel="noopener noreferrer" class="text-blue-600 underline">Ver post no Instagram</a>
+        </blockquote>
+      </div>`
   })
 
-  // TikTok
-  const tiktokRegex =
-    /(?:https?:\/\/)?(?:www.)?tiktok.com\/@[^\/]+\/video\/(d+)/g
-  html = html.replace(tiktokRegex, (match, videoId) => {
-    return `<div class="video-embed tiktok-embed">
-      <blockquote class="tiktok-embed" cite="${match}" data-video-id="${videoId}">
-        <a href="${match}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 underline">
-          Ver vídeo no TikTok
-        </a>
-      </blockquote>
-    </div>`
-  })
-
-  return html
-}
-
-// Função para processar imagens e adicionar classes de centralização
-const processImages = (html: string, centerImages: boolean = false): string => {
-  if (!centerImages) return html
-
-  return html.replace(
-    /<img([^>]*)>/g,
-    `<img$1 class="mx-auto block max-w-full h-auto rounded-lg">`
-  )
-}
-
-// Função para preservar quebras de linha e espaçamento
-const preserveFormatting = (html: string): string => {
-  // Preservar quebras de linha duplas como parágrafos
-  html = html.replace(/\n\n/g, '</p><p>')
-
-  // Preservar quebras de linha simples como <br>
-  html = html.replace(/\n/g, '<br>')
-
-  // Preservar espaços múltiplos
-  html = html.replace(/  +/g, match => {
-    return '&nbsp;'.repeat(match.length)
+  // TikTok – link sozinho
+  const tt =
+    /<p>\s*(https?:\/\/(?:www\.)?tiktok\.com\/@[^\/]+\/video\/(\d+))\s*<\/p>/gi
+  html = html.replace(tt, (__, url, id) => {
+    return `
+      <div class="video-embed tiktok-embed">
+        <blockquote class="tiktok-embed" cite="${url}" data-video-id="${id}">
+          <a href="${url}" target="_blank" rel="noopener noreferrer" class="text-blue-600 underline">Ver vídeo no TikTok</a>
+        </blockquote>
+      </div>`
   })
 
   return html
 }
 
-export function ContentRenderer({
-  content,
-  className,
-  centerImages = false,
-}: ContentRendererProps) {
-  // Processar o conteúdo
-  let processedContent = content
+/** Centraliza e otimiza imagens */
+function tweakImages(html: string, center = false): string {
+  // adiciona loading/decoding
+  html = html.replace(/<img([^>]*?)>/g, (_m, attrs) => {
+    let a = attrs
+    if (!/loading=/.test(a)) a += ' loading="lazy"'
+    if (!/decoding=/.test(a)) a += ' decoding="async"'
+    if (center) {
+      if (/class=/.test(a)) {
+        a = a.replace(/class="([^"]*)"/, 'class="$1 mx-auto block max-w-full h-auto rounded-lg"')
+      } else {
+        a += ' class="mx-auto block max-w-full h-auto rounded-lg"'
+      }
+    }
+    return `<img${a}>`
+  })
+  return html
+}
 
-  // 1. Processar embeds de vídeo
-  processedContent = processVideoEmbeds(processedContent)
+export function ContentRenderer({ content, className, centerImages = false }: ContentRendererProps) {
+  // 1) Markdown -> HTML
+  let html = marked.parse((content || '').trim()) as string
 
-  // 2. Processar imagens
-  processedContent = processImages(processedContent, centerImages)
+  // 2) Embeds
+  html = embedVideos(html)
 
-  // 3. Preservar formatação
-  processedContent = preserveFormatting(processedContent)
+  // 3) Imagens
+  html = tweakImages(html, centerImages)
 
-  // 4. Sanitizar o HTML com DOMPurify
-  processedContent = DOMPurify.sanitize(processedContent, {
+  // 4) Sanitização
+  html = DOMPurify.sanitize(html, {
     ALLOWED_TAGS: [
-      'div', 'iframe', 'blockquote', 'img', 'br', 'p', 'span', 'strong', 'em', 'u', 'a', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li'
+      'p','br','span','strong','em','u','a',
+      'h1','h2','h3','h4','h5','h6',
+      'ul','ol','li','blockquote','code','pre',
+      'img','div','iframe'
     ],
     ALLOWED_ATTR: [
-      'class', 'width', 'height', 'src', 'frameborder', 'allowfullscreen', 'data-instgrm-permalink', 'data-instgrm-version', 'cite', 'data-video-id', 'alt', 'href', 'target'
+      'class','href','target','rel',
+      'src','width','height','alt','loading','decoding',
+      'frameborder','allow','allowfullscreen','referrerpolicy',
+      'data-instgrm-permalink','data-instgrm-version',
+      'cite','data-video-id'
     ],
-    ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|cid|xmpp):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i
   })
 
   return (
@@ -114,53 +117,40 @@ export function ContentRenderer({
       className={cn(
         'prose prose-lg max-w-none',
         'prose-headings:text-gray-900 prose-headings:font-bold',
-        'prose-p:text-gray-800 prose-p:leading-relaxed prose-p:mb-4',
-        'prose-a:text-blue-600 prose-a:hover:text-blue-800 prose-a:underline',
-        'prose-strong:text-gray-900 prose-strong:font-semibold',
-        'prose-em:text-gray-800 prose-em:italic',
-        'prose-ul:list-disc prose-ul:pl-6 prose-ul:mb-4',
-        'prose-ol:list-decimal prose-ol:pl-6 prose-ol:mb-4',
-        'prose-li:mb-1',
-        'prose-blockquote:border-l-4 prose-blockquote:border-blue-500 prose-blockquote:pl-4 prose-blockquote:italic prose-blockquote:text-gray-700',
-        'prose-code:bg-gray-100 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-sm',
-        'prose-pre:bg-gray-100 prose-pre:p-4 prose-pre:rounded-lg prose-pre:overflow-x-auto',
-        // Estilos para embeds de vídeo
+        'prose-p:text-gray-800 prose-p:leading-relaxed',
+        'prose-a:text-blue-600 hover:prose-a:text-blue-800',
+        'prose-ul:list-disc prose-ol:list-decimal',
+        'prose-blockquote:border-l-4 prose-blockquote:border-blue-500 prose-blockquote:pl-4 prose-blockquote:italic',
+        // Embeds
         '[&_.video-embed]:my-6 [&_.video-embed]:mx-auto [&_.video-embed]:max-w-full',
         '[&_.youtube-embed]:aspect-video',
         '[&_.instagram-embed]:max-w-lg [&_.instagram-embed]:mx-auto',
         '[&_.tiktok-embed]:max-w-sm [&_.tiktok-embed]:mx-auto',
-        // Estilos para imagens
+        // Imagens
         '[&_img]:max-w-full [&_img]:h-auto [&_img]:rounded-lg [&_img]:shadow-sm',
         centerImages && '[&_img]:mx-auto [&_img]:block',
         className
       )}
-      dangerouslySetInnerHTML={{ __html: processedContent }}
+      dangerouslySetInnerHTML={{ __html: html }}
     />
   )
 }
 
-// Hook para carregar scripts de embed externos
+/** Carrega os scripts de embed (chame no componente da página) */
 export function useEmbedScripts() {
   React.useEffect(() => {
-    // Verificação segura para SSR
-    if (typeof document === 'undefined' || !document.createElement || !document.body) {
-      return
-    }
-
-    // Carregar script do Instagram
+    if (typeof document === 'undefined') return
     if (!document.querySelector('script[src*="instagram.com/embed.js"]')) {
-      const instagramScript = document.createElement('script')
-      instagramScript.src = '//www.instagram.com/embed.js'
-      instagramScript.async = true
-      document.body.appendChild(instagramScript)
+      const s = document.createElement('script')
+      s.src = 'https://www.instagram.com/embed.js'
+      s.async = true
+      document.body.appendChild(s)
     }
-
-    // Carregar script do TikTok
     if (!document.querySelector('script[src*="tiktok.com/embed.js"]')) {
-      const tiktokScript = document.createElement('script')
-      tiktokScript.src = 'https://www.tiktok.com/embed.js'
-      tiktokScript.async = true
-      document.body.appendChild(tiktokScript)
+      const s = document.createElement('script')
+      s.src = 'https://www.tiktok.com/embed.js'
+      s.async = true
+      document.body.appendChild(s)
     }
   }, [])
 }

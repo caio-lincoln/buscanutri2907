@@ -28,12 +28,12 @@ import {
 import { getAllBlogPosts, blogCategories, type BlogPost } from '@/lib/blog-data'
 
 export default function BlogPage() {
-  const [allBlogPosts, setAllBlogPosts] = useState<BlogPost[]>([])
-  const [selectedCategory, setSelectedCategory] = useState('Todos')
-  const [searchTerm, setSearchTerm] = useState('')
-  const [sortBy, setSortBy] = useState('recent')
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
-  const [visiblePosts, setVisiblePosts] = useState(6)
+  const [ allBlogPosts, setAllBlogPosts ] = useState<BlogPost[]>([])
+  const [ selectedCategory, setSelectedCategory ] = useState('Todos')
+  const [ searchTerm, setSearchTerm ] = useState('')
+  const [ sortBy, setSortBy ] = useState('recent')
+  const [ viewMode, setViewMode ] = useState<'grid' | 'list'>('grid')
+  const [ visiblePosts, setVisiblePosts ] = useState(6)
 
   useEffect(() => {
     const loadPosts = async () => {
@@ -84,7 +84,7 @@ export default function BlogPage() {
     })
 
     return filtered
-  }, [allBlogPosts, selectedCategory, searchTerm, sortBy, getUpdatedViews])
+  }, [ allBlogPosts, selectedCategory, searchTerm, sortBy, getUpdatedViews ])
 
   const featuredPost = allBlogPosts.find(post => post.featured)
   const regularPosts = filteredAndSortedPosts
@@ -152,7 +152,7 @@ export default function BlogPage() {
           <div className="flex flex-col lg:flex-row gap-6 items-center justify-between">
             {/* Categories */}
             <div className="flex flex-wrap gap-2">
-              {['Todos', ...blogCategories].map(category => (
+              {[ 'Todos', ...blogCategories ].map(category => (
                 <Button
                   key={category}
                   variant={
@@ -160,11 +160,10 @@ export default function BlogPage() {
                   }
                   size="sm"
                   onClick={() => setSelectedCategory(category)}
-                  className={`transition-all duration-200 ${
-                    category === selectedCategory
-                      ? 'bg-[#4AB0D9] hover:bg-[#4AB0D9]/90 shadow-md'
-                      : 'hover:bg-gray-50 border-gray-200'
-                  }`}
+                  className={`transition-all duration-200 ${category === selectedCategory
+                    ? 'bg-[#4AB0D9] hover:bg-[#4AB0D9]/90 shadow-md'
+                    : 'hover:bg-gray-50 border-gray-200'
+                    }`}
                 >
                   {category}
                   {category !== 'Todos' && (
@@ -337,69 +336,68 @@ export default function BlogPage() {
               {regularPosts.map(post => (
                 <Card
                   key={post.id}
-                  className={`overflow-hidden hover:shadow-xl transition-all duration-300 border-0 shadow-md group ${
-                    viewMode === 'list' ? 'flex' : ''
-                  }`}
+                  className={`overflow-hidden hover:shadow-xl transition-all duration-300 border-0 shadow-md group ${viewMode === 'list' ? 'flex' : ''
+                    }`}
                 >
-                  <div className={viewMode === 'list' ? 'w-1/3' : ''}>
-                    <div className="relative">
-                      <Image
-                        src={post.image || '/placeholder.svg'}
-                        alt={post.title}
-                        width={400}
-                        height={250}
-                        className={`object-cover group-hover:scale-105 transition-transform duration-300 ${
-                          viewMode === 'list' ? 'h-full w-full' : 'w-full h-48'
-                        }`}
-                      />
-                      <div className="absolute top-3 left-3">
+                  <Link href={`/blog/${post.id}`}>
+                    <div className={viewMode === 'list' ? 'w-1/3' : ''}>
+                      <div className="relative">
+                        <Image
+                          src={post.image || '/placeholder.svg'}
+                          alt={post.title}
+                          width={400}
+                          height={250}
+                          className={`object-cover group-hover:scale-105 transition-transform duration-300 ${viewMode === 'list' ? 'h-full w-full' : 'w-full h-48'
+                            }`}
+                        />
+                        <div className="absolute top-3 left-3">
+                          <Badge
+                            variant="secondary"
+                            className="bg-white/90 text-gray-700"
+                          >
+                            {post.category}
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+
+                    <CardContent
+                      className={`p-6 ${viewMode === 'list' ? 'flex-1' : ''}`}
+                    >
+                      <div className="flex items-center gap-2 mb-3">
                         <Badge
-                          variant="secondary"
-                          className="bg-white/90 text-gray-700"
+                          variant="outline"
+                          className="text-xs text-gray-600"
                         >
-                          {post.category}
+                          {getUpdatedViews(post).toLocaleString()} visualizações
                         </Badge>
-                      </div>
-                    </div>
-                  </div>
-
-                  <CardContent
-                    className={`p-6 ${viewMode === 'list' ? 'flex-1' : ''}`}
-                  >
-                    <div className="flex items-center gap-2 mb-3">
-                      <Badge
-                        variant="outline"
-                        className="text-xs text-gray-600"
-                      >
-                        {getUpdatedViews(post).toLocaleString()} visualizações
-                      </Badge>
-                      <div className="flex items-center gap-4 text-xs text-gray-500">
-                        <div className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          {new Date(post.date).toLocaleDateString('pt-BR')}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          {post.readTime}
+                        <div className="flex items-center gap-4 text-xs text-gray-500">
+                          <div className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3" />
+                            {new Date(post.date).toLocaleDateString('pt-BR')}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            {post.readTime}
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    <h3 className="text-xl font-bold text-[#1E1D40] mb-3 line-clamp-2 group-hover:text-[#4AB0D9] transition-colors">
-                      {post.title}
-                    </h3>
+                      <h3 className="text-xl font-bold text-[#1E1D40] mb-3 line-clamp-2 group-hover:text-[#4AB0D9] transition-colors">
+                        {post.title}
+                      </h3>
 
-                    <p className="text-gray-600 mb-4 line-clamp-3">
-                      {post.excerpt}
-                    </p>
+                      <p className="text-gray-600 mb-4 line-clamp-3">
+                        {post.excerpt}
+                      </p>
 
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 text-sm text-gray-500">
-                        <User className="h-4 w-4" />
-                        {post.author}
-                      </div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-sm text-gray-500">
+                          <User className="h-4 w-4" />
+                          {post.author}
+                        </div>
 
-                      <Link href={`/blog/${post.id}`}>
+
                         <Button
                           variant="ghost"
                           size="sm"
@@ -407,18 +405,19 @@ export default function BlogPage() {
                         >
                           <ArrowRight className="h-4 w-4" />
                         </Button>
-                      </Link>
-                    </div>
 
-                    {/* Tags */}
-                    <div className="flex flex-wrap gap-1 mt-4">
-                      {post.tags.slice(0, 3).map(tag => (
-                        <Badge key={tag} variant="outline" className="text-xs">
-                          {tag}
-                        </Badge>
-                      ))}
-                    </div>
-                  </CardContent>
+                      </div>
+
+                      {/* Tags */}
+                      <div className="flex flex-wrap gap-1 mt-4">
+                        {post.tags.slice(0, 3).map(tag => (
+                          <Badge key={tag} variant="outline" className="text-xs">
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Link>
                 </Card>
               ))}
             </div>

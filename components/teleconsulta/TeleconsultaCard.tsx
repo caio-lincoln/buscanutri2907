@@ -34,7 +34,7 @@ export interface TeleconsultaSession {
 
 export interface TeleconsultaCardProps {
   session: TeleconsultaSession
-  userRole: 'nutritionist' | 'patient'
+  userRole: 'nutricionista' | 'paciente'
   onJoin?: (sessionId: string) => void
   onCancel?: (sessionId: string) => void
   onReschedule?: (sessionId: string) => void
@@ -78,7 +78,7 @@ export function TeleconsultaCard({
   const canJoin = session.status === 'scheduled' && 
     Math.abs(scheduledDate.getTime() - now.getTime()) <= 15 * 60 * 1000 // 15 minutos
   
-  const otherUser = userRole === 'nutritionist' ? session.patient : session.nutritionist
+  const otherUser = userRole === 'nutricionista' ? session.patient : session.nutritionist
   const statusInfo = statusConfig[session.status]
   const StatusIcon = statusInfo.icon
 
@@ -105,16 +105,16 @@ export function TeleconsultaCard({
         <div className="flex items-start justify-between">
           <div className="flex items-center space-x-3">
             <Avatar className="h-10 w-10">
-              <AvatarImage src={otherUser?.avatar_url} />
+              <AvatarImage src={otherUser?.profile_image_url} />
               <AvatarFallback>
                 <User className="h-5 w-5" />
               </AvatarFallback>
             </Avatar>
             <div>
               <CardTitle className="text-lg">
-                {userRole === 'nutritionist' ? 'Consulta com' : 'Consulta com'} {otherUser?.name}
+                {userRole === 'nutricionista' ? 'Consulta com' : 'Consulta com'} {otherUser?.full_name}
               </CardTitle>
-              {userRole === 'patient' && session.nutritionist?.crn && (
+              {userRole === 'paciente' && session.nutritionist?.crn && (
                 <p className="text-sm text-muted-foreground">
                   CRN: {session.nutritionist.crn}
                 </p>

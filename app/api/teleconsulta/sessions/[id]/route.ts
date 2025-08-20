@@ -10,15 +10,15 @@ export const PUT = withErrorHandling(async (
   request: NextRequest,
   { params }: { params: { id: string } }
 ) => {
-  const cookieStore = cookies()
-  const supabase = createClient(cookieStore)
+
+  const supabase = await createClient()
   
   // Verificar autenticação
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   const userId = validateAuth(authError ? null : user?.id || null)
 
   // Validar parâmetros
-  const { id: sessionId } = idParamSchema.parse(params)
+  const { id: sessionId } = idParamSchema.parse(await params)
   
   // Validar dados do corpo da requisição
   const body = await request.json()
@@ -26,15 +26,26 @@ export const PUT = withErrorHandling(async (
 
   // Verificar se a sessão existe e se o usuário tem permissão
   const { data: session, error: sessionError } = await supabase
-    .from('teleconsulta_sessions')
-    .select('*, patient_id, nutritionist_id')
-    .eq('id', sessionId)
-    .single()
+  .from('teleconsulta_sessions')
+  .select(`
+    id, session_token, scheduled_at, started_at, ended_at,
+    duration_minutes, price, status, join_url,
+
+    nutritionist:nutritionist_profiles!teleconsulta_sessions_nutritionist_id_fkey (
+      id, user_id, full_name, profile_image_url
+    ),
+
+    patient:patient_profiles!teleconsulta_sessions_patient_id_fkey (
+      id, user_id, full_name, phone, profile_image_url
+    )
+  `)
+  .eq('id', sessionId)
+  .single()
 
   const validSession = validateResourceExists(sessionError ? null : session, 'Sessão não encontrada')
 
   // Verificar permissão (paciente ou nutricionista da sessão)
-  if (validSession.patient_id !== userId && validSession.nutritionist_id !== userId) {
+  if (validSession.patient.user_id !== userId && validSession.nutritionist.user_id !== userId) {
     throw new ForbiddenError('Sem permissão para modificar esta sessão')
   }
 
@@ -63,15 +74,17 @@ export const PUT = withErrorHandling(async (
   } else if (status === 'completed') {
     updateData.ended_at = new Date().toISOString()
   }
-
+  
+  console.log("🚀 ~ updateData:", updateData)
   // Atualizar sessão
   const { data: updatedSession, error: updateError } = await supabase
-    .from('teleconsulta_sessions')
-    .update(updateData)
-    .eq('id', sessionId)
-    .select()
-    .single()
-
+  .from('teleconsulta_sessions')
+  .update(updateData)
+  .eq('id', sessionId)
+  .select('*')
+  .maybeSingle()
+  
+  console.log("🚀 ~ updatedSession:", updatedSession)
   if (updateError) {
     throw new Error('Erro ao atualizar sessão')
   }

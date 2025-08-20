@@ -51,8 +51,12 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
     .from('teleconsulta_sessions')
     .select(`
       *,
-      patient_profiles!patient_id(id, full_name, email),
-      nutritionist_profiles!nutritionist_id(id, full_name, email, specialties)
+      nutritionist:nutritionist_profiles!teleconsulta_sessions_nutritionist_id_fkey (
+            id, user_id, full_name, profile_image_url
+          ),
+          patient:patient_profiles!teleconsulta_sessions_patient_id_fkey (
+            id, user_id, full_name, phone, profile_image_url
+          )
     `)
     .eq(userType === 'nutritionist' ? 'nutritionist_id' : 'patient_id', profileId)
     .order('scheduled_at', { ascending: true })
@@ -71,6 +75,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
   }
 
   const { data: sessions, error: sessionsError } = await query
+  console.log("🚀 ~ sessionsError:", sessionsError)
 
   if (sessionsError) {
     throw new Error('Erro ao buscar teleconsultas')
@@ -93,18 +98,18 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
 
   // Validar se a data é futura
   const scheduledDate = new Date(scheduled_for)
-  console.log("🚀 ~ scheduledDate:", scheduledDate)
+
   if (scheduledDate <= new Date()) {
     throw new ValidationError('Data deve ser futura')
   }
 
   // Verificar se o nutricionista existe
   const { data: nutritionist, error: nutritionistError } = await supabase
-  .from('nutritionist_profiles')
-  .select('id, user_id')
-  .eq('id', nutritionist_id)
-  .single()
-  
+    .from('nutritionist_profiles')
+    .select('id, user_id')
+    .eq('id', nutritionist_id)
+    .single()
+
   if (nutritionistError || !nutritionist) {
     throw new ValidationError('Nutricionista não encontrado')
   }
@@ -123,13 +128,13 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   // Verificar se já existe uma sessão no mesmo horário
   const endTime = new Date(scheduledDate.getTime() + duration_minutes * 60000)
   const { data: existingSessions, error: sessionError } = await supabase
-  .from('teleconsulta_sessions')
-  .select('id')
-  .eq('nutritionist_id', nutritionist.id)
-  .eq('status', 'scheduled')
-  .gte('scheduled_at', scheduled_for)
-  .lt('scheduled_at', endTime.toISOString())
-  
+    .from('teleconsulta_sessions')
+    .select('id')
+    .eq('nutritionist_id', nutritionist.id)
+    .eq('status', 'scheduled')
+    .gte('scheduled_at', scheduled_for)
+    .lt('scheduled_at', endTime.toISOString())
+
   if (sessionError) {
     throw new Error('Erro ao verificar disponibilidade')
   }

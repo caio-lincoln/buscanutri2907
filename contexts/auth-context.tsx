@@ -122,7 +122,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const loadUser = useCallback(async () => {
     try {
       const sessionUser = await supabase.auth.getUser()
-      console.log("🚀 ~ AuthProvider ~ sessionUser:", sessionUser)
 
       if (!sessionUser.data?.user) {
         setUser(null)
@@ -139,7 +138,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .eq('id', sessionUser.data.user.id)
       .maybeSingle()
       
-      console.log("🚀 ~ AuthProvider ~ row:", row)
       const utype = row?.user_type
       if (utype) {
         const table = PROFILE_TABLE_BY_TYPE[ utype as UserType ]

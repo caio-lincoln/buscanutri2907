@@ -14,7 +14,7 @@ export const updateSessionStatusSchema = z.object({
   status: z.enum(['scheduled', 'in_progress', 'completed', 'cancelled'], {
     errorMap: () => ({ message: 'Status deve ser: scheduled, in_progress, completed ou cancelled' })
   }),
-  message: z.string().min(1, 'Mensagem é obrigatória')
+  // message: z.string().min(1, 'Mensagem é obrigatória')
 })
 
 // Schema para disponibilidade de agenda

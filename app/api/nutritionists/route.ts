@@ -6,6 +6,7 @@ export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient()
     const { searchParams } = new URL(request.url)
+    console.log("🚀 ~ GET ~ searchParams:", searchParams)
 
     // Parâmetros de filtro
     const searchTerm = searchParams.get('search') || ''
@@ -42,7 +43,7 @@ export async function GET(request: NextRequest) {
         is_verified,
         created_at
       `)
-      .eq('verification_status', 'aprovado')
+      // .eq('verification_status', 'aprovado')
 
     // Filtro por consulta online
     if (onlineOnly) {

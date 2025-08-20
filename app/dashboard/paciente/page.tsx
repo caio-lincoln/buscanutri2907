@@ -84,6 +84,7 @@ import { useRealtimeNutritionists } from '@/hooks/use-realtime-nutritionists'
 import { format, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import TeleconsultasPage from './teleconsultas/page'
+import { useDebouncedValue } from '../../../hooks/use-debounce'
 
 // Adicionar interfaces para nutricionistas (movidas de app/nutricionistas/page.tsx)
 interface NutritionistService {
@@ -145,17 +146,6 @@ const formatNutritionistData = (nutritionist: NutritionistProfile) => {
   }
 }
 
-const specialtiesOptions = [
-  'Todas',
-  'Nutrição Clínica',
-  'Nutrição Esportiva',
-  'Nutrição Infantil',
-  'Emagrecimento',
-  'Nutrição Vegana',
-  'Distúrbios Alimentares',
-  'Nutrição Geriátrica',
-  'Nutrição Funcional',
-]
 
 const statesOptions = [
   'Todas',
@@ -247,6 +237,9 @@ export default function PatientDashboard() {
     Set<string>
   >(new Set())
 
+  const debouncedSearch = useDebouncedValue(searchNutritionistTerm, 600);
+  const [ specialties, setSpecialties ] = useState<Specialty[]>([])
+
   // Hook de realtime para nutricionistas
   const {
     nutritionists,
@@ -254,13 +247,13 @@ export default function PatientDashboard() {
     error: nutritionistsError,
     refreshNutritionists,
   } = useRealtimeNutritionists({
-    searchTerm: searchNutritionistTerm,
-    specialty: selectedNutritionistSpecialty,
-    state: selectedNutritionistState,
-    priceRange: selectedNutritionistPriceRange,
-    onlineOnly: onlineOnlyNutritionist,
-    verifiedOnly: showVerifiedOnlyNutritionist,
-    sortBy: sortByNutritionist,
+    searchTerm: debouncedSearch ?? undefined,
+    specialty: selectedNutritionistSpecialty ?? undefined,
+    state: selectedNutritionistState ?? undefined,
+    priceRange: selectedNutritionistPriceRange ?? undefined,
+    onlineOnly: onlineOnlyNutritionist ?? undefined,
+    verifiedOnly: showVerifiedOnlyNutritionist ?? undefined,
+    sortBy: sortByNutritionist ?? undefined,
   })
 
   // Estados para o modal de avaliação
@@ -296,7 +289,7 @@ export default function PatientDashboard() {
 
   useEffect(() => {
     if (activeTab === 'buscar') {
-      loadAvailableSpecialties()
+      // loadAvailableSpecialties()
       loadAvailableLocations()
     }
   }, [ activeTab ])
@@ -324,6 +317,29 @@ export default function PatientDashboard() {
     }
   }
 
+  useEffect(() => {
+    const loadSpecialties = async () => {
+      try {
+        setLoading(true)
+
+        const response = await fetch('/api/specialties')
+        console.log("🚀 ~ loadSpecialties ~ response:", response)
+        if (!response.ok) {
+          throw new Error('Erro ao carregar especialidades')
+        }
+
+        const data = await response.json()
+        setSpecialties(data.specialties || [])
+      } catch (err) {
+        // Silent error handling - error loading specialties
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadSpecialties()
+  }, [])
+
   const loadAnamneseData = async (userId: string) => {
     try {
       const { data, error } = await supabase
@@ -342,18 +358,18 @@ export default function PatientDashboard() {
 
   // Funções para a aba "Buscar Nutricionistas"
 
-  const loadAvailableSpecialties = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('specialties')
-        .select('id, name')
-        .order('name')
-      if (error) throw error
-      setAvailableSpecialties(data || [])
-    } catch (error) {
-      // Silent error handling for specialties loading
-    }
-  }
+  // const loadAvailableSpecialties = async () => {
+  //   try {
+  //     const { data, error } = await supabase
+  //       .from('specialties')
+  //       .select('id, name')
+  //       .order('name')
+  //     if (error) throw error
+  //     setAvailableSpecialties(data || [])
+  //   } catch (error) {
+  //     // Silent error handling for specialties loading
+  //   }
+  // }
 
   const loadAvailableLocations = async () => {
     try {
@@ -968,9 +984,12 @@ export default function PatientDashboard() {
                       <SelectValue placeholder="Especialidade" />
                     </SelectTrigger>
                     <SelectContent>
-                      {specialtiesOptions.map(specialty => (
-                        <SelectItem key={specialty} value={specialty}>
-                          {specialty}
+                      <SelectItem value={"Todas"}>
+                        Todas
+                      </SelectItem>
+                      {specialties?.map(specialty => (
+                        <SelectItem key={specialty.id} value={specialty.id}>
+                          {specialty.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -1082,7 +1101,7 @@ export default function PatientDashboard() {
             </Card>
 
             {/* Loading State */}
-            {loadingNutritionists && (
+            {loadingNutritionists && nutritionists.length === 0 && (
               <div className="text-center py-12">
                 <div className="animate-spin rounded-full h-12 w-12 border-4 border-red-200 border-t-red-500 mx-auto mb-4"></div>
                 <p className="text-gray-600">Buscando nutricionistas...</p>
@@ -1273,8 +1292,8 @@ export default function PatientDashboard() {
                                     className={`hover-lift bg-white/80 backdrop-blur-sm transition-all duration-300 ${favoritedNutritionists.has(
                                       nutritionist.id
                                     )
-                                        ? 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100'
-                                        : 'hover:bg-red-50 hover:text-red-600 hover:border-red-200'
+                                      ? 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100'
+                                      : 'hover:bg-red-50 hover:text-red-600 hover:border-red-200'
                                       }`}
                                     onClick={() =>
                                       handleToggleFavorite(nutritionist.id)
@@ -1284,8 +1303,8 @@ export default function PatientDashboard() {
                                       className={`h-4 w-4 ${favoritedNutritionists.has(
                                         nutritionist.id
                                       )
-                                          ? 'fill-current'
-                                          : ''
+                                        ? 'fill-current'
+                                        : ''
                                         }`}
                                     />
                                   </Button>

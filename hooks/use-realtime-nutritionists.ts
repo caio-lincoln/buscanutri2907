@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
-import { RealtimeChannel } from '@supabase/supabase-js'
+import type { RealtimeChannel } from '@supabase/supabase-js'
 
 export interface NutritionistProfile {
   id: string
@@ -30,37 +30,54 @@ export interface UseRealtimeNutritionistsProps {
   sortBy?: string
 }
 
-export function useRealtimeNutritionists(
-  filters: UseRealtimeNutritionistsProps = {}
-) {
+export function useRealtimeNutritionists(filters: UseRealtimeNutritionistsProps = {}) {
   const [nutritionists, setNutritionists] = useState<NutritionistProfile[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const channelRef = useRef<RealtimeChannel | null>(null)
 
-  // Função para carregar nutricionistas com filtros
+  // sempre aponta para a versão mais recente do loader (para evitar stale-closure nos handlers)
+  const latestLoadRef = useRef<() => Promise<void>>(() => Promise.resolve())
+
+  const getMinPrice = (services: any[]) => {
+    if (!services || services.length === 0) return null
+    return Math.min(...services.map((s) => s.price))
+  }
+
   const loadNutritionists = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
 
-      // Query simplificada sem especialidades para teste
-      let query = supabase.from('nutritionist_profiles').select(`
-        id,
-        user_id,
-        full_name,
-        bio,
-        location,
-        profile_image_url,
-        crn,
-        rating,
-        total_reviews,
-        experience_years,
-        is_verified,
-        nutritionist_services (*)
-      `)
+      const specJoin = (filters.specialty && filters.specialty !== 'Todas')
+      ? `,nutritionist_specialties!inner (
+           specialty_id,
+           specialties:specialties ( id, name )
+         )`
+      : `,nutritionist_specialties (
+           specialty_id,
+           specialties:specialties ( id, name )
+         )`
+      
+      let query = supabase
+        .from('nutritionist_profiles')
+        .select(`
+          id,
+          user_id,
+          full_name,
+          bio,
+          location,
+          profile_image_url,
+          crn,
+          rating,
+          total_reviews,
+          experience_years,
+          is_verified,
+          nutritionist_services(*)
+          ${specJoin}
+        `)
 
-      // Aplicar filtros
+      // Filtros
       if (filters.searchTerm) {
         query = query.or(
           `full_name.ilike.%${filters.searchTerm}%,bio.ilike.%${filters.searchTerm}%`
@@ -72,82 +89,47 @@ export function useRealtimeNutritionists(
       }
 
       if (filters.verifiedOnly) {
-        query = query.eq('is_verified', true)
+        query = query.eq('verification_status', 'aprovado')
       }
 
-      // Filtrar apenas nutricionistas aprovados (conforme política RLS)
-      query = query.eq('verification_status', 'aprovado')
+      if (filters.specialty !== "Todas" && filters.specialty) {
+        query = query.eq('nutritionist_specialties.specialty_id', filters.specialty)
+      }
 
       const { data, error } = await query
+      if (error) throw error
 
-      if (error) {
-        console.error('Error loading nutritionists:', error)
-        throw error
-      }
+      let filteredData: NutritionistProfile[] = (data as any) || []
 
-      let filteredData: NutritionistProfile[] = data || []
+      // remove ids ruins
+      filteredData = filteredData.filter((n) => n.id && n.id !== 'null' && n.id !== 'undefined')
 
-      // Filtrar nutricionistas com IDs válidos
-      filteredData = filteredData.filter(nutritionist => {
-        if (
-          !nutritionist.id ||
-          nutritionist.id === 'null' ||
-          nutritionist.id === 'undefined'
-        ) {
-          console.warn(
-            'Nutricionista com ID inválido encontrado:',
-            nutritionist
-          )
-          return false
-        }
-        return true
-      })
-
-      // Filtrar por especialidade (temporariamente desabilitado)
-      // if (filters.specialty && filters.specialty !== "Todas") {
-      //   filteredData = filteredData.filter((nutritionist) =>
-      //     nutritionist.nutritionist_specialties?.some(
-      //       (spec: any) => spec.specialties?.name === filters.specialty,
-      //     ),
-      //   )
-      // }
-
-      // Filtrar por preço
       if (filters.priceRange) {
-        filteredData = filteredData.filter(nutritionist => {
-          const minPrice = getMinPrice(nutritionist.nutritionist_services)
-          if (minPrice === null) return false
-          return (
+        filteredData = filteredData.filter((n) => {
+          const minPrice = getMinPrice(n.nutritionist_services)
+          return minPrice != null &&
             minPrice >= filters.priceRange!.min &&
             minPrice <= filters.priceRange!.max
-          )
         })
       }
 
-      // Filtrar por consulta online
       if (filters.onlineOnly) {
-        filteredData = filteredData.filter(nutritionist =>
-          nutritionist.nutritionist_services?.some(
-            (service: any) => service.online_available
-          )
+        filteredData = filteredData.filter((n) =>
+          n.nutritionist_services?.some((s: any) => s.online_available)
         )
       }
 
-      // Ordenar
+      // ordenação
       filteredData.sort((a, b) => {
         switch (filters.sortBy) {
           case 'rating':
             return (b.rating || 0) - (a.rating || 0)
           case 'price-low':
-            return (
-              (getMinPrice(a.nutritionist_services) || 0) -
-              (getMinPrice(b.nutritionist_services) || 0)
-            )
+            return (getMinPrice(a.nutritionist_services) || 0) -
+                   (getMinPrice(b.nutritionist_services) || 0)
           case 'price-high':
-            return (
-              (getMinPrice(b.nutritionist_services) || 0) -
-              (getMinPrice(a.nutritionist_services) || 0)
-            )
+            return (getMinPrice(b.nutritionist_services) || 0) -
+                   (getMinPrice(a.nutritionist_services) || 0)
           case 'name':
             return a.full_name.localeCompare(b.full_name)
           case 'experience':
@@ -158,103 +140,67 @@ export function useRealtimeNutritionists(
       })
 
       setNutritionists(filteredData)
-    } catch (error) {
-      console.error('Error loading nutritionists:', error)
+    } catch (e) {
+      console.log("🚀 ~ useRealtimeNutritionists ~ e:", e)
+      console.error('Error loading nutritionists:', e)
       setError('Erro ao carregar nutricionistas')
     } finally {
       setLoading(false)
     }
-  }, [filters, supabase])
+  }, [
+    filters.searchTerm,
+    filters.priceRange,
+    filters.state,
+    filters.onlineOnly,
+    filters.verifiedOnly,
+    filters.sortBy,
+    filters.specialty
+  ]) 
 
-  // Função auxiliar para obter preço mínimo
-  const getMinPrice = (services: any[]) => {
-    if (!services || services.length === 0) return null
-    return Math.min(...services.map(service => service.price))
-  }
-
-  // Configurar realtime para monitorar mudanças
+  // mantém o ref apontando para a versão atual do loader
   useEffect(() => {
-    // Carregar dados iniciais
-    loadNutritionists()
+    latestLoadRef.current = loadNutritionists
+  }, [loadNutritionists])
 
-    // Configurar canal realtime
-    const channel = supabase
+  // Recarrega quando os filtros mudarem
+  useEffect(() => {
+    loadNutritionists()
+  }, [loadNutritionists])
+
+  // Inscrição realtime (uma vez) usando o ref para chamar a versão atual do loader
+  useEffect(() => {
+    const ch = supabase
       .channel('nutritionist_profiles_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*', // Escutar INSERT, UPDATE, DELETE
-          schema: 'public',
-          table: 'nutritionist_profiles',
-        },
-        payload => {
-          console.log('🔄 Mudança detectada em nutritionist_profiles:', payload)
-          // Recarregar dados quando houver mudanças
-          loadNutritionists()
-        }
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'nutritionist_profiles' },
+        () => latestLoadRef.current()
       )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'nutritionist_services',
-        },
-        payload => {
-          console.log('🔄 Mudança detectada em nutritionist_services:', payload)
-          // Recarregar dados quando houver mudanças nos serviços
-          loadNutritionists()
-        }
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'nutritionist_services' },
+        () => latestLoadRef.current()
       )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'nutritionist_specialties',
-        },
-        payload => {
-          console.log(
-            '🔄 Mudança detectada em nutritionist_specialties:',
-            payload
-          )
-          // Recarregar dados quando houver mudanças nas especialidades
-          loadNutritionists()
-        }
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'nutritionist_specialties' },
+        () => latestLoadRef.current()
       )
-      .subscribe(status => {
+      .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
-          console.log(
-            '✅ Inscrito em atualizações de nutricionistas em tempo real'
-          )
-        } else if (status === 'CHANNEL_ERROR') {
-          console.error(
-            '❌ Erro ao inscrever-se em atualizações de nutricionistas'
-          )
+          console.log('✅ Realtime inscrito')
         }
       })
 
-    channelRef.current = channel
-
-    // Cleanup
+    channelRef.current = ch
     return () => {
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current)
         channelRef.current = null
-        console.log('🔌 Desconectado das atualizações de nutricionistas')
       }
     }
+  }, []) // não depende dos filtros – usamos latestLoadRef dentro dos handlers
+
+  const refreshNutritionists = useCallback(() => {
+    return latestLoadRef.current()
   }, [])
 
-  // Função para atualizar manualmente
-  const refreshNutritionists = useCallback(() => {
-    loadNutritionists()
-  }, [loadNutritionists])
-
-  return {
-    nutritionists,
-    loading,
-    error,
-    refreshNutritionists,
-  }
+  return { nutritionists, loading, error, refreshNutritionists }
 }

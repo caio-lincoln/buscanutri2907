@@ -35,20 +35,10 @@ import {
 import {
   formatNutritionistData,
 } from '@/lib/nutritionist-service'
-import type { NutritionistProfile } from '@/lib/supabase'
+import type { NutritionistProfile, Specialty } from '@/lib/supabase'
 import { useAuth } from '@/contexts/auth-context'
 
-const specialties = [
-  'Todas',
-  'Nutrição Clínica',
-  'Nutrição Esportiva',
-  'Nutrição Infantil',
-  'Emagrecimento',
-  'Nutrição Vegana',
-  'Distúrbios Alimentares',
-  'Nutrição Geriátrica',
-  'Nutrição Funcional',
-]
+
 
 const states = [
   'Todas',
@@ -103,6 +93,8 @@ export default function BuscarNutricionistasPage() {
   const router = useRouter()
   const { user, loading: authLoading } = useAuth()
 
+  const [ specialties, setSpecialties ] = useState<Specialty[]>([])
+
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/login')
@@ -133,6 +125,7 @@ export default function BuscarNutricionistasPage() {
       }
       
       const data = await response.json()
+      console.log("🚀 ~ loadNutritionists ~ data:", data)
       setNutritionists(data.nutritionists || [])
     } catch (error) {
       console.error('Erro ao carregar nutricionistas:', error)
@@ -141,6 +134,29 @@ export default function BuscarNutricionistasPage() {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    const loadSpecialties = async () => {
+      try {
+        setLoading(true)
+
+        const response = await fetch('/api/specialties')
+        console.log("🚀 ~ loadSpecialties ~ response:", response)
+        if (!response.ok) {
+          throw new Error('Erro ao carregar especialidades')
+        }
+
+        const data = await response.json()
+        setSpecialties(data.specialties || [])
+      } catch (err) {
+        // Silent error handling - error loading specialties
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadSpecialties()
+  }, [])
 
   // Os nutricionistas já vêm filtrados e ordenados da API
   const displayNutritionists = nutritionists
@@ -231,8 +247,8 @@ export default function BuscarNutricionistasPage() {
                     </SelectTrigger>
                     <SelectContent>
                       {specialties.map(specialty => (
-                        <SelectItem key={specialty} value={specialty}>
-                          {specialty}
+                        <SelectItem key={specialty.id} value={specialty.id}>
+                          {specialty.name}
                         </SelectItem>
                       ))}
                     </SelectContent>

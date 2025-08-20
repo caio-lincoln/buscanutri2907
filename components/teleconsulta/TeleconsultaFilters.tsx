@@ -32,6 +32,8 @@ export interface TeleconsultaFiltersProps {
   nutritionists?: Array<{ id: string; name: string }>
   patients?: Array<{ id: string; name: string }>
   className?: string
+  isExpanded: boolean
+  setIsExpanded: (expanded: boolean) => void;
 }
 
 const statusOptions = [
@@ -48,12 +50,14 @@ export function TeleconsultaFilters({
   userRole,
   nutritionists = [],
   patients = [],
-  className
+  className,
+  isExpanded,
+  setIsExpanded
 }: TeleconsultaFiltersProps) {
-  const [isExpanded, setIsExpanded] = useState(false)
+  
   const [dateFromOpen, setDateFromOpen] = useState(false)
   const [dateToOpen, setDateToOpen] = useState(false)
-
+ 
   const updateFilter = (key: keyof TeleconsultaFilters, value: any) => {
     onFiltersChange({
       ...filters,

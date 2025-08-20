@@ -29,6 +29,7 @@ export default function BlogPostPage() {
   const router = useRouter()
   const postId = params['id'] as string
   const [post, setPost] = useState<BlogPost | null>(null)
+
   const [loading, setLoading] = useState(true)
 
   useEmbedScripts()
