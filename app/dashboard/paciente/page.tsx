@@ -212,7 +212,7 @@ export default function PatientDashboard() {
   const [ isAnamneseModalOpen, setIsAnamneseModalOpen ] = useState(false)
   const [ anamneseData, setAnamneseData ] = useState<any>(null)
   const router = useRouter()
-  const { user, loading: authLoading, signOut } = useAuth()
+  const { user, loading: authLoading, signOut, patientProfile } = useAuth()
 
   // Estados para a aba "Buscar Nutricionistas"
   const [ searchNutritionistTerm, setSearchNutritionistTerm ] = useState('')
@@ -260,6 +260,7 @@ export default function PatientDashboard() {
   const [ isRatingModalOpen, setIsRatingModalOpen ] = useState(false)
   const [ selectedConsultationForRating, setSelectedConsultationForRating ] =
     useState<Consultation | null>(null)
+  console.log("🚀 ~ PatientDashboard ~ selectedConsultationForRating:", selectedConsultationForRating)
 
   const upcomingConsultations = consultations
     .filter(
@@ -406,7 +407,7 @@ export default function PatientDashboard() {
   }
 
   const handleScheduleConsultation = (nutritionistId: string) => {
-    router.push(`/dashboard/paciente/agendar/${nutritionistId}`)
+    router.push(`/dashboard/paciente/agendar?nutritionistId=${nutritionistId}`)
   }
 
   // Funções gerais
@@ -430,7 +431,7 @@ export default function PatientDashboard() {
 
       if (isFavorited) {
         const success = await removeFavoriteNutritionist(
-          user.id,
+          patientProfile?.id as string,
           nutritionistId
         )
         if (success) {
@@ -441,17 +442,17 @@ export default function PatientDashboard() {
           })
           // Recarregar favoritos para atualizar a lista
           const updatedFavorites = await getPatientFavoriteNutritionists(
-            user.id
+            patientProfile?.id as string
           )
           setFavoriteNutritionists(updatedFavorites)
         }
       } else {
-        const success = await addFavoriteNutritionist(user.id, nutritionistId)
+        const success = await addFavoriteNutritionist(patientProfile?.id as string, nutritionistId)
         if (success) {
           setFavoritedNutritionists(prev => new Set([ ...prev, nutritionistId ]))
           // Recarregar favoritos para atualizar a lista
           const updatedFavorites = await getPatientFavoriteNutritionists(
-            user.id
+            patientProfile?.id as string
           )
           setFavoriteNutritionists(updatedFavorites)
         }
@@ -514,45 +515,47 @@ export default function PatientDashboard() {
     }
   }
 
-  const recentActivities = [
-    ...consultations
-      .slice(0, 3)
-      .filter(c => c.start_time)
-      .map(c => ({
-        id: c.id,
-        type: 'consultation',
-        title: `Consulta com ${c.nutritionist_profiles?.full_name || 'Nutricionista'}`,
-        description:
-          c.status === 'completed' ? 'Consulta concluída' : 'Consulta agendada',
-        time: formatDate(c.start_time),
-        icon: Video,
-      })),
-    ...favoriteNutritionists
-      .slice(0, 2)
-      .filter(f => f.created_at)
-      .map(f => ({
-        id: f.id,
-        type: 'favorite',
-        title: `${f.nutritionist_profiles.full_name} adicionado aos favoritos`,
-        description: f.nutritionist_profiles.specialties.join(', '),
-        time: formatDate(f.created_at),
-        icon: Heart,
-      })),
-  ]
-    .filter(
-      activity =>
-        activity.time !== 'Data não disponível' &&
-        activity.time !== 'Data inválida'
-    )
-    .sort((a, b) => {
-      try {
-        if (!a.time || !b.time) return 0
-        return parseISO(b.time).getTime() - parseISO(a.time).getTime()
-      } catch (error) {
-        return 0
-      }
-    })
-    .slice(0, 5)
+  // const recentActivities = [
+  //   ...consultations
+  //     .slice(0, 3)
+  //     .filter(c => c.start_time)
+  //     .map(c => ({
+  //       id: c.id,
+  //       type: 'consultation',
+  //       title: `Consulta com ${c.nutritionist_profiles?.full_name || 'Nutricionista'}`,
+  //       description:
+  //         c.status === 'completed' ? 'Consulta concluída' : 'Consulta agendada',
+  //       time: formatDate(c.start_time),
+  //       icon: Video,
+  //     })),
+  //   ...favoriteNutritionists
+  //     .slice(0, 2)
+  //     .filter(f => f.created_at)
+  //     .map(f => ({
+  //       id: f.id,
+  //       type: 'favorite',
+  //       title: `${f.nutritionist_profiles.full_name} adicionado aos favoritos`,
+  //       description: f.nutritionist_profiles.specialties.join(', '),
+  //       time: formatDate(f.created_at),
+  //       icon: Heart,
+  //     })),
+  // ]
+  //   .filter(
+  //     activity =>
+  //       activity.time !== 'Data não disponível' &&
+  //       activity.time !== 'Data inválida'
+  //   )
+  //   .sort((a, b) => {
+  //     try {
+  //       if (!a.time || !b.time) return 0
+  //       return parseISO(b.time).getTime() - parseISO(a.time).getTime()
+  //     } catch (error) {
+  //       return 0
+  //     }
+  //   })
+  //   .slice(0, 5)
+
+  const recentActivities = []
 
   if (authLoading || loading) {
     return (
@@ -2231,7 +2234,7 @@ export default function PatientDashboard() {
             selectedConsultationForRating.nutritionist_profiles?.full_name ||
             'Nutricionista'
           }
-          onSubmit={handleRatingSubmit}
+          onSubmit={() => {}}
         />
       )}
     </DashboardSidebar>

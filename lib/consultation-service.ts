@@ -145,7 +145,7 @@ export async function addFavoriteNutritionist(
       .select('id')
       .eq('patient_id', patientId)
       .eq('nutritionist_id', nutritionistId)
-      .single()
+      .maybeSingle()
 
     if (checkError && checkError.code !== 'PGRST116') {
       // Silent error handling: Error checking existing favorite

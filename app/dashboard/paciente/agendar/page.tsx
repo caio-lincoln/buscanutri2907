@@ -8,13 +8,13 @@ import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { 
-  Calendar, 
-  Clock, 
-  ArrowLeft, 
-  Video, 
-  Star, 
-  MapPin, 
+import {
+  Calendar,
+  Clock,
+  ArrowLeft,
+  Video,
+  Star,
+  MapPin,
   DollarSign,
   Search,
   Filter,
@@ -56,49 +56,54 @@ interface AvailableSlot {
 export default function AgendarPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const nutritionistId = searchParams.get('nutritionistId')
   const { user, loading: authLoading } = useAuth()
-  
+
   // Estados para busca de nutricionistas
-  const [nutritionists, setNutritionists] = useState<NutritionistProfile[]>([])
-  const [searchTerm, setSearchTerm] = useState('')
-  const [selectedSpecialty, setSelectedSpecialty] = useState('Todas')
-  const [selectedState, setSelectedState] = useState('Todas')
-  const [selectedPriceRange, setSelectedPriceRange] = useState({ min: 0, max: 500 })
-  const [onlineOnly, setOnlineOnly] = useState(true) // Padrão para teleconsultas
-  const [sortBy, setSortBy] = useState('rating')
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
-  const [loading, setLoading] = useState(false)
-  
+  const [ nutritionists, setNutritionists ] = useState<NutritionistProfile[]>([])
+  const [ searchTerm, setSearchTerm ] = useState('')
+  const [ selectedSpecialty, setSelectedSpecialty ] = useState('Todas')
+  const [ selectedState, setSelectedState ] = useState('Todas')
+  const [ selectedPriceRange, setSelectedPriceRange ] = useState({ min: 0, max: 500 })
+  const [ onlineOnly, setOnlineOnly ] = useState(true) // Padrão para teleconsultas
+  const [ sortBy, setSortBy ] = useState('rating')
+  const [ viewMode, setViewMode ] = useState<'grid' | 'list'>('grid')
+  const [ loading, setLoading ] = useState(false)
+
   // Estados para agendamento
-  const [selectedNutritionist, setSelectedNutritionist] = useState<NutritionistProfile | null>(null)
-  const [availableSlots, setAvailableSlots] = useState<AvailableSlot[]>([])
-  const [selectedSlot, setSelectedSlot] = useState<AvailableSlot | null>(null)
-  const [profile, setProfile] = useState<PatientProfile | null>(null)
-  const [booking, setBooking] = useState(false)
-  const [step, setStep] = useState<'search' | 'schedule'>('search')
-  
+  const [ selectedNutritionist, setSelectedNutritionist ] = useState<NutritionistProfile | null>(null)
+  const [ availableSlots, setAvailableSlots ] = useState<AvailableSlot[]>([])
+  const [ selectedSlot, setSelectedSlot ] = useState<AvailableSlot | null>(null)
+  const [ profile, setProfile ] = useState<PatientProfile | null>(null)
+  const [ booking, setBooking ] = useState(false)
+  const [ step, setStep ] = useState<'search' | 'schedule'>('search')
+
+
   // Verificar se há um nutricionista pré-selecionado
   useEffect(() => {
-    const nutritionistId = searchParams.get('nutritionistId')
-    if (nutritionistId) {
+    
+    if (nutritionistId && nutritionists.length > 0) {
+      const currentNutritionist = nutritionists.find(nutritionist => nutritionist.id === nutritionistId)
       // Buscar dados do nutricionista específico
-      loadSpecificNutritionist(nutritionistId)
+      if (currentNutritionist) {
+        handleSelectNutritionist(currentNutritionist)
+      }
     }
-  }, [searchParams])
+  }, [ searchParams, nutritionists ])
 
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/login')
       return
     }
-    
+
     if (user) {
       loadProfile()
       if (step === 'search') {
         loadNutritionists()
       }
     }
-  }, [user, authLoading, step, searchTerm, selectedSpecialty, selectedState, selectedPriceRange, onlineOnly, sortBy])
+  }, [ user, authLoading, step, searchTerm, selectedSpecialty, selectedState, selectedPriceRange, onlineOnly, sortBy ])
 
   const loadProfile = async () => {
     try {
@@ -140,12 +145,12 @@ export default function AgendarPage() {
         sortBy: sortBy,
         limit: '20'
       })
-      
+
       const response = await fetch(`/api/nutritionists?${params}`)
       if (!response.ok) {
         throw new Error('Erro ao buscar nutricionistas')
       }
-      
+
       const data = await response.json()
       setNutritionists(data.nutritionists || [])
     } catch (error) {
@@ -161,15 +166,15 @@ export default function AgendarPage() {
       setLoading(true)
       const startDate = format(new Date(), 'yyyy-MM-dd')
       const endDate = format(addDays(new Date(), 14), 'yyyy-MM-dd')
-      
+
       const response = await fetch(
         `/api/teleconsulta/horarios-disponiveis?nutritionistId=${nutritionistId}&startDate=${startDate}&endDate=${endDate}`
       )
-      
+
       if (!response.ok) {
         throw new Error('Erro ao carregar horários disponíveis')
       }
-      
+
       const data = await response.json()
       setAvailableSlots(data.availableSlots || [])
     } catch (error) {
@@ -224,10 +229,10 @@ export default function AgendarPage() {
 
   // Agrupar slots por data
   const slotsByDate = availableSlots.reduce((acc, slot) => {
-    if (!acc[slot.date]) {
-      acc[slot.date] = []
+    if (!acc[ slot.date ]) {
+      acc[ slot.date ] = []
     }
-    acc[slot.date].push(slot)
+    acc[ slot.date ].push(slot)
     return acc
   }, {} as Record<string, AvailableSlot[]>)
 
@@ -247,7 +252,7 @@ export default function AgendarPage() {
           variant="ghost"
           size="sm"
           onClick={() => {
-            if (step === 'schedule') {
+            if (step === 'schedule' && !nutritionistId) {
               setStep('search')
               setSelectedNutritionist(null)
               setSelectedSlot(null)
@@ -265,7 +270,7 @@ export default function AgendarPage() {
             {step === 'search' ? 'Buscar Nutricionista' : 'Agendar Teleconsulta'}
           </h1>
           <p className="text-gray-600">
-            {step === 'search' 
+            {step === 'search'
               ? 'Encontre o nutricionista ideal para sua teleconsulta'
               : 'Escolha o melhor horário para sua consulta online'
             }
@@ -298,7 +303,7 @@ export default function AgendarPage() {
                     />
                   </div>
                 </div>
-                
+
                 <div>
                   <label className="text-sm font-medium mb-2 block">Especialidade</label>
                   <Select value={selectedSpecialty} onValueChange={setSelectedSpecialty}>
@@ -314,7 +319,7 @@ export default function AgendarPage() {
                     </SelectContent>
                   </Select>
                 </div>
-                
+
                 <div>
                   <label className="text-sm font-medium mb-2 block">Estado</label>
                   <Select value={selectedState} onValueChange={setSelectedState}>
@@ -329,7 +334,7 @@ export default function AgendarPage() {
                     </SelectContent>
                   </Select>
                 </div>
-                
+
                 <div>
                   <label className="text-sm font-medium mb-2 block">Ordenar por</label>
                   <Select value={sortBy} onValueChange={setSortBy}>
@@ -395,7 +400,7 @@ export default function AgendarPage() {
                 >
                   {nutritionists.map(nutritionist => {
                     const formatted = formatNutritionistData(nutritionist)
-                    
+
                     return (
                       <Card key={nutritionist.id} className="hover:shadow-lg transition-shadow">
                         <CardContent className="p-6">
@@ -596,7 +601,7 @@ export default function AgendarPage() {
                   </div>
                 ) : (
                   <div className="space-y-6">
-                    {Object.entries(slotsByDate).map(([date, slots]) => (
+                    {Object.entries(slotsByDate).map(([ date, slots ]) => (
                       <div key={date}>
                         <h3 className="font-medium text-lg mb-3">
                           {format(parseISO(date), "EEEE, dd 'de' MMMM", {

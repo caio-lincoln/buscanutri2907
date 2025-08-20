@@ -137,6 +137,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .select('*')
       .eq('id', sessionUser.data.user.id)
       .maybeSingle()
+      console.log("🚀 ~ AuthProvider ~ row:", row)
       
       const utype = row?.user_type
       if (utype) {
