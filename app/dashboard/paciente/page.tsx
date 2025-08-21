@@ -146,7 +146,6 @@ const formatNutritionistData = (nutritionist: NutritionistProfile) => {
   }
 }
 
-
 const statesOptions = [
   'Todas',
   'SP',
@@ -212,7 +211,7 @@ export default function PatientDashboard() {
   const [ isAnamneseModalOpen, setIsAnamneseModalOpen ] = useState(false)
   const [ anamneseData, setAnamneseData ] = useState<any>(null)
   const router = useRouter()
-  const { user, loading: authLoading, signOut, patientProfile } = useAuth()
+  const { user, loading: authLoading, signOut, patientProfile} = useAuth()
 
   // Estados para a aba "Buscar Nutricionistas"
   const [ searchNutritionistTerm, setSearchNutritionistTerm ] = useState('')
@@ -260,7 +259,6 @@ export default function PatientDashboard() {
   const [ isRatingModalOpen, setIsRatingModalOpen ] = useState(false)
   const [ selectedConsultationForRating, setSelectedConsultationForRating ] =
     useState<Consultation | null>(null)
-  console.log("🚀 ~ PatientDashboard ~ selectedConsultationForRating:", selectedConsultationForRating)
 
   const upcomingConsultations = consultations
     .filter(
@@ -281,7 +279,7 @@ export default function PatientDashboard() {
   const menuItems = getMenuItems('paciente', dashboardStats)
 
   useEffect(() => {
-    if (!authLoading && !user) {
+    if ((!authLoading && !user) || user?.user_metadata['user_type'] !== 'paciente') {
       router.push('/login')
       return
     }

@@ -19,7 +19,7 @@ import {
   VideoTrack,
 } from '@livekit/components-react'
 import '@livekit/components-styles'
-import { Track, RoomEvent, type Room } from 'livekit-client'
+import { Track, RoomEvent } from 'livekit-client'
 
 import { useAuth } from '@/contexts/auth-context'
 import { useCallTimer } from '../../../hooks/use-call-timer'
@@ -87,10 +87,10 @@ export default function TeleconsultaRoom() {
   const sessionToken = params.sessionId as string
 
   const routePath =
-  user?.user_metadata?.user_type === 'nutricionista'
-    ? '/dashboard/nutricionistas'
+    user?.user_metadata?.user_type === 'nutricionista'
+      ? '/dashboard/nutricionistas'
       : '/dashboard/paciente';
-  
+
   const [ loading, setLoading ] = useState(true)
   const [ session, setSession ] = useState<TeleconsultaSession | null>(null)
   const [ token, setToken ] = useState<string>()
@@ -143,8 +143,8 @@ export default function TeleconsultaRoom() {
         }
       } catch (e) {
         console.error(e);
-       
-        router.push(routePath);
+
+        // router.push(routePath);
       } finally {
         setLoading(false);
       }

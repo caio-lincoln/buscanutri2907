@@ -549,7 +549,7 @@ export default function AgendarPage() {
                           <div className="flex items-center gap-2 text-green-800">
                             <Calendar className="h-4 w-4" />
                             <span className="font-medium">
-                              {format(parseISO(selectedSlot.datetime), "dd 'de' MMMM 'de' yyyy", {
+                              {format(parseISO(selectedSlot.datetime.slice(0, -1)), "dd 'de' MMMM 'de' yyyy", {
                                 locale: ptBR,
                               })}
                             </span>
@@ -557,7 +557,7 @@ export default function AgendarPage() {
                           <div className="flex items-center gap-2 text-green-800 mt-1">
                             <Clock className="h-4 w-4" />
                             <span className="font-medium">
-                              {format(parseISO(selectedSlot.datetime), 'HH:mm', {
+                              {format(parseISO(selectedSlot.datetime.slice(0, -1)), 'HH:mm', {
                                 locale: ptBR,
                               })}
                             </span>

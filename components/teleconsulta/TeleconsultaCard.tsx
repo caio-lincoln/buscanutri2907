@@ -72,7 +72,9 @@ export function TeleconsultaCard({
   onReschedule,
   className
 }: TeleconsultaCardProps) {
+ 
   const scheduledDate = new Date(session.scheduled_at)
+
   const now = new Date()
   const isToday = format(scheduledDate, 'yyyy-MM-dd') === format(now, 'yyyy-MM-dd')
   const canJoin = session.status === 'scheduled' && 
@@ -140,7 +142,7 @@ export function TeleconsultaCard({
           <div className="flex items-center space-x-2">
             <Clock className="h-4 w-4 text-muted-foreground" />
             <span>
-              {format(scheduledDate, 'HH:mm')} ({session.duration_minutes}min)
+              {scheduledDate.toISOString().substring(11, 16)} ({session.duration_minutes}min)
             </span>
           </div>
         </div>

@@ -70,7 +70,7 @@ export default function NutritionistDashboard() {
     ScheduledAppointment[]
   >([])
   const router = useRouter()
-  const { user, nutritionistProfile, loading: authLoading, signOut, refreshUser} = useAuth()
+  const { user, nutritionistProfile, patientProfile, loading: authLoading, signOut, refreshUser} = useAuth()
 
    // Hook para estatísticas dinâmicas do dashboard
   const { stats: dashboardStats } = useDashboardStats({

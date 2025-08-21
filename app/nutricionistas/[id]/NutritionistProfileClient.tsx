@@ -122,7 +122,6 @@ interface NutritionistProfileClientProps {
 export default function NutritionistProfilePageClient({
   nutritionist,
 }: NutritionistProfileClientProps) {
-  console.log("🚀 ~ NutritionistProfilePageClient ~ nutritionist:", nutritionist)
   const [ mobileMenuOpen, setMobileMenuOpen ] = useState(false)
   const { viewStats, recordView } = useRealtimeProfileViews(nutritionist.id, {
     totalViews: nutritionist.total_views || 0,
@@ -550,7 +549,7 @@ export default function NutritionistProfilePageClient({
 
           {/* Quick Actions */}
           <div className="flex flex-wrap gap-4 mb-8">
-            <Link href={`/dashboard/paciente/agendar/${nutritionist.id}`}>
+            <Link href={`/dashboard/paciente/agendar?nutritionistId=${nutritionist.id}`}>
               <Button
                 size="lg"
                 className="bg-[#4AB0D9] hover:bg-[#4AB0D9]/90 text-white"
@@ -811,7 +810,7 @@ export default function NutritionistProfilePageClient({
                                 R$ {service.price}
                               </div>
                               <Link
-                                href={`/dashboard/paciente/agendar/${nutritionist.id}?service=${index}`}
+                                href={`/dashboard/paciente/agendar?nutritionistId=${nutritionist.id}`}
                               >
                                 <Button className="bg-[#4AB0D9] hover:bg-[#4AB0D9]/90 text-white">
                                   Agendar
@@ -1182,7 +1181,7 @@ export default function NutritionistProfilePageClient({
                   </p>
                   <div className="space-y-3">
                     <Link
-                      href={`/dashboard/paciente/agendar/${nutritionist.id}`}
+                      href={`/dashboard/paciente/agendar?nutritionistId=${nutritionist.id}`}
                     >
                       <Button className="w-full bg-[#4AB0D9] hover:bg-[#4AB0D9]/90 text-white text-lg py-3">
                         <Calendar className="h-5 w-5 mr-2" />
