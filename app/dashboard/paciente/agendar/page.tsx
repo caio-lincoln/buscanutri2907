@@ -28,6 +28,11 @@ import { format, parseISO, addDays } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { toast } from 'sonner'
 import { formatNutritionistData } from '@/lib/nutritionist-service'
+import { loadStripe } from '@stripe/stripe-js'
+
+const stripePromise = loadStripe(
+  process.env[ 'NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY' ] as string
+)
 
 interface NutritionistProfile {
   id: string
@@ -57,7 +62,7 @@ export default function AgendarPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const nutritionistId = searchParams.get('nutritionistId')
-  const { user, loading: authLoading } = useAuth()
+  const { user, loading: authLoading, patientProfile } = useAuth()
 
   // Estados para busca de nutricionistas
   const [ nutritionists, setNutritionists ] = useState<NutritionistProfile[]>([])
@@ -78,10 +83,9 @@ export default function AgendarPage() {
   const [ booking, setBooking ] = useState(false)
   const [ step, setStep ] = useState<'search' | 'schedule'>('search')
 
-
   // Verificar se há um nutricionista pré-selecionado
   useEffect(() => {
-    
+
     if (nutritionistId && nutritionists.length > 0) {
       const currentNutritionist = nutritionists.find(nutritionist => nutritionist.id === nutritionistId)
       // Buscar dados do nutricionista específico
@@ -197,8 +201,9 @@ export default function AgendarPage() {
       return
     }
 
-    setBooking(true)
     try {
+      setBooking(true)
+
       const response = await fetch('/api/teleconsulta/sessions', {
         method: 'POST',
         headers: {
@@ -216,16 +221,78 @@ export default function AgendarPage() {
         throw new Error('Erro ao agendar teleconsulta')
       }
 
-      const data = await response.json()
-      toast.success('Teleconsulta agendada com sucesso!')
-      router.push('/dashboard/paciente/teleconsultas')
-    } catch (error) {
-      console.error('Erro ao agendar:', error)
-      toast.error('Erro ao agendar teleconsulta')
+      const sessionData = await response.json()
+      console.log("🚀 ~ handleBooking ~ sessionData:", sessionData)
+
+      const res = await fetch('/api/payments/create-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          patient_id: patientProfile?.id, 
+          patient_email: patientProfile?.email ?? user?.email, 
+          nutritionist_id: selectedNutritionist.id,
+          nutritionist_name: selectedNutritionist.full_name,
+          scheduled_for: selectedSlot.datetime,      
+          duration_minutes: selectedSlot.duration,
+          price_brl: selectedNutritionist.consultation_price,
+          teleconsulta_session_id: sessionData.session.id
+        }),
+      })
+
+      if (!res.ok) {
+        const e = await res.json().catch(() => ({}))
+        throw new Error(e?.message || 'Falha ao iniciar pagamento')
+      }
+
+      const { sessionId } = await res.json()
+
+      // Redireciona para a Stripe
+      const stripe = await stripePromise
+      await stripe?.redirectToCheckout({ sessionId })
+    } catch (err) {
+      console.error(err)
+      toast.error('Não foi possível iniciar o pagamento')
     } finally {
       setBooking(false)
     }
   }
+
+
+  // const handleBooking = async () => {
+  //   if (!selectedSlot || !profile || !selectedNutritionist) {
+  //     toast.error('Selecione um horário para continuar')
+  //     return
+  //   }
+
+  //   setBooking(true)
+  //   try {
+  //     const response = await fetch('/api/teleconsulta/sessions', {
+  //       method: 'POST',
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //       },
+  //       body: JSON.stringify({
+  //         nutritionist_id: selectedNutritionist.id,
+  //         scheduled_for: selectedSlot.datetime,
+  //         duration_minutes: selectedSlot.duration,
+  //         price: selectedNutritionist.consultation_price,
+  //       }),
+  //     })
+
+  //     if (!response.ok) {
+  //       throw new Error('Erro ao agendar teleconsulta')
+  //     }
+
+  //     const data = await response.json()
+  //     toast.success('Teleconsulta agendada com sucesso!')
+  //     router.push('/dashboard/paciente/teleconsultas')
+  //   } catch (error) {
+  //     console.error('Erro ao agendar:', error)
+  //     toast.error('Erro ao agendar teleconsulta')
+  //   } finally {
+  //     setBooking(false)
+  //   }
+  // }
 
   // Agrupar slots por data
   const slotsByDate = availableSlots.reduce((acc, slot) => {

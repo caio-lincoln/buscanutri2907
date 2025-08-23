@@ -13,6 +13,7 @@ import {
   SidebarProvider,
   SidebarInset,
   SidebarTrigger,
+  useSidebar,
 } from '@/components/ui/sidebar'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -134,160 +135,21 @@ export function DashboardSidebar({
   userAvatar,
   menuItems = [],
   activeItem = '',
-  onItemClick = () => {},
-  onSignOut = () => {},
+  onItemClick = () => { },
+  onSignOut = () => { },
   children,
 }: DashboardSidebarProps) {
-  const config = userTypeConfig[userType] || userTypeConfig.paciente
+  const config = userTypeConfig[ userType ] || userTypeConfig.paciente
 
   return (
     <SidebarProvider>
-      <Sidebar className={cn('border-r-0 shadow-xl bg-white')}>
-        {/* Header com Logo */}
-        <SidebarHeader className="border-b border-gray-100/50 bg-white/90 backdrop-blur-sm p-6">
-          <div className="flex items-center gap-3">
-            <div className="relative w-10 h-10">
-              <Image
-                src="/Rosa.png"
-                alt="Busca Nutri"
-                fill
-                className="object-contain"
-                priority
-              />
-            </div>
-            <div>
-              <h2 className="font-bold text-lg text-[#1E1D40]">Busca Nutri</h2>
-              <p className="text-xs text-gray-500 capitalize">{userType}</p>
-            </div>
-          </div>
-        </SidebarHeader>
-
-        <SidebarContent className="px-4 py-6 custom-scrollbar bg-white">
-          <SidebarMenu className="space-y-2">
-            {menuItems.length > 0 &&
-              menuItems.map((item, index) => {
-                const Icon = item.icon
-                const isActive = activeItem === item.id
-
-                return (
-                  <SidebarMenuItem
-                    key={item.id}
-                    className="animate-fade-in-up"
-                    style={{ animationDelay: `${index * 0.05}s` }}
-                  >
-                    <SidebarMenuButton
-                      onClick={() => onItemClick(item.id)}
-                      className={cn(
-                        'w-full justify-start gap-3 px-4 py-3 rounded-xl transition-all duration-300 group',
-                        'hover:shadow-md hover-lift transform hover:scale-[1.02]',
-                        config.hoverBg,
-                        isActive && [
-                          config.activeBg,
-                          config.activeBorder,
-                          config.activeText,
-                          'border shadow-lg font-semibold transform scale-[1.02]',
-                        ]
-                      )}
-                    >
-                      <div
-                        className={cn(
-                          'p-2 rounded-lg transition-all duration-300 shadow-sm',
-                          isActive
-                            ? config.iconBg
-                            : 'bg-gray-100 group-hover:bg-gray-200 group-hover:shadow-md'
-                        )}
-                      >
-                        <Icon
-                          className={cn(
-                            'h-4 w-4 transition-all duration-300',
-                            isActive
-                              ? 'text-white'
-                              : 'text-gray-600 group-hover:text-gray-700'
-                          )}
-                        />
-                      </div>
-                      <span
-                        className={cn(
-                          'flex-1 font-medium text-sm',
-                          isActive && 'text-current'
-                        )}
-                      >
-                        {item.label}
-                      </span>
-                      {item.badge && (
-                        <Badge
-                          variant={item.badge.variant || 'default'}
-                          className={cn(
-                            'h-5 px-2 text-xs font-semibold transition-all duration-300 shadow-sm',
-                            isActive
-                              ? 'bg-white/25 text-current border-current/30 shadow-md'
-                              : 'bg-gray-200 text-gray-700 group-hover:bg-gray-300 group-hover:shadow-md'
-                          )}
-                        >
-                          {item.badge.count}
-                        </Badge>
-                      )}
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                )
-              })}
-          </SidebarMenu>
-        </SidebarContent>
-
-        {/* Footer */}
-        <SidebarFooter className="border-t border-gray-100/50 p-4 bg-white/90 backdrop-blur-sm">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                className="w-full justify-between px-3 py-3 h-auto hover:bg-gray-100 rounded-xl transition-all duration-300 hover-lift shadow-sm hover:shadow-md"
-              >
-                <div className="flex items-center gap-3">
-                  <Avatar className="h-10 w-10 ring-2 ring-gray-200 shadow-md">
-                    <AvatarImage src={userAvatar || '/placeholder.svg'} />
-                    <AvatarFallback className={config.iconBg}>
-                      <span className="text-white font-semibold text-sm">
-                        {userName.charAt(0)}
-                      </span>
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex flex-col items-start">
-                    <span className="text-sm font-semibold text-[#1E1D40] truncate max-w-[120px]">
-                      {userName}
-                    </span>
-                    <span
-                      className={cn(
-                        'text-xs font-medium capitalize',
-                        config.textColor
-                      )}
-                    >
-                      {userType}
-                    </span>
-                  </div>
-                </div>
-                <ChevronDown className="h-4 w-4 text-gray-500" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="end"
-              className="w-64 shadow-2xl border-0 bg-white/95 backdrop-blur-md rounded-xl"
-            >
-              <DropdownMenuItem className="hover:bg-gray-50 rounded-lg m-2 p-3 transition-colors duration-200">
-                <User className="h-4 w-4 mr-3 text-gray-600" />
-                <span className="font-medium text-sm">Meu Perfil</span>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator className="my-2" />
-              <DropdownMenuItem
-                onClick={onSignOut}
-                className="text-red-600 hover:bg-red-50 hover:text-red-700 rounded-lg m-2 p-3 transition-colors duration-200"
-              >
-                <LogOut className="h-4 w-4 mr-3" />
-                <span className="font-medium text-sm">Sair</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </SidebarFooter>
-      </Sidebar>
+      <SidebarShell userType={userType}
+        userName={userName}
+        userAvatar={userAvatar}
+        menuItems={menuItems}
+        activeItem={activeItem}
+        onItemClick={onItemClick}
+        onSignOut={onSignOut} />
 
       {/* Conteúdo principal */}
       <SidebarInset className={cn('flex-1', config.bgGradient)}>
@@ -314,6 +176,172 @@ export function DashboardSidebar({
   )
 }
 
+function SidebarShell({
+  userType,
+  userName,
+  userAvatar,
+  menuItems,
+  activeItem,
+  onItemClick,
+  onSignOut,
+}: DashboardSidebarProps) {
+  const config = userTypeConfig[ userType ] || userTypeConfig.paciente
+  const { setOpen, setOpenMobile } = useSidebar()
+
+  return (
+    <Sidebar className={cn('border-r-0 shadow-xl bg-white')}>
+      {/* Header com Logo */}
+      <SidebarHeader className="border-b border-gray-100/50 bg-white/90 backdrop-blur-sm p-6">
+        <div className="flex items-center gap-3">
+          <div className="relative w-10 h-10">
+            <Image
+              src="/Rosa.png"
+              alt="Busca Nutri"
+              fill
+              className="object-contain"
+              priority
+            />
+          </div>
+          <div>
+            <h2 className="font-bold text-lg text-[#1E1D40]">Busca Nutri</h2>
+            <p className="text-xs text-gray-500 capitalize">{userType}</p>
+          </div>
+        </div>
+      </SidebarHeader>
+
+      <SidebarContent className="px-4 py-6 custom-scrollbar bg-white">
+        <SidebarMenu className="space-y-2">
+          {menuItems.length > 0 &&
+            menuItems.map((item, index) => {
+              const Icon = item.icon
+              const isActive = activeItem === item.id
+              return (
+                <SidebarMenuItem
+                  key={item.id}
+                  className="animate-fade-in-up"
+                  style={{ animationDelay: `${index * 0.05}s` }}
+                >
+                  <SidebarMenuButton
+                    onClick={() => {
+                      onItemClick(item.id)
+                      setOpen(false)
+                      setOpenMobile(false)
+                    }}
+                    className={cn(
+                      'w-full justify-start gap-3 px-4 py-3 rounded-xl transition-all duration-300 group',
+                      'hover:shadow-md hover-lift transform hover:scale-[1.02]',
+                      config.hoverBg,
+                      isActive && [
+                        config.activeBg,
+                        config.activeBorder,
+                        config.activeText,
+                        'border shadow-lg font-semibold transform scale-[1.02]',
+                      ]
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        'p-2 rounded-lg transition-all duration-300 shadow-sm',
+                        isActive
+                          ? config.iconBg
+                          : 'bg-gray-100 group-hover:bg-gray-200 group-hover:shadow-md'
+                      )}
+                    >
+                      <Icon
+                        className={cn(
+                          'h-4 w-4 transition-all duration-300',
+                          isActive
+                            ? 'text-white'
+                            : 'text-gray-600 group-hover:text-gray-700'
+                        )}
+                      />
+                    </div>
+                    <span
+                      className={cn(
+                        'flex-1 font-medium text-sm',
+                        isActive && 'text-current'
+                      )}
+                    >
+                      {item.label}
+                    </span>
+                    {item.badge && (
+                      <Badge
+                        variant={item.badge.variant || 'default'}
+                        className={cn(
+                          'h-5 px-2 text-xs font-semibold transition-all duration-300 shadow-sm',
+                          isActive
+                            ? 'bg-white/25 text-current border-current/30 shadow-md'
+                            : 'bg-gray-200 text-gray-700 group-hover:bg-gray-300 group-hover:shadow-md'
+                        )}
+                      >
+                        {item.badge.count}
+                      </Badge>
+                    )}
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )
+
+            })}
+        </SidebarMenu>
+      </SidebarContent>
+
+      {/* Footer */}
+      <SidebarFooter className="border-t border-gray-100/50 p-4 bg-white/90 backdrop-blur-sm">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              className="w-full justify-between px-3 py-3 h-auto hover:bg-gray-100 rounded-xl transition-all duration-300 hover-lift shadow-sm hover:shadow-md"
+            >
+              <div className="flex items-center gap-3">
+                <Avatar className="h-10 w-10 ring-2 ring-gray-200 shadow-md">
+                  <AvatarImage src={userAvatar || '/placeholder.svg'} />
+                  <AvatarFallback className={config.iconBg}>
+                    <span className="text-white font-semibold text-sm">
+                      {userName.charAt(0)}
+                    </span>
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex flex-col items-start">
+                  <span className="text-sm font-semibold text-[#1E1D40] truncate max-w-[120px]">
+                    {userName}
+                  </span>
+                  <span
+                    className={cn(
+                      'text-xs font-medium capitalize',
+                      config.textColor
+                    )}
+                  >
+                    {userType}
+                  </span>
+                </div>
+              </div>
+              <ChevronDown className="h-4 w-4 text-gray-500" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="end"
+            className="w-64 shadow-2xl border-0 bg-white/95 backdrop-blur-md rounded-xl"
+          >
+            <DropdownMenuItem className="hover:bg-gray-50 rounded-lg m-2 p-3 transition-colors duration-200">
+              <User className="h-4 w-4 mr-3 text-gray-600" />
+              <span className="font-medium text-sm">Meu Perfil</span>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator className="my-2" />
+            <DropdownMenuItem
+              onClick={onSignOut}
+              className="text-red-600 hover:bg-red-50 hover:text-red-700 rounded-lg m-2 p-3 transition-colors duration-200"
+            >
+              <LogOut className="h-4 w-4 mr-3" />
+              <span className="font-medium text-sm">Sair</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </SidebarFooter>
+    </Sidebar>
+  )
+}
+
 // Menu items para cada tipo de usuário
 export const getMenuItems = (
   userType: string,
@@ -336,7 +364,7 @@ export const getMenuItems = (
   switch (userType) {
     case 'paciente':
       return [
-        { id: 'overview', label: 'Início', icon: Home },
+        { id: 'overview', label: 'Início', href: '/dashboard/paciente', icon: Home },
         {
           id: 'teleconsultas',
           label: 'Teleconsultas',

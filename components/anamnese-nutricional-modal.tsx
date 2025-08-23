@@ -233,11 +233,11 @@ export function AnamneseNutricionalModal({
   const loadExistingAnamnese = async () => {
     try {
       const { data, error } = await supabase
-        .from('anamnese_nutricional')
-        .select('*')
-        .eq('patient_id', patientId)
-        .single()
-
+      .from('anamnese_nutricional')
+      .select('*')
+      .eq('patient_id', patientId)
+      .single()
+      
       if (data && !error) {
         setFormData(data)
         // Determinar qual página mostrar baseado no progresso
@@ -262,37 +262,46 @@ export function AnamneseNutricionalModal({
   }
 
   // Função para formatar peso automaticamente
-  const formatPeso = (value: string) => {
-    // Remove caracteres não numéricos
-    const numericValue = value.replace(/[^d]/g, '')
+  const formatPeso = (value: string): string => {
+    // mantém só dígitos
+    const digits = (value ?? '').replace(/\D/g, '');
+    if (!digits) return '';
 
-    if (numericValue.length === 0) return ''
-    if (numericValue.length === 1) return numericValue
-    if (numericValue.length === 2) return numericValue
+    // última casa é a decimal
+    const decimal = digits.slice(-1);
+    let integer = digits.slice(0, -1);
 
-    // Adiciona ponto antes do último dígito para valores com 3+ dígitos
-    const integerPart = numericValue.slice(0, -1)
-    const decimalPart = numericValue.slice(-1)
+    // se não tiver parte inteira, usa 0
+    if (integer.length === 0) integer = '0';
 
-    return `${integerPart}.${decimalPart}`
-  }
+    // remove zeros à esquerda (ex.: "000" -> "0")
+    integer = String(Number(integer));
+
+    return `${integer}.${decimal}`;   // se quiser vírgula: `${integer},${decimal}`
+  };
 
   // Função para formatar altura automaticamente
-  const formatAltura = (value: string) => {
-    // Remove caracteres não numéricos
-    const numericValue = value.replace(/[^d]/g, '')
+  const formatAltura = (raw: string): string => {
+    if (!raw) return '';
 
-    if (numericValue.length === 0) return ''
-    if (numericValue.length === 1) return `1.${numericValue}`
-    if (numericValue.length === 2) return `1.${numericValue}`
+    // mantém apenas dígitos e ponto
+    let v = raw.replace(/[^\d.]/g, '');
 
-    // Para valores com 3 dígitos, formato 1.XX
-    if (numericValue.length === 3) {
-      return `${numericValue[0]}.${numericValue.slice(1)}`
+    // Se o usuário já tem ponto, respeite o que vem depois dele
+    if (v.includes('.')) {
+      const parts = v.split('.');
+      const decimals = (parts[ 1 ] ?? '').replace(/\D/g, '').slice(0, 2);
+      // força o metro a ser 1; permite o estado intermediário "1."
+      return decimals.length ? `${parts[ 0 ]}.${decimals}` : v;
     }
 
-    return value
-  }
+    // Sem ponto: interpreta como fluxo de dígitos
+    const digits = v.replace(/\D/g, '');
+    if (digits.length === 0) return '';
+    if (digits.length === 1) return `${digits[ 0 ]}`;                 // só "1"
+    if (digits.length === 2) return `${digits[ 0 ]}.${digits[ 1 ]}`;    // "17" -> "1.7"
+    return `${digits[ 0 ]}.${digits.slice(1, 3)}`;                    // "170" -> "1.70"
+  };
 
   // Handlers específicos para peso e altura
   const handlePesoChange = (e: React.ChangeEvent<HTMLInputElement>) => {

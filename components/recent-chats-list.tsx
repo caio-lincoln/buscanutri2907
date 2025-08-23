@@ -10,23 +10,25 @@ import {
   type ChatConversation,
 } from '@/lib/chat-forum-service'
 import { Button } from '@/components/ui/button'
+import { useAuth } from '../contexts/auth-context'
 
 interface RecentChatsListProps {
   userId: string
 }
 
 export default function RecentChatsList({ userId }: RecentChatsListProps) {
-  const [recentConversations, setRecentConversations] = useState<
+  const [ recentConversations, setRecentConversations ] = useState<
     ChatConversation[]
   >([])
-  const [loading, setLoading] = useState(true)
+  const [ loading, setLoading ] = useState(true)
+  const { patientProfile } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
     const fetchRecentChats = async () => {
       setLoading(true)
       try {
-        const conversations = await getPatientChatConversations(userId)
+        const conversations = await getPatientChatConversations(patientProfile?.id as string)
         setRecentConversations(conversations.slice(0, 5)) // Exibe as 5 conversas mais recentes
       } catch (error) {
         // Silent error handling - recent chats fetch error
@@ -38,7 +40,7 @@ export default function RecentChatsList({ userId }: RecentChatsListProps) {
     if (userId) {
       fetchRecentChats()
     }
-  }, [userId])
+  }, [ userId ])
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
@@ -149,7 +151,7 @@ export default function RecentChatsList({ userId }: RecentChatsListProps) {
               <p className="text-gray-600 mb-4">
                 Suas conversas com nutricionistas aparecerão aqui.
               </p>
-              <Button onClick={() => router.push('/dashboard/paciente/buscar')}>
+              <Button onClick={() => router.push('/dashboard/paciente?activeTab=buscar')}>
                 <Search className="h-4 w-4 mr-2" />
                 Encontrar Nutricionista
               </Button>

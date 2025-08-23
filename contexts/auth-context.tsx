@@ -182,9 +182,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [ supabase, broadcastAuthChange ])
 
-  // const refreshUser = useCallback(async (user?: User) => {
-  //   await refreshUserData(user)
-  // }, [ refreshUserData ])
+  const refreshUser = useCallback(async (user?: User) => {
+    await loadUser()
+  }, [ loadUser ])
 
   const subscribedRef = useRef(false);
   const handledSignOutRef = useRef(false);
@@ -232,13 +232,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUserProfile,
       setUser,
       signOut: handleSignOut,
-      refreshUser: async () => { loadUser()},
+      refreshUser: async () => { refreshUser()},
     }),
     [ user, userProfile, nutritionistProfile, patientProfile, companyProfile, loading, handleSignOut, loadUser]
   )
 
   return (
-    <AuthContext.Provider value={value} suppressHydrationWarning>
+    <AuthContext.Provider value={value} >
       {children}
     </AuthContext.Provider>
   )

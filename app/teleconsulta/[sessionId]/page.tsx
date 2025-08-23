@@ -112,7 +112,11 @@ export default function TeleconsultaRoom() {
         // 1) token da sala
         const r1 = await fetch(`/api/teleconsulta/livekit-token?sessionId=${sessionToken}`);
         const d1 = await r1.json();
-        if (!r1.ok) throw new Error(d1?.error || 'falha no token');
+        if (!r1.ok) {
+          //  router.push(routePath);
+          throw new Error(d1?.error || 'falha no token');
+
+        }
         setToken(d1.token);
         setRoomName(d1.roomName);
 
@@ -143,8 +147,6 @@ export default function TeleconsultaRoom() {
         }
       } catch (e) {
         console.error(e);
-
-        // router.push(routePath);
       } finally {
         setLoading(false);
       }
@@ -190,8 +192,11 @@ export default function TeleconsultaRoom() {
   // se ainda não liberou, mostra UI de espera em SEGUNDOS
   if (secondsLeft !== null && secondsLeft > 0) {
     const humanStart = new Date(session!.scheduled_at).toLocaleString('pt-BR');
-    const mm = String(Math.floor(secondsLeft / 60)).padStart(2, '0');
+
+    const hh = String(Math.floor(secondsLeft / 3600)).padStart(2, '0');
+    const mm = String(Math.floor((secondsLeft % 3600) / 60)).padStart(2, '0');
     const ss = String(secondsLeft % 60).padStart(2, '0');
+
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-900 text-white">
         <div className="text-center max-w-md">
@@ -201,7 +206,7 @@ export default function TeleconsultaRoom() {
             Você poderá entrar {ALLOW_JOIN_MINUTES_BEFORE} min antes do horário.
           </p>
 
-          <div className="text-5xl font-mono font-semibold mb-6">{mm}:{ss}</div>
+          <div className="text-5xl font-mono font-semibold mb-6">{hh}:{mm}:{ss}</div>
 
           <Button variant="secondary" onClick={() => router.push(routePath)}>
             Voltar ao Dashboard

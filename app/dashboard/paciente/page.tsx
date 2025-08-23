@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect, useMemo } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -44,6 +44,8 @@ import { NotificationsPanel } from '@/components/notifications-panel'
 import { DashboardSidebar, getMenuItems } from '@/components/dashboard-sidebar'
 import { IrisChat } from '@/components/iris-chat'
 import { StatsCard } from '@/components/stats-card'
+import { toast } from 'sonner'
+import { openConversationWithNutritionist } from '@/lib/chat-forum-service'
 // Importar o hook de estatísticas do dashboard
 import { useDashboardStats } from '@/hooks/use-dashboard-stats.ts'
 import {
@@ -70,7 +72,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { supabase } from '@/lib/supabase'
+import { createSupabaseClient } from '@/lib/supabase'
 import RecentChatsList from '@/components/recent-chats-list'
 import { UserProfileModal } from '@/components/user-profile-modal'
 import { RatingCard, RatingDisplay } from '@/components/ui/rating-display'
@@ -211,8 +213,10 @@ export default function PatientDashboard() {
   const [ isAnamneseModalOpen, setIsAnamneseModalOpen ] = useState(false)
   const [ anamneseData, setAnamneseData ] = useState<any>(null)
   const router = useRouter()
-  const { user, loading: authLoading, signOut, patientProfile} = useAuth()
+  const { user, loading: authLoading, signOut, patientProfile } = useAuth()
 
+  const searchParams = useSearchParams()
+  const activeTabParam = searchParams.get('activeTab')
   // Estados para a aba "Buscar Nutricionistas"
   const [ searchNutritionistTerm, setSearchNutritionistTerm ] = useState('')
   const [ selectedNutritionistSpecialty, setSelectedNutritionistSpecialty ] =
@@ -238,7 +242,13 @@ export default function PatientDashboard() {
 
   const debouncedSearch = useDebouncedValue(searchNutritionistTerm, 600);
   const [ specialties, setSpecialties ] = useState<Specialty[]>([])
+  const supabase = useMemo(() => createSupabaseClient(), [])
 
+  useEffect(() => {
+    if (activeTabParam) {
+      setActiveTab(activeTabParam)
+    }
+  }, [ activeTabParam ])
   // Hook de realtime para nutricionistas
   const {
     nutritionists,
@@ -260,6 +270,20 @@ export default function PatientDashboard() {
   const [ selectedConsultationForRating, setSelectedConsultationForRating ] =
     useState<Consultation | null>(null)
 
+  const [ startingChatFor, setStartingChatFor ] = useState<string | null>(null)
+
+  async function handleStartChat(nutritionistId: string) {
+    try {
+      setStartingChatFor(nutritionistId)
+      const conversationId = await openConversationWithNutritionist(nutritionistId)
+      router.push(`/dashboard/paciente/chat/${conversationId}`)
+    } catch (e: any) {
+      toast.error(e?.message ?? 'Não foi possível iniciar o chat')
+    } finally {
+      setStartingChatFor(null)
+    }
+  }
+
   const upcomingConsultations = consultations
     .filter(
       c =>
@@ -279,7 +303,7 @@ export default function PatientDashboard() {
   const menuItems = getMenuItems('paciente', dashboardStats)
 
   useEffect(() => {
-    if ((!authLoading && !user) || user?.user_metadata['user_type'] !== 'paciente') {
+    if ((!authLoading && !user) || user?.user_metadata[ 'user_type' ] !== 'paciente') {
       router.push('/login')
       return
     }
@@ -342,11 +366,11 @@ export default function PatientDashboard() {
   const loadAnamneseData = async (userId: string) => {
     try {
       const { data, error } = await supabase
-        .from('anamnese_nutricional')
-        .select('*')
-        .eq('patient_id', userId)
-        .single()
-
+      .from('anamnese_nutricional')
+      .select('*')
+      .eq('patient_id', userId)
+      .single()
+      
       if (data && !error) {
         setAnamneseData(data)
       }
@@ -575,7 +599,10 @@ export default function PatientDashboard() {
       userAvatar={profile?.profile_image_url || '/placeholder.svg'}
       menuItems={menuItems}
       activeItem={activeTab}
-      onItemClick={setActiveTab}
+      onItemClick={(item) => {
+        setActiveTab(item)
+        
+      }}
       onSignOut={handleSignOut}
     >
       <div className="space-y-8">
@@ -1308,6 +1335,15 @@ export default function PatientDashboard() {
                                         : ''
                                         }`}
                                     />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-lg hover:shadow-xl transition-all duration-300"
+                                    onClick={() => handleStartChat(nutritionist.id)}
+                                    disabled={startingChatFor === nutritionist.id}
+                                  >
+                                    <MessageSquare className="h-4 w-4 mr-2" />
+                                    {startingChatFor === nutritionist.id ? 'Abrindo...' : 'Iniciar chat'}
                                   </Button>
                                 </div>
                               </div>
@@ -2232,7 +2268,7 @@ export default function PatientDashboard() {
             selectedConsultationForRating.nutritionist_profiles?.full_name ||
             'Nutricionista'
           }
-          onSubmit={() => {}}
+          onSubmit={() => { }}
         />
       )}
     </DashboardSidebar>

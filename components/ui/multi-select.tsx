@@ -37,7 +37,7 @@ export function MultiSelect({
   placeholder = 'Selecione opções...',
   className,
 }: MultiSelectProps) {
-  const [open, setOpen] = React.useState(false)
+  const [ open, setOpen ] = React.useState(false)
 
   const handleUnselect = (item: string) => {
     onChange(selected.filter(i => i !== item))
@@ -47,12 +47,12 @@ export function MultiSelect({
     if (selected.includes(item)) {
       onChange(selected.filter(i => i !== item))
     } else {
-      onChange([...selected, item])
+      onChange([ ...selected, item ])
     }
   }
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={setOpen} modal={false}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
@@ -97,7 +97,11 @@ export function MultiSelect({
           <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-full p-0" align="start">
+      <PopoverContent side="bottom"
+        align="start"
+        className="p-0 pointer-events-auto z-[70] 
+             w-[var(--radix-popover-trigger-width)]
+             min-w-[var(--radix-popover-trigger-width)]">
         <Command>
           <CommandInput placeholder="Buscar..." />
           <CommandEmpty>Nenhuma opção encontrada.</CommandEmpty>

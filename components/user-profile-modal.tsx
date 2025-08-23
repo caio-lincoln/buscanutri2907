@@ -489,6 +489,7 @@ export function UserProfileModal({
   const handleImageUploaded = (imageUrl: string) => {
     const imageField = userType === 'empresa' ? 'logo_url' : 'profile_image_url'
     setFormData(prev => ({ ...prev, [ imageField ]: imageUrl }))
+    refreshUser()
   }
 
   const handleImageRemoved = () => {
@@ -788,7 +789,6 @@ export function UserProfileModal({
     }
 
     try {
-      console.log("🚀 ~ handleSubmit ~ formData:", formData)
       const dataToSubmit = { ...formData }
 
       // Processamento específico para pacientes foi removido pois os dados
@@ -874,7 +874,10 @@ export function UserProfileModal({
           )
         }
       }
-      await saveNutritionistAvailability(nutritionistProfile?.id as string, JSON.parse(dataToSubmit.available_times))
+      if (userType === 'nutricionista') {
+        await saveNutritionistAvailability(nutritionistProfile?.id as string, JSON.parse(dataToSubmit.available_times))
+      }
+
       delete dataToSubmit.specialties
       delete dataToSubmit.available_times
       await updateUserProfile(userId, userType, dataToSubmit)
@@ -956,6 +959,7 @@ export function UserProfileModal({
       // onProfileUpdate?.()
       onOpenChange(false)
     } catch (err: any) {
+      console.log("🚀 ~ handleSubmit ~ err:", err)
       setError(err.message || 'Erro ao salvar perfil.')
       toast({
         title: 'Erro ao atualizar perfil',

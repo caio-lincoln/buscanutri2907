@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -25,7 +25,7 @@ import {
   type ChatMessage,
   type ChatConversation,
 } from '@/lib/chat-forum-service'
-import { supabase } from '@/lib/supabase'
+import { createSupabaseClient } from '@/lib/supabase'
 import { toast } from '@/components/ui/use-toast'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -34,20 +34,23 @@ import { DashboardSidebar, getMenuItems } from '@/components/dashboard-sidebar'
 import { useDashboardStats } from '@/hooks/use-dashboard-stats'
 
 export default function PatientChatPage() {
-  const { user, loading: authLoading, signOut } = useAuth()
-  const [userProfile, setUserProfile] = useState<any>(null)
-  const [conversation, setConversation] = useState<ChatConversation | null>(
+  const { user, loading: authLoading, signOut, patientProfile: userProfile } = useAuth()
+  // const [userProfile, setUserProfile] = useState<any>(null)
+  const [ conversation, setConversation ] = useState<ChatConversation | null>(
     null
   )
-  const [messages, setMessages] = useState<ChatMessage[]>([])
-  const [newMessage, setNewMessage] = useState('')
-  const [loading, setLoading] = useState(true)
-  const [sending, setSending] = useState(false)
+  const [ messages, setMessages ] = useState<ChatMessage[]>([])
+  const [ newMessage, setNewMessage ] = useState('')
+  const [ loading, setLoading ] = useState(true)
+  const [ sending, setSending ] = useState(false)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
   const params = useParams()
   const conversationId = params.id as string
+  const supabase = useMemo(() => createSupabaseClient(), [])
+
+  const seenIdsRef = useRef<Set<string>>(new Set())
 
   // Dashboard stats
   const { stats, loading: statsLoading } = useDashboardStats({
@@ -70,17 +73,17 @@ export default function PatientChatPage() {
     if (!authLoading && user) {
       loadChatData()
     }
-  }, [conversationId, user, authLoading])
+  }, [ conversationId, user, authLoading ])
 
   useEffect(() => {
     scrollToBottom()
-  }, [messages])
+  }, [ messages ])
 
   useEffect(() => {
-    if (conversation) {
-      setupRealtimeSubscription()
-    }
-  }, [conversation])
+    if (!conversation) return
+    const cleanup = setupRealtimeSubscription()
+    return cleanup
+  }, [ conversation, conversationId, supabase ])
 
   const loadChatData = async () => {
     try {
@@ -90,17 +93,14 @@ export default function PatientChatPage() {
         return
       }
 
-      const profile = await getUserProfile(user.id)
-      setUserProfile(profile)
-
       // Get conversation details
       const { data: conversationData, error: conversationError } =
         await supabase
           .from('chat_conversations')
           .select('*')
           .eq('id', conversationId)
-          .eq('patient_id', user.id)
-          .single()
+          .eq('patient_id', userProfile?.id)
+          .maybeSingle()
 
       if (conversationError) {
         // Silent error handling for conversation fetching
@@ -109,7 +109,7 @@ export default function PatientChatPage() {
           description: 'Conversa não encontrada ou acesso negado.',
           variant: 'destructive',
         })
-        router.push('/dashboard/paciente')
+        // router.push('/dashboard/paciente')
         return
       }
 
@@ -117,7 +117,7 @@ export default function PatientChatPage() {
       const { data: nutritionistProfile } = await supabase
         .from('nutritionist_profiles')
         .select('full_name, profile_image_url, crn, is_verified')
-        .eq('user_id', conversationData.nutritionist_id)
+        .eq('id', conversationData.nutritionist_id)
         .single()
 
       // Enriquecer dados da conversa com perfil do nutricionista
@@ -135,6 +135,7 @@ export default function PatientChatPage() {
         'patient'
       )
       setMessages(chatMessages)
+      seenIdsRef.current = new Set(chatMessages.map(m => m.id))
     } catch (error) {
       // Silent error handling for chat data loading
       toast({
@@ -159,8 +160,10 @@ export default function PatientChatPage() {
           filter: `conversation_id=eq.${conversationId}`,
         },
         payload => {
-          const newMessage = payload.new as ChatMessage
-          setMessages(prev => [...prev, newMessage])
+          const msg = payload.new as ChatMessage
+          if (seenIdsRef.current.has(msg.id)) return
+          seenIdsRef.current.add(msg.id)
+          setMessages(prev => [ ...prev, msg ])
         }
       )
       .subscribe()
@@ -176,24 +179,16 @@ export default function PatientChatPage() {
 
   const handleSendMessage = async () => {
     if (!newMessage.trim() || !user || !conversation || sending) return
-
     try {
       setSending(true)
-      const message = await sendChatMessage(
-        conversationId,
-        user.id,
-        'patient',
-        newMessage.trim()
-      )
-      setMessages(prev => [...prev, message])
+      await sendChatMessage(conversationId, user.id, 'patient', newMessage.trim())
       setNewMessage('')
-    } catch (error) {
-      // Silent error handling for message sending
-      toast({
-        title: 'Erro',
-        description: 'Erro ao enviar mensagem.',
-        variant: 'destructive',
-      })
+    } catch (e) {
+      if (e.code === 'P0001') {
+        toast({ title: 'Aviso', description: e.message, variant: 'destructive' })
+        return
+      }
+      toast({ title: 'Erro', description: 'Erro ao enviar mensagem.', variant: 'destructive' })
     } finally {
       setSending(false)
     }
@@ -233,14 +228,14 @@ export default function PatientChatPage() {
   const nutritionist = conversation.nutritionist_profiles
 
   return (
-    <DashboardSidebar
-      userType="paciente"
-      userName={userProfile?.full_name || 'Paciente'}
-      menuItems={menuItems}
-      activeItem="chat"
-      onItemClick={item => router.push(item.href)}
-      onSignOut={handleSignOut}
-    >
+    // <DashboardSidebar
+    //   userType="paciente"
+    //   userName={userProfile?.full_name || 'Paciente'}
+    //   menuItems={menuItems}
+    //   activeItem="chat"
+    //   onItemClick={item => router.push(item.href)}
+    //   onSignOut={handleSignOut}
+    // >
       <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50">
         {/* Header */}
         <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
@@ -281,7 +276,7 @@ export default function PatientChatPage() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              {/* <div className="flex items-center gap-2">
                 <Button variant="outline" size="sm">
                   <Phone className="h-4 w-4" />
                 </Button>
@@ -291,7 +286,7 @@ export default function PatientChatPage() {
                 <Button variant="ghost" size="sm">
                   <MoreVertical className="h-4 w-4" />
                 </Button>
-              </div>
+              </div> */}
             </div>
           </div>
         </div>
@@ -330,20 +325,18 @@ export default function PatientChatPage() {
                           className={`max-w-[70%] ${isFromPatient ? 'order-first' : ''}`}
                         >
                           <div
-                            className={`rounded-lg px-4 py-2 ${
-                              isFromPatient
-                                ? 'bg-green-600 text-white'
-                                : 'bg-gray-100 text-gray-900'
-                            }`}
+                            className={`rounded-lg px-4 py-2 ${isFromPatient
+                              ? 'bg-green-600 text-white'
+                              : 'bg-gray-100 text-gray-900'
+                              }`}
                           >
                             <p className="text-sm whitespace-pre-wrap">
                               {message.message_text}
                             </p>
                           </div>
                           <p
-                            className={`text-xs text-gray-500 mt-1 ${
-                              isFromPatient ? 'text-right' : 'text-left'
-                            }`}
+                            className={`text-xs text-gray-500 mt-1 ${isFromPatient ? 'text-right' : 'text-left'
+                              }`}
                           >
                             {format(new Date(message.created_at), 'HH:mm', {
                               locale: ptBR,
@@ -400,6 +393,6 @@ export default function PatientChatPage() {
           </Card>
         </div>
       </div>
-    </DashboardSidebar>
+    // </DashboardSidebar>
   )
 }

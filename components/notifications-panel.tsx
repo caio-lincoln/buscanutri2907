@@ -60,7 +60,7 @@ const originalTypeColors = {
 }
 
 export function NotificationsPanel({ userType }: NotificationsPanelProps) {
-  const [filter, setFilter] = useState<'all' | 'unread'>('all')
+  const [ filter, setFilter ] = useState<'all' | 'unread'>('all')
   const {
     notifications,
     unreadCount,
@@ -143,7 +143,7 @@ export function NotificationsPanel({ userType }: NotificationsPanelProps) {
         ) : (
           filteredNotifications.map(notification => {
             const originalType = notification.originalType || 'system'
-            const IconComponent = notificationIcons[originalType] || AlertCircle
+            const IconComponent = notificationIcons[ originalType ] || AlertCircle
 
             // Função para formatar a data
             const formatTime = (dateString: string) => {
@@ -169,9 +169,8 @@ export function NotificationsPanel({ userType }: NotificationsPanelProps) {
             return (
               <Card
                 key={notification.id}
-                className={`border-0 shadow-lg transition-all duration-300 hover:shadow-xl ${
-                  !notification.read ? 'bg-blue-50/50' : ''
-                }`}
+                className={`border-0 shadow-lg transition-all duration-300 hover:shadow-xl ${!notification.read ? 'bg-blue-50/50' : ''
+                  }`}
               >
                 <CardContent className="p-6">
                   <div className="flex items-start gap-4">
@@ -194,7 +193,7 @@ export function NotificationsPanel({ userType }: NotificationsPanelProps) {
                         <div className="flex items-center gap-2">
                           <Badge
                             variant="outline"
-                            className={`text-xs ${originalTypeColors[originalType] || typeColors[notification.type]}`}
+                            className={`text-xs ${originalTypeColors[ originalType ] || typeColors[ notification.type ]}`}
                           >
                             {notification.type === 'error' && (
                               <AlertCircle className="h-3 w-3 mr-1" />
@@ -248,7 +247,9 @@ export function NotificationsPanel({ userType }: NotificationsPanelProps) {
                           <span>{formatTime(notification.createdAt)}</span>
                         </div>
                         {notification.actionUrl && (
-                          <Button size="sm" variant="outline">
+                          <Button size="sm" variant="outline" onClick={() => {
+                            window.open(notification.actionUrl)
+                          }}>
                             Ver detalhes
                           </Button>
                         )}

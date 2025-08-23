@@ -49,7 +49,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
 
   // Buscar mensagens
   const { data: messages, error: messagesError } = await supabase
-    .from('teleconsulta_messages')
+    .from('e')
     .select(`
       *,
       sender:profiles!sender_id(id, full_name, avatar_url)

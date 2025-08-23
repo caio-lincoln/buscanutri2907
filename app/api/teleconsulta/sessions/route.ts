@@ -75,7 +75,6 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
   }
 
   const { data: sessions, error: sessionsError } = await query
-  console.log("🚀 ~ sessionsError:", sessionsError)
 
   if (sessionsError) {
     throw new Error('Erro ao buscar teleconsultas')
@@ -159,7 +158,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
       duration_minutes,
       price,
       notes,
-      status: 'scheduled',
+      status: 'pending_payment',
       join_url: joinUrl
     })
     .select()
