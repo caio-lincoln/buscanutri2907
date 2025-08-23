@@ -1,6 +1,6 @@
 # BuscaNutri
 
-Sistema de busca e recomendação nutricional.
+tSistema de busca e recomendação nutricional.
 
 ## Sistema de Armazenamento
 
