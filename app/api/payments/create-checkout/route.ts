@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 
-const stripe = new Stripe(process.env['NEXT_PUBLIC_STRIPE_SECRET_KEY'], {
+const stripe = new Stripe(process.env['STRIPE_SECRET_KEY'], {
   apiVersion: '2025-07-30.basil',
 })
 
 export async function POST(req: NextRequest) {
   try {
-    const origin = process.env['NEXT_PUBLIC_APP_BASE_URL'] || new URL(req.url).origin
+    const origin = process.env['APP_BASE_URL'] || new URL(req.url).origin
     const {
       patient_id,
       patient_email,
