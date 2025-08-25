@@ -50,6 +50,7 @@ import {
   Bot,
 } from 'lucide-react'
 import Image from 'next/image'
+import { useMediaQuery } from '../hooks/use-media-query'
 
 export interface DashboardMenuItem {
   id: string
@@ -186,7 +187,8 @@ function SidebarShell({
   onSignOut,
 }: DashboardSidebarProps) {
   const config = userTypeConfig[ userType ] || userTypeConfig.paciente
-  const { setOpen, setOpenMobile } = useSidebar()
+  const { setOpen, setOpenMobile, openMobile } = useSidebar()
+  const isMobile = useMediaQuery('(max-width: 800px)')
 
   return (
     <Sidebar className={cn('border-r-0 shadow-xl bg-white')}>
@@ -224,8 +226,10 @@ function SidebarShell({
                   <SidebarMenuButton
                     onClick={() => {
                       onItemClick(item.id)
-                      setOpen(false)
-                      setOpenMobile(false)
+                      if (isMobile) {
+                        setOpenMobile(false)
+                        setOpen(false)
+                      }
                     }}
                     className={cn(
                       'w-full justify-start gap-3 px-4 py-3 rounded-xl transition-all duration-300 group',

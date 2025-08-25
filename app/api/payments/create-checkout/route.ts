@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
+import { formatDateBR } from '../../../../lib/utils/format-date'
 
 const stripe = new Stripe(process.env['STRIPE_SECRET_KEY'], {
   apiVersion: '2025-07-30.basil',
@@ -38,7 +39,7 @@ export async function POST(req: NextRequest) {
             unit_amount: amount,
             product_data: {
               name: `Teleconsulta com ${nutritionist_name || 'nutricionista'}`,
-              description: `Data/Hora: ${scheduled_for} · Duração: ${duration_minutes || 60} min`,
+              description: `Data/Hora: ${formatDateBR(scheduled_for)} · Duração: ${duration_minutes || 60} min`,
             },
           },
         },
