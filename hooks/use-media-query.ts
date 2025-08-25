@@ -1,4 +1,3 @@
-// useMediaQuery.ts
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -10,9 +9,8 @@ export function useMediaQuery(query: string) {
     const mql = window.matchMedia(query)
     const onChange = () => setMatches(mql.matches)
 
-    onChange() // primeira medição
+    onChange() 
     mql.addEventListener?.('change', onChange)
-    // fallback para browsers antigos
     mql.addListener?.(onChange)
 
     return () => {

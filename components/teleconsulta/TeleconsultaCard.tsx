@@ -61,6 +61,11 @@ const statusConfig = {
     label: 'Cancelada',
     color: 'bg-red-100 text-red-800',
     icon: Clock
+  },
+  pending_payment: {
+    label: 'Pendente pagamento',
+    color: 'bg-blue-100 text-blue-800',
+    icon: Calendar
   }
 }
 
@@ -75,14 +80,15 @@ export function TeleconsultaCard({
  
   const scheduledDate = new Date(session.scheduled_at)
 
+
   const now = new Date()
   const isToday = format(scheduledDate, 'yyyy-MM-dd') === format(now, 'yyyy-MM-dd')
   const canJoin = session.status === 'scheduled' && 
-    Math.abs(scheduledDate.getTime() - now.getTime()) <= 15 * 60 * 1000 // 15 minutos
+    Math.abs(scheduledDate.getTime() - now.getTime()) <= 15 * 60 * 1000 
   
   const otherUser = userRole === 'nutricionista' ? session.patient : session.nutritionist
   const statusInfo = statusConfig[session.status]
-  const StatusIcon = statusInfo.icon
+  const StatusIcon = statusInfo?.icon
 
   const handleCopyLink = async () => {
     try {
