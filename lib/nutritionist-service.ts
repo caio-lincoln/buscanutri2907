@@ -122,7 +122,6 @@ export async function getNutritionistById(id: string): Promise<
     // Adiciona o email do usuário ao objeto do nutricionista
     const nutritionistWithEmail = {
       ...nutritionist,
-      email:  null,
     } as NutritionistProfile
 
     // Busca as insígnias do nutricionista

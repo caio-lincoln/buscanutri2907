@@ -396,22 +396,23 @@ export const getMenuItems = (
     case 'nutricionista':
       return [
         { id: 'overview', label: 'Visão Geral', icon: Home },
-        {
-          id: 'agenda',
-          label: 'Agenda',
-          icon: Calendar,
-          href: '/dashboard/nutricionistas/agenda',
-          badge:
-            upcomingAppointments > 0
-              ? { count: upcomingAppointments, variant: 'default' }
-              : undefined,
-        },
+        // {
+        //   id: 'agenda',
+        //   label: 'Agenda',
+        //   icon: Calendar,
+        //   href: '/dashboard/nutricionistas/agenda',
+        //   badge:
+        //     upcomingAppointments > 0
+        //       ? { count: upcomingAppointments, variant: 'default' }
+        //       : undefined,
+        // },
         {
           id: 'teleconsultas',
           label: 'Teleconsultas',
           icon: Video,
           href: '/dashboard/nutricionistas/teleconsultas',
         },
+        { id: 'chat', label: 'Chat', icon: MessageSquare },
         { id: 'blog', label: 'Blog', icon: BookOpen },
         { id: 'forum', label: 'Fórum', icon: MessageSquare },
         {

@@ -319,7 +319,7 @@ export default function ParaEmpresasPage() {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-8">
                   <div className="text-center">
                     <div className="text-2xl font-bold text-[#1E1D40]">
-                      200+
+                      2
                     </div>
                     <div className="text-sm text-[#1E1D40]/60">
                       Empresas Atendidas
@@ -327,18 +327,18 @@ export default function ParaEmpresasPage() {
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-bold text-[#1E1D40]">
-                      50k+
+                      5
                     </div>
                     <div className="text-sm text-[#1E1D40]/60">
                       Colaboradores
                     </div>
                   </div>
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-[#1E1D40]">95%</div>
+                    <div className="text-2xl font-bold text-[#1E1D40]">100%</div>
                     <div className="text-sm text-[#1E1D40]/60">Satisfação</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-[#1E1D40]">30%</div>
+                    <div className="text-2xl font-bold text-[#1E1D40]">100%</div>
                     <div className="text-sm text-[#1E1D40]/60">
                       Redução Custos
                     </div>
@@ -351,7 +351,7 @@ export default function ParaEmpresasPage() {
                 <Card className="relative border-0 shadow-2xl">
                   <CardContent className="p-0">
                     <img
-                      src="/placeholder.svg?height=500&width=600&text=Equipe+Corporativa+Saudável"
+                      src="/homemapertandoamao.png"
                       alt="Equipe corporativa participando de programa de bem-estar nutricional"
                       className="w-full h-auto rounded-3xl"
                       width={600}

@@ -47,7 +47,7 @@ import { StatsCard } from '@/components/stats-card'
 import { toast } from 'sonner'
 import { openConversationWithNutritionist } from '@/lib/chat-forum-service'
 // Importar o hook de estatísticas do dashboard
-import { useDashboardStats } from '@/hooks/use-dashboard-stats.ts'
+import { useDashboardStats } from '@/hooks/use-dashboard-stats'
 import {
   getPatientConsultations,
   getPatientFavoriteNutritionists,
@@ -77,6 +77,7 @@ import RecentChatsList from '@/components/recent-chats-list'
 import { UserProfileModal } from '@/components/user-profile-modal'
 import { RatingCard, RatingDisplay } from '@/components/ui/rating-display'
 import { RatingModal } from '@/components/ui/rating-modal'
+import { ConsultationsToRate } from '@/components/dashboard/consultations-to-rate'
 import { Checkbox } from '@/components/ui/checkbox'
 import Link from 'next/link'
 import { PatientForumTab } from '@/components/patient-forum-tab'
@@ -365,11 +366,11 @@ export default function PatientDashboard() {
   const loadAnamneseData = async (userId: string) => {
     try {
       const { data, error } = await supabase
-      .from('anamnese_nutricional')
-      .select('*')
-      .eq('patient_id', userId)
-      .single()
-      
+        .from('anamnese_nutricional')
+        .select('*')
+        .eq('patient_id', userId)
+        .single()
+
       if (data && !error) {
         setAnamneseData(data)
       }
@@ -600,7 +601,7 @@ export default function PatientDashboard() {
       activeItem={activeTab}
       onItemClick={(item) => {
         setActiveTab(item)
-        
+
       }}
       onSignOut={handleSignOut}
     >
@@ -652,10 +653,10 @@ export default function PatientDashboard() {
                       <p className="text-sm text-red-100">Sua avaliação</p>
                       <div className="flex items-center gap-2">
                         <span className="font-semibold">
-                          {profile?.rating?.toFixed(1) || '5.0'}
+                          {profile?.rating?.toFixed(1) || 0}
                         </span>
                         <RatingDisplay
-                          rating={profile?.rating || 5.0}
+                          rating={profile?.rating || 0}
                           totalReviews={profile?.total_reviews || 0}
                           size="sm"
                           showNumber={false}
@@ -682,7 +683,7 @@ export default function PatientDashboard() {
                 value={stats.scheduledConsultations}
                 icon={Calendar}
                 color="blue"
-                trend={{ value: 12, isPositive: true }}
+                trend={{ value: 0, isPositive: true }}
                 description="Este mês"
               />
               <StatsCard
@@ -690,15 +691,15 @@ export default function PatientDashboard() {
                 value={stats.totalConsultations}
                 icon={Activity}
                 color="green"
-                trend={{ value: 8, isPositive: true }}
+                trend={{ value: 0, isPositive: true }}
                 description="Histórico completo"
               />
               <StatsCard
                 title="Avaliação Média"
-                value={profile?.rating?.toFixed(1) || '5.0'}
+                value={profile?.rating?.toFixed(1) || '0'}
                 icon={Star}
                 color="yellow"
-                trend={{ value: 15, isPositive: true }}
+                trend={{ value: 0, isPositive: true }}
                 description={`Baseado em ${profile?.total_reviews || 0} avaliações`}
               />
               <StatsCard
@@ -956,6 +957,11 @@ export default function PatientDashboard() {
                 </CardContent>
               </Card>
             </div>
+
+            {/* Consultas para Avaliar */}
+            {profile && (
+              <ConsultationsToRate patientId={profile.id} />
+            )}
           </div>
         )}
 

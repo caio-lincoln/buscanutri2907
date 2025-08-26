@@ -1,3 +1,4 @@
+'use client'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -15,12 +16,8 @@ import {
   CheckCircle,
   Briefcase,
 } from 'lucide-react'
-
-export const metadata: Metadata = {
-  title: 'Para Nutricionistas - Busca Nutri',
-  description:
-    'Expanda sua prática, conecte-se com mais pacientes e cresça profissionalmente na maior rede de nutricionistas do Brasil.',
-}
+import { formatNumber, formatRating, getPlatformStats, PlatformStats } from '../../lib/stats'
+import { useCallback, useEffect, useState } from 'react'
 
 const benefits = [
   {
@@ -135,6 +132,24 @@ const stats = [
 ]
 
 export default function ParaNutricionistasPage() {
+  const [ stats, setStats ] = useState<PlatformStats | null>(null)
+  console.log("🚀 ~ ParaNutricionistasPage ~ stats:", stats)
+
+  const loadStats = useCallback(async () => {
+    try {
+      const platformStats = await getPlatformStats()
+      console.log("🚀 ~ ParaNutricionistasPage ~ platformStats:", platformStats)
+      setStats(platformStats)
+    } catch (error) {
+      // Error loading stats - handled silently
+      // setError('Erro ao carregar estatísticas')
+    }
+  }, [])
+
+  useEffect(() => {
+    loadStats()
+  }, [ loadStats ])
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-cyan-50">
       {/* Header */}
@@ -235,16 +250,32 @@ export default function ParaNutricionistasPage() {
 
                 {/* Stats */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-8">
-                  {stats.map((stat, index) => (
-                    <div key={index} className="text-center">
-                      <div className="text-2xl font-bold text-[#4AB0D9]">
-                        {stat.number}
+                  <div className="flex items-center justify-center sm:justify-start gap-4 sm:gap-6 md:gap-8 pt-2 md:pt-4">
+                    <div className="text-center">
+                      <div className="text-xl md:text-2xl font-bold text-[#1E1D40]">
+                        {stats ? formatNumber(stats.totalNutricionistas) : '0'}
                       </div>
-                      <div className="text-sm text-[#1E1D40]/60">
-                        {stat.label}
+                      <div className="text-xs md:text-sm text-[#1E1D40]/60">
+                        Nutricionistas
                       </div>
                     </div>
-                  ))}
+                    <div className="text-center">
+                      <div className="text-xl md:text-2xl font-bold text-[#1E1D40]">
+                        {stats ? formatNumber(stats.totalPacientes) : '0'}
+                      </div>
+                      <div className="text-xs md:text-sm text-[#1E1D40]/60">
+                        Clientes
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-xl md:text-2xl font-bold text-[#1E1D40]">
+                        {stats ? formatRating(stats.averageRating) : '4'}
+                      </div>
+                      <div className="text-xs md:text-sm text-[#1E1D40]/60">
+                        Satisfação
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -253,7 +284,7 @@ export default function ParaNutricionistasPage() {
                 <Card className="relative border-0 shadow-2xl">
                   <CardContent className="p-0">
                     <img
-                      src="/placeholder.svg?height=500&width=600&text=Dashboard+Nutricionista+Profissional"
+                      src="/mulheratendente.png"
                       alt="Dashboard profissional para nutricionistas"
                       className="w-full h-auto rounded-3xl"
                       width={600}
@@ -325,11 +356,10 @@ export default function ParaNutricionistasPage() {
               {plans.map((plan, index) => (
                 <Card
                   key={index}
-                  className={`relative ${
-                    plan.popular
-                      ? 'border-2 border-[#4AB0D9] shadow-lg scale-105'
-                      : 'border border-gray-200'
-                  }`}
+                  className={`relative ${plan.popular
+                    ? 'border-2 border-[#4AB0D9] shadow-lg scale-105'
+                    : 'border border-gray-200'
+                    }`}
                 >
                   {plan.popular && (
                     <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
@@ -372,11 +402,10 @@ export default function ParaNutricionistasPage() {
                       ))}
                     </ul>
                     <Button
-                      className={`w-full ${
-                        plan.popular
-                          ? 'bg-[#4AB0D9] hover:bg-[#4AB0D9]/90 text-white'
-                          : 'bg-gray-100 hover:bg-gray-200 text-[#1E1D40]'
-                      }`}
+                      className={`w-full ${plan.popular
+                        ? 'bg-[#4AB0D9] hover:bg-[#4AB0D9]/90 text-white'
+                        : 'bg-gray-100 hover:bg-gray-200 text-[#1E1D40]'
+                        }`}
                     >
                       {plan.price === 'Gratuito'
                         ? 'Começar Grátis'

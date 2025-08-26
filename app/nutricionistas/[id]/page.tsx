@@ -76,7 +76,7 @@ export default async function NutritionistProfilePage({ params }: PageProps) {
   // Generate structured data on the server to avoid hydration mismatch
   const formattedName = nutritionist.full_name || 'Nutricionista Desconhecido'
   const formattedFullBio = nutritionist.bio || 'Sem biografia disponível.'
-  const formattedEducation = nutritionist.education || 'Formação não informada.'
+  const formattedEducation = nutritionist.academic_background || 'Formação não informada.'
   const formattedCrn = nutritionist.crn || 'CRN não informado.'
   const formattedPhone = nutritionist.phone || 'Telefone não informado.'
   const formattedEmail = nutritionist.email || 'Email não informado.'

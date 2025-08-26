@@ -1,4 +1,6 @@
-import { supabase } from '@/lib/supabase'
+import { createSupabaseClient } from "./supabase"
+
+const supabase = createSupabaseClient()
 
 export interface Consultation {
   id: string
@@ -10,16 +12,29 @@ export interface Consultation {
   notes?: string
   created_at: string
   updated_at: string
+  nutritionist_profiles?: {
+    full_name: string
+    specialties: string[]
+    avatar_url?: string
+  }
+  patient_profiles?: {
+    full_name: string
+    avatar_url?: string
+  }
 }
 
 export interface FavoriteNutritionist {
   id: string
   patient_id: string
   nutritionist_id: string
-  nutritionist_name: string
-  nutritionist_avatar?: string
-  nutritionist_rating: number
   created_at: string
+  nutritionist_profiles: {
+    full_name: string
+    specialties: string[]
+    rating: number
+    total_reviews: number
+    avatar_url?: string
+  }
 }
 
 export interface PatientStats {
@@ -37,11 +52,78 @@ export async function getPatientConsultations(
   patientId: string
 ): Promise<Consultation[]> {
   try {
-    // Como a funcionalidade de telemedicina foi removida, retornamos array vazio
-    // Quando a funcionalidade for reativada, implementar a busca real
-    return []
+    const { data, error } = await supabase
+      .from('consultations')
+      .select(`
+        *,
+        nutritionist_profiles(
+          full_name,
+          specialties,
+          avatar_url
+        ),
+        patient_profiles(
+          full_name,
+          avatar_url
+        )
+      `)
+      .eq('patient_id', patientId)
+      .order('start_time', { ascending: false })
+
+    if (error) {
+      // Silent error handling: Error fetching patient consultations
+      return []
+    }
+
+    return data || []
   } catch (error) {
     // Silent error handling: Error fetching patient consultations
+    return []
+  }
+}
+
+/**
+ * Busca consultas completadas que podem ser avaliadas
+ */
+export async function getCompletedConsultationsForRating(
+  patientId: string
+): Promise<Consultation[]> {
+  try {
+    const { data, error } = await supabase
+      .from('teleconsulta_sessions')
+      .select(`
+      *,
+      nutritionist_profiles(
+        full_name,
+        profile_image_url
+        )
+        `)
+      .eq('patient_id', patientId)
+      .eq('status', 'completed')
+    .order('scheduled_at', { ascending: false })
+
+    console.log("🚀 ~ getCompletedConsultationsForRating ~ data:", data)
+    console.log("🚀 ~ getCompletedConsultationsForRating ~ error:", error)
+    if (error) {
+      // Silent error handling: Error fetching completed consultations
+      return []
+    }
+
+    // Filtrar apenas consultas que não foram avaliadas ainda
+    const consultationsWithoutRating = await Promise.all(
+      (data || []).map(async (consultation) => {
+        const { data: rating } = await supabase
+          .from('consultation_ratings')
+          .select('id')
+          .eq('consultation_id', consultation.id)
+          .single()
+
+        return rating ? null : consultation
+      })
+    )
+
+    return consultationsWithoutRating.filter(Boolean) as Consultation[]
+  } catch (error) {
+    // Silent error handling: Error fetching completed consultations
     return []
   }
 }
@@ -55,39 +137,25 @@ export async function getPatientFavoriteNutritionists(
   try {
     const { data, error } = await supabase
       .from('patient_favorite_nutritionists')
-      .select(
-        `
-        id,
-        patient_id,
-        nutritionist_id,
-        created_at,
-        nutritionist_profiles!inner (
+      .select(`
+        *,
+        nutritionist_profiles(
           full_name,
-          profile_image_url,
-          rating
+          specialties,
+          rating,
+          total_reviews,
+          avatar_url
         )
-      `
-      )
+      `)
       .eq('patient_id', patientId)
+      .order('created_at', { ascending: false })
 
     if (error) {
       // Silent error handling: Error fetching favorite nutritionists
       return []
     }
 
-    return (
-      data?.map((item: any) => ({
-        id: item.id,
-        patient_id: item.patient_id,
-        nutritionist_id: item.nutritionist_id,
-        nutritionist_name:
-          item.nutritionist_profiles?.full_name || 'Nutricionista',
-        nutritionist_avatar:
-          item.nutritionist_profiles?.profile_image_url || '/placeholder.svg',
-        nutritionist_rating: item.nutritionist_profiles?.rating || 0,
-        created_at: item.created_at,
-      })) || []
-    )
+    return data || []
   } catch (error) {
     // Silent error handling: Error fetching favorite nutritionists
     return []
@@ -95,32 +163,83 @@ export async function getPatientFavoriteNutritionists(
 }
 
 /**
- * Busca estatísticas de um paciente
+ * Adiciona um nutricionista aos favoritos
  */
-export async function getPatientStats(
-  patientId: string
-): Promise<PatientStats> {
+export async function addFavoriteNutritionist(
+  patientId: string,
+  nutritionistId: string
+): Promise<void> {
   try {
-    // Buscar nutricionistas favoritos
-    const { data: favorites, error: favoritesError } = await supabase
+    const { error } = await supabase
       .from('patient_favorite_nutritionists')
-      .select('id')
-      .eq('patient_id', patientId)
+      .insert({
+        patient_id: patientId,
+        nutritionist_id: nutritionistId,
+      })
 
-    if (favoritesError) {
-      // Silent error handling: Error fetching favorites
-    }
-
-    // Como a funcionalidade de telemedicina foi removida, retornamos valores padrão
-    return {
-      totalConsultations: 0,
-      scheduledConsultations: 0,
-      completedConsultations: 0,
-      favoriteNutritionists: favorites?.length || 0,
-      averageRating: 0,
+    if (error) {
+      // Silent error handling: Error adding favorite nutritionist
+      throw error
     }
   } catch (error) {
-    // Silent error handling: Error fetching patient statistics
+    // Silent error handling: Error adding favorite nutritionist
+    throw error
+  }
+}
+
+/**
+ * Remove um nutricionista dos favoritos
+ */
+export async function removeFavoriteNutritionist(
+  patientId: string,
+  nutritionistId: string
+): Promise<void> {
+  try {
+    const { error } = await supabase
+      .from('patient_favorite_nutritionists')
+      .delete()
+      .eq('patient_id', patientId)
+      .eq('nutritionist_id', nutritionistId)
+
+    if (error) {
+      // Silent error handling: Error removing favorite nutritionist
+      throw error
+    }
+  } catch (error) {
+    // Silent error handling: Error removing favorite nutritionist
+    throw error
+  }
+}
+
+/**
+ * Busca estatísticas do paciente
+ */
+export async function getPatientStats(patientId: string): Promise<PatientStats> {
+  try {
+    const { data, error } = await supabase.rpc('get_patient_stats', {
+      patient_user_id: patientId,
+    })
+
+    if (error) {
+      // Silent error handling: Error fetching patient stats
+      return {
+        totalConsultations: 0,
+        scheduledConsultations: 0,
+        completedConsultations: 0,
+        favoriteNutritionists: 0,
+        averageRating: 0,
+      }
+    }
+
+    return {
+      totalConsultations: data?.total_consultations || 0,
+      scheduledConsultations: data?.scheduled_consultations || 0,
+      completedConsultations: data?.completed_consultations || 0,
+      favoriteNutritionists: data?.favorite_nutritionists || 0,
+      averageRating: data?.average_rating || 0,
+    }
+  } catch (error) {
+    // Silent error handling: Error fetching patient stats
     return {
       totalConsultations: 0,
       scheduledConsultations: 0,
@@ -132,73 +251,44 @@ export async function getPatientStats(
 }
 
 /**
- * Adiciona um nutricionista aos favoritos do paciente
+ * Verifica se uma consulta pode ser avaliada
  */
-export async function addFavoriteNutritionist(
-  patientId: string,
-  nutritionistId: string
+export async function canRateConsultation(
+  consultationId: string,
+  patientId: string
 ): Promise<boolean> {
   try {
-    // Verificar se já existe
-    const { data: existing, error: checkError } = await supabase
-      .from('patient_favorite_nutritionists')
+    // Verificar se a consulta existe e está completa
+    const { data: consultation, error: consultationError } = await supabase
+      .from('consultations')
+      .select('status')
+      .eq('id', consultationId)
+      .eq('patient_id', patientId)
+      .single()
+
+    if (consultationError || !consultation) {
+      return false
+    }
+
+    if (consultation.status !== 'completed') {
+      return false
+    }
+
+    // Verificar se já foi avaliada
+    const { data: rating, error: ratingError } = await supabase
+      .from('consultation_ratings')
       .select('id')
-      .eq('patient_id', patientId)
-      .eq('nutritionist_id', nutritionistId)
-      .maybeSingle()
+      .eq('consultation_id', consultationId)
+      .single()
 
-    if (checkError && checkError.code !== 'PGRST116') {
-      // Silent error handling: Error checking existing favorite
+    if (ratingError && ratingError.code !== 'PGRST116') {
       return false
     }
 
-    if (existing) {
-      // Silent logging: Nutritionist already in favorites
-      return true
-    }
-
-    // Adicionar aos favoritos
-    const { error } = await supabase
-      .from('patient_favorite_nutritionists')
-      .insert({
-        patient_id: patientId,
-        nutritionist_id: nutritionistId,
-      })
-
-    if (error) {
-      // Silent error handling: Error adding nutritionist to favorites
-      return false
-    }
-
-    return true
+    // Pode avaliar se não existe rating
+    return !rating
   } catch (error) {
-    // Silent error handling: Error adding nutritionist to favorites
-    return false
-  }
-}
-
-/**
- * Remove um nutricionista dos favoritos do paciente
- */
-export async function removeFavoriteNutritionist(
-  patientId: string,
-  nutritionistId: string
-): Promise<boolean> {
-  try {
-    const { error } = await supabase
-      .from('patient_favorite_nutritionists')
-      .delete()
-      .eq('patient_id', patientId)
-      .eq('nutritionist_id', nutritionistId)
-
-    if (error) {
-      // Silent error handling: Error removing nutritionist from favorites
-      return false
-    }
-
-    return true
-  } catch (error) {
-    // Silent error handling: Error removing nutritionist from favorites
+    // Silent error handling: Error checking if consultation can be rated
     return false
   }
 }

@@ -167,10 +167,10 @@ export default function NutritionistProfilePageClient({
   const formattedCoverImage = coverVariants.md
   const formattedBio = nutritionist.bio || 'Sem biografia disponível.'
   const formattedFullBio = nutritionist.bio || 'Sem biografia disponível.'
-  const formattedEducation = nutritionist.education || 'Formação não informada.'
+  const formattedEducation = nutritionist.academic_background || 'Formação não informada.'
   const formattedCrn = nutritionist.crn || 'CRN não informado.'
-  const formattedPhone = nutritionist.phone || user?.phone || 'Telefone não informado.'
-  const formattedEmail = nutritionist.email || user?.email || 'Email não informado.' // Assumindo que email pode vir do perfil ou ser um placeholder
+  const formattedPhone = nutritionist.phone || 'Telefone não informado.'
+  const formattedEmail = nutritionist.email || 'Email não informado.' // Assumindo que email pode vir do perfil ou ser um placeholder
   const formattedWebsite = nutritionist.website || ''
   const formattedOnlineConsultation =
     nutritionist.service_online_available || false
@@ -482,7 +482,7 @@ export default function NutritionistProfilePageClient({
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
 
               {/* Informações sobrepostas */}
-              <div className="absolute bottom-6 left-6 text-white z-10">
+              <div className="absolute bottom-14 left-6 text-white z-10">
                 <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-2 drop-shadow-lg">
                   {formattedName}
                 </h1>
@@ -578,8 +578,12 @@ export default function NutritionistProfilePageClient({
             <Button
               onClick={async () => {
                 try {
-                  const conversationId = await openConversationWithNutritionist(nutritionist.id)
-                  router.push(`/dashboard/paciente/chat/${conversationId}`)
+                  if (user) {
+                    const conversationId = await openConversationWithNutritionist(nutritionist.id)
+                    router.push(`/dashboard/paciente/chat/${conversationId}`)
+                  } else {
+                    router.push('/login')
+                  }
                 } catch (error) {
                   console.log("🚀 ~ error:", error)
 
@@ -1202,8 +1206,12 @@ export default function NutritionistProfilePageClient({
                     <Button
                       onClick={async () => {
                         try {
-                          const conversationId = await openConversationWithNutritionist(nutritionist.id)
-                          router.push(`/dashboard/paciente/chat/${conversationId}`)
+                          if (user) {
+                            const conversationId = await openConversationWithNutritionist(nutritionist.id)
+                            router.push(`/dashboard/paciente/chat/${conversationId}`)
+                          } else {
+                            router.push('/login')
+                          }
                         } catch (error) {
                           console.log("🚀 ~ error:", error)
 
