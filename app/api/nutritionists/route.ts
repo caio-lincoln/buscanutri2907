@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
 
     // Filtro por consulta online
     if (onlineOnly) {
-      query = query.eq('online_consultation', true)
+      query = query.eq('online_consultation_available', true)
     }
 
     // Filtro por estado

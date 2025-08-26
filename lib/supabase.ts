@@ -94,6 +94,7 @@ export interface NutritionistProfile extends UserProfile {
   cancellation_policy?: string | null // Política de cancelamento
   // Campos adicionais usados no código
   specialties?: string[] | null // Especialidades do nutricionista
+  specializations?: string[] | null // Especialidades do nutricionista
   consultation_price?: number | null // Preço da consulta
   // Campo online_consultation removido - substituído por service_online_available
   crn?: string | null // Alias para crn_number

@@ -142,7 +142,7 @@ export default function NutritionistProfilePageClient({
   // Formatações para exibição, usando dados reais ou placeholders
   const formattedName = nutritionist.full_name || 'Nutricionista Desconhecido'
   const formattedSpecialty = nutritionist.specialties?.[ 0 ] || 'Nutrição'
-  const formattedLocation = nutritionist.address || 'Localização não informada'
+  const formattedLocation = nutritionist.location || 'Localização não informada'
   const formattedRating = nutritionist.rating?.toFixed(1) || '0.0'
   const formattedReviews = nutritionist.total_reviews || 0
   const formattedExperience = nutritionist.experience_years || 0
@@ -228,7 +228,23 @@ export default function NutritionistProfilePageClient({
   ]
 
   const formattedSpecializations = toArray(nutritionist.specialties)
-  const formattedAvailableTimes = toArray(nutritionist.available_times)
+  const formattedAvailableTimes: string[] = Array.isArray(nutritionist.available_times)
+  ? nutritionist.available_times
+    : [];
+  
+    type DayIntervals = { day_of_week: number; intervals: { start: string; end: string }[]; is_available: boolean };
+    const week: DayIntervals[] = Array.isArray(nutritionist.weekly_availability)
+      ? nutritionist.weekly_availability
+      : [];
+    
+    const days = ['Segunda','Terça','Quarta','Quinta','Sexta','Sábado','Domingo'];
+    const scheduleRows = days.map((label, idx) => {
+      const d = week.find(w => w.day_of_week === (idx + 1)) || { intervals: [] };
+      const text = d.intervals.length
+        ? d.intervals.map(i => `${i.start} - ${i.end}`).join('  ·  ')
+        : 'Fechado';
+      return { label, text, closed: d.intervals.length === 0 };
+    });
 
   const formattedLanguages = normalizeLanguages(nutritionist.languages) || []
   const formattedCertifications = toArray(nutritionist.certifications)
@@ -524,8 +540,8 @@ export default function NutritionistProfilePageClient({
                         {formattedExperience} anos
                       </div>
                       <div className="flex items-center gap-1">
-                        <Users className="h-4 w-4" />
-                        {formattedPatients}+ pacientes
+                        {/* <Users className="h-4 w-4" /> */}
+                        {/* {formattedPatients}+ pacientes */}
                       </div>
                       {formattedOnlineConsultation && (
                         <div className="flex items-center gap-1">
@@ -1042,43 +1058,28 @@ export default function NutritionistProfilePageClient({
               {/* Horários de Funcionamento */}
               {Object.keys(formattedWorkingHours).length > 0 && (
                 <Card className="shadow-lg border-0">
-                  <CardHeader>
-                    <CardTitle className="text-xl">
-                      Horários de Atendimento
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      {Object.entries(formattedWorkingHours).map(
-                        ([ day, hours ]) => (
-                          <div
-                            key={day}
-                            className="flex items-center justify-between text-sm"
-                          >
-                            <span className="font-medium capitalize">
-                              {day === 'monday' && 'Segunda'}
-                              {day === 'tuesday' && 'Terça'}
-                              {day === 'wednesday' && 'Quarta'}
-                              {day === 'thursday' && 'Quinta'}
-                              {day === 'friday' && 'Sexta'}
-                              {day === 'saturday' && 'Sábado'}
-                              {day === 'sunday' && 'Domingo'}
-                            </span>
-                            <span
-                              className={
-                                hours === 'Fechado'
-                                  ? 'text-red-500'
-                                  : 'text-[#1E1D40]/70'
-                              }
-                            >
-                              {hours}
-                            </span>
-                          </div>
-                        )
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
+                <CardHeader>
+                  <CardTitle className="text-xl">Horários de Atendimento</CardTitle>
+                </CardHeader>
+              
+                <CardContent>
+                  <div className="space-y-2">
+                    {scheduleRows.map((row) => (
+                      <div
+                        key={row.label}
+                        className="flex items-center justify-between py-1"
+                      >
+                        <span className="text-[#1E1D40] font-medium">{row.label}</span>
+                        <span
+                          className={row.closed ? 'text-red-500' : 'text-[#1E1D40]/80'}
+                        >
+                          {row.text}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
               )}
 
               {/* Horários Disponíveis */}

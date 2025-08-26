@@ -202,7 +202,7 @@ export default function ParaPacientesPage() {
                 <Card className="relative border-0 shadow-2xl">
                   <CardContent className="p-0">
                     <img
-                      src="/placeholder.svg?height=500&width=600&text=Paciente+Feliz+com+Nutricionista"
+                      src="/mulher.png"
                       alt="Paciente satisfeita após consulta com nutricionista"
                       className="w-full h-auto rounded-3xl"
                       width={600}

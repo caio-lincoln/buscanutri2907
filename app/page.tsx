@@ -53,7 +53,6 @@ export default function Home() {
   const [ stats, setStats ] = useState<PlatformStats | null>(null)
   const { user, loading, signOut } = useAuth()
 
-
   const closeMobileMenu = useCallback(() => {
     setIsMobileMenuOpen(false)
   }, [])
@@ -62,6 +61,7 @@ export default function Home() {
   const loadStats = useCallback(async () => {
     try {
       const platformStats = await getPlatformStats()
+      console.log("🚀 ~ Home ~ platformStats:", platformStats)
       setStats(platformStats)
     } catch (error) {
       // Error loading stats - handled silently
@@ -990,7 +990,7 @@ export default function Home() {
                   tecnologia e colaboração. A plataforma que revoluciona o
                   cuidado nutricional.
                 </p>
-                <div className="flex gap-4">
+                {/* <div className="flex gap-4">
                   <div className="flex text-yellow-400">
                     {[ ...Array(5) ].map((_, i) => (
                       <svg
@@ -1007,7 +1007,7 @@ export default function Home() {
                       ? `${formatRating(stats.averageRating)} (${formatNumber(stats.totalAvaliacoes)} avaliações)`
                       : '4.9 (1.2k avaliações)'}
                   </span>
-                </div>
+                </div> */}
               </div>
 
               {/* Platform Links */}

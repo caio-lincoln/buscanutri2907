@@ -1167,10 +1167,9 @@ export function UserProfileModal({
                   currentImageUrl={formData?.cover_image_url}
                   userId={userId}
                   className="w-full"
-                  aspectRatio={16 / 5}
                   cropType="cover"
-                  minWidth={1500}
-                  minHeight={500}
+                  minWidth={1000}
+                  minHeight={320}
                   title="Upload de Capa do Perfil"
                   description="Selecione uma imagem para a capa do seu perfil"
                 />
@@ -1812,10 +1811,10 @@ export function UserProfileModal({
                     </Label>
                     <ScheduleSelector
                       value={formData?.available_times || '{}'}
-                      onChange={value =>{
+                      onChange={value => {
                         setFormData((prev: any) => ({
                           ...prev,
-                          available_times:value,
+                          available_times: value,
                         }))
                       }}
                       placeholder="Configure seus horários de atendimento"

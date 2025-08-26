@@ -80,7 +80,6 @@ export function TeleconsultaCard({
  
   const scheduledDate = new Date(session.scheduled_at)
 
-
   const now = new Date()
   const isToday = format(scheduledDate, 'yyyy-MM-dd') === format(now, 'yyyy-MM-dd')
   const canJoin = session.status === 'scheduled' && 

@@ -61,6 +61,7 @@ class ProfileViewsService {
         session_id: sessionId,
         referrer: referrer || (typeof document !== 'undefined' ? document.referrer : '') || 'direct',
       })
+      console.log("🚀 ~ ProfileViewsService ~ recordView ~ error:", error)
 
       if (error) {
         // Silent error handling - error registering view

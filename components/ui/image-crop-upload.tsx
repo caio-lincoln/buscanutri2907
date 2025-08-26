@@ -66,7 +66,7 @@ export function ImageCropUpload({
   userId,
   className = '',
   disabled = false,
-  aspectRatio = 1,
+  aspectRatio = undefined,
   cropType,
   minWidth = 600,
   minHeight = 600,
@@ -74,16 +74,16 @@ export function ImageCropUpload({
   description = 'Selecione uma imagem para fazer upload',
 }: ImageCropUploadProps) {
   const supabase = createSupabaseClient()
-  const [isUploading, setIsUploading] = useState(false)
-  const [uploadError, setUploadError] = useState<string | null>(null)
-  const [uploadSuccess, setUploadSuccess] = useState<string | null>(null)
-  const [dragActive, setDragActive] = useState(false)
-  const [showCropModal, setShowCropModal] = useState(false)
-  const [selectedFile, setSelectedFile] = useState<File | null>(null)
-  const [imageSrc, setImageSrc] = useState<string>('')
-  const [croppedImageUrl, setCroppedImageUrl] = useState<string>('')
+  const [ isUploading, setIsUploading ] = useState(false)
+  const [ uploadError, setUploadError ] = useState<string | null>(null)
+  const [ uploadSuccess, setUploadSuccess ] = useState<string | null>(null)
+  const [ dragActive, setDragActive ] = useState(false)
+  const [ showCropModal, setShowCropModal ] = useState(false)
+  const [ selectedFile, setSelectedFile ] = useState<File | null>(null)
+  const [ imageSrc, setImageSrc ] = useState<string>('')
+  const [ croppedImageUrl, setCroppedImageUrl ] = useState<string>('')
 
-  const [cropState, setCropState] = useState<CropState>({
+  const [ cropState, setCropState ] = useState<CropState>({
     crop: {
       unit: '%',
       width: 90,
@@ -102,7 +102,7 @@ export function ImageCropUpload({
 
   // Função para validar arquivo
   const validateFile = (file: File): string | null => {
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+    const allowedTypes = [ 'image/jpeg', 'image/jpg', 'image/png', 'image/webp' ]
     if (!allowedTypes.includes(file.type)) {
       return 'Formato nao suportado. Use JPEG, PNG ou WebP.'
     }
@@ -119,11 +119,11 @@ export function ImageCropUpload({
   const validateImageDimensions = (img: HTMLImageElement): string | null => {
     if (cropType === 'cover') {
       if (img.naturalWidth < minWidth || img.naturalHeight < minHeight) {
-        return `Dimensao minima para capa: ${minWidth}x${minHeight}px. Sua imagem: ${img.naturalWidth}x${img.naturalHeight}px`
+        return `Dimensão mínima para capa: ${minWidth}x${minHeight}px. Sua imagem: ${img.naturalWidth}x${img.naturalHeight}px`
       }
     } else if (cropType === 'avatar') {
       if (img.naturalWidth < 600 || img.naturalHeight < 600) {
-        return `Dimensao minima para avatar: 600x600px. Sua imagem: ${img.naturalWidth}x${img.naturalHeight}px`
+        return `Dimensão mínima para avatar: 600x600px. Sua imagem: ${img.naturalWidth}x${img.naturalHeight}px`
       }
     }
     return null
@@ -131,16 +131,15 @@ export function ImageCropUpload({
 
   // Função para criar crop inicial
   const createInitialCrop = (imageWidth: number, imageHeight: number): Crop => {
-    return centerCrop(
-      makeAspectCrop(
-        {
-          unit: '%',
-          width: 90,
-        },
-        aspectRatio,
+    if (aspectRatio) {
+      return centerCrop(
+        makeAspectCrop({ unit: '%', width: 90 }, aspectRatio, imageWidth, imageHeight),
         imageWidth,
         imageHeight
-      ),
+      )
+    }
+    return centerCrop(
+      { unit: '%', width: 90, height: 40, x: 5, y: 30 },
       imageWidth,
       imageHeight
     )
@@ -237,7 +236,7 @@ export function ImageCropUpload({
             return
           }
 
-          const croppedFile = new File([blob], selectedFile.name, {
+          const croppedFile = new File([ blob ], selectedFile.name, {
             type: selectedFile.type,
             lastModified: Date.now(),
           })
@@ -248,7 +247,7 @@ export function ImageCropUpload({
         0.9
       )
     })
-  }, [cropState.completedCrop, cropState.rotate, selectedFile])
+  }, [ cropState.completedCrop, cropState.rotate, selectedFile ])
 
   // Função para fazer upload da imagem cortada
   const handleUpload = async () => {
@@ -329,7 +328,7 @@ export function ImageCropUpload({
 
       const { error: updateError } = await supabase
         .from(tableName)
-        .update({ [updateField]: result.url })
+        .update({ [ updateField ]: result.url })
         .eq('user_id', session.user.id)
 
       if (updateError) {
@@ -381,7 +380,7 @@ export function ImageCropUpload({
 
     if (disabled) return
 
-    const file = e.dataTransfer.files?.[0]
+    const file = e.dataTransfer.files?.[ 0 ]
     if (file && file.type.startsWith('image/')) {
       handleFileSelect(file)
     }
@@ -394,7 +393,7 @@ export function ImageCropUpload({
   }
 
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
+    const file = e.target.files?.[ 0 ]
     if (file) {
       handleFileSelect(file)
     }
@@ -407,7 +406,7 @@ export function ImageCropUpload({
       const newCrop = createInitialCrop(width, height)
       setCropState(prev => ({ ...prev, crop: newCrop }))
     }
-  }, [cropState.scale, cropState.rotate, aspectRatio])
+  }, [ cropState.scale, cropState.rotate, aspectRatio ])
 
   return (
     <div className={`space-y-4 ${className}`}>
@@ -415,7 +414,8 @@ export function ImageCropUpload({
       {currentImageUrl && (
         <Card className="relative overflow-hidden">
           <div
-            className={`relative ${cropType === 'cover' ? 'aspect-[16/5]' : 'aspect-square w-32 h-32 mx-auto'}`}
+            className={`relative ${cropType === 'cover' ? 'w-full' : 'aspect-square w-32 h-32 mx-auto'}`}
+            style={cropType === 'cover' ? { height: 180 } : undefined} // altura fixa amigável
           >
             <Image
               src={currentImageUrl}
@@ -426,12 +426,7 @@ export function ImageCropUpload({
             />
           </div>
           <div className="absolute top-2 right-2 flex gap-2">
-            <Button
-              size="sm"
-              variant="destructive"
-              onClick={handleRemove}
-              disabled={disabled}
-            >
+            <Button size="sm" variant="destructive" onClick={handleRemove} disabled={disabled}>
               <X className="h-4 w-4" />
             </Button>
           </div>
@@ -440,11 +435,10 @@ export function ImageCropUpload({
 
       {/* Área de upload */}
       <Card
-        className={`relative border-2 border-dashed transition-colors cursor-pointer ${
-          dragActive
-            ? 'border-primary bg-primary/5'
-            : 'border-gray-300 hover:border-gray-400'
-        } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+        className={`relative border-2 border-dashed transition-colors cursor-pointer ${dragActive
+          ? 'border-primary bg-primary/5'
+          : 'border-gray-300 hover:border-gray-400'
+          } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
         onDragEnter={handleDrag}
         onDragLeave={handleDrag}
         onDragOver={handleDrag}
@@ -461,8 +455,8 @@ export function ImageCropUpload({
               <p className="text-xs text-gray-500">{description}</p>
               <p className="text-xs text-gray-400">
                 {cropType === 'cover'
-                  ? 'Formatos: JPEG, PNG, WebP - Min: 2000x700px - Max: 5MB'
-                  : 'Formatos: JPEG, PNG, WebP - Min: 600x600px - Max: 5MB'}
+                  ? `Formatos: JPEG, PNG, WebP - Mín: ${minWidth}x${minHeight}px - Máx: 5MB`
+                  : 'Formatos: JPEG, PNG, WebP - Min: 600x600px - Máx: 5MB'}
               </p>
             </div>
             <Button
@@ -518,8 +512,8 @@ export function ImageCropUpload({
               <div className="space-y-2">
                 <Label>Zoom: {cropState.scale.toFixed(1)}x</Label>
                 <Slider
-                  value={[cropState.scale]}
-                  onValueChange={([value]) =>
+                  value={[ cropState.scale ]}
+                  onValueChange={([ value ]) =>
                     setCropState(prev => ({ ...prev, scale: value }))
                   }
                   min={0.5}
@@ -532,8 +526,8 @@ export function ImageCropUpload({
               <div className="space-y-2">
                 <Label>Rotacao: {cropState.rotate} graus</Label>
                 <Slider
-                  value={[cropState.rotate]}
-                  onValueChange={([value]) =>
+                  value={[ cropState.rotate ]}
+                  onValueChange={([ value ]) =>
                     setCropState(prev => ({ ...prev, rotate: value }))
                   }
                   min={-180}
@@ -567,13 +561,9 @@ export function ImageCropUpload({
               {imageSrc && (
                 <ReactCrop
                   crop={cropState.crop}
-                  onChange={(_, percentCrop) =>
-                    setCropState(prev => ({ ...prev, crop: percentCrop }))
-                  }
-                  onComplete={c =>
-                    setCropState(prev => ({ ...prev, completedCrop: c }))
-                  }
-                  aspect={aspectRatio}
+                  onChange={(_, percentCrop) => setCropState(prev => ({ ...prev, crop: percentCrop }))}
+                  onComplete={c => setCropState(prev => ({ ...prev, completedCrop: c }))}
+                  aspect={aspectRatio ?? undefined}
                   minWidth={minWidth / 4}
                   minHeight={minHeight / 4}
                 >
@@ -597,15 +587,13 @@ export function ImageCropUpload({
               <div className="space-y-2">
                 <Label>Preview:</Label>
                 <div
-                  className={`relative mx-auto ${
-                    cropType === 'cover' ? 'w-80 h-20' : 'w-24 h-24'
-                  }`}
+                  className={`relative mx-auto ${cropType === 'cover' ? 'w-80 h-20' : 'w-24 h-24'
+                    }`}
                 >
                   <canvas
                     ref={canvasRef}
-                    className={`w-full h-full border border-gray-300 ${
-                      cropType === 'avatar' ? 'rounded-full' : 'rounded'
-                    }`}
+                    className={`w-full h-full border border-gray-300 ${cropType === 'avatar' ? 'rounded-full' : 'rounded'
+                      }`}
                     style={{
                       width: cropType === 'cover' ? '320px' : '96px',
                       height: cropType === 'cover' ? '80px' : '96px',

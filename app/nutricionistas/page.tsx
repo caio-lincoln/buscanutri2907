@@ -70,6 +70,57 @@ const states = [
   'MA',
 ]
 
+const UF_ALIASES: Record<string, string[]> = {
+  AC: [ 'AC', 'ACRE' ],
+  AL: [ 'AL', 'ALAGOAS' ],
+  AM: [ 'AM', 'AMAZONAS' ],
+  AP: [ 'AP', 'AMAPÁ', 'AMAPA' ],
+  BA: [ 'BA', 'BAHIA' ],
+  CE: [ 'CE', 'CEARÁ', 'CEARA' ],
+  DF: [ 'DF', 'DISTRITO FEDERAL', 'BRASÍLIA', 'BRASILIA' ],
+  ES: [ 'ES', 'ESPÍRITO SANTO', 'ESPIRITO SANTO' ],
+  GO: [ 'GO', 'GOIÁS', 'GOIAS' ],
+  MA: [ 'MA', 'MARANHÃO', 'MARANHAO' ],
+  MG: [ 'MG', 'MINAS GERAIS' ],
+  MS: [ 'MS', 'MATO GROSSO DO SUL' ],
+  MT: [ 'MT', 'MATO GROSSO' ],
+  PA: [ 'PA', 'PARÁ', 'PARA' ],
+  PB: [ 'PB', 'PARAÍBA', 'PARAIBA' ],
+  PE: [ 'PE', 'PERNAMBUCO' ],
+  PI: [ 'PI', 'PIAUÍ', 'PIAUI' ],
+  PR: [ 'PR', 'PARANÁ', 'PARANA' ],
+  RJ: [ 'RJ', 'RIO DE JANEIRO' ],
+  RN: [ 'RN', 'RIO GRANDE DO NORTE' ],
+  RO: [ 'RO', 'RONDÔNIA', 'RONDONIA' ],
+  RR: [ 'RR', 'RORAIMA' ],
+  RS: [ 'RS', 'RIO GRANDE DO SUL' ],
+  SC: [ 'SC', 'SANTA CATARINA' ],
+  SE: [ 'SE', 'SERGIPE' ],
+  SP: [ 'SP', 'SÃO PAULO', 'SAO PAULO' ],
+  TO: [ 'TO', 'TOCANTINS' ],
+};
+
+const normalize = (s: string) =>
+  (s || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase();
+
+const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+function addressMatchesState(address: string | null | undefined, uf: string): boolean {
+  if (!address || !uf || uf === 'Todas') return true;
+
+  const nAddr = normalize(address);
+  const aliases = UF_ALIASES[ uf ] ?? [ uf ];
+
+  return aliases.some(alias => {
+    const nAlias = normalize(alias);
+    const re = new RegExp(`(?:^|[^A-Z])${esc(nAlias)}(?:$|[^A-Z])`);
+    return re.test(nAddr);
+  });
+}
+
 const priceRanges = [
   { label: 'Todos', min: 0, max: 1000 },
   { label: 'Até R$ 100', min: 0, max: 100 },
@@ -99,6 +150,7 @@ export default function NutricionistasPage() {
       try {
         setLoading(true)
         const data = await getAllNutritionists()
+        console.log("🚀 ~ loadNutritionists ~ data:", data)
         setNutritionists(data)
       } catch (error) {
         // Silent error handling for nutritionist loading
@@ -192,10 +244,10 @@ export default function NutricionistasPage() {
       // Parse specialties if it's a JSON string
       let specialtiesArray: string[] = []
       try {
-        if (typeof nutritionist.specialties === 'string') {
-          specialtiesArray = JSON.parse(nutritionist.specialties)
-        } else if (Array.isArray(nutritionist.specialties)) {
-          specialtiesArray = nutritionist.specialties.map(specialities => specialities.toLowerCase())
+        if (typeof formattedData.specializations === 'string') {
+          specialtiesArray = JSON.parse(formattedData.specializations)
+        } else if (Array.isArray(formattedData.specializations)) {
+          specialtiesArray = formattedData.specializations.map(specialities => normalizeText(specialities))
         }
       } catch (e) {
         specialtiesArray = []
@@ -203,14 +255,12 @@ export default function NutricionistasPage() {
 
       const matchesSpecialty =
         selectedSpecialty === 'Todas' ||
-        specialtiesArray.includes(normalizeText(selectedSpecialty) )
+        specialtiesArray.includes(normalizeText(selectedSpecialty))
 
       // O filtro por estado agora verifica se a string do estado está contida no endereço
       const matchesState =
         selectedState === 'Todas' ||
-        (nutritionist.address ?? '')
-          .toUpperCase()
-          .includes(selectedState.toUpperCase())
+        (nutritionist.address && addressMatchesState(nutritionist.address, selectedState))
 
       const matchesPrice =
         selectedPriceRange.label === 'Todos' ||
@@ -220,7 +270,7 @@ export default function NutricionistasPage() {
           nutritionist.consultation_price <= selectedPriceRange.max)
 
       const matchesOnline =
-        !onlineOnly || nutritionist.online_consultation_available || nutritionist.online_consultation || false
+        !onlineOnly || nutritionist.service_online_available || nutritionist.service_online_available || false
 
       const matchesCupons = !aceitaCupons || nutritionist.aceita_cupons || false
 
@@ -669,11 +719,25 @@ export default function NutricionistasPage() {
                     ))}
                   </SelectContent>
                 </Select>
-
+                
                 {/* Estado */}
                 <Select value={selectedState} onValueChange={setSelectedState}>
                   <SelectTrigger className="h-12">
                     <SelectValue placeholder="Estado" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {states.map(state => (
+                      <SelectItem key={state} value={state}>
+                        {state}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                 {/* Cidade */}
+                 <Select value={selectedState} onValueChange={setSelectedState}>
+                  <SelectTrigger className="h-12">
+                    <SelectValue placeholder="Cidade" />
                   </SelectTrigger>
                   <SelectContent>
                     {states.map(state => (
@@ -972,7 +1036,7 @@ export default function NutricionistasPage() {
                               </Link>
 
                               <Link
-                                href={`/dashboard/paciente/agendar/${nutritionist.id}`}
+                                href={`/dashboard/paciente/agendar?nutritionistId=${nutritionist.id}`}
                               >
                                 <Button className="flex-1 bg-[#4AB0D9] hover:bg-[#4AB0D9]/90 text-white">
                                   Agendar
