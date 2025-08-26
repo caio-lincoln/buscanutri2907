@@ -91,15 +91,14 @@ export default function NutritionistDashboard() {
 
   const menuItems = getMenuItems('nutricionista', dashboardStats)
 
-  const searchParams = useSearchParams()
-  const activeTabParam = searchParams.get('activeTab')
-  console.log("🚀 ~ NutritionistDashboard ~ activeTabParam:", activeTabParam)
+  // const searchParams = useSearchParams()
+  // const activeTabParam = searchParams.get('activeTab')
 
-  useEffect(() => {
-    if (activeTabParam) {
-      setActiveTab(activeTabParam)
-    }
-  }, [ activeTabParam ])
+  // useEffect(() => {
+  //   if (activeTabParam) {
+  //     setActiveTab(activeTabParam)
+  //   }
+  // }, [ activeTabParam ])
 
   useEffect(() => {
     if ((!authLoading && !user) || user?.user_metadata[ 'user_type' ] !== 'nutricionista') {
