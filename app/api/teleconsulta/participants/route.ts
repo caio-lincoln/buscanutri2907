@@ -47,7 +47,6 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     user:user_id(id, email)
     `)
     .single()
-  console.log("🚀 ~ participant:", participant)
 
 
   if (insertError) {

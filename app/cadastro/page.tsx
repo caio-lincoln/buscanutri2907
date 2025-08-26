@@ -161,7 +161,6 @@ export default function CadastroPage() {
     }
 
     const score = Object.values(requirements).filter(Boolean).length
-    console.log("🚀 ~ validatePasswordStrength ~ score:", score)
 
     let strength: PasswordStrength = 'weak'
     let message = ''

@@ -35,7 +35,6 @@ export function ReportsTab() {
       try {
         setLoading(true)
         const stats = await getContentEngagementStats(user.id)
-        console.log("🚀 ~ loadEngagementData ~ stats:", stats)
         setEngagementStats(stats)
       } catch (error) {
         // Silent error handling: Error loading engagement data

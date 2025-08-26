@@ -78,7 +78,6 @@ export function ScheduleSelector({
         ...schedule,
         [ dayKey ]: [ ...(schedule[ dayKey ] || []), { start: '08:00', end: '17:00' } ],
       }
-      console.log("🚀 ~ addTimeSlot ~ newSchedule:", newSchedule)
       updateSchedule(newSchedule)
     }
 

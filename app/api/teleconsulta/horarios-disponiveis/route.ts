@@ -77,7 +77,6 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
     start,
     end
   )
-  console.log("🚀 ~ availableSlots:", availableSlots)
 
   return NextResponse.json({ availableSlots })
 })

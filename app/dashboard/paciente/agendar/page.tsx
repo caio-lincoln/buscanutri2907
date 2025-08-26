@@ -222,7 +222,6 @@ export default function AgendarPage() {
       }
 
       const sessionData = await response.json()
-      console.log("🚀 ~ handleBooking ~ sessionData:", sessionData)
 
       const res = await fetch('/api/payments/create-checkout', {
         method: 'POST',

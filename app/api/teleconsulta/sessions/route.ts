@@ -164,7 +164,6 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     .select()
     .single()
 
-  console.log("🚀 ~ createError:", createError)
   if (createError) {
     throw new Error('Erro ao criar sessão de teleconsulta')
   }

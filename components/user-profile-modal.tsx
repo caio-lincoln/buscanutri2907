@@ -959,7 +959,6 @@ export function UserProfileModal({
       // onProfileUpdate?.()
       onOpenChange(false)
     } catch (err: any) {
-      console.log("🚀 ~ handleSubmit ~ err:", err)
       setError(err.message || 'Erro ao salvar perfil.')
       toast({
         title: 'Erro ao atualizar perfil',

@@ -125,7 +125,6 @@ export default function BuscarNutricionistasPage() {
       }
       
       const data = await response.json()
-      console.log("🚀 ~ loadNutritionists ~ data:", data)
       setNutritionists(data.nutritionists || [])
     } catch (error) {
       console.error('Erro ao carregar nutricionistas:', error)
@@ -141,7 +140,6 @@ export default function BuscarNutricionistasPage() {
         setLoading(true)
 
         const response = await fetch('/api/specialties')
-        console.log("🚀 ~ loadSpecialties ~ response:", response)
         if (!response.ok) {
           throw new Error('Erro ao carregar especialidades')
         }

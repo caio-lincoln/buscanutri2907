@@ -195,7 +195,6 @@ export default function AddressManagement({
       return
     }
 
-    console.log("🚀 ~ handleSaveAddress ~ formData:", formData)
     // if (formData.zip_code) {
     //   toast({
     //     title: 'Erro de validação',
@@ -244,7 +243,6 @@ export default function AddressManagement({
       // await loadAddresses()
       // setEditingIndex(null)
     } catch (error) {
-      console.log("🚀 ~ handleSaveAddress ~ error:", error)
       // Error saving address - handled silently
       toast({
         title: 'Erro',

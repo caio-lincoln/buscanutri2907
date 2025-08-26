@@ -119,7 +119,6 @@ export default function NutritionistChatPage() {
       setMessages(chatMessages)
       seenIdsRef.current = new Set(chatMessages.map(m => m.id))
     } catch (err) {
-      console.log("🚀 ~ loadChatData ~ err:", err)
       toast({
         title: 'Erro',
         description: 'Erro ao carregar dados do chat.',

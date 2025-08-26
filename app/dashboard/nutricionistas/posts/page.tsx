@@ -153,7 +153,6 @@ export default function PostsPage() {
   const loadStats = async () => {
     try {
       const { data, error } = await BlogPostsService.getMyPostsStats(supabase)
-      console.log("🚀 ~ loadStats ~ data:", data)
       
       if (error) {
         console.error('Erro ao carregar estatísticas:', error)

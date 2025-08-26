@@ -150,7 +150,6 @@ export default function NutricionistasPage() {
       try {
         setLoading(true)
         const data = await getAllNutritionists()
-        console.log("🚀 ~ loadNutritionists ~ data:", data)
         setNutritionists(data)
       } catch (error) {
         // Silent error handling for nutritionist loading

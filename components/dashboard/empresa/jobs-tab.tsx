@@ -617,7 +617,6 @@ function CreateJobForm({
         alert(`Erro ao criar vaga: ${result.error}`)
       }
     } catch (error) {
-      console.log("🚀 ~ handleSubmit ~ error:", error)
       // Silent error handling - error creating job
       alert('Erro interno. Tente novamente.')
     } finally {

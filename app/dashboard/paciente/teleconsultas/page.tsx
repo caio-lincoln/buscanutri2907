@@ -204,7 +204,7 @@ export default function TeleconsultasPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button
+          {/* <Button
             variant="ghost"
             size="sm"
             onClick={() => router.back()}
@@ -212,7 +212,7 @@ export default function TeleconsultasPage() {
           >
             <ArrowLeft className="h-4 w-4" />
             Voltar
-          </Button>
+          </Button> */}
           <div>
             <h1 className="text-3xl font-bold text-[#1E1D40]">Teleconsultas</h1>
             <p className="text-gray-600 mt-2">Gerencie suas consultas online</p>

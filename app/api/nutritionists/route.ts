@@ -6,7 +6,6 @@ export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient()
     const { searchParams } = new URL(request.url)
-    console.log("🚀 ~ GET ~ searchParams:", searchParams)
 
     // Parâmetros de filtro
     const searchTerm = searchParams.get('search') || ''
@@ -122,7 +121,6 @@ export async function GET(request: NextRequest) {
       const { specialties_join, ...rest } = query
       return {...rest, specialties: specialties_join.map(specialties => specialties.specialty.name)}
     })
-    console.log("🚀 ~ GET ~ data:", data)
     if (data) {
       nutritionists = data
       // const nutritionistsWithAddress = nutritionists?.map((nutritionist) => {

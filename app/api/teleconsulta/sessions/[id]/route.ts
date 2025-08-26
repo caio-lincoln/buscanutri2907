@@ -75,7 +75,6 @@ export const PUT = withErrorHandling(async (
     updateData.ended_at = new Date().toISOString()
   }
   
-  console.log("🚀 ~ updateData:", updateData)
   // Atualizar sessão
   const { data: updatedSession, error: updateError } = await supabase
   .from('teleconsulta_sessions')
@@ -84,7 +83,6 @@ export const PUT = withErrorHandling(async (
   .select('*')
   .maybeSingle()
   
-  console.log("🚀 ~ updatedSession:", updatedSession)
   if (updateError) {
     throw new Error('Erro ao atualizar sessão')
   }

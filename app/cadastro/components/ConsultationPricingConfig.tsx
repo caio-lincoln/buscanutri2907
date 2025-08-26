@@ -220,7 +220,6 @@ export default function ConsultationPricingConfig({
                     value={priceValue}
                     onChange={value => {
                       setPriceValue(value)
-                      console.log("🚀 ~ value:", value)
                       updateConfig({
                         inPerson: {
                           ...pricingConfig.inPerson,

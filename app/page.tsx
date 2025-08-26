@@ -61,7 +61,6 @@ export default function Home() {
   const loadStats = useCallback(async () => {
     try {
       const platformStats = await getPlatformStats()
-      console.log("🚀 ~ Home ~ platformStats:", platformStats)
       setStats(platformStats)
     } catch (error) {
       // Error loading stats - handled silently

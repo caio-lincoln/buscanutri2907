@@ -167,7 +167,6 @@ export function AvailabilityManager({
   const handleSave = async () => {
     setIsSaving(true)
     try {
-      console.log("🚀 ~ handleSave ~ availability:", availability)
       // await onSave(availability)
       toast.success('Disponibilidade salva com sucesso!')
     } catch (error) {

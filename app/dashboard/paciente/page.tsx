@@ -346,7 +346,6 @@ export default function PatientDashboard() {
         setLoading(true)
 
         const response = await fetch('/api/specialties')
-        console.log("🚀 ~ loadSpecialties ~ response:", response)
         if (!response.ok) {
           throw new Error('Erro ao carregar especialidades')
         }

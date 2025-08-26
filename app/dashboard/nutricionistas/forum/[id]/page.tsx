@@ -201,7 +201,7 @@ export default function NutritionistForumQuestionPage() {
           await loadReplies(currentUser)
         }
       } catch (err) {
-        console.log("🚀 ~ loadData ~ err:", err)
+        ("🚀 ~ loadData ~ err:", err)
         // Silent error handling for data loading
         setError('Erro ao carregar a pergunta')
       } finally {
