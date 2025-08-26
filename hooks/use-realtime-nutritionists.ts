@@ -77,6 +77,9 @@ export function useRealtimeNutritionists(filters: UseRealtimeNutritionistsProps 
           ${specJoin}
         `)
 
+      query = query.not('stripe_account_id', 'is', null)
+        .eq('stripe_onboarding_complete', true)
+
       // Filtros
       if (filters.searchTerm) {
         query = query.or(
