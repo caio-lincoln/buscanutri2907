@@ -48,6 +48,7 @@ import {
   ChevronDown,
   Home,
   Bot,
+  CreditCard,
 } from 'lucide-react'
 import Image from 'next/image'
 import { useMediaQuery } from '../hooks/use-media-query'
@@ -435,6 +436,7 @@ export const getMenuItems = (
               ? { count: unreadNotifications, variant: 'destructive' }
               : undefined,
         },
+        { id: 'assinatura', label: 'Assinatura', icon: CreditCard },
         { id: 'perfil', label: 'Meu Perfil', icon: User },
       ]
 
@@ -462,6 +464,7 @@ export const getMenuItems = (
               ? { count: unreadNotifications, variant: 'destructive' }
               : undefined,
         },
+       
         { id: 'perfil', label: 'Perfil', icon: Building },
       ]
 

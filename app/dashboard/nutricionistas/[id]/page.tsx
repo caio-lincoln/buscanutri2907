@@ -9,14 +9,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
-import { 
-  User, 
-  MapPin, 
-  Phone, 
-  Mail, 
-  Calendar, 
-  Star, 
-  Award, 
+import {
+  User,
+  MapPin,
+  Phone,
+  Mail,
+  Calendar,
+  Star,
+  Award,
   BookOpen,
   Clock,
   Users,
@@ -25,15 +25,17 @@ import {
 } from 'lucide-react'
 import { RatingDisplay } from '@/components/ui/rating-display'
 import { UserProfileModal } from '@/components/user-profile-modal'
+import { ConnectStripeCard } from '../../../../components/ConnectStripeCard'
+import SubscriptionCard from '../../../../components/SubscriptionCard'
 
 export default function NutritionistProfilePage() {
   const params = useParams()
   const router = useRouter()
   const { user, nutritionistProfile, loading: authLoading } = useAuth()
-  const [loading, setLoading] = useState(true)
-  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
-  
-  const profileId = params['id'] as string
+  const [ loading, setLoading ] = useState(true)
+  const [ isProfileModalOpen, setIsProfileModalOpen ] = useState(false)
+
+  const profileId = params[ 'id' ] as string
   const profile = nutritionistProfile
 
   useEffect(() => {
@@ -41,17 +43,17 @@ export default function NutritionistProfilePage() {
       router.push('/login')
       return
     }
-    
+
     // Verificar se o ID do perfil corresponde ao usuário logado
     if (profile && profileId !== profile.id) {
       router.push(`/dashboard/nutricionistas/${profile.id}`)
       return
     }
-    
+
     if (profile) {
       setLoading(false)
     }
-  }, [user, authLoading, profile, profileId, router])
+  }, [ user, authLoading, profile, profileId, router ])
 
   const handleSignOut = async () => {
     try {
@@ -127,6 +129,7 @@ export default function NutritionistProfilePage() {
               <p className="text-gray-600">Gerencie suas informações profissionais</p>
             </div>
           </div>
+
           <Button
             onClick={() => setIsProfileModalOpen(true)}
             className="flex items-center gap-2"
@@ -159,7 +162,7 @@ export default function NutritionistProfilePage() {
                     </p>
                     <div className="flex items-center gap-4 mt-3">
                       <RatingDisplay
-                        rating={profile.rating || 5.0}
+                        rating={profile.rating || 0}
                         totalReviews={profile.total_reviews || 0}
                         size="sm"
                       />
@@ -228,7 +231,7 @@ export default function NutritionistProfilePage() {
                 )} */}
               </CardContent>
             </Card>
-
+            <ConnectStripeCard nutritionistUserId={nutritionistProfile?.user_id as string}/>
           </div>
 
           {/* Coluna Lateral - Estatísticas */}
@@ -300,16 +303,16 @@ export default function NutritionistProfilePage() {
                 <CardTitle>Ações Rápidas</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="w-full justify-start"
                   onClick={() => window.open(`/nutricionistas/${profile.id}`, '_blank')}
                 >
                   <User className="h-4 w-4 mr-2" />
                   Ver Perfil Público
                 </Button>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="w-full justify-start"
                   onClick={() => setIsProfileModalOpen(true)}
                 >

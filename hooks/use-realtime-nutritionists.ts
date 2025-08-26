@@ -31,9 +31,9 @@ export interface UseRealtimeNutritionistsProps {
 }
 
 export function useRealtimeNutritionists(filters: UseRealtimeNutritionistsProps = {}) {
-  const [nutritionists, setNutritionists] = useState<NutritionistProfile[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [ nutritionists, setNutritionists ] = useState<NutritionistProfile[]>([])
+  const [ loading, setLoading ] = useState(true)
+  const [ error, setError ] = useState<string | null>(null)
   const channelRef = useRef<RealtimeChannel | null>(null)
 
   // sempre aponta para a versão mais recente do loader (para evitar stale-closure nos handlers)
@@ -50,15 +50,15 @@ export function useRealtimeNutritionists(filters: UseRealtimeNutritionistsProps 
       setError(null)
 
       const specJoin = (filters.specialty && filters.specialty !== 'Todas')
-      ? `,nutritionist_specialties!inner (
+        ? `,nutritionist_specialties!inner (
            specialty_id,
            specialties:specialties ( id, name )
          )`
-      : `,nutritionist_specialties (
+        : `,nutritionist_specialties (
            specialty_id,
            specialties:specialties ( id, name )
          )`
-      
+
       let query = supabase
         .from('nutritionist_profiles')
         .select(`
@@ -97,6 +97,7 @@ export function useRealtimeNutritionists(filters: UseRealtimeNutritionistsProps 
       }
 
       const { data, error } = await query
+
       if (error) throw error
 
       let filteredData: NutritionistProfile[] = (data as any) || []
@@ -104,7 +105,7 @@ export function useRealtimeNutritionists(filters: UseRealtimeNutritionistsProps 
       // remove ids ruins
       filteredData = filteredData.filter((n) => n.id && n.id !== 'null' && n.id !== 'undefined')
 
-      if (filters.priceRange) {
+      if (filters.priceRange && filters.priceRange.label !== "Todos") {
         filteredData = filteredData.filter((n) => {
           const minPrice = getMinPrice(n.nutritionist_services)
           return minPrice != null &&
@@ -115,7 +116,8 @@ export function useRealtimeNutritionists(filters: UseRealtimeNutritionistsProps 
 
       if (filters.onlineOnly) {
         filteredData = filteredData.filter((n) =>
-          n.nutritionist_services?.some((s: any) => s.online_available)
+          n.nutritionist_services?.some((s: any) => s.online_available
+          )
         )
       }
 
@@ -126,10 +128,10 @@ export function useRealtimeNutritionists(filters: UseRealtimeNutritionistsProps 
             return (b.rating || 0) - (a.rating || 0)
           case 'price-low':
             return (getMinPrice(a.nutritionist_services) || 0) -
-                   (getMinPrice(b.nutritionist_services) || 0)
+              (getMinPrice(b.nutritionist_services) || 0)
           case 'price-high':
             return (getMinPrice(b.nutritionist_services) || 0) -
-                   (getMinPrice(a.nutritionist_services) || 0)
+              (getMinPrice(a.nutritionist_services) || 0)
           case 'name':
             return a.full_name.localeCompare(b.full_name)
           case 'experience':
@@ -155,17 +157,17 @@ export function useRealtimeNutritionists(filters: UseRealtimeNutritionistsProps 
     filters.verifiedOnly,
     filters.sortBy,
     filters.specialty
-  ]) 
+  ])
 
   // mantém o ref apontando para a versão atual do loader
   useEffect(() => {
     latestLoadRef.current = loadNutritionists
-  }, [loadNutritionists])
+  }, [ loadNutritionists ])
 
   // Recarrega quando os filtros mudarem
   useEffect(() => {
     loadNutritionists()
-  }, [loadNutritionists])
+  }, [ loadNutritionists ])
 
   // Inscrição realtime (uma vez) usando o ref para chamar a versão atual do loader
   useEffect(() => {

@@ -54,25 +54,28 @@ import { useDashboardStats } from '@/hooks/use-dashboard-stats'
 import { useRealtimeProfileViews } from '@/hooks/use-realtime-profile-views'
 import { RealtimeViewsTest } from '@/components/realtime-views-test'
 import NutricionistaTeleconsultasPage from './teleconsultas/page'
+import { ConnectStripeCard } from '../../../components/ConnectStripeCard'
+import SubscriptionCard from '../../../components/SubscriptionCard'
+import { useSearchParams } from 'next/navigation'
 
 export default function NutritionistDashboard() {
-  const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState('overview')
+  const [ loading, setLoading ] = useState(true)
+  const [ activeTab, setActiveTab ] = useState('overview')
   const [ isProfileModalOpen, setIsProfileModalOpen ] = useState(false)
- 
-  const [stats, setStats] = useState<NutritionistStats>({
+
+  const [ stats, setStats ] = useState<NutritionistStats>({
     activePatients: 0,
     scheduledAppointments: 0,
     unreadMessages: 0,
     totalConsultations: 0,
   })
-  const [upcomingAppointments, setUpcomingAppointments] = useState<
+  const [ upcomingAppointments, setUpcomingAppointments ] = useState<
     ScheduledAppointment[]
   >([])
   const router = useRouter()
-  const { user, nutritionistProfile, patientProfile, loading: authLoading, signOut, refreshUser} = useAuth()
+  const { user, nutritionistProfile, patientProfile, loading: authLoading, signOut, refreshUser } = useAuth()
 
-   // Hook para estatísticas dinâmicas do dashboard
+  // Hook para estatísticas dinâmicas do dashboard
   const { stats: dashboardStats } = useDashboardStats({
     userType: 'nutricionista',
     userId: nutritionistProfile?.user_id || '',
@@ -88,17 +91,27 @@ export default function NutritionistDashboard() {
 
   const menuItems = getMenuItems('nutricionista', dashboardStats)
 
+  const searchParams = useSearchParams()
+  const activeTabParam = searchParams.get('activeTab')
+  console.log("🚀 ~ NutritionistDashboard ~ activeTabParam:", activeTabParam)
+
   useEffect(() => {
-    if ((!authLoading && !user) || user?.user_metadata['user_type'] !== 'nutricionista') {
+    if (activeTabParam) {
+      setActiveTab(activeTabParam)
+    }
+  }, [ activeTabParam ])
+
+  useEffect(() => {
+    if ((!authLoading && !user) || user?.user_metadata[ 'user_type' ] !== 'nutricionista') {
       router.push('/login')
       return
     }
-    
+
     if (nutritionistProfile?.user_id) {
       loadDashboardData()
       setLoading(false)
     }
-  }, [user, authLoading, nutritionistProfile?.user_id])
+  }, [ user, authLoading, nutritionistProfile?.user_id ])
 
   // Remover a função loadProfile pois agora usamos o perfil do contexto
 
@@ -174,7 +187,7 @@ export default function NutritionistDashboard() {
                     <div>
                       <h1 className="text-3xl lg:text-4xl font-bold">
                         Olá, Dr(a).{' '}
-                        {nutritionistProfile?.full_name?.split(' ')[0] || 'Nutricionista'}!
+                        {nutritionistProfile?.full_name?.split(' ')[ 0 ] || 'Nutricionista'}!
                         👋
                       </h1>
                       <p className="text-blue-100 text-lg mt-1">
@@ -648,6 +661,9 @@ export default function NutritionistDashboard() {
             <NotificationsPanel userType="nutricionista" />
           </div>
         )}
+        {activeTab === 'assinatura' && (
+          <SubscriptionCard />
+        )}
 
         {/* Perfil */}
         {activeTab === 'perfil' && (
@@ -686,6 +702,7 @@ export default function NutritionistDashboard() {
                     Perfil não disponível
                   </Button>
                 )}
+
                 <Button
                   variant="outline"
                   className="hover-lift bg-white/80 backdrop-blur-sm border-gray-200"
@@ -1445,8 +1462,8 @@ export default function NutritionistDashboard() {
                     <p className="text-[#1E1D40] font-semibold text-sm">
                       {viewStats.lastViewAt
                         ? new Date(viewStats.lastViewAt).toLocaleDateString(
-                            'pt-BR'
-                          )
+                          'pt-BR'
+                        )
                         : 'Nunca'}
                     </p>
                   </div>
@@ -1486,7 +1503,7 @@ export default function NutritionistDashboard() {
         {/* Conteúdo padrão para outras abas que não foram detalhadas acima */}
         {activeTab === 'teleconsultas' && (
           <div className="space-y-8">
-            <NutricionistaTeleconsultasPage/>
+            <NutricionistaTeleconsultasPage />
           </div>
         )}
       </div>
@@ -1497,7 +1514,7 @@ export default function NutritionistDashboard() {
           onOpenChange={setIsProfileModalOpen}
           userType="nutricionista"
           initialData={nutritionistProfile}
-          
+
           userId={nutritionistProfile.id}
         />
       )}

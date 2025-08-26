@@ -1,6 +1,6 @@
+// app/api/nutritionists/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { NutritionistProfile } from '../../../lib/supabase'
 
 export async function GET(request: NextRequest) {
   try {
@@ -18,7 +18,44 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '50')
     const offset = parseInt(searchParams.get('offset') || '0')
 
-    // Query base para buscar nutricionistas
+    // Helper p/ aplicar filtros iguais na query e no count
+    const applyFilters = (q: ReturnType<typeof supabase.from> extends infer T
+      ? T extends any ? any : never : never) => {
+      // Somente quem tem Stripe conectado
+      q = q.not('stripe_account_id', 'is', null)
+           .eq('stripe_onboarding_complete', true) // <- remova se quiser listar quem só criou a conta
+
+      if (onlineOnly) {
+        q = q.eq('online_consultation_available', true)
+      }
+
+      if (minPrice > 0 || maxPrice < 1000) {
+        q = q.gte('consultation_price', minPrice)
+             .lte('consultation_price', maxPrice)
+      }
+
+      if (specialty && specialty !== 'Todas') {
+        // Se você mantém um JSON em 'specialties' no profile:
+        // q = q.contains('specialties', [specialty])
+        // Como você já traz via join, normalmente filtraria pelo join em uma view/função;
+        // aqui mantemos o filtro de texto no searchTerm para simplificar.
+      }
+
+      if (searchTerm) {
+        q = q.or(
+          `full_name.ilike.%${searchTerm}%,bio.ilike.%${searchTerm}%,city.ilike.%${searchTerm}%`
+        )
+      }
+
+      // Se quiser filtrar por estado aqui (caso exista coluna state):
+      if (state && state !== 'Todas') {
+        // q = q.eq('state', state)
+      }
+
+      return q
+    }
+
+    // Query base
     let query = supabase
       .from('nutritionist_profiles')
       .select(`
@@ -27,9 +64,7 @@ export async function GET(request: NextRequest) {
         full_name,
         bio,
         specialties_join:nutritionist_specialties (
-          specialty:specialties (
-            id, name
-          )
+          specialty:specialties ( id, name )
         ),
         profile_image_url,
         crn,
@@ -37,41 +72,13 @@ export async function GET(request: NextRequest) {
         total_reviews,
         experience_years,
         consultation_price,
-        online_consultation,
+        online_consultation_available,
         service_online_available,
         is_verified,
         created_at
       `)
-      // .eq('verification_status', 'aprovado')
 
-    // Filtro por consulta online
-    if (onlineOnly) {
-      query = query.eq('online_consultation_available', true)
-    }
-
-    // Filtro por estado
-    // if (state && state !== 'Todas') {
-    //   query = query.eq('state', state)
-    // }
-
-    // Filtro por preço
-    if (minPrice > 0 || maxPrice < 1000) {
-      query = query
-        .gte('consultation_price', minPrice)
-        .lte('consultation_price', maxPrice)
-    }
-
-    // Filtro por especialidade
-    if (specialty && specialty !== 'Todas') {
-      query = query.contains('specialties::jsonb', [ specialty ])
-    }
-
-    // Filtro por termo de busca (nome, bio, cidade)
-    if (searchTerm) {
-      query = query.or(
-        `full_name.ilike.%${searchTerm}%,bio.ilike.%${searchTerm}%,city.ilike.%${searchTerm}%`
-      )
-    }
+    query = applyFilters(query)
 
     // Ordenação
     switch (sortBy) {
@@ -97,56 +104,35 @@ export async function GET(request: NextRequest) {
     // Paginação
     query = query.range(offset, offset + limit - 1)
 
-
-    let nutritionists: {
-      id: any;
-      user_id: any;
-      full_name: any;
-      bio: any;
-      specialties_text: string;
-      profile_image_url: any;
-      crn: any;
-      rating: any;
-      total_reviews: any;
-      experience_years: any;
-      consultation_price: any;
-      online_consultation: any;
-      service_online_available: any;
-      is_verified: any;
-      created_at: any;
-    }[] = []
-    const { data: queryData, error, count } = await query
-
-    const data = queryData?.map(query => {
-      const { specialties_join, ...rest } = query
-      return {...rest, specialties: specialties_join.map(specialties => specialties.specialty.name)}
-    })
-    if (data) {
-      nutritionists = data
-      // const nutritionistsWithAddress = nutritionists?.map((nutritionist) => {
-      // console.log("🚀 ~ GET ~ nutritionist:", nutritionist)
-
-      //   return {...nutritionist, specialties: nutritionist.specialties_text}
-      // })
-
-    }
+    const { data: rows, error } = await query
 
     if (error) {
       console.error('Erro ao buscar nutricionistas:', error)
-      return NextResponse.json(
-        { error: 'Erro interno do servidor' },
-        { status: 500 }
-      )
+      return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 })
     }
 
-    // Buscar contagem total para paginação
-    const { count: totalCount } = await supabase
+    const nutritionists = (rows || []).map((row: any) => {
+      const { specialties_join, ...rest } = row
+      const specialties = (specialties_join || [])
+        .map((s: any) => s?.specialty?.name)
+        .filter(Boolean)
+      return { ...rest, specialties }
+    })
+
+    // Count com MESMOS filtros (sem paginação/ordenação)
+    let countQuery = supabase
       .from('nutritionist_profiles')
-      .select('*', { count: 'exact', head: true })
-      .eq('verification_status', 'aprovado')
+      .select('id', { count: 'exact', head: true })
+
+    countQuery = applyFilters(countQuery)
+
+    const { count: totalCount, error: countError } = await countQuery
+    if (countError) {
+      console.error('Erro ao contar nutricionistas:', countError)
+    }
 
     return NextResponse.json({
-      nutritionists: nutritionists || [],
+      nutritionists,
       pagination: {
         total: totalCount || 0,
         limit,
@@ -156,9 +142,6 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     console.error('Erro na API de nutricionistas:', error)
-    return NextResponse.json(
-      { error: 'Erro interno do servidor' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 })
   }
 }

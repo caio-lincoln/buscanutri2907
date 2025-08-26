@@ -1,5 +1,5 @@
 'use client'
-import { notFound } from 'next/navigation'
+import { notFound, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
@@ -50,6 +50,7 @@ import {
   logNormalizationEvent,
 } from '@/lib/structured-data-utils'
 import { useAuth } from '../../../contexts/auth-context'
+import { openConversationWithNutritionist } from '../../../lib/chat-forum-service'
 
 // Garante que o valor retornado seja sempre um array
 function toArray(value: unknown): string[] {
@@ -168,8 +169,8 @@ export default function NutritionistProfilePageClient({
   const formattedFullBio = nutritionist.bio || 'Sem biografia disponível.'
   const formattedEducation = nutritionist.education || 'Formação não informada.'
   const formattedCrn = nutritionist.crn || 'CRN não informado.'
-  const formattedPhone = nutritionist.phone || 'Telefone não informado.'
-  const formattedEmail = nutritionist.email || 'Email não informado.' // Assumindo que email pode vir do perfil ou ser um placeholder
+  const formattedPhone = nutritionist.phone || user?.phone || 'Telefone não informado.'
+  const formattedEmail = nutritionist.email || user?.email || 'Email não informado.' // Assumindo que email pode vir do perfil ou ser um placeholder
   const formattedWebsite = nutritionist.website || ''
   const formattedOnlineConsultation =
     nutritionist.service_online_available || false
@@ -229,27 +230,27 @@ export default function NutritionistProfilePageClient({
 
   const formattedSpecializations = toArray(nutritionist.specialties)
   const formattedAvailableTimes: string[] = Array.isArray(nutritionist.available_times)
-  ? nutritionist.available_times
+    ? nutritionist.available_times
     : [];
-  
-    type DayIntervals = { day_of_week: number; intervals: { start: string; end: string }[]; is_available: boolean };
-    const week: DayIntervals[] = Array.isArray(nutritionist.weekly_availability)
-      ? nutritionist.weekly_availability
-      : [];
-    
-    const days = ['Segunda','Terça','Quarta','Quinta','Sexta','Sábado','Domingo'];
-    const scheduleRows = days.map((label, idx) => {
-      const d = week.find(w => w.day_of_week === (idx + 1)) || { intervals: [] };
-      const text = d.intervals.length
-        ? d.intervals.map(i => `${i.start} - ${i.end}`).join('  ·  ')
-        : 'Fechado';
-      return { label, text, closed: d.intervals.length === 0 };
-    });
+
+  type DayIntervals = { day_of_week: number; intervals: { start: string; end: string }[]; is_available: boolean };
+  const week: DayIntervals[] = Array.isArray(nutritionist.weekly_availability)
+    ? nutritionist.weekly_availability
+    : [];
+
+  const days = [ 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo' ];
+  const scheduleRows = days.map((label, idx) => {
+    const d = week.find(w => w.day_of_week === (idx + 1)) || { intervals: [] };
+    const text = d.intervals.length
+      ? d.intervals.map(i => `${i.start} - ${i.end}`).join('  ·  ')
+      : 'Fechado';
+    return { label, text, closed: d.intervals.length === 0 };
+  });
 
   const formattedLanguages = normalizeLanguages(nutritionist.languages) || []
   const formattedCertifications = toArray(nutritionist.certifications)
   const formattedAchievements = toArray(nutritionist.achievements)
-
+  const router = useRouter()
   // Testimonials removidos - campo JSON não existe mais
   const formattedTestimonials: any[] = []
 
@@ -267,10 +268,10 @@ export default function NutritionistProfilePageClient({
         return '/dashboard/paciente'
     }
   }, [])
-  
+
   const currentDashboardUrl = useMemo(() => {
     return getDashboardUrl(user?.user_metadata[ 'user_type' ])
-  
+
   }, [ user?.user_type, getDashboardUrl ])
 
   return (
@@ -363,7 +364,7 @@ export default function NutritionistProfilePageClient({
                   </>
                 )
               }
-            
+
 
               {/* Mobile Menu Button */}
               <Button
@@ -526,9 +527,9 @@ export default function NutritionistProfilePageClient({
                           ({formattedReviews} avaliações)
                         </span>
                       </div>
-                      <Badge className="bg-green-100 text-green-800">
+                      {nutritionist.is_verified && <Badge className="bg-green-100 text-green-800">
                         Verificado
-                      </Badge>
+                      </Badge>}
                     </div>
                     <div className="flex flex-wrap items-center gap-4 text-sm text-[#1E1D40]/70">
                       <div className="flex items-center gap-1">
@@ -575,6 +576,15 @@ export default function NutritionistProfilePageClient({
               </Button>
             </Link>
             <Button
+              onClick={async () => {
+                try {
+                  const conversationId = await openConversationWithNutritionist(nutritionist.id)
+                  router.push(`/dashboard/paciente/chat/${conversationId}`)
+                } catch (error) {
+                  console.log("🚀 ~ error:", error)
+
+                }
+              }}
               variant="outline"
               size="lg"
               className="border-[#4AB0D9] text-[#4AB0D9] bg-transparent"
@@ -582,10 +592,10 @@ export default function NutritionistProfilePageClient({
               <MessageSquare className="h-5 w-5 mr-2" />
               Enviar Mensagem
             </Button>
-            <Button variant="outline" size="lg">
+            {/* <Button variant="outline" size="lg">
               <Heart className="h-5 w-5 mr-2" />
               Favoritar
-            </Button>
+            </Button> */}
             {formattedWebsite && (
               <Button variant="outline" size="lg">
                 <Globe className="h-5 w-5 mr-2" />
@@ -821,17 +831,17 @@ export default function NutritionistProfilePageClient({
                                 )}
                             </div>
 
-                            <div className="text-center md:text-right">
+                            <div className="text-center md:text-right mt-5">
                               <div className="text-3xl font-bold text-[#4AB0D9] mb-2">
                                 R$ {service.price}
                               </div>
-                              <Link
+                              {/* <Link
                                 href={`/dashboard/paciente/agendar?nutritionistId=${nutritionist.id}`}
                               >
                                 <Button className="bg-[#4AB0D9] hover:bg-[#4AB0D9]/90 text-white">
                                   Agendar
                                 </Button>
-                              </Link>
+                              </Link> */}
                             </div>
                           </div>
                         </div>
@@ -1058,28 +1068,28 @@ export default function NutritionistProfilePageClient({
               {/* Horários de Funcionamento */}
               {Object.keys(formattedWorkingHours).length > 0 && (
                 <Card className="shadow-lg border-0">
-                <CardHeader>
-                  <CardTitle className="text-xl">Horários de Atendimento</CardTitle>
-                </CardHeader>
-              
-                <CardContent>
-                  <div className="space-y-2">
-                    {scheduleRows.map((row) => (
-                      <div
-                        key={row.label}
-                        className="flex items-center justify-between py-1"
-                      >
-                        <span className="text-[#1E1D40] font-medium">{row.label}</span>
-                        <span
-                          className={row.closed ? 'text-red-500' : 'text-[#1E1D40]/80'}
+                  <CardHeader>
+                    <CardTitle className="text-xl">Horários de Atendimento</CardTitle>
+                  </CardHeader>
+
+                  <CardContent>
+                    <div className="space-y-2">
+                      {scheduleRows.map((row) => (
+                        <div
+                          key={row.label}
+                          className="flex items-center justify-between py-1"
                         >
-                          {row.text}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
+                          <span className="text-[#1E1D40] font-medium">{row.label}</span>
+                          <span
+                            className={row.closed ? 'text-red-500' : 'text-[#1E1D40]/80'}
+                          >
+                            {row.text}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
               )}
 
               {/* Horários Disponíveis */}
@@ -1190,6 +1200,15 @@ export default function NutritionistProfilePageClient({
                       </Button>
                     </Link>
                     <Button
+                      onClick={async () => {
+                        try {
+                          const conversationId = await openConversationWithNutritionist(nutritionist.id)
+                          router.push(`/dashboard/paciente/chat/${conversationId}`)
+                        } catch (error) {
+                          console.log("🚀 ~ error:", error)
+
+                        }
+                      }}
                       variant="outline"
                       className="w-full border-[#4AB0D9] text-[#4AB0D9] bg-transparent"
                     >

@@ -1191,7 +1191,7 @@ export default function PatientDashboard() {
                               </Avatar>
 
                               <div className="flex-1 space-y-3">
-                                <div className="flex items-start justify-between">
+                                <div className="flex items-start justify-between ">
                                   <div>
                                     <h3 className="font-bold text-[#1E1D40] text-lg">
                                       {nutritionist.full_name}
@@ -1313,7 +1313,7 @@ export default function PatientDashboard() {
                                     <Calendar className="h-4 w-4 mr-2" />
                                     Agendar
                                   </Button>
-                                  <Button
+                                  {/* <Button
                                     size="sm"
                                     variant="outline"
                                     className={`hover-lift bg-white/80 backdrop-blur-sm transition-all duration-300 ${favoritedNutritionists.has(
@@ -1334,7 +1334,7 @@ export default function PatientDashboard() {
                                         : ''
                                         }`}
                                     />
-                                  </Button>
+                                  </Button> */}
                                   <Button
                                     size="sm"
                                     className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-lg hover:shadow-xl transition-all duration-300"

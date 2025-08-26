@@ -733,7 +733,7 @@ export default function NutricionistasPage() {
                   </SelectContent>
                 </Select>
 
-                 {/* Cidade */}
+                 {/* Cidade
                  <Select value={selectedState} onValueChange={setSelectedState}>
                   <SelectTrigger className="h-12">
                     <SelectValue placeholder="Cidade" />
@@ -745,7 +745,7 @@ export default function NutricionistasPage() {
                       </SelectItem>
                     ))}
                   </SelectContent>
-                </Select>
+                </Select> */}
 
                 {/* Preço */}
                 <Select
@@ -949,13 +949,13 @@ export default function NutricionistasPage() {
                             {/* Badges */}
                             <div className="flex flex-wrap gap-1 mb-4">
                               {/* Badge de cupom */}
-                              {nutritionist.aceita_cupons && (
+                              {/* {nutritionist.aceita_cupons && (
                                 <div className="flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-green-50 to-emerald-50 rounded-full border border-green-200">
                                   <span className="text-xs font-medium text-green-700">
                                     Aceita cupom
                                   </span>
                                 </div>
-                              )}
+                              )} */}
 
                               {/* Badges existentes */}
                               {nutritionist.badges &&
