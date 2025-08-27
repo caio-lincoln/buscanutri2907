@@ -72,10 +72,6 @@ function toArray(value: unknown): string[] {
   return []
 }
 
-
-
-
-
 // Função específica para processar idiomas com múltiplos escapes
 function processLanguages(value: unknown): string[] {
   if (Array.isArray(value)) return value
@@ -538,7 +534,7 @@ export default function NutritionistProfilePageClient({
                       </div>
                       <div className="flex items-center gap-1">
                         <Award className="h-4 w-4" />
-                        {formattedExperience} anos
+                        {formattedExperience ? `${formattedExperience} anos` : "Sem experiência"}
                       </div>
                       <div className="flex items-center gap-1">
                         {/* <Users className="h-4 w-4" /> */}
@@ -744,7 +740,7 @@ export default function NutritionistProfilePageClient({
                             className="flex items-start gap-3 p-3 bg-green-50 rounded-lg"
                           >
                             <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                            <span className="text-[#1E1D40]/80">{cert}</span>
+                            <span className="text-[#1E1D40]/80">{cert.title}</span>
                           </div>
                         ))}
                       </div>

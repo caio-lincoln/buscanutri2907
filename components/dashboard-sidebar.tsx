@@ -347,7 +347,51 @@ function SidebarShell({
   )
 }
 
-// Menu items para cada tipo de usuário
+type DashboardMenuItem = {
+  id: string
+  label: string
+  href?: string
+  icon: any
+  badge?: { count: number; variant: 'default' | 'outline' | 'destructive' }
+  requiresSubscription?: boolean  // << NOVO
+}
+
+// Itens que exigem assinatura por tipo de usuário
+const SUBS_GATE_BY_ROLE: Record<string, Set<string>> = {
+  nutricionista: new Set([
+    'teleconsultas',
+    'chat',
+    'blog',
+    'forum',
+    'vagas',
+    'candidaturas',
+    'cursos',
+    'relatorios',
+    'iris',
+    // 'notificacoes' e 'perfil' ficam liberados
+  ]),
+  // se quiser aplicar para outras roles depois
+}
+
+// Aplica o “gate” de assinatura
+function applySubscriptionGate(
+  items: DashboardMenuItem[],
+  userType: string,
+  hasActiveSubscription?: boolean
+) {
+  // Se não é nutricionista ou assinatura está ok, não mexe
+  if (userType !== 'nutricionista' || hasActiveSubscription) return items
+
+  const gated = SUBS_GATE_BY_ROLE[ userType ] ?? new Set<string>()
+  // esconda apenas os itens marcados; "assinatura" continua visível
+  return items.map(i =>
+    gated.has(i.id) ? { ...i, requiresSubscription: true } : i
+  ).filter(i => !i.requiresSubscription)
+}
+
+// ------------------------------
+// SUA FUNÇÃO com um 3º parâmetro
+// ------------------------------
 export const getMenuItems = (
   userType: string,
   stats?: {
@@ -356,7 +400,8 @@ export const getMenuItems = (
     unreadNotifications?: number
     pendingReports?: number
     pendingModerations?: number
-  }
+  },
+  opts?: { hasActiveSubscription?: boolean }  // << NOVO
 ): DashboardMenuItem[] => {
   const {
     upcomingAppointments = 0,
@@ -367,8 +412,8 @@ export const getMenuItems = (
   } = stats || {}
 
   switch (userType) {
-    case 'paciente':
-      return [
+    case 'paciente': {
+      const items: DashboardMenuItem[] = [
         { id: 'overview', label: 'Início', href: '/dashboard/paciente', icon: Home },
         {
           id: 'teleconsultas',
@@ -385,44 +430,30 @@ export const getMenuItems = (
           id: 'notificacoes',
           label: 'Notificações',
           icon: Bell,
-          badge:
-            unreadNotifications > 0
-              ? { count: unreadNotifications, variant: 'destructive' }
-              : undefined,
+          badge: unreadNotifications > 0 ? { count: unreadNotifications, variant: 'destructive' } : undefined,
         },
         { id: 'perfil', label: 'Meu Perfil', icon: User },
       ]
+      return items
+    }
 
-    case 'nutricionista':
-      return [
-        { id: 'overview', label: 'Visão Geral', icon: Home },
-        // {
-        //   id: 'agenda',
-        //   label: 'Agenda',
-        //   icon: Calendar,
-        //   href: '/dashboard/nutricionistas/agenda',
-        //   badge:
-        //     upcomingAppointments > 0
-        //       ? { count: upcomingAppointments, variant: 'default' }
-        //       : undefined,
-        // },
+    case 'nutricionista': {
+      const items: DashboardMenuItem[] = [
+        { id: 'overview', label: 'Visão Geral', icon: Home, href: '/dashboard/nutricionistas' },
         {
           id: 'teleconsultas',
           label: 'Teleconsultas',
           icon: Video,
           href: '/dashboard/nutricionistas/teleconsultas',
         },
-        { id: 'chat', label: 'Chat', icon: MessageSquare },
+        // { id: 'chat', label: 'Chat', icon: MessageSquare },
         { id: 'blog', label: 'Blog', icon: BookOpen },
         { id: 'forum', label: 'Fórum', icon: MessageSquare },
         {
           id: 'vagas',
           label: 'Vagas',
           icon: Briefcase,
-          badge:
-            availableJobs > 0
-              ? { count: availableJobs, variant: 'outline' }
-              : undefined,
+          badge: availableJobs > 0 ? { count: availableJobs, variant: 'outline' } : undefined,
         },
         { id: 'candidaturas', label: 'Candidaturas', icon: FileText },
         { id: 'cursos', label: 'Cursos', icon: Users },
@@ -432,26 +463,22 @@ export const getMenuItems = (
           id: 'notificacoes',
           label: 'Notificações',
           icon: Bell,
-          badge:
-            unreadNotifications > 0
-              ? { count: unreadNotifications, variant: 'destructive' }
-              : undefined,
+          badge: unreadNotifications > 0 ? { count: unreadNotifications, variant: 'destructive' } : undefined,
         },
-        { id: 'assinatura', label: 'Assinatura', icon: CreditCard },
-        { id: 'perfil', label: 'Meu Perfil', icon: User },
+        { id: 'assinatura', label: 'Assinatura', icon: CreditCard, href: '/dashboard/nutricionistas/assinatura' },
+        { id: 'perfil', label: 'Meu Perfil', icon: User, href: '/dashboard/nutricionistas/perfil' },
       ]
+      return applySubscriptionGate(items, userType, opts?.hasActiveSubscription)
+    }
 
-    case 'empresa':
-      return [
+    case 'empresa': {
+      const items: DashboardMenuItem[] = [
         { id: 'overview', label: 'Visão Geral', icon: Home },
         {
           id: 'vagas',
           label: 'Vagas',
           icon: Briefcase,
-          badge:
-            availableJobs > 0
-              ? { count: availableJobs, variant: 'default' }
-              : undefined,
+          badge: availableJobs > 0 ? { count: availableJobs, variant: 'default' } : undefined,
         },
         { id: 'candidatos', label: 'Candidatos', icon: Users },
         { id: 'processos', label: 'Processos', icon: FileText },
@@ -460,17 +487,15 @@ export const getMenuItems = (
           id: 'notificacoes',
           label: 'Notificações',
           icon: Bell,
-          badge:
-            unreadNotifications > 0
-              ? { count: unreadNotifications, variant: 'destructive' }
-              : undefined,
+          badge: unreadNotifications > 0 ? { count: unreadNotifications, variant: 'destructive' } : undefined,
         },
-       
         { id: 'perfil', label: 'Perfil', icon: Building },
       ]
+      return items
+    }
 
-    case 'admin':
-      return [
+    case 'admin': {
+      const items: DashboardMenuItem[] = [
         { id: 'overview', label: 'Visão Geral', icon: Home },
         { id: 'usuarios', label: 'Usuários', icon: Users },
         { id: 'vagas', label: 'Vagas', icon: Briefcase },
@@ -478,10 +503,7 @@ export const getMenuItems = (
           id: 'relatorios',
           label: 'Relatórios',
           icon: FileText,
-          badge:
-            pendingReports > 0
-              ? { count: pendingReports, variant: 'destructive' }
-              : undefined,
+          badge: pendingReports > 0 ? { count: pendingReports, variant: 'destructive' } : undefined,
         },
         { id: 'financeiro', label: 'Financeiro', icon: DollarSign },
         { id: 'analytics', label: 'Analytics', icon: TrendingUp },
@@ -489,10 +511,7 @@ export const getMenuItems = (
           id: 'moderacao',
           label: 'Moderação',
           icon: Shield,
-          badge:
-            pendingModerations > 0
-              ? { count: pendingModerations, variant: 'outline' }
-              : undefined,
+          badge: pendingModerations > 0 ? { count: pendingModerations, variant: 'outline' } : undefined,
         },
         { id: 'sistema', label: 'Sistema', icon: Cog },
         { id: 'configuracoes', label: 'Configurações', icon: Settings },
@@ -500,12 +519,11 @@ export const getMenuItems = (
           id: 'notificacoes',
           label: 'Notificações',
           icon: Bell,
-          badge:
-            unreadNotifications > 0
-              ? { count: unreadNotifications, variant: 'destructive' }
-              : undefined,
+          badge: unreadNotifications > 0 ? { count: unreadNotifications, variant: 'destructive' } : undefined,
         },
       ]
+      return items
+    }
 
     default:
       return []

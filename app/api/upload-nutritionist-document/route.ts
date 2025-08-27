@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '../../../lib/supabase/server'
+import { createAdminClient } from '../../../lib/supabase/server'
 
 const supabaseUrl = process.env['NEXT_PUBLIC_SUPABASE_URL']!
 const supabaseServiceKey = process.env['SUPABASE_SERVICE_ROLE_KEY']!
@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const supabase = await createClient()
+    const supabase = await createAdminClient()
 
     // Parse do form data
     const formData = await request.formData()
@@ -186,8 +186,9 @@ export async function POST(request: NextRequest) {
           .eq('id', existingDoc.id)
           .select()
           .single()
-
-        if (updateError) {
+          
+          if (updateError) {
+          console.log("🚀 ~ POST ~ updateError:", updateError)
           // Silent error handling - document update error
           return NextResponse.json(
             { error: 'Erro ao salvar metadados do documento' },
@@ -210,7 +211,8 @@ export async function POST(request: NextRequest) {
       .select()
       .single()
 
-    if (insertError) {
+      if (insertError) {
+      console.log("🚀 ~ POST ~ insertError:", insertError)
       // Silent error handling - document save error
 
       // Limpar arquivo do storage em caso de erro

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/auth-context'
 import { DashboardSidebar, getMenuItems } from '@/components/dashboard-sidebar'
@@ -16,8 +16,6 @@ import {
   Mail,
   Calendar,
   Star,
-  Award,
-  BookOpen,
   Clock,
   Users,
   Edit,
@@ -26,7 +24,9 @@ import {
 import { RatingDisplay } from '@/components/ui/rating-display'
 import { UserProfileModal } from '@/components/user-profile-modal'
 import { ConnectStripeCard } from '../../../../components/ConnectStripeCard'
-import SubscriptionCard from '../../../../components/SubscriptionCard'
+import { useSubscriptionContext } from '../../../../contexts/subscription-context'
+
+const DASH_BASE = '/dashboard/nutricionistas';
 
 export default function NutritionistProfilePage() {
   const params = useParams()
@@ -34,6 +34,13 @@ export default function NutritionistProfilePage() {
   const { user, nutritionistProfile, loading: authLoading } = useAuth()
   const [ loading, setLoading ] = useState(true)
   const [ isProfileModalOpen, setIsProfileModalOpen ] = useState(false)
+
+  const { hasActiveSubscription } = useSubscriptionContext()
+
+  const menuItems = useMemo(
+    () => getMenuItems('nutricionista', undefined, { hasActiveSubscription }),
+    [ hasActiveSubscription ]
+  );
 
   const profileId = params[ 'id' ] as string
   const profile = nutritionistProfile
@@ -55,6 +62,12 @@ export default function NutritionistProfilePage() {
     }
   }, [ user, authLoading, profile, profileId, router ])
 
+  const goToTab = useCallback((tab: string) => {
+    const sp = new URLSearchParams();
+    sp.set('activeTab', tab);
+    router.push(`${DASH_BASE}?${sp.toString()}`, { scroll: false });
+  }, [ router ]);
+
   const handleSignOut = async () => {
     try {
       // Implementar logout
@@ -67,8 +80,6 @@ export default function NutritionistProfilePage() {
   const handleBackToDashboard = () => {
     router.push('/dashboard/nutricionistas')
   }
-
-  const menuItems = getMenuItems('nutricionista')
 
   if (authLoading || loading) {
     return (
@@ -107,7 +118,7 @@ export default function NutritionistProfilePage() {
       activeItem="perfil"
       onItemClick={(itemId) => {
         if (itemId === 'perfil') return // Já estamos na página de perfil
-        router.push('/dashboard/nutricionistas')
+        goToTab(itemId)
       }}
       onSignOut={handleSignOut}
     >
@@ -231,7 +242,7 @@ export default function NutritionistProfilePage() {
                 )} */}
               </CardContent>
             </Card>
-            <ConnectStripeCard nutritionistUserId={nutritionistProfile?.user_id as string}/>
+            <ConnectStripeCard nutritionistUserId={nutritionistProfile?.user_id as string} />
           </div>
 
           {/* Coluna Lateral - Estatísticas */}

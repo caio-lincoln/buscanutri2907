@@ -11,10 +11,10 @@ import { Tabs, TabsContent } from '@/components/ui/tabs'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 
-import { useAuth } from '../../../../contexts/auth-context'
-import { createSupabaseClient } from '../../../../lib/supabase'
-import { AvailabilityManager, TeleconsultaCard, TeleconsultaFilters } from '../../../../components/teleconsulta'
-import { useDebouncedValue } from '../../../../hooks/use-debounce'
+import { useAuth } from '@/contexts/auth-context'
+import { createSupabaseClient } from '@/lib/supabase'
+import { AvailabilityManager, TeleconsultaCard, TeleconsultaFilters } from '@/components/teleconsulta'
+import { useDebouncedValue } from '@/hooks/use-debounce'
 
 type SessionStatus = 'scheduled' | 'in_progress' | 'completed' | 'cancelled'
 
@@ -71,7 +71,7 @@ type FiltersState = {
   priceMax: string
 }
 
-export default function NutricionistaTeleconsultasPage() {
+export default function NutricionistaTeleconsultasTab() {
   const router = useRouter()
   const supabase = useMemo(() => createSupabaseClient(), [])
   const { user, nutritionistProfile } = useAuth()
@@ -126,7 +126,7 @@ export default function NutricionistaTeleconsultasPage() {
 
       if (status !== 'all') q = q.eq('status', status)
       if (dateFrom) q = q.gte('scheduled_at', startOfDay(dateFrom).toISOString())
-      if (dateTo)   q = q.lte('scheduled_at', endOfDay(dateTo).toISOString())
+      if (dateTo) q = q.lte('scheduled_at', endOfDay(dateTo).toISOString())
       if (priceMin) q = q.gte('price', Number(priceMin))
       if (priceMax) q = q.lte('price', Number(priceMax))
 

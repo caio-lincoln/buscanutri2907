@@ -874,8 +874,9 @@ export function UserProfileModal({
           )
         }
       }
+
       if (userType === 'nutricionista') {
-        await saveNutritionistAvailability(nutritionistProfile?.id as string, JSON.parse(dataToSubmit.available_times))
+        await saveNutritionistAvailability(nutritionistProfile?.id as string, typeof dataToSubmit.available_times === 'string' ? JSON.parse(dataToSubmit.available_times) : dataToSubmit.available_times)
       }
 
       delete dataToSubmit.specialties
@@ -959,6 +960,7 @@ export function UserProfileModal({
       // onProfileUpdate?.()
       onOpenChange(false)
     } catch (err: any) {
+      console.log("🚀 ~ handleSubmit ~ err:", err)
       setError(err.message || 'Erro ao salvar perfil.')
       toast({
         title: 'Erro ao atualizar perfil',
