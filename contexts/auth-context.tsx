@@ -167,9 +167,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (typeof window !== 'undefined') {
         sessionStorage.removeItem('admin_session')
       }
-      router.replace('/')
       broadcastAuthChange('SIGN_OUT')
-
+      
       await supabase.auth.signOut()
       setUser(null)
       setUserProfile(null)
@@ -177,6 +176,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setPatientProfile(null)
       setCompanyProfile(null)
       
+      router.replace('/')
     } catch (error) {
       console.error('Erro ao fazer logout:', error)
     }
@@ -201,8 +201,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         loadUser()
         handledSignOutRef.current = false; // reset
       } else if (event === 'SIGNED_OUT') {
+        console.log("Antes")
         if (handledSignOutRef.current) return; // dedupe do SIGNED_OUT
         handledSignOutRef.current = true;
+        console.log("Depois")
         setUser(null);
         setUserProfile(null);
         setNutritionistProfile(null);

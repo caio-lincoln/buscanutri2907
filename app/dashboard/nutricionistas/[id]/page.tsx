@@ -31,7 +31,7 @@ const DASH_BASE = '/dashboard/nutricionistas';
 export default function NutritionistProfilePage() {
   const params = useParams()
   const router = useRouter()
-  const { user, nutritionistProfile, loading: authLoading } = useAuth()
+  const { user, nutritionistProfile, loading: authLoading, signOut } = useAuth()
   const [ loading, setLoading ] = useState(true)
   const [ isProfileModalOpen, setIsProfileModalOpen ] = useState(false)
 
@@ -68,14 +68,6 @@ export default function NutritionistProfilePage() {
     router.push(`${DASH_BASE}?${sp.toString()}`, { scroll: false });
   }, [ router ]);
 
-  const handleSignOut = async () => {
-    try {
-      // Implementar logout
-      router.push('/')
-    } catch (error) {
-      console.error('Erro ao fazer logout:', error)
-    }
-  }
 
   const handleBackToDashboard = () => {
     router.push('/dashboard/nutricionistas')
@@ -120,7 +112,7 @@ export default function NutritionistProfilePage() {
         if (itemId === 'perfil') return // Já estamos na página de perfil
         goToTab(itemId)
       }}
-      onSignOut={handleSignOut}
+      onSignOut={signOut}
     >
       <div className="space-y-6">
         {/* Header com botão de voltar */}
@@ -242,7 +234,8 @@ export default function NutritionistProfilePage() {
                 )} */}
               </CardContent>
             </Card>
-            <ConnectStripeCard nutritionistUserId={nutritionistProfile?.user_id as string} />
+            {hasActiveSubscription && <ConnectStripeCard nutritionistUserId={nutritionistProfile?.user_id as string} />}
+            
           </div>
 
           {/* Coluna Lateral - Estatísticas */}

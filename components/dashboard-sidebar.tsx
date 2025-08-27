@@ -1,6 +1,7 @@
 'use client'
 
 import type * as React from 'react'
+import { useMemo } from 'react'
 import { cn } from '@/lib/utils'
 import {
   Sidebar,
@@ -52,6 +53,8 @@ import {
 } from 'lucide-react'
 import Image from 'next/image'
 import { useMediaQuery } from '../hooks/use-media-query'
+import { useRouter } from 'next/navigation'
+import { useAuth } from '../contexts/auth-context'
 
 export interface DashboardMenuItem {
   id: string
@@ -191,6 +194,22 @@ function SidebarShell({
   const { setOpen, setOpenMobile, openMobile } = useSidebar()
   const isMobile = useMediaQuery('(max-width: 800px)')
 
+  const router = useRouter()
+  const { nutritionistProfile, patientProfile, companyProfile } = useAuth()
+
+  const myProfileUrl = useMemo(() => {
+    switch (userType) {
+      case 'nutricionista':
+        return `/dashboard/nutricionistas/${nutritionistProfile?.id}`
+      case 'paciente':
+        return `/dashboard/nutricionistas/${patientProfile?.id}`
+      case 'empresa':
+        return `/dashboard/nutricionistas/${companyProfile?.id}`
+    }
+
+    return ''
+  }, [])
+
   return (
     <Sidebar className={cn('border-r-0 shadow-xl bg-white')}>
       {/* Header com Logo */}
@@ -328,7 +347,9 @@ function SidebarShell({
             align="end"
             className="w-64 shadow-2xl border-0 bg-white/95 backdrop-blur-md rounded-xl"
           >
-            <DropdownMenuItem className="hover:bg-gray-50 rounded-lg m-2 p-3 transition-colors duration-200">
+            <DropdownMenuItem onClick={() => {
+              router.push(myProfileUrl as string)
+            }} className="hover:bg-gray-50 rounded-lg m-2 p-3 transition-colors duration-200">
               <User className="h-4 w-4 mr-3 text-gray-600" />
               <span className="font-medium text-sm">Meu Perfil</span>
             </DropdownMenuItem>
