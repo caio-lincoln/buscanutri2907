@@ -30,6 +30,7 @@ export interface FavoriteNutritionist {
   created_at: string
   nutritionist_profiles: {
     full_name: string
+    profile_image_url: string;
     specialties: string[]
     rating: number
     total_reviews: number

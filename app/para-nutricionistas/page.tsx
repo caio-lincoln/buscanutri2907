@@ -72,19 +72,19 @@ const benefits = [
 ]
 
 const plans = [
-  {
-    name: 'Básico',
-    price: 'Gratuito',
-    description: 'Ideal para começar',
-    features: [
-      'Perfil profissional',
-      'Até 10 pacientes',
-      'Agendamento básico',
-      'Chat com pacientes',
-      'Suporte por email',
-    ],
-    popular: false,
-  },
+  // {
+  //   name: 'Básico',
+  //   price: 'Gratuito',
+  //   description: 'Ideal para começar',
+  //   features: [
+  //     'Perfil profissional',
+  //     'Até 10 pacientes',
+  //     'Agendamento básico',
+  //     'Chat com pacientes',
+  //     'Suporte por email',
+  //   ],
+  //   popular: false,
+  // },
   {
     name: 'Profissional',
     price: 'R$ 24,90/mês',

@@ -96,16 +96,16 @@ export interface ForumAnswer {
 // Chat functions
 export async function getPatientChatConversations(patientId: string): Promise<ChatConversation[]> {
   const { data, error } = await supabase
-  .from('chat_conversations')
-  .select(`
+    .from('chat_conversations')
+    .select(`
     id, patient_id, nutritionist_id, status, created_at, last_message_at, last_message_text, is_unlocked,
     nutritionist_profiles ( id, full_name, profile_image_url )
     `)
     .eq('patient_id', patientId)
     .order('last_message_at', { ascending: false })
     .order('created_at', { ascending: false });
-    
-    if (error) throw error;
+
+  if (error) throw error;
 
   // adapta ao que seu componente espera (last_message?.message_text)
   return (data ?? []).map((row: any) => ({
@@ -113,83 +113,33 @@ export async function getPatientChatConversations(patientId: string): Promise<Ch
     last_message: { message_text: row.last_message_text }
   }));
 }
+
 export async function getNutritionistChatConversations(
-  nutritionistUserId: string
+  nutritionistId: string
 ): Promise<ChatConversation[]> {
-  try {
-    const { data: conversations, error } = await supabase
-      .from('chat_conversations')
-      .select('*')
-      .eq('nutritionist_id', nutritionistUserId)
-      .order('last_message_at', { ascending: false, nullsFirst: false })
+  const { data, error } = await supabase
+    .from('chat_conversations')
+    .select(`
+      id, patient_id, nutritionist_id, status, created_at, last_message_at, last_message_text, is_unlocked,
+      patient_profiles ( id, full_name, profile_image_url )
+    `)
+    .eq('nutritionist_id', nutritionistId)
+    .order('last_message_at', { ascending: false, nullsFirst: false })
+    .order('created_at', { ascending: false })
 
-    if (error) {
-      // Silent error handling: Error fetching nutritionist chat conversations
-      return []
-    }
+  if (error) throw error
 
-    if (!conversations || conversations.length === 0) {
-      return []
-    }
-
-    // Buscar perfis dos pacientes separadamente
-    const patientIds = [
-      ...new Set(conversations.map(c => c.patient_id).filter(Boolean)),
-    ]
-    let patientProfiles: any[] = []
-
-    if (patientIds.length > 0) {
-      const { data: profiles } = await supabase
-        .from('patient_profiles')
-        .select('user_id, full_name, profile_image_url')
-        .in('user_id', patientIds)
-
-      patientProfiles = profiles || []
-    }
-
-    // Buscar últimas mensagens separadamente
-    const conversationIds = conversations.map(c => c.id)
-    let lastMessages: any[] = []
-
-    if (conversationIds.length > 0) {
-      const { data: messages } = await supabase
-        .from('chat_messages')
-        .select('conversation_id, message_text, sender_type, created_at')
-        .in('conversation_id', conversationIds)
-        .order('created_at', { ascending: false })
-
-      lastMessages = messages || []
-    }
-
-    // Combinar os dados
-    const result = conversations.map((conv: any) => {
-      const patientProfile = patientProfiles.find(
-        pp => pp.user_id === conv.patient_id
-      )
-      const conversationMessages = lastMessages.filter(
-        msg => msg.conversation_id === conv.id
-      )
-      const lastMessage =
-        conversationMessages.length > 0 ? conversationMessages[0] : null
-
-      return {
-        ...conv,
-        patient_profiles: patientProfile || null,
-        last_message: lastMessage,
-      }
-    })
-
-    return result
-  } catch (error) {
-    // Silent error handling: Error in getNutritionistChatConversations
-    return []
-  }
+  return (data ?? []).map((row: any) => ({
+    ...row,
+    last_message: { message_text: row.last_message_text },
+  }))
 }
+
 
 export async function openConversationWithNutritionist(nutritionistId: string): Promise<string> {
   const { data, error } = await supabase.rpc('chat_start', { nutritionist: nutritionistId });
   if (error) throw error;
-  return data as string; 
+  return data as string;
 }
 
 export async function getChatMessages(
@@ -219,7 +169,7 @@ export async function getChatMessages(
       .update({ read_at: new Date().toISOString() })
       .eq('conversation_id', conversationId)
       .neq('sender_id', userId)
-      // .eq('read_at', 'null')
+    // .eq('read_at', 'null')
 
     return data || []
   } catch (error) {
@@ -242,11 +192,11 @@ export async function sendChatMessage(
     userType === 'patient' ? 'patient_profiles' : 'nutritionist_profiles'
 
   const { data: profile, error: profileError } = await supabase
-  .from(profileTable)
-  .select('id')
-  .eq('user_id', userId)
-  .maybeSingle()
-  
+    .from(profileTable)
+    .select('id')
+    .eq('user_id', userId)
+    .maybeSingle()
+
   if (profileError) throw profileError
   if (!profile?.id) throw new Error(`Perfil (${profileTable}) não encontrado para este usuário.`)
 
@@ -262,7 +212,7 @@ export async function sendChatMessage(
     .from('chat_messages')
     .insert({
       conversation_id: conversationId,
-      sender_id: senderProfileId,     
+      sender_id: senderProfileId,
       sender_type: userType,
       message_text: messageType === 'text' ? trimmed : trimmed || null,
       message_type: messageType,
@@ -273,7 +223,7 @@ export async function sendChatMessage(
     .single()
 
   if (error) {
-    
+
     throw error
   }
 

@@ -290,9 +290,9 @@ export default function NutricionistaTeleconsultasTab() {
           />
 
           {loading ? <>
-
-            <div className="flex items-center justify-center mt-4">
-              <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-[#1E1D40]" />
+            <div className="text-center py-12 flex flex-col items-center justify-center ">
+              <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-200 border-t-blue-500 mx-auto"></div>
+              <p className="text-[#1E1D40]/70">Carregando suas consultas...</p>
             </div>
           </> : <>
             <div className="grid gap-4">

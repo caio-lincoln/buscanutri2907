@@ -18,7 +18,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { useAuth } from '../../../contexts/auth-context'
 import { RatingDisplay } from '@/components/ui/rating-display'
 import { StatsCard } from '@/components/stats-card'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import {
   getNutritionistStats,
@@ -26,15 +26,18 @@ import {
   type NutritionistStats,
   type ScheduledAppointment,
 } from '@/lib/nutritionist-data-service'
-import NutritionistRecentChatsList from '../../nutritionist-recent-chats-list'
 import { useRouter } from 'next/navigation'
 import { useHasActiveSubscription } from '../../../hooks/use-has-active-subscription'
+import { Tab } from '../../../app/dashboard/nutricionistas/_client'
+import NutritionistRecentChatsList from '../../../app/dashboard/nutricionistas/_components/NutriotinistRecentChatsList'
+import { createSupabaseClient } from '../../../lib/supabase'
 
-export default function OverviewTab({ setActiveTab }: { setActiveTab: (tab: string) => void }) {
+export default function OverviewTab({ setActiveTab }: { setActiveTab: (tab: Tab) => void }) {
   const { nutritionistProfile } = useAuth()
   const [ upcomingAppointments, setUpcomingAppointments ] = useState<
     ScheduledAppointment[]
   >([])
+  const supabase = useMemo(() => createSupabaseClient(), [])
 
   const router = useRouter()
   const { hasActiveSubscription } = useHasActiveSubscription()
@@ -49,6 +52,33 @@ export default function OverviewTab({ setActiveTab }: { setActiveTab: (tab: stri
     unreadMessages: 0,
     totalConsultations: 0,
   })
+
+  async function fetchStats(nutritionistId: string) {
+    const { data, error } = await supabase
+      .rpc('get_nutritionist_stats', { p_nutritionist_id: nutritionistId })
+
+    if (error) throw error
+
+    const row = Array.isArray(data) ? data[ 0 ] : data
+    return {
+      activePatients: row?.active_patients ?? 0,
+      scheduledAppointments: row?.scheduled_appointments ?? 0,
+      unreadMessages: row?.unread_messages ?? 0,
+      totalConsultations: row?.total_consultations ?? 0,
+    }
+  }
+
+  useEffect(() => {
+    (async () => {
+      if (!nutritionistProfile?.id) return
+      try {
+        const s = await fetchStats(nutritionistProfile.id)
+        setStats(s)
+      } catch (e) {
+        // opcional: log
+      }
+    })()
+  }, [supabase, nutritionistProfile?.id])
 
   const loadDashboardData = async () => {
     if (!nutritionistProfile?.user_id) return
@@ -166,14 +196,14 @@ export default function OverviewTab({ setActiveTab }: { setActiveTab: (tab: stri
               <h2 className="text-2xl font-bold text-[#1E1D40]">
                 Ações Rápidas
               </h2>
-              <Button
+              {/* <Button
                 variant="ghost"
                 size="sm"
                 className="text-gray-500 hover:text-gray-700"
                 onClick={() => router.push('/dashboard/nutricionistas/notificacoes')}
               >
                 Ver todas <ArrowRight className="h-4 w-4 ml-1" />
-              </Button>
+              </Button> */}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
@@ -310,9 +340,9 @@ export default function OverviewTab({ setActiveTab }: { setActiveTab: (tab: stri
                   variant="ghost"
                   size="sm"
                   className="text-gray-500 hover:text-gray-700"
-                  onClick={() => router.push('/dashboard/nutricionistas/consultas')}
+                  onClick={() => setActiveTab('teleconsultas')}
                 >
-                  Ver agenda completa <ArrowRight className="h-4 w-4 ml-1" />
+                  Ver consultas <ArrowRight className="h-4 w-4 ml-1" />
                 </Button>
               </div>
 
@@ -367,14 +397,14 @@ export default function OverviewTab({ setActiveTab }: { setActiveTab: (tab: stri
                       <p className="text-gray-400 text-sm mb-4">
                         Suas próximas consultas aparecerão aqui
                       </p>
-                      <Button
+                      {/* <Button
                         variant="outline"
                         onClick={() => setActiveTab('agenda')}
                         className="hover-lift"
                       >
                         <Calendar className="h-4 w-4 mr-2" />
                         Ver agenda
-                      </Button>
+                      </Button> */}
                     </div>
                   )}
                 </CardContent>

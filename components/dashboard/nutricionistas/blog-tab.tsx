@@ -232,7 +232,7 @@ export function BlogTab() {
 
   if (loading) {
     return (
-      <div className="min-h-[400px] flex items-center justify-center">
+      <div className="min-h-[100vh] flex flex-col items-center justify-center gap-2">
         <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-200 border-t-blue-500 mx-auto"></div>
         <p className="text-[#1E1D40]/70 font-medium ml-4">
           Carregando seus artigos...

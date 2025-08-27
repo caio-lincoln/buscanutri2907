@@ -467,7 +467,7 @@ export const getMenuItems = (
           icon: Video,
           href: '/dashboard/nutricionistas/teleconsultas',
         },
-        // { id: 'chat', label: 'Chat', icon: MessageSquare },
+        { id: 'chat', label: 'Chat', icon: MessageSquare },
         { id: 'blog', label: 'Blog', icon: BookOpen },
         { id: 'forum', label: 'Fórum', icon: MessageSquare },
         {

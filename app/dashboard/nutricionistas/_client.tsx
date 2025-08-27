@@ -20,10 +20,12 @@ import NutricionistaTeleconsultasTab from '../../../components/dashboard/nutrici
 import OverviewTab from '../../../components/dashboard/nutricionistas/overview-tab'
 import { Bot } from 'lucide-react'
 import { useSubscriptionContext } from '../../../contexts/subscription-context'
+import NutritionistRecentChatsList from './_components/NutriotinistRecentChatsList'
 
 const TABS = [
   'overview',
   'agenda',
+  'chat',
   'relatorios',
   'cursos',
   'vagas',
@@ -36,7 +38,7 @@ const TABS = [
   'teleconsultas',
 ] as const;
 
-type Tab = typeof TABS[ number ];
+export type Tab = typeof TABS[ number ];
 const isTab = (v: unknown): v is Tab =>
   typeof v === 'string' && (TABS as readonly string[]).includes(v as string);
 
@@ -49,7 +51,7 @@ export default function NutritionistDashboard() {
   const searchParams = useSearchParams();
 
   const router = useRouter()
-  const { user, nutritionistProfile, loading: authLoading, signOut, refreshUser } = useAuth()
+  const { user, nutritionistProfile, loading: authLoading, signOut } = useAuth()
 
   // Hook para estatísticas dinâmicas do dashboard
   // const { stats: dashboardStats } = useDashboardStats({
@@ -134,7 +136,13 @@ export default function NutritionistDashboard() {
       <div className="space-y-8">
         {/* Overview Dashboard */}
         {activeTab === 'overview' && (
-          <OverviewTab setActiveTab={setActiveTab} />
+          <OverviewTab setActiveTab={setTab} />
+        )}
+
+        {activeTab === 'chat' && (
+          <div className="space-y-8">
+            <NutritionistRecentChatsList userId={user?.id as string} />
+          </div>
         )}
 
         {/* Agenda (Nova aba dedicada) */}
