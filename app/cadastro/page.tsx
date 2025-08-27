@@ -81,6 +81,23 @@ interface Certificate {
   isUploaded?: boolean
 }
 
+function SubmittingOverlay({ message = 'Enviando seu cadastro...' }: { message?: string }) {
+  return (
+    <div
+      className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm flex items-center justify-center"
+      role="alert"
+      aria-live="assertive"
+    >
+      <div className="bg-white rounded-2xl shadow-xl p-6 w-[90%] max-w-sm text-center border border-gray-100">
+        <Loader2 className="h-6 w-6 animate-spin mx-auto mb-3 text-[#4AB0D9]" aria-hidden />
+        <p className="font-medium text-[#1E1D40]">{message}</p>
+        <p className="text-sm text-[#1E1D40]/70 mt-1">Isso pode levar alguns segundos…</p>
+      </div>
+    </div>
+  )
+}
+
+
 export default function CadastroPage() {
   const [ showPassword, setShowPassword ] = useState(false)
   const [ userType, setUserType ] = useState('paciente')
@@ -92,7 +109,7 @@ export default function CadastroPage() {
   const [ aceitaCupons, setAceitaCupons ] = useState(false)
   const [ error, setError ] = useState('')
   const [ addresses, setAddresses ] = useState<AddressData[]>([])
-  const { user, loading: authLoading } = useAuth()
+  const { user, loading: authLoading, refreshUser } = useAuth()
   const [ pricingConfig, setPricingConfig ] = useState({
     inPerson: {
       enabled: false,
@@ -126,11 +143,13 @@ export default function CadastroPage() {
       },
     })
 
-  useEffect(() => {
-    if (!authLoading && user) {
-      router.replace('/')
-    }
-  }, [user, authLoading])
+
+
+  // useEffect(() => {
+  //   if (!authLoading && user) {
+  //     router.replace('/')
+  //   }
+  // }, [ user, authLoading ])
 
   // Estados para validação de CRN
   const [ crnValue, setCrnValue ] = useState('')
@@ -183,7 +202,8 @@ export default function CadastroPage() {
       requirements,
     }
   }
-
+  
+  const submitting = loading || documentsUploading
   // Função para lidar com mudanças na senha
   const handlePasswordChange = (value: string) => {
     setPassword(value)
@@ -199,6 +219,7 @@ export default function CadastroPage() {
   }>({ status: 'idle', message: '' })
 
   const router = useRouter()
+
 
   // Função para upload de documentos
   const uploadNutritionistDocuments = async (
@@ -232,8 +253,6 @@ export default function CadastroPage() {
         )
       }
 
-      // CRN proof uploaded successfully
-
       // Upload dos certificados (se houver)
       for (const certificate of certificates) {
         if (certificate.title.trim() && certificate.file) {
@@ -262,6 +281,7 @@ export default function CadastroPage() {
               description: `Erro ao fazer upload do certificado "${certificate.title}". Você pode adicioná-lo depois no seu perfil.`,
               variant: 'default',
             })
+            return
           } else {
             // Certificate uploaded successfully
           }
@@ -442,10 +462,10 @@ export default function CadastroPage() {
         // Converter preços para números
         const parsePrice = (price: string): number | null => {
           if (!price) return null
-        
+
           const raw = price.replace(/[^\d,.\-]/g, '')
           if (!raw) return null
-        
+
           let normalized: string
           if (raw.includes(',') && !raw.includes('.')) {
             normalized = raw.replace(/\./g, '').replace(',', '.')
@@ -461,14 +481,14 @@ export default function CadastroPage() {
           } else {
             normalized = raw
           }
-        
+
           const n = Number(normalized)
           return Number.isFinite(n) ? n : null
         }
 
         additionalData = {
           full_name,
-          crn: crnValue, 
+          crn: crnValue,
           phone,
           accepts_corporate_plans: acceptsCorporatePlans,
           in_person_pricing_type: pricingConfig.inPerson.enabled
@@ -550,13 +570,12 @@ export default function CadastroPage() {
 
       // Processing registration data
 
-      const { data, profileData,  error: signUpError } = await signUp(
+      const { data, profileData, error: signUpError } = await signUp(
         email,
         password,
         userType as any,
         additionalData
       )
-
 
       if (signUpError) {
         throw new Error(signUpError)
@@ -653,6 +672,8 @@ export default function CadastroPage() {
         } else if (userType === 'empresa') {
           router.push('/dashboard/empresa')
         }
+
+        refreshUser()
       }, 2000)
     } catch (error: any) {
       // Registration error
@@ -732,7 +753,7 @@ export default function CadastroPage() {
           </p>
         </div>
 
-        <Card className="border-0 shadow-xl">
+        <Card className={`border-0 shadow-xl ${submitting ? 'pointer-events-none select-none' : ''}`}>
           <CardHeader className="space-y-1 pb-4">
             <CardTitle className="text-xl text-center text-[#1E1D40]">
               Cadastro
@@ -742,6 +763,8 @@ export default function CadastroPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {submitting && <SubmittingOverlay message="Enviando seu cadastro..." />}
+
             {error && (
               <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700">
                 <AlertCircle className="h-4 w-4" />
@@ -766,483 +789,485 @@ export default function CadastroPage() {
                 </TabsTrigger>
               </TabsList>
 
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <TabsContent value="paciente" className="space-y-4 mt-0">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="full_name">Nome completo *</Label>
-                      <Input
-                        id="full_name"
-                        name="full_name"
-                        placeholder="Seu nome completo"
-                        className="h-11"
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="birth_date">Data de nascimento</Label>
-                      <Input
-                        id="birth_date"
-                        name="birth_date"
-                        type="date"
-                        className="h-11"
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="email">E-mail *</Label>
-                      <Input
-                        id="email"
-                        name="email"
-                        type="email"
-                        placeholder="seu@email.com"
-                        className="h-11"
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="phone">Telefone</Label>
-                      <Input
-                        id="phone"
-                        name="phone"
-                        placeholder="(11) 99999-9999"
-                        className="h-11"
-                      />
-                    </div>
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="nutricionista" className="space-y-4 mt-0">
-                  <div className="grid grid-cols-1 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="full_name">Nome completo *</Label>
-                      <Input
-                        id="full_name"
-                        name="full_name"
-                        placeholder="Seu nome completo"
-                        className="h-11"
-                        required
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="email">E-mail profissional *</Label>
-                      <Input
-                        id="email"
-                        name="email"
-                        type="email"
-                        placeholder="seu@email.com"
-                        className="h-11"
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="phone">Telefone</Label>
-                      <Input
-                        id="phone"
-                        name="phone"
-                        placeholder="(11) 99999-9999"
-                        className="h-11"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Pergunta sobre planos corporativos */}
-                  <div className="space-y-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                    <div className="space-y-2">
-                      <Label className="text-base font-medium text-gray-900">
-                        Aceita atender no modo corporativo?
-                      </Label>
-                      <p className="text-sm text-gray-600 leading-relaxed">
-                        O plano corporativo é uma opção de atendimento
-                        nutricional para empresas, onde os funcionários podem
-                        receber orientação nutricional, consultas individuais,
-                        palestras e relatórios básicos. O valor do plano é
-                        determinado pela quantidade de funcionários da empresa.
-                        Ao aceitar atender no modo corporativo, você concorda em
-                        fornecer serviços de nutrição para empresas que desejam
-                        promover a saúde e o bem-estar de seus funcionários.
-                      </p>
-                    </div>
-                    <div className="flex gap-4">
-                      <Button
-                        type="button"
-                        variant={
-                          acceptsCorporatePlans === true ? 'default' : 'outline'
-                        }
-                        className={`flex-1 h-11 ${acceptsCorporatePlans === true
-                          ? 'bg-[#4AB0D9] hover:bg-[#4AB0D9]/90 text-white'
-                          : 'border-[#4AB0D9] text-[#4AB0D9] hover:bg-[#4AB0D9]/10'
-                          }`}
-                        onClick={() => setAcceptsCorporatePlans(true)}
-                      >
-                        Sim
-                      </Button>
-                      <Button
-                        type="button"
-                        variant={
-                          acceptsCorporatePlans === false
-                            ? 'default'
-                            : 'outline'
-                        }
-                        className={`flex-1 h-11 ${acceptsCorporatePlans === false
-                          ? 'bg-gray-600 hover:bg-gray-700 text-white'
-                          : 'border-gray-400 text-gray-600 hover:bg-gray-50'
-                          }`}
-                        onClick={() => setAcceptsCorporatePlans(false)}
-                      >
-                        Não
-                      </Button>
-                    </div>
-                  </div>
-
-                  {/* Configuração de Preços */}
-                  <ConsultationPricingConfig
-                    pricingConfig={pricingConfig}
-                    setPricingConfig={setPricingConfig}
-                  />
-
-                  {/* Gerenciamento de Endereços */}
-                  <AddressManagement onAddressesChange={setAddresses} />
-
-                  {/* Documentos e CRN */}
-                  <NutritionistDocumentsUpload
-                    crnNumber={crnValue}
-                    onCrnNumberChange={handleCRNChange}
-                    crnProofFile={crnProofFile}
-                    onCrnProofFileChange={setCrnProofFile}
-                    certificates={certificates}
-                    onCertificatesChange={setCertificates}
-                    isRequired={true}
-                    disabled={loading || documentsUploading}
-                  />
-
-                  {/* Seleção de Especialidades */}
-                  <div className="space-y-2">
-                    <Label className="text-base font-medium">
-                      Especialidades
-                    </Label>
-                    <p className="text-sm text-gray-600">
-                      Selecione suas áreas de especialização (máximo 5)
-                    </p>
-                    <SpecialtySelector
-                      selectedSpecialties={selectedSpecialties}
-                      onSpecialtiesChange={setSelectedSpecialties}
-                      maxSelections={5}
-                    />
-                  </div>
-
-                  {/* Consentimento para Cupons de Desconto */}
-                  <div className="space-y-3 p-4 bg-green-50 border border-green-200 rounded-lg">
-                    <div className="flex items-start space-x-3">
-                      <input
-                        type="checkbox"
-                        id="aceita_cupons"
-                        checked={aceitaCupons}
-                        onChange={e => setAceitaCupons(e.target.checked)}
-                        className="mt-1 h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
-                        aria-describedby="aceita_cupons_description"
-                      />
-                      <div className="flex-1">
-                        <Label
-                          htmlFor="aceita_cupons"
-                          className="text-sm font-medium text-gray-900 cursor-pointer"
-                        >
-                          Aceito disponibilizar cupons de desconto para
-                          pacientes em promoções da plataforma.
-                        </Label>
-                        <p
-                          id="aceita_cupons_description"
-                          className="text-xs text-gray-600 mt-1 leading-relaxed"
-                        >
-                          Campanhas e prêmios para os primeiros pacientes que se
-                          cadastrarem na plataforma serão realizadas, onde
-                          disponibilizamos cupons de 10% desconto na consulta
-                          online.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="empresa" className="space-y-4 mt-0">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="company_name">Nome da empresa *</Label>
-                      <Input
-                        id="company_name"
-                        name="company_name"
-                        placeholder="Razão social"
-                        className="h-11"
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="cnpj">CNPJ *</Label>
-                      <div className="relative">
+              <form onSubmit={handleSubmit} className="space-y-4" aria-busy={submitting}>
+                <fieldset disabled={submitting} className="contents">
+                  <TabsContent value="paciente" className="space-y-4 mt-0">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="full_name">Nome completo *</Label>
                         <Input
-                          id="cnpj"
-                          name="cnpj"
-                          placeholder="00.000.000/0000-00"
-                          className="h-11 pr-10"
-                          value={cnpjValue}
-                          onChange={e => handleCNPJChange(e.target.value)}
+                          id="full_name"
+                          name="full_name"
+                          placeholder="Seu nome completo"
+                          className="h-11"
                           required
                         />
-                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                          {renderCNPJValidationIcon()}
-                        </div>
                       </div>
-                      {cnpjValidation.message && (
-                        <p
-                          className={`text-xs mt-1 ${cnpjValidation.status === 'valid'
-                            ? 'text-green-600'
-                            : cnpjValidation.status === 'invalid'
-                              ? 'text-red-600'
-                              : 'text-yellow-600'
-                            }`}
-                        >
-                          {cnpjValidation.message}
+                      <div className="space-y-2">
+                        <Label htmlFor="birth_date">Data de nascimento</Label>
+                        <Input
+                          id="birth_date"
+                          name="birth_date"
+                          type="date"
+                          className="h-11"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="email">E-mail *</Label>
+                        <Input
+                          id="email"
+                          name="email"
+                          type="email"
+                          placeholder="seu@email.com"
+                          className="h-11"
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="phone">Telefone</Label>
+                        <Input
+                          id="phone"
+                          name="phone"
+                          placeholder="(11) 99999-9999"
+                          className="h-11"
+                        />
+                      </div>
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="nutricionista" className="space-y-4 mt-0">
+                    <div className="grid grid-cols-1 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="full_name">Nome completo *</Label>
+                        <Input
+                          id="full_name"
+                          name="full_name"
+                          placeholder="Seu nome completo"
+                          className="h-11"
+                          required
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="email">E-mail profissional *</Label>
+                        <Input
+                          id="email"
+                          name="email"
+                          type="email"
+                          placeholder="seu@email.com"
+                          className="h-11"
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="phone">Telefone</Label>
+                        <Input
+                          id="phone"
+                          name="phone"
+                          placeholder="(11) 99999-9999"
+                          className="h-11"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Pergunta sobre planos corporativos */}
+                    <div className="space-y-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                      <div className="space-y-2">
+                        <Label className="text-base font-medium text-gray-900">
+                          Aceita atender no modo corporativo?
+                        </Label>
+                        <p className="text-sm text-gray-600 leading-relaxed">
+                          O plano corporativo é uma opção de atendimento
+                          nutricional para empresas, onde os funcionários podem
+                          receber orientação nutricional, consultas individuais,
+                          palestras e relatórios básicos. O valor do plano é
+                          determinado pela quantidade de funcionários da empresa.
+                          Ao aceitar atender no modo corporativo, você concorda em
+                          fornecer serviços de nutrição para empresas que desejam
+                          promover a saúde e o bem-estar de seus funcionários.
                         </p>
-                      )}
-                      {cnpjValidation.companyData &&
-                        cnpjValidation.status === 'valid' && (
-                          <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-xs">
-                            <div className="flex items-center gap-1 text-green-700 font-medium">
-                              <Building className="h-3 w-3" />
-                              Empresa Encontrada
-                            </div>
-                            <div className="text-green-600 mt-1">
-                              <div>
-                                <strong>Razão Social:</strong>{' '}
-                                {cnpjValidation.companyData.name}
-                              </div>
-                              {cnpjValidation.companyData.fantasyName && (
-                                <div>
-                                  <strong>Nome Fantasia:</strong>{' '}
-                                  {cnpjValidation.companyData.fantasyName}
-                                </div>
-                              )}
-                              <div>
-                                <strong>Situação:</strong>{' '}
-                                {cnpjValidation.companyData.situation}
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      <p className="text-xs text-gray-500 mt-1">
-                        Será validado automaticamente na Receita Federal
-                      </p>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="responsible_name">
-                        Nome do responsável *
-                      </Label>
-                      <Input
-                        id="responsible_name"
-                        name="responsible_name"
-                        placeholder="Nome completo"
-                        className="h-11"
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="responsible_position">Cargo</Label>
-                      <Input
-                        id="responsible_position"
-                        name="responsible_position"
-                        placeholder="Ex: Gerente de RH"
-                        className="h-11"
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="email">E-mail corporativo *</Label>
-                      <Input
-                        id="email"
-                        name="email"
-                        type="email"
-                        placeholder="contato@empresa.com"
-                        className="h-11"
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="phone">Telefone</Label>
-                      <Input
-                        id="phone"
-                        name="phone"
-                        placeholder="(11) 3333-3333"
-                        className="h-11"
-                      />
-                    </div>
-                  </div>
-                </TabsContent>
-
-                <div className="space-y-2">
-                  <Label htmlFor="password">Senha *</Label>
-                  <div className="relative">
-                    <Input
-                      id="password"
-                      name="password"
-                      type={showPassword ? 'text' : 'password'}
-                      placeholder="Mínimo 8 caracteres"
-                      className="h-11 pr-20"
-                      required
-                      minLength={8}
-                      value={password}
-                      onChange={e => handlePasswordChange(e.target.value)}
-                    />
-                    <div className="absolute right-12 top-1/2 transform -translate-y-1/2">
-                      {renderPasswordStrengthIcon()}
-                    </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                      onClick={() => setShowPassword(!showPassword)}
-                    >
-                      {showPassword ? (
-                        <EyeOff className="h-4 w-4 text-gray-400" />
-                      ) : (
-                        <Eye className="h-4 w-4 text-gray-400" />
-                      )}
-                    </Button>
-                  </div>
-
-                  {/* Indicador de força da senha */}
-                  {password && (
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1 bg-gray-200 rounded-full h-2">
-                          <div
-                            className={`h-2 rounded-full transition-all duration-300 ${passwordValidation.strength === 'weak'
-                              ? 'w-1/3 bg-red-500'
-                              : passwordValidation.strength === 'medium'
-                                ? 'w-2/3 bg-yellow-500'
-                                : 'w-full bg-green-500'
-                              }`}
-                          />
-                        </div>
-                        <span
-                          className={`text-xs font-medium ${passwordValidation.strength === 'weak'
-                            ? 'text-red-600'
-                            : passwordValidation.strength === 'medium'
-                              ? 'text-yellow-600'
-                              : 'text-green-600'
+                      </div>
+                      <div className="flex gap-4">
+                        <Button
+                          type="button"
+                          variant={
+                            acceptsCorporatePlans === true ? 'default' : 'outline'
+                          }
+                          className={`flex-1 h-11 ${acceptsCorporatePlans === true
+                            ? 'bg-[#4AB0D9] hover:bg-[#4AB0D9]/90 text-white'
+                            : 'border-[#4AB0D9] text-[#4AB0D9] hover:bg-[#4AB0D9]/10'
                             }`}
+                          onClick={() => setAcceptsCorporatePlans(true)}
                         >
-                          {passwordValidation.message}
-                        </span>
+                          Sim
+                        </Button>
+                        <Button
+                          type="button"
+                          variant={
+                            acceptsCorporatePlans === false
+                              ? 'default'
+                              : 'outline'
+                          }
+                          className={`flex-1 h-11 ${acceptsCorporatePlans === false
+                            ? 'bg-gray-600 hover:bg-gray-700 text-white'
+                            : 'border-gray-400 text-gray-600 hover:bg-gray-50'
+                            }`}
+                          onClick={() => setAcceptsCorporatePlans(false)}
+                        >
+                          Não
+                        </Button>
                       </div>
+                    </div>
 
-                      {/* Lista de requisitos */}
-                      <div className="grid grid-cols-2 gap-1 text-xs">
-                        <div
-                          className={`flex items-center gap-1 ${passwordValidation.requirements.length ? 'text-green-600' : 'text-gray-500'}`}
-                        >
-                          <div
-                            className={`w-1 h-1 rounded-full ${passwordValidation.requirements.length ? 'bg-green-500' : 'bg-gray-300'}`}
-                          />
-                          8+ caracteres
-                        </div>
-                        <div
-                          className={`flex items-center gap-1 ${passwordValidation.requirements.uppercase ? 'text-green-600' : 'text-gray-500'}`}
-                        >
-                          <div
-                            className={`w-1 h-1 rounded-full ${passwordValidation.requirements.uppercase ? 'bg-green-500' : 'bg-gray-300'}`}
-                          />
-                          Letra maiúscula
-                        </div>
-                        <div
-                          className={`flex items-center gap-1 ${passwordValidation.requirements.lowercase ? 'text-green-600' : 'text-gray-500'}`}
-                        >
-                          <div
-                            className={`w-1 h-1 rounded-full ${passwordValidation.requirements.lowercase ? 'bg-green-500' : 'bg-gray-300'}`}
-                          />
-                          Letra minúscula
-                        </div>
-                        <div
-                          className={`flex items-center gap-1 ${passwordValidation.requirements.number ? 'text-green-600' : 'text-gray-500'}`}
-                        >
-                          <div
-                            className={`w-1 h-1 rounded-full ${passwordValidation.requirements.number ? 'bg-green-500' : 'bg-gray-300'}`}
-                          />
-                          Número
-                        </div>
-                        <div
-                          className={`flex items-center gap-1 ${passwordValidation.requirements.special ? 'text-green-600' : 'text-gray-500'}`}
-                        >
-                          <div
-                            className={`w-1 h-1 rounded-full ${passwordValidation.requirements.special ? 'bg-green-500' : 'bg-gray-300'}`}
-                          />
-                          Caractere especial
+                    {/* Configuração de Preços */}
+                    <ConsultationPricingConfig
+                      pricingConfig={pricingConfig}
+                      setPricingConfig={setPricingConfig}
+                    />
+
+                    {/* Gerenciamento de Endereços */}
+                    <AddressManagement onAddressesChange={setAddresses} />
+
+                    {/* Documentos e CRN */}
+                    <NutritionistDocumentsUpload
+                      crnNumber={crnValue}
+                      onCrnNumberChange={handleCRNChange}
+                      crnProofFile={crnProofFile}
+                      onCrnProofFileChange={setCrnProofFile}
+                      certificates={certificates}
+                      onCertificatesChange={setCertificates}
+                      isRequired={true}
+                      disabled={loading || documentsUploading}
+                    />
+
+                    {/* Seleção de Especialidades */}
+                    <div className="space-y-2">
+                      <Label className="text-base font-medium">
+                        Especialidades
+                      </Label>
+                      <p className="text-sm text-gray-600">
+                        Selecione suas áreas de especialização (máximo 5)
+                      </p>
+                      <SpecialtySelector
+                        selectedSpecialties={selectedSpecialties}
+                        onSpecialtiesChange={setSelectedSpecialties}
+                        maxSelections={5}
+                      />
+                    </div>
+
+                    {/* Consentimento para Cupons de Desconto */}
+                    <div className="space-y-3 p-4 bg-green-50 border border-green-200 rounded-lg">
+                      <div className="flex items-start space-x-3">
+                        <input
+                          type="checkbox"
+                          id="aceita_cupons"
+                          checked={aceitaCupons}
+                          onChange={e => setAceitaCupons(e.target.checked)}
+                          className="mt-1 h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                          aria-describedby="aceita_cupons_description"
+                        />
+                        <div className="flex-1">
+                          <Label
+                            htmlFor="aceita_cupons"
+                            className="text-sm font-medium text-gray-900 cursor-pointer"
+                          >
+                            Aceito disponibilizar cupons de desconto para
+                            pacientes em promoções da plataforma.
+                          </Label>
+                          <p
+                            id="aceita_cupons_description"
+                            className="text-xs text-gray-600 mt-1 leading-relaxed"
+                          >
+                            Campanhas e prêmios para os primeiros pacientes que se
+                            cadastrarem na plataforma serão realizadas, onde
+                            disponibilizamos cupons de 10% desconto na consulta
+                            online.
+                          </p>
                         </div>
                       </div>
                     </div>
-                  )}
-                </div>
+                  </TabsContent>
 
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="terms"
-                    checked={acceptTerms}
-                    onCheckedChange={(checked) => setAcceptTerms(checked === true)}
-                  />
-                  <Label htmlFor="terms" className="text-sm">
-                    Aceito os{' '}
-                    <Link
-                      href="/termos"
-                      className="text-[#4AB0D9] hover:underline"
-                    >
-                      Termos de Uso
-                    </Link>{' '}
-                    e{' '}
-                    <Link
-                      href="/privacidade"
-                      className="text-[#4AB0D9] hover:underline"
-                    >
-                      Política de Privacidade
-                    </Link>
-                  </Label>
-                </div>
+                  <TabsContent value="empresa" className="space-y-4 mt-0">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="company_name">Nome da empresa *</Label>
+                        <Input
+                          id="company_name"
+                          name="company_name"
+                          placeholder="Razão social"
+                          className="h-11"
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="cnpj">CNPJ *</Label>
+                        <div className="relative">
+                          <Input
+                            id="cnpj"
+                            name="cnpj"
+                            placeholder="00.000.000/0000-00"
+                            className="h-11 pr-10"
+                            value={cnpjValue}
+                            onChange={e => handleCNPJChange(e.target.value)}
+                            required
+                          />
+                          <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                            {renderCNPJValidationIcon()}
+                          </div>
+                        </div>
+                        {cnpjValidation.message && (
+                          <p
+                            className={`text-xs mt-1 ${cnpjValidation.status === 'valid'
+                              ? 'text-green-600'
+                              : cnpjValidation.status === 'invalid'
+                                ? 'text-red-600'
+                                : 'text-yellow-600'
+                              }`}
+                          >
+                            {cnpjValidation.message}
+                          </p>
+                        )}
+                        {cnpjValidation.companyData &&
+                          cnpjValidation.status === 'valid' && (
+                            <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-xs">
+                              <div className="flex items-center gap-1 text-green-700 font-medium">
+                                <Building className="h-3 w-3" />
+                                Empresa Encontrada
+                              </div>
+                              <div className="text-green-600 mt-1">
+                                <div>
+                                  <strong>Razão Social:</strong>{' '}
+                                  {cnpjValidation.companyData.name}
+                                </div>
+                                {cnpjValidation.companyData.fantasyName && (
+                                  <div>
+                                    <strong>Nome Fantasia:</strong>{' '}
+                                    {cnpjValidation.companyData.fantasyName}
+                                  </div>
+                                )}
+                                <div>
+                                  <strong>Situação:</strong>{' '}
+                                  {cnpjValidation.companyData.situation}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        <p className="text-xs text-gray-500 mt-1">
+                          Será validado automaticamente na Receita Federal
+                        </p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="responsible_name">
+                          Nome do responsável *
+                        </Label>
+                        <Input
+                          id="responsible_name"
+                          name="responsible_name"
+                          placeholder="Nome completo"
+                          className="h-11"
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="responsible_position">Cargo</Label>
+                        <Input
+                          id="responsible_position"
+                          name="responsible_position"
+                          placeholder="Ex: Gerente de RH"
+                          className="h-11"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="email">E-mail corporativo *</Label>
+                        <Input
+                          id="email"
+                          name="email"
+                          type="email"
+                          placeholder="contato@empresa.com"
+                          className="h-11"
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="phone">Telefone</Label>
+                        <Input
+                          id="phone"
+                          name="phone"
+                          placeholder="(11) 3333-3333"
+                          className="h-11"
+                        />
+                      </div>
+                    </div>
+                  </TabsContent>
 
-                <Button
-                  type="submit"
-                  className={`w-full h-11 ${userType === 'nutricionista'
-                    ? 'bg-[#4AB0D9] hover:bg-[#4AB0D9]/90'
-                    : userType === 'paciente'
-                      ? 'bg-[#D90D32] hover:bg-[#D90D32]/90'
-                      : 'bg-[#1E1D40] hover:bg-[#1E1D40]/90'
-                    } text-white`}
-                  disabled={
-                    !acceptTerms ||
-                    loading ||
-                    documentsUploading ||
-                    (userType === 'nutricionista' &&
-                      crnValidation.status !== 'valid') ||
-                    (userType === 'nutricionista' && !crnProofFile) ||
-                    (userType === 'empresa' &&
-                      cnpjValidation.status !== 'valid') ||
-                    passwordValidation.strength === 'weak' ||
-                    !password
-                  }
-                >
-                  {loading || documentsUploading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Cadastrando...
-                    </>
-                  ) : (
-                    `Cadastrar como ${userType === 'nutricionista' ? 'Nutricionista' : userType === 'paciente' ? 'Paciente' : 'Empresa'}`
-                  )}
-                </Button>
+                  <div className="space-y-2">
+                    <Label htmlFor="password">Senha *</Label>
+                    <div className="relative">
+                      <Input
+                        id="password"
+                        name="password"
+                        type={showPassword ? 'text' : 'password'}
+                        placeholder="Mínimo 8 caracteres"
+                        className="h-11 pr-20"
+                        required
+                        minLength={8}
+                        value={password}
+                        onChange={e => handlePasswordChange(e.target.value)}
+                      />
+                      <div className="absolute right-12 top-1/2 transform -translate-y-1/2">
+                        {renderPasswordStrengthIcon()}
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4 text-gray-400" />
+                        ) : (
+                          <Eye className="h-4 w-4 text-gray-400" />
+                        )}
+                      </Button>
+                    </div>
+
+                    {/* Indicador de força da senha */}
+                    {password && (
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 bg-gray-200 rounded-full h-2">
+                            <div
+                              className={`h-2 rounded-full transition-all duration-300 ${passwordValidation.strength === 'weak'
+                                ? 'w-1/3 bg-red-500'
+                                : passwordValidation.strength === 'medium'
+                                  ? 'w-2/3 bg-yellow-500'
+                                  : 'w-full bg-green-500'
+                                }`}
+                            />
+                          </div>
+                          <span
+                            className={`text-xs font-medium ${passwordValidation.strength === 'weak'
+                              ? 'text-red-600'
+                              : passwordValidation.strength === 'medium'
+                                ? 'text-yellow-600'
+                                : 'text-green-600'
+                              }`}
+                          >
+                            {passwordValidation.message}
+                          </span>
+                        </div>
+
+                        {/* Lista de requisitos */}
+                        <div className="grid grid-cols-2 gap-1 text-xs">
+                          <div
+                            className={`flex items-center gap-1 ${passwordValidation.requirements.length ? 'text-green-600' : 'text-gray-500'}`}
+                          >
+                            <div
+                              className={`w-1 h-1 rounded-full ${passwordValidation.requirements.length ? 'bg-green-500' : 'bg-gray-300'}`}
+                            />
+                            8+ caracteres
+                          </div>
+                          <div
+                            className={`flex items-center gap-1 ${passwordValidation.requirements.uppercase ? 'text-green-600' : 'text-gray-500'}`}
+                          >
+                            <div
+                              className={`w-1 h-1 rounded-full ${passwordValidation.requirements.uppercase ? 'bg-green-500' : 'bg-gray-300'}`}
+                            />
+                            Letra maiúscula
+                          </div>
+                          <div
+                            className={`flex items-center gap-1 ${passwordValidation.requirements.lowercase ? 'text-green-600' : 'text-gray-500'}`}
+                          >
+                            <div
+                              className={`w-1 h-1 rounded-full ${passwordValidation.requirements.lowercase ? 'bg-green-500' : 'bg-gray-300'}`}
+                            />
+                            Letra minúscula
+                          </div>
+                          <div
+                            className={`flex items-center gap-1 ${passwordValidation.requirements.number ? 'text-green-600' : 'text-gray-500'}`}
+                          >
+                            <div
+                              className={`w-1 h-1 rounded-full ${passwordValidation.requirements.number ? 'bg-green-500' : 'bg-gray-300'}`}
+                            />
+                            Número
+                          </div>
+                          <div
+                            className={`flex items-center gap-1 ${passwordValidation.requirements.special ? 'text-green-600' : 'text-gray-500'}`}
+                          >
+                            <div
+                              className={`w-1 h-1 rounded-full ${passwordValidation.requirements.special ? 'bg-green-500' : 'bg-gray-300'}`}
+                            />
+                            Caractere especial
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="terms"
+                      checked={acceptTerms}
+                      onCheckedChange={(checked) => setAcceptTerms(checked === true)}
+                    />
+                    <Label htmlFor="terms" className="text-sm">
+                      Aceito os{' '}
+                      <Link
+                        href="/termos"
+                        className="text-[#4AB0D9] hover:underline"
+                      >
+                        Termos de Uso
+                      </Link>{' '}
+                      e{' '}
+                      <Link
+                        href="/privacidade"
+                        className="text-[#4AB0D9] hover:underline"
+                      >
+                        Política de Privacidade
+                      </Link>
+                    </Label>
+                  </div>
+
+                  <Button
+                    type="submit"
+                    className={`w-full h-11 ${userType === 'nutricionista'
+                      ? 'bg-[#4AB0D9] hover:bg-[#4AB0D9]/90'
+                      : userType === 'paciente'
+                        ? 'bg-[#D90D32] hover:bg-[#D90D32]/90'
+                        : 'bg-[#1E1D40] hover:bg-[#1E1D40]/90'
+                      } text-white`}
+                    disabled={
+                      !acceptTerms ||
+                      loading ||
+                      documentsUploading ||
+                      (userType === 'nutricionista' &&
+                        crnValidation.status !== 'valid') ||
+                      (userType === 'nutricionista' && !crnProofFile) ||
+                      (userType === 'empresa' &&
+                        cnpjValidation.status !== 'valid') ||
+                      passwordValidation.strength === 'weak' ||
+                      !password
+                    }
+                  >
+                    {loading || documentsUploading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Cadastrando...
+                      </>
+                    ) : (
+                      `Cadastrar como ${userType === 'nutricionista' ? 'Nutricionista' : userType === 'paciente' ? 'Paciente' : 'Empresa'}`
+                    )}
+                  </Button>
+                </fieldset >
               </form>
             </Tabs>
 
