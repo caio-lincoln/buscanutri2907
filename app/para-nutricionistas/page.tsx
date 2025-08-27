@@ -88,6 +88,7 @@ const plans = [
   {
     name: 'Profissional',
     price: 'R$ 24,90/mês',
+    promoFrom: 'R$ 49,90',
     priceOptions: 'R$ 137,90/semestre • R$ 264,90/ano',
     description: 'Para nutricionistas ativos',
     features: [
@@ -372,6 +373,13 @@ export default function ParaNutricionistasPage() {
                     <CardTitle className="text-2xl text-[#1E1D40]">
                       {plan.name}
                     </CardTitle>
+                    {plan.promoFrom && (
+                      <div className="mb-1 text-sm">
+                        <span className="text-[#1E1D40]/70">de </span>
+                        <span className="line-through text-[#1E1D40]/40">{plan.promoFrom}</span>
+                        <span className="text-[#1E1D40]/70"> por</span>
+                      </div>
+                    )}
                     <div className="text-3xl font-bold text-[#4AB0D9] mb-2">
                       {plan.price}
                     </div>
