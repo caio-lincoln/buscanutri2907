@@ -21,13 +21,13 @@ export interface NutritionistProfile {
 }
 
 export interface UseRealtimeNutritionistsProps {
-  searchTerm?: string
-  specialty?: string
-  state?: string
-  priceRange?: { min: number; max: number }
-  onlineOnly?: boolean
-  verifiedOnly?: boolean
-  sortBy?: string
+  searchTerm?: string | undefined
+  specialty?: string | undefined
+  state?: string | undefined
+  priceRange?: { min: number; max: number } | undefined
+  onlineOnly?: boolean | undefined
+  verifiedOnly?: boolean | undefined
+  sortBy?: string | undefined
 }
 
 export function useRealtimeNutritionists(filters: UseRealtimeNutritionistsProps = {}) {
@@ -73,6 +73,7 @@ export function useRealtimeNutritionists(filters: UseRealtimeNutritionistsProps 
           total_reviews,
           experience_years,
           is_verified,
+          online_available:service_online_available,
           nutritionist_services(*)
           ${specJoin}
         `)
@@ -120,7 +121,7 @@ export function useRealtimeNutritionists(filters: UseRealtimeNutritionistsProps 
       if (filters.onlineOnly) {
         filteredData = filteredData.filter((n) =>
           n.nutritionist_services?.some((s: any) => s.online_available
-          )
+          ) || n.online_available
         )
       }
 
@@ -146,7 +147,6 @@ export function useRealtimeNutritionists(filters: UseRealtimeNutritionistsProps 
 
       setNutritionists(filteredData)
     } catch (e) {
-      console.log("🚀 ~ useRealtimeNutritionists ~ e:", e)
       console.error('Error loading nutritionists:', e)
       setError('Erro ao carregar nutricionistas')
     } finally {

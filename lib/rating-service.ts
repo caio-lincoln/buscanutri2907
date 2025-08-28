@@ -32,7 +32,7 @@ export async function createRating(
   comment?: string
 ): Promise<Rating> {
   const { data, error } = await supabase
-    .from('consultation_ratings')
+    .from('consultation_reviews')
     .insert({
       consultation_id: consultationId,
       patient_id: patientId,
@@ -85,7 +85,7 @@ export async function getRatingByConsultation(
   consultationId: string
 ): Promise<Rating | null> {
   const { data, error } = await supabase
-    .from('consultation_ratings')
+    .from('consultation_reviews')
     .select('*')
     .eq('consultation_id', consultationId)
     .single()
@@ -105,7 +105,7 @@ export async function getNutritionistRatings(
   offset = 0
 ): Promise<Rating[]> {
   const { data, error } = await supabase
-    .from('consultation_ratings')
+    .from('consultation_reviews')
     .select(`
       *,
       patient_profiles(full_name, avatar_url)
@@ -127,7 +127,7 @@ export async function getNutritionistRatingStats(
   nutritionistId: string
 ): Promise<RatingStats> {
   const { data, error } = await supabase
-    .from('consultation_ratings')
+    .from('consultation_reviews')
     .select('rating')
     .eq('nutritionist_id', nutritionistId)
 
@@ -205,7 +205,7 @@ export async function canRateConsultation(
 
     // Verificar se já foi avaliada
     const { data: rating, error: ratingError } = await supabase
-      .from('consultation_ratings')
+      .from('consultation_reviews')
       .select('id')
       .eq('consultation_id', consultationId)
       .single()
@@ -246,7 +246,7 @@ export async function getConsultationsToRate(
     const consultationsWithoutRating = await Promise.all(
       (consultations || []).map(async (consultation) => {
         const { data: rating } = await supabase
-          .from('consultation_ratings')
+          .from('consultation_reviews')
           .select('id')
           .eq('consultation_id', consultation.id)
           .single()

@@ -3,7 +3,6 @@ import {
   Search,
   Star,
   Calendar,
-
   Heart,
   Activity,
   Users,
@@ -11,13 +10,11 @@ import {
   Bot,
   Target,
   BookOpen,
-
   FileText,
 } from 'lucide-react'
 import { useAuth } from '../../../../contexts/auth-context';
-import { parseISO } from 'date-fns';
 import { Consultation, FavoriteNutritionist, PatientStats } from '../../../../lib/consultation-service';
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { RatingDisplay } from '../../../../components/ui/rating-display';
 import { StatsCard } from '../../../../components/stats-card';
 import { Button } from '../../../../components/ui/button';
@@ -25,15 +22,32 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../../../components
 import { ConsultationsToRate } from '../../../../components/dashboard/consultations-to-rate';
 import { useRouter } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from '../../../../components/ui/avatar';
+import { createSupabaseClient } from '../../../../lib/supabase';
 
+async function fetchPatientStats(p_patient_id: string, supabase: any): Promise<PatientStats> {
+  const { data, error } = await supabase
+  .rpc('get_patient_stats', { p_patient_id, p_tz: 'America/Sao_Paulo' });
 
-export default function OverviewTab({ setActiveTab }: { setActiveTab: (tab: string) => void }) {
+  if (error) throw error;
+
+  const row = Array.isArray(data) ? data[ 0 ] : data;
+
+  return {
+    totalConsultations: row?.total_consultations ?? 0,
+    scheduledConsultations: row?.scheduled_consultations ?? 0,
+    completedConsultations: row?.completed_consultations ?? 0,
+    favoriteNutritionists: row?.favorite_nutritionists ?? 0,
+    averageRating: Number(row?.average_rating ?? 0),
+  };
+}
+
+export default function OverviewTab({ setActiveTab, setIsAnamneseModalOpen }: { setActiveTab: (tab: any) => void, setIsAnamneseModalOpen: (ans: boolean) => void; }) {
   const { patientProfile: profile } = useAuth()
   const [ consultations, setConsultations ] = useState<Consultation[]>([])
   const [ favoriteNutritionists, setFavoriteNutritionists ] = useState<
     FavoriteNutritionist[]
   >([])
-
+  const supabase = useMemo(() => createSupabaseClient(), [])
   const router = useRouter()
 
   const [ stats, setStats ] = useState<PatientStats>({
@@ -44,14 +58,15 @@ export default function OverviewTab({ setActiveTab }: { setActiveTab: (tab: stri
     averageRating: 0,
   })
 
-  const upcomingConsultations = consultations
-    .filter(
-      c =>
-        c.status === 'scheduled' &&
-        c.start_time &&
-        parseISO(c.start_time) > new Date()
-    )
-    .slice(0, 3)
+  useEffect(() => {
+    (async () => {
+      if (!profile?.id) return;
+      try {
+        const s = await fetchPatientStats(profile.id, supabase);
+        setStats(s);
+      } catch { }
+    })();
+  }, [ profile?.id ]);
 
   const recentActivities = []
 
@@ -128,7 +143,7 @@ export default function OverviewTab({ setActiveTab }: { setActiveTab: (tab: stri
           value={stats.scheduledConsultations}
           icon={Calendar}
           color="blue"
-          trend={{ value: 0, isPositive: true }}
+          // trend={{ value: 0, isPositive: true }}
           description="Este mês"
         />
         <StatsCard
@@ -136,7 +151,7 @@ export default function OverviewTab({ setActiveTab }: { setActiveTab: (tab: stri
           value={stats.totalConsultations}
           icon={Activity}
           color="green"
-          trend={{ value: 0, isPositive: true }}
+          // trend={{ value: 0, isPositive: true }}
           description="Histórico completo"
         />
         <StatsCard
@@ -144,7 +159,7 @@ export default function OverviewTab({ setActiveTab }: { setActiveTab: (tab: stri
           value={profile?.rating?.toFixed(1) || '0'}
           icon={Star}
           color="yellow"
-          trend={{ value: 0, isPositive: true }}
+          // trend={{ value: 0, isPositive: true }}
           description={`Baseado em ${profile?.total_reviews || 0} avaliações`}
         />
         <StatsCard

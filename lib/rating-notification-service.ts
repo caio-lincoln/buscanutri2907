@@ -180,7 +180,7 @@ export async function checkForRatingReminders(): Promise<void> {
     // Para cada consulta, verificar se já foi avaliada
     for (const consultation of consultations || []) {
       const { data: existingRating } = await supabase
-        .from('consultation_ratings')
+        .from('consultation_reviews')
         .select('id')
         .eq('consultation_id', consultation.id)
         .single()
@@ -228,7 +228,7 @@ export async function sendRatingRemindersForConsultations(
       if (consultation) {
         // Verificar se já foi avaliada
         const { data: existingRating } = await supabase
-          .from('consultation_ratings')
+          .from('consultation_reviews')
           .select('id')
           .eq('consultation_id', consultationId)
           .single()

@@ -13,6 +13,21 @@ export interface UserProfile {
 
 export interface NutritionistProfile extends UserProfile {
   user_type: 'nutricionista'
+  full_name?: string;
+  nutritionist_specialties?: {
+    specialties: {
+      id: string;
+      name: string;
+    }
+    specialty_id: string;
+  }[];
+  location?: string
+  profile_image_url?: string
+  rating?: string;
+  reviews?: number;
+  total_reviews?: number
+  experience_years?: number
+  nutritionist_services?: Array<any>
   crn: string
   specialty: string
   bio?: string
@@ -37,15 +52,15 @@ export interface CompanyProfile extends UserProfile {
 
 export async function getCurrentUser(): Promise<User | null> {
   const supabase = createClient()
-  
+
   try {
     const { data: { user }, error } = await supabase.auth.getUser()
-    
+
     if (error) {
       console.error('Error getting current user:', error)
       return null
     }
-    
+
     return user
   } catch (error) {
     console.error('Error in getCurrentUser:', error)
@@ -55,19 +70,19 @@ export async function getCurrentUser(): Promise<User | null> {
 
 export async function getUserProfile(userId: string): Promise<UserProfile | null> {
   const supabase = createClient()
-  
+
   try {
     const { data, error } = await supabase
       .from('users')
       .select('*')
       .eq('id', userId)
       .single()
-    
+
     if (error) {
       console.error('Error getting user profile:', error)
       return null
     }
-    
+
     return data
   } catch (error) {
     console.error('Error in getUserProfile:', error)
@@ -77,7 +92,7 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
 
 export async function getNutritionistProfile(userId: string): Promise<NutritionistProfile | null> {
   const supabase = createClient()
-  
+
   try {
     const { data, error } = await supabase
       .from('users')
@@ -88,15 +103,15 @@ export async function getNutritionistProfile(userId: string): Promise<Nutritioni
       .eq('id', userId)
       .eq('user_type', 'nutricionista')
       .single()
-    
+
     if (error) {
       console.error('Error getting nutritionist profile:', error)
       return null
     }
-    
+
     return {
       ...data,
-      ...data.nutritionist_profiles[0]
+      ...data.nutritionist_profiles[ 0 ]
     }
   } catch (error) {
     console.error('Error in getNutritionistProfile:', error)
@@ -106,7 +121,7 @@ export async function getNutritionistProfile(userId: string): Promise<Nutritioni
 
 export async function getPatientProfile(userId: string): Promise<PatientProfile | null> {
   const supabase = createClient()
-  
+
   try {
     const { data, error } = await supabase
       .from('users')
@@ -117,15 +132,15 @@ export async function getPatientProfile(userId: string): Promise<PatientProfile 
       .eq('id', userId)
       .eq('user_type', 'paciente')
       .single()
-    
+
     if (error) {
       console.error('Error getting patient profile:', error)
       return null
     }
-    
+
     return {
       ...data,
-      ...data.patient_profiles[0]
+      ...data.patient_profiles[ 0 ]
     }
   } catch (error) {
     console.error('Error in getPatientProfile:', error)
@@ -135,7 +150,7 @@ export async function getPatientProfile(userId: string): Promise<PatientProfile 
 
 export async function getCompanyProfile(userId: string): Promise<CompanyProfile | null> {
   const supabase = createClient()
-  
+
   try {
     const { data, error } = await supabase
       .from('users')
@@ -146,15 +161,15 @@ export async function getCompanyProfile(userId: string): Promise<CompanyProfile 
       .eq('id', userId)
       .eq('user_type', 'empresa')
       .single()
-    
+
     if (error) {
       console.error('Error getting company profile:', error)
       return null
     }
-    
+
     return {
       ...data,
-      ...data.company_profiles[0]
+      ...data.company_profiles[ 0 ]
     }
   } catch (error) {
     console.error('Error in getCompanyProfile:', error)
@@ -164,76 +179,76 @@ export async function getCompanyProfile(userId: string): Promise<CompanyProfile 
 
 export async function requireAuth(): Promise<User> {
   const user = await getCurrentUser()
-  
+
   if (!user) {
     throw new Error('Authentication required')
   }
-  
+
   return user
 }
 
 export async function requireUserType(allowedTypes: string[]): Promise<UserProfile> {
   const user = await requireAuth()
   const profile = await getUserProfile(user.id)
-  
+
   if (!profile) {
     throw new Error('User profile not found')
   }
-  
+
   if (!allowedTypes.includes(profile.user_type)) {
     throw new Error(`Access denied. Required user types: ${allowedTypes.join(', ')}`)
   }
-  
+
   return profile
 }
 
 export async function requireNutritionist(): Promise<NutritionistProfile> {
   const user = await requireAuth()
   const profile = await getNutritionistProfile(user.id)
-  
+
   if (!profile) {
     throw new Error('Nutritionist profile not found')
   }
-  
+
   return profile
 }
 
 export async function requirePatient(): Promise<PatientProfile> {
   const user = await requireAuth()
   const profile = await getPatientProfile(user.id)
-  
+
   if (!profile) {
     throw new Error('Patient profile not found')
   }
-  
+
   return profile
 }
 
 export async function requireCompany(): Promise<CompanyProfile> {
   const user = await requireAuth()
   const profile = await getCompanyProfile(user.id)
-  
+
   if (!profile) {
     throw new Error('Company profile not found')
   }
-  
+
   return profile
 }
 
 export async function requireAdmin(): Promise<UserProfile> {
-  return requireUserType(['admin'])
+  return requireUserType([ 'admin' ])
 }
 
 export function hasPermission(userType: string, requiredPermissions: string[]): boolean {
   const permissions: Record<string, string[]> = {
-    admin: ['read', 'write', 'delete', 'manage_users', 'manage_system'],
-    nutricionista: ['read', 'write', 'manage_consultations', 'manage_agenda'],
-    empresa: ['read', 'write', 'manage_jobs', 'view_candidates'],
-    paciente: ['read', 'write', 'book_consultations']
+    admin: [ 'read', 'write', 'delete', 'manage_users', 'manage_system' ],
+    nutricionista: [ 'read', 'write', 'manage_consultations', 'manage_agenda' ],
+    empresa: [ 'read', 'write', 'manage_jobs', 'view_candidates' ],
+    paciente: [ 'read', 'write', 'book_consultations' ]
   }
-  
-  const userPermissions = permissions[userType] || []
-  
+
+  const userPermissions = permissions[ userType ] || []
+
   return requiredPermissions.every(permission => userPermissions.includes(permission))
 }
 

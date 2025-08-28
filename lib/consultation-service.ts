@@ -100,10 +100,8 @@ export async function getCompletedConsultationsForRating(
         `)
       .eq('patient_id', patientId)
       .eq('status', 'completed')
-    .order('scheduled_at', { ascending: false })
+      .order('scheduled_at', { ascending: false })
 
-    console.log("🚀 ~ getCompletedConsultationsForRating ~ data:", data)
-    console.log("🚀 ~ getCompletedConsultationsForRating ~ error:", error)
     if (error) {
       // Silent error handling: Error fetching completed consultations
       return []
@@ -113,7 +111,7 @@ export async function getCompletedConsultationsForRating(
     const consultationsWithoutRating = await Promise.all(
       (data || []).map(async (consultation) => {
         const { data: rating } = await supabase
-          .from('consultation_ratings')
+          .from('consultation_reviews')
           .select('id')
           .eq('consultation_id', consultation.id)
           .single()
@@ -169,7 +167,7 @@ export async function getPatientFavoriteNutritionists(
 export async function addFavoriteNutritionist(
   patientId: string,
   nutritionistId: string
-): Promise<void> {
+): Promise<boolean> {
   try {
     const { error } = await supabase
       .from('patient_favorite_nutritionists')
@@ -184,8 +182,10 @@ export async function addFavoriteNutritionist(
     }
   } catch (error) {
     // Silent error handling: Error adding favorite nutritionist
-    throw error
+
+    return false
   }
+  return true
 }
 
 /**
@@ -194,7 +194,7 @@ export async function addFavoriteNutritionist(
 export async function removeFavoriteNutritionist(
   patientId: string,
   nutritionistId: string
-): Promise<void> {
+): Promise<boolean> {
   try {
     const { error } = await supabase
       .from('patient_favorite_nutritionists')
@@ -208,8 +208,9 @@ export async function removeFavoriteNutritionist(
     }
   } catch (error) {
     // Silent error handling: Error removing favorite nutritionist
-    throw error
+    return false
   }
+  return true
 }
 
 /**
@@ -277,7 +278,7 @@ export async function canRateConsultation(
 
     // Verificar se já foi avaliada
     const { data: rating, error: ratingError } = await supabase
-      .from('consultation_ratings')
+      .from('consultation_reviews')
       .select('id')
       .eq('consultation_id', consultationId)
       .single()

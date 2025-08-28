@@ -65,13 +65,6 @@ export default function NutritionistDashboard() {
     [ hasActiveSubscription ]
   );
 
-  useEffect(() => {
-    const param = searchParams.get('activeTab');
-    if (isTab(param) && param !== activeTab) {
-      setActiveTab(param);
-    }
-  }, [ searchParams, activeTab ]);
-
   const setTab = useCallback(
     (tab: Tab) => {
       setActiveTab(tab);
@@ -81,6 +74,13 @@ export default function NutritionistDashboard() {
     },
     [ router, pathname, searchParams ]
   );
+
+  useEffect(() => {
+    const param = searchParams.get('activeTab');
+    if (isTab(param) && param !== activeTab) {
+      setActiveTab(param);
+    }
+  }, [ searchParams, activeTab ]);
 
   useEffect(() => {
     if ((!authLoading && !user) || user?.user_metadata[ 'user_type' ] !== 'nutricionista') {
