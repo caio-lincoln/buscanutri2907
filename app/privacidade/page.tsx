@@ -95,9 +95,11 @@ export default function PrivacidadePage() {
               <CardHeader><CardTitle className="text-[#1E1D40]">1. Introdução</CardTitle></CardHeader>
               <CardContent className="prose prose-gray max-w-none">
                 <p className="text-[#1E1D40]/80 leading-relaxed">
-                  A Busca Nutri (CNPJ: 57.370.073/0001-92) está comprometida com a proteção da privacidade
-                  e dos dados pessoais de seus usuários. Esta Política descreve como coletamos, usamos,
-                  armazenamos e protegemos suas informações em conformidade com a LGPD (Lei nº 13.709/2018).
+                  A Busca Nutri (CNPJ: 57.370.073/0001-92) está comprometida com a proteção da privacidade 
+                  e dos dados pessoais de seus usuários, que incluem Nutricionistas, Pacientes e Empresas. 
+                  Esta Política de Privacidade descreve como coletamos, usamos, armazenamos e protegemos 
+                  essas informações em conformidade com a Lei Geral de Proteção de Dados (LGPD - Lei nº 
+                  13.709/2018) e demais regulamentações aplicáveis.
                 </p>
               </CardContent>
             </Card>
@@ -106,34 +108,40 @@ export default function PrivacidadePage() {
             <Card className="border-[#F2E6D8] shadow-lg">
               <CardHeader><CardTitle className="text-[#1E1D40]">2. Dados Pessoais Coletados e Suas Finalidades</CardTitle></CardHeader>
               <CardContent className="prose prose-gray max-w-none">
-                <h4 className="font-semibold text-[#1E1D40] mb-3">2.1 Dados de Identificação</h4>
+                <p className="text-[#1E1D40]/80 leading-relaxed mb-4">
+                  A seguir, detalhamos os tipos de dados tratados pela Busca Nutri e suas respectivas 
+                  finalidades:
+                </p>
+                
+                <h4 className="font-semibold text-[#1E1D40] mb-3">2.1 Dados de Identificação (Nutricionistas, Pacientes e Empresas)</h4>
                 <ul className="list-disc pl-6 space-y-2 text-[#1E1D40]/80 mb-4">
                   <li><strong>Nome completo:</strong> identificação do usuário na plataforma.</li>
-                  <li><strong>E-mail:</strong> autenticação, notificações e comunicações.</li>
-                  <li><strong>Telefone:</strong> contato para agendamentos/suporte e entre usuários autorizados.</li>
-                  <li><strong>CPF (pacientes e nutricionistas):</strong> verificação de identidade, emissão fiscal e prevenção a fraudes.</li>
-                  <li><strong>CNPJ (empresas):</strong> validação cadastral.</li>
-                  <li><strong>Data de nascimento:</strong> verificação de maioridade/adequação de serviços.</li>
-                  <li><strong>Endereço:</strong> notas fiscais, vinculação de serviços e regionalidade (busca por profissionais próximos).</li>
+                  <li><strong>E-mail:</strong> autenticação da conta, envio de notificações e comunicações de interesse.</li>
+                  <li><strong>Telefone:</strong> contato direto para agendamentos, suporte ou comunicação entre usuários autorizados.</li>
+                  <li><strong>CPF (pacientes e nutricionistas):</strong> verificação de identidade do titular, emissão de documentos fiscais e prevenção a fraudes.</li>
+                  <li><strong>CNPJ (empresas):</strong> validação da empresa para cadastramento de serviços ou vagas.</li>
+                  <li><strong>Data de nascimento (quando aplicável):</strong> verificação da maioridade legal e adequação de serviços.</li>
+                  <li><strong>Endereço:</strong> emissão de notas fiscais, vinculação de serviços e verificação de regionalidade (ex.: busca por profissionais próximos).</li>
                 </ul>
 
                 <h4 className="font-semibold text-[#1E1D40] mb-3">2.2 Dados Profissionais (Nutricionistas)</h4>
                 <ul className="list-disc pl-6 space-y-2 text-[#1E1D40]/80 mb-4">
-                  <li><strong>Número do CRN:</strong> comprovação de regularidade profissional.</li>
-                  <li><strong>Especialidades e certificações:</strong> exibição pública no perfil.</li>
-                  <li><strong>Experiência e formação:</strong> composição do portfólio profissional.</li>
+                  <li><strong>Número do CRN:</strong> comprovação de regularidade profissional junto ao Conselho de Nutrição.</li>
+                  <li><strong>Especialidades e certificações:</strong> exibição pública no perfil para auxiliar pacientes e empresas na escolha.</li>
+                  <li><strong>Experiência profissional e formação acadêmica:</strong> construção do portfólio profissional do nutricionista dentro da plataforma.</li>
                 </ul>
 
-                <h4 className="font-semibold text-[#1E1D40] mb-3">2.3 Dados de Empresas (Parceiras)</h4>
+                <h4 className="font-semibold text-[#1E1D40] mb-3">2.3 Dados de Empresas (Empresas Parceiras)</h4>
                 <ul className="list-disc pl-6 space-y-2 text-[#1E1D40]/80 mb-4">
-                  <li>Razão social, CNPJ, endereço, representantes e contatos para contratações e parcerias.</li>
+                  <li><strong>Razão social, CNPJ e endereço:</strong> verificação da legitimidade da empresa.</li>
+                  <li><strong>Representantes legais e contatos:</strong> comunicação direta para contratações, consultorias e parcerias.</li>
                 </ul>
 
-                <h4 className="font-semibold text-[#1E1D40] mb-3">2.4 Dados de Uso da Plataforma</h4>
+                <h4 className="font-semibold text-[#1E1D40] mb-3">2.4 Dados de Uso da Plataforma (Todos os Usuários)</h4>
                 <ul className="list-disc pl-6 space-y-2 text-[#1E1D40]/80">
-                  <li>Logs de acesso e navegação para segurança, prevenção a fraudes e análise de uso.</li>
-                  <li>Endereço IP e informações de dispositivo para integridade e melhoria da experiência.</li>
-                  <li>Cookies e tecnologias similares para sessão, preferências, estatísticas e segurança.</li>
+                  <li><strong>Logs de acesso e navegação:</strong> prevenção a fraudes, segurança e análise de uso.</li>
+                  <li><strong>Endereço IP e informações do dispositivo:</strong> garantir a integridade da plataforma, identificar irregularidades e melhorar a experiência do usuário.</li>
+                  <li><strong>Cookies e tecnologias similares:</strong> manter sessão ativa, registrar preferências, personalizar conteúdo, gerar estatísticas de navegação e reforçar segurança.</li>
                 </ul>
               </CardContent>
             </Card>
@@ -142,11 +150,14 @@ export default function PrivacidadePage() {
             <Card className="border-[#F2E6D8] shadow-lg">
               <CardHeader><CardTitle className="text-[#1E1D40]">3. Bases Legais para o Tratamento</CardTitle></CardHeader>
               <CardContent className="prose prose-gray max-w-none">
+                <p className="text-[#1E1D40]/80 leading-relaxed mb-4">
+                  O tratamento dos dados pessoais é realizado de acordo com as seguintes bases legais:
+                </p>
                 <ul className="list-disc pl-6 space-y-2 text-[#1E1D40]/80">
-                  <li><strong>Consentimento:</strong> comunicações promocionais e cookies não essenciais.</li>
-                  <li><strong>Execução de contrato:</strong> viabilizar serviços (agendamentos, pagamentos, interações).</li>
-                  <li><strong>Legítimo interesse:</strong> melhorias, suporte e segurança preventiva.</li>
-                  <li><strong>Obrigação legal/regulatória:</strong> exigências fiscais, regulatórias e auditoria.</li>
+                  <li><strong>Consentimento:</strong> especialmente para comunicações promocionais e cookies não essenciais.</li>
+                  <li><strong>Execução de contrato:</strong> viabilização de serviços como agendamentos, pagamentos e interações entre usuários.</li>
+                  <li><strong>Legítimo interesse:</strong> melhoria contínua das funcionalidades e ações de segurança preventiva.</li>
+                  <li><strong>Obrigação legal e regulatória:</strong> cumprimento de deveres fiscais, regulatórios e de auditoria.</li>
                 </ul>
               </CardContent>
             </Card>
@@ -155,14 +166,16 @@ export default function PrivacidadePage() {
             <Card className="border-[#F2E6D8] shadow-lg">
               <CardHeader><CardTitle className="text-[#1E1D40]">4. Compartilhamento de Dados</CardTitle></CardHeader>
               <CardContent className="prose prose-gray max-w-none">
-                <p className="text-[#1E1D40]/80 leading-relaxed mb-4">Podemos compartilhar seus dados:</p>
+                <p className="text-[#1E1D40]/80 leading-relaxed mb-4">Seus dados poderão ser compartilhados com:</p>
                 <ul className="list-disc pl-6 space-y-2 text-[#1E1D40]/80">
-                  <li>Com usuários quando necessário à prestação do serviço (ex.: dados básicos para agendamento).</li>
-                  <li>Com fornecedores terceirizados (pagamentos, hospedagem, auditoria, suporte).</li>
-                  <li>Com autoridades competentes, quando exigido por lei/ordem judicial.</li>
-                  <li>Em operações societárias (fusão, aquisição ou incorporação).</li>
+                  <li><strong>Usuários:</strong> quando necessário para prestação do serviço (ex.: envio de dados básicos do paciente ao nutricionista para agendamento).</li>
+                  <li><strong>Fornecedores terceirizados:</strong> processadores de pagamento, hospedagem de dados, auditoria e suporte técnico.</li>
+                  <li><strong>Autoridades competentes:</strong> quando previstos por lei, ordem judicial ou regulatória.</li>
+                  <li><strong>Operações societárias:</strong> em casos de fusão, aquisição ou incorporação da Busca Nutri.</li>
                 </ul>
-                <p className="text-[#1E1D40]/80 leading-relaxed mt-4"><strong>Não comercializamos dados pessoais.</strong></p>
+                <p className="text-[#1E1D40]/80 leading-relaxed mt-4">
+                  <strong>Ressaltamos que a Busca Nutri não comercializa dados pessoais de seus usuários.</strong>
+                </p>
               </CardContent>
             </Card>
 
@@ -170,12 +183,16 @@ export default function PrivacidadePage() {
             <Card className="border-[#F2E6D8] shadow-lg">
               <CardHeader><CardTitle className="text-[#1E1D40]">5. Segurança dos Dados</CardTitle></CardHeader>
               <CardContent className="prose prose-gray max-w-none">
+                <p className="text-[#1E1D40]/80 leading-relaxed mb-4">
+                  A Busca Nutri adota medidas técnicas e administrativas adequadas para proteger os dados 
+                  tratados, incluindo:
+                </p>
                 <ul className="list-disc pl-6 space-y-2 text-[#1E1D40]/80">
-                  <li>Criptografia e protocolos seguros.</li>
-                  <li>Controles estritos de acesso.</li>
-                  <li>Monitoramento e auditorias periódicas.</li>
-                  <li>Backups e políticas de recuperação.</li>
-                  <li>Treinamento contínuo da equipe.</li>
+                  <li>Criptografia e protocolos seguros de transmissão.</li>
+                  <li>Controles estritos de acesso interno.</li>
+                  <li>Monitoramento, auditoria e testes periódicos de segurança.</li>
+                  <li>Backups seguros e políticas de recuperação.</li>
+                  <li>Treinamento contínuo da equipe em boas práticas de proteção de dados.</li>
                 </ul>
               </CardContent>
             </Card>
@@ -184,10 +201,14 @@ export default function PrivacidadePage() {
             <Card className="border-[#F2E6D8] shadow-lg">
               <CardHeader><CardTitle className="text-[#1E1D40]">6. Retenção dos Dados</CardTitle></CardHeader>
               <CardContent className="prose prose-gray max-w-none">
+                <p className="text-[#1E1D40]/80 leading-relaxed mb-4">
+                  Os dados pessoais serão armazenados apenas pelo tempo necessário para cumprir suas 
+                  finalidades, respeitando os seguintes prazos:
+                </p>
                 <ul className="list-disc pl-6 space-y-2 text-[#1E1D40]/80">
-                  <li><strong>Conta ativa:</strong> enquanto houver vínculo.</li>
-                  <li><strong>Conta inativa:</strong> até 2 anos após a última atividade.</li>
-                  <li><strong>Financeiros/fiscais:</strong> 5 anos.</li>
+                  <li><strong>Contas ativas:</strong> enquanto o usuário mantiver vínculo com a plataforma.</li>
+                  <li><strong>Contas inativas:</strong> até 2 anos após a última atividade.</li>
+                  <li><strong>Dados financeiros e fiscais:</strong> mínimo de 5 anos, conforme legislação aplicável.</li>
                   <li><strong>Logs de segurança:</strong> 6 meses.</li>
                   <li><strong>Exigências legais específicas:</strong> enquanto durar a obrigação.</li>
                 </ul>
@@ -198,14 +219,18 @@ export default function PrivacidadePage() {
             <Card className="border-[#F2E6D8] shadow-lg">
               <CardHeader><CardTitle className="text-[#1E1D40]">7. Direitos dos Titulares</CardTitle></CardHeader>
               <CardContent className="prose prose-gray max-w-none">
+                <p className="text-[#1E1D40]/80 leading-relaxed mb-4">
+                  Em conformidade com a LGPD, todos os titulares (Nutricionistas, Pacientes e Empresas) 
+                  possuem os seguintes direitos:
+                </p>
                 <ul className="list-disc pl-6 space-y-2 text-[#1E1D40]/80">
-                  <li><strong>Acesso</strong> e confirmação de tratamento.</li>
-                  <li><strong>Correção</strong> de dados incompletos/inexatos.</li>
-                  <li><strong>Exclusão</strong> de dados desnecessários/irregulares.</li>
-                  <li><strong>Portabilidade</strong> (quando aplicável).</li>
-                  <li><strong>Oposição</strong> a tratamentos, quando cabível.</li>
-                  <li><strong>Revogação do consentimento</strong> a qualquer momento.</li>
-                  <li><strong>Informação</strong> sobre compartilhamentos.</li>
+                  <li><strong>Acesso:</strong> confirmar a existência de tratamento e acessar os dados.</li>
+                  <li><strong>Correção:</strong> retificar dados incompletos, inexatos ou desatualizados.</li>
+                  <li><strong>Exclusão:</strong> solicitar eliminação de dados desnecessários ou tratados irregularmente.</li>
+                  <li><strong>Portabilidade:</strong> receber os dados em formato estruturado quando aplicável.</li>
+                  <li><strong>Oposição:</strong> se opor a determinados tratamentos, quando cabível.</li>
+                  <li><strong>Revogação do consentimento:</strong> retirar o consentimento a qualquer momento.</li>
+                  <li><strong>Informação:</strong> saber com quem e para quais finalidades seus dados foram compartilhados.</li>
                 </ul>
               </CardContent>
             </Card>
@@ -214,16 +239,16 @@ export default function PrivacidadePage() {
             <Card className="border-[#F2E6D8] shadow-lg">
               <CardHeader><CardTitle className="text-[#1E1D40]">8. Cookies e Tecnologias Similares</CardTitle></CardHeader>
               <CardContent className="prose prose-gray max-w-none">
-                <p className="text-[#1E1D40]/80 leading-relaxed mb-4">Usamos cookies para:</p>
+                <p className="text-[#1E1D40]/80 leading-relaxed mb-4">Utilizamos cookies para:</p>
                 <ul className="list-disc pl-6 space-y-2 text-[#1E1D40]/80">
-                  <li>Manter sessão ativa.</li>
-                  <li>Lembrar preferências.</li>
-                  <li>Analisar desempenho da plataforma.</li>
-                  <li>Personalizar recomendações.</li>
+                  <li>Manter a sessão do usuário ativa;</li>
+                  <li>Memorizar preferências de navegação;</li>
+                  <li>Analisar e otimizar o desempenho da plataforma;</li>
+                  <li>Personalizar recomendações;</li>
                   <li>Garantir segurança do serviço.</li>
                 </ul>
                 <p className="text-[#1E1D40]/80 leading-relaxed mt-4">
-                  Saiba mais na nossa{' '}
+                  Mais informações podem ser consultadas em nossa{' '}
                   <Link href="/cookies" className="text-[#4AB0D9] hover:underline font-medium">
                     Política de Cookies
                   </Link>.
@@ -235,12 +260,16 @@ export default function PrivacidadePage() {
             <Card className="border-[#F2E6D8] shadow-lg">
               <CardHeader><CardTitle className="text-[#1E1D40]">9. Transferência Internacional de Dados</CardTitle></CardHeader>
               <CardContent className="prose prose-gray max-w-none">
-                <p className="text-[#1E1D40]/80 leading-relaxed">Quando houver transferência internacional, garantimos que:</p>
-                <ul className="list-disc pl-6 space-y-2 text-[#1E1D40]/80 mt-4">
-                  <li>O país de destino ofereça nível adequado de proteção.</li>
-                  <li>Haja salvaguardas contratuais apropriadas.</li>
-                  <li>Você seja informado previamente.</li>
-                  <li>Quando exigido, coletaremos consentimento específico.</li>
+                <p className="text-[#1E1D40]/80 leading-relaxed mb-4">
+                  Alguns de nossos prestadores de serviços (como hospedagem em nuvem, provedores de 
+                  pagamento ou suporte técnico) podem estar localizados em outros países.
+                </p>
+                <p className="text-[#1E1D40]/80 leading-relaxed mb-4">Quando isso ocorrer, garantiremos que:</p>
+                <ul className="list-disc pl-6 space-y-2 text-[#1E1D40]/80">
+                  <li>O país de destino ofereça nível adequado de proteção de dados;</li>
+                  <li>Sejam adotadas salvaguardas contratuais apropriadas;</li>
+                  <li>Você seja informado previamente sobre a transferência;</li>
+                  <li>Seja coletado consentimento específico para essas transferências, sempre que exigido pela legislação vigente.</li>
                 </ul>
               </CardContent>
             </Card>
@@ -249,12 +278,15 @@ export default function PrivacidadePage() {
             <Card className="border-[#F2E6D8] shadow-lg">
               <CardHeader><CardTitle className="text-[#1E1D40]">10. Alterações nesta Política</CardTitle></CardHeader>
               <CardContent className="prose prose-gray max-w-none">
-                <ul className="list-disc pl-6 space-y-2 text-[#1E1D40]/80">
-                  <li>Publicaremos a nova versão na plataforma.</li>
-                  <li>Notificaremos por e-mail mudanças relevantes.</li>
-                  <li>Indicaremos a data da última atualização.</li>
-                  <li>Você poderá revisar e aceitar as mudanças.</li>
-                </ul>
+                <p className="text-[#1E1D40]/80 leading-relaxed mb-4">
+                  A Busca Nutri poderá atualizar esta Política periodicamente. Em caso de modificações 
+                  relevantes, notificaremos os usuários através dos canais de comunicação disponíveis 
+                  (e-mail, notificações na plataforma) e indicaremos a data da última atualização.
+                </p>
+                <p className="text-[#1E1D40]/80 leading-relaxed">
+                  Recomendamos que você revise esta Política regularmente para se manter informado sobre 
+                  como protegemos seus dados pessoais.
+                </p>
               </CardContent>
             </Card>
 
