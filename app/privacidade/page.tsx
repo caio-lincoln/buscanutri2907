@@ -37,7 +37,7 @@ export default function PrivacidadePage() {
               Como coletamos, usamos e protegemos seus dados pessoais na Busca Nutri
             </p>
             <div className="mt-6 text-sm text-[#1E1D40]/60">
-              <p><strong>Última atualização:</strong> 21 de janeiro de 2025</p>
+              <p><strong>Última atualização:</strong> 30/08/2025</p>
               <p><strong>Versão:</strong> 2.0</p>
             </div>
           </div>
@@ -100,6 +100,10 @@ export default function PrivacidadePage() {
                   Esta Política de Privacidade descreve como coletamos, usamos, armazenamos e protegemos 
                   essas informações em conformidade com a Lei Geral de Proteção de Dados (LGPD - Lei nº 
                   13.709/2018) e demais regulamentações aplicáveis.
+                </p>
+                <p className="text-[#1E1D40]/80 leading-relaxed mt-4">
+                  Ao utilizar nossos serviços, você concorda com os termos desta política. Caso não 
+                  concorde com algum aspecto, recomendamos que não utilize nossa plataforma.
                 </p>
               </CardContent>
             </Card>
@@ -280,13 +284,14 @@ export default function PrivacidadePage() {
               <CardContent className="prose prose-gray max-w-none">
                 <p className="text-[#1E1D40]/80 leading-relaxed mb-4">
                   A Busca Nutri poderá atualizar esta Política periodicamente. Em caso de modificações 
-                  relevantes, notificaremos os usuários através dos canais de comunicação disponíveis 
-                  (e-mail, notificações na plataforma) e indicaremos a data da última atualização.
+                  relevantes:
                 </p>
-                <p className="text-[#1E1D40]/80 leading-relaxed">
-                  Recomendamos que você revise esta Política regularmente para se manter informado sobre 
-                  como protegemos seus dados pessoais.
-                </p>
+                <ul className="list-disc pl-6 space-y-2 text-[#1E1D40]/80">
+                  <li>Publicaremos a nova versão na plataforma;</li>
+                  <li>Enviaremos notificação por e-mail;</li>
+                  <li>Indicaremos a data da última atualização;</li>
+                  <li>Garantiremos ao usuário a possibilidade de revisar e aceitar as mudanças.</li>
+                </ul>
               </CardContent>
             </Card>
 
@@ -295,7 +300,7 @@ export default function PrivacidadePage() {
               <CardHeader><CardTitle className="text-[#1E1D40]">11. Contato e Encarregado de Dados (DPO)</CardTitle></CardHeader>
               <CardContent>
                 <p className="text-[#1E1D40]/80 leading-relaxed mb-4">
-                  Para exercer seus direitos, esclarecer dúvidas ou registrar reclamações, fale com a gente:
+                  Para exercer direitos ou esclarecer dúvidas relacionadas a esta Política de Privacidade, contate:
                 </p>
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-3">
@@ -325,11 +330,11 @@ export default function PrivacidadePage() {
                     </div>
                     <div className="flex items-center gap-2">
                       <Clock className="h-4 w-4 text-[#4AB0D9]" />
-                      <span className="text-[#1E1D40]/70">Segunda a Sexta, 9h às 18h</span>
+                      <span className="text-[#1E1D40]/70">Segunda a Sexta, das 9h às 18h</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <MapPin className="h-4 w-4 text-[#4AB0D9]" />
-                      <span className="text-[#1E1D40]/70">Aracaju, SE - Brasil</span>
+                      <span className="text-[#1E1D40]/70">Aracaju, SE – Brasil</span>
                     </div>
                   </div>
                 </div>

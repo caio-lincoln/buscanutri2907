@@ -52,7 +52,7 @@ export default function TermosPage() {
               Conheça os termos e condições para uso da plataforma Busca Nutri
             </p>
             <div className="mt-6 text-sm text-[#1E1D40]/60">
-              <p><strong>Última atualização:</strong> 21 de janeiro de 2025</p>
+              <p><strong>Última atualização:</strong> 30/08/2025</p>
               <p><strong>Versão:</strong> 2.0</p>
             </div>
           </div>
