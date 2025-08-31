@@ -46,8 +46,7 @@ export default function CookiesPage() {
               Como utilizamos cookies e tecnologias similares na plataforma Busca Nutri
             </p>
             <div className="mt-6 text-sm text-[#1E1D40]/60">
-              <p><strong>Última atualização:</strong> 20/08/2025</p>
-              <p><strong>Versão:</strong> 2.0</p>
+              <p><strong>Última atualização:</strong> 30/08/2025</p>
             </div>
           </div>
 
@@ -104,162 +103,235 @@ export default function CookiesPage() {
               <CardHeader><CardTitle className="text-[#1E1D40]">1. O que são Cookies?</CardTitle></CardHeader>
               <CardContent className="prose prose-gray max-w-none">
                 <p className="text-[#1E1D40]/80">
-                  Cookies são pequenos arquivos de texto armazenados no seu dispositivo quando você visita a
-                  plataforma. Usamos cookies e tecnologias similares para melhorar sua experiência, personalizar
-                  conteúdo, analisar uso, garantir segurança e permitir funcionalidades essenciais.
+                  Cookies são pequenos arquivos de texto armazenados no seu dispositivo (computador, tablet ou 
+                  smartphone) quando você visita nossa plataforma. Utilizamos cookies e tecnologias similares para melhorar 
+                  sua experiência, personalizar conteúdo, analisar o uso, garantir segurança e permitir funcionalidades 
+                  essenciais.
                 </p>
               </CardContent>
             </Card>
 
             {/* 2. Gerenciamento e Consentimento */}
             <Card className="border-[#F2E6D8] shadow-lg">
-              <CardHeader><CardTitle className="text-[#1E1D40]">2. Gerenciamento e Consentimento</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="text-[#1E1D40]">2. Gerenciamento e Consentimento de Cookies</CardTitle></CardHeader>
               <CardContent className="prose prose-gray max-w-none">
                 <p className="text-[#1E1D40]/80">
-                  Ao acessar a plataforma, exibimos um banner para você aceitar, recusar ou personalizar categorias
-                  de cookies. Cookies não essenciais (marketing, analytics e redes sociais) só são ativados com seu
-                  consentimento explícito. Você pode revisar ou alterar escolhas a qualquer momento no painel de
-                  privacidade.
+                  Ao acessar nossa plataforma pela primeira vez, exibiremos um banner de consentimento que permite que 
+                  você aceite, recuse ou personalize as categorias de cookies utilizados. Os cookies não essenciais (cookies 
+                  de marketing, analytics e de redes sociais) somente serão ativados mediante seu consentimento explícito, 
+                  conforme exigências da LGPD.
                 </p>
                 <p className="text-[#1E1D40]/80">
-                  O uso de cookies deve ser interpretado em conjunto com nossa{' '}
-                  <Link href="/privacidade" className="text-[#4AB0D9] hover:underline font-medium">
-                    Política de Privacidade
-                  </Link>.
+                  Você pode revisar e alterar suas preferências de cookies a qualquer momento no painel de privacidade da 
+                  plataforma.
                 </p>
               </CardContent>
             </Card>
 
-            {/* 3. Tipos de Cookies */}
+            {/* 3. Relação com a Política de Privacidade */}
             <Card className="border-[#F2E6D8] shadow-lg">
-              <CardHeader><CardTitle className="text-[#1E1D40]">3. Tipos de Cookies que Utilizamos</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="text-[#1E1D40]">3. Relação com a Política de Privacidade</CardTitle></CardHeader>
               <CardContent className="prose prose-gray max-w-none">
-                <h4 className="font-semibold text-[#1E1D40] mb-3">3.1 Essenciais</h4>
+                <p className="text-[#1E1D40]/80">
+                  O uso de cookies nesta plataforma deve ser interpretado em conjunto com nossa{' '}
+                  <Link href="/privacidade" className="text-[#4AB0D9] hover:underline font-medium">
+                    Política de Privacidade
+                  </Link>, 
+                  que detalha como tratamos dados pessoais em geral, inclusive os coletados por meio de cookies.
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* 4. Tipos de Cookies */}
+            <Card className="border-[#F2E6D8] shadow-lg">
+              <CardHeader><CardTitle className="text-[#1E1D40]">4. Tipos de Cookies que Utilizamos</CardTitle></CardHeader>
+              <CardContent className="prose prose-gray max-w-none">
+                <h4 className="font-semibold text-[#1E1D40] mb-3">4.1 Cookies Essenciais</h4>
+                <p className="text-[#1E1D40]/80 mb-2"><strong>Finalidade:</strong> Funcionamento básico da plataforma.</p>
                 <ul className="list-disc pl-6 space-y-1 text-[#1E1D40]/80 mb-4">
-                  <li>Manter você logado durante a sessão</li>
-                  <li>Lembrar preferências de idioma</li>
-                  <li>Garantir a segurança da navegação</li>
-                  <li>Processar transações e pagamentos</li>
+                  <li>Manter você logado durante a sessão.</li>
+                  <li>Lembrar suas preferências de idioma.</li>
+                  <li>Garantir a segurança da navegação.</li>
+                  <li>Processar transações e pagamentos.</li>
                 </ul>
 
-                <h4 className="font-semibold text-[#1E1D40] mb-3">3.2 Performance</h4>
+                <h4 className="font-semibold text-[#1E1D40] mb-3">4.2 Cookies de Performance</h4>
+                <p className="text-[#1E1D40]/80 mb-2"><strong>Finalidade:</strong> Analisar como você utiliza a plataforma.</p>
                 <ul className="list-disc pl-6 space-y-1 text-[#1E1D40]/80 mb-4">
-                  <li>Páginas mais visitadas</li>
-                  <li>Tempo de permanência</li>
-                  <li>Identificar erros técnicos</li>
-                  <li>Melhorar velocidade e otimização</li>
+                  <li>Páginas mais visitadas.</li>
+                  <li>Tempo de permanência.</li>
+                  <li>Identificar erros técnicos.</li>
+                  <li>Melhorar velocidade e otimização.</li>
                 </ul>
 
-                <h4 className="font-semibold text-[#1E1D40] mb-3">3.3 Funcionalidade</h4>
+                <h4 className="font-semibold text-[#1E1D40] mb-3">4.3 Cookies de Funcionalidade</h4>
+                <p className="text-[#1E1D40]/80 mb-2"><strong>Finalidade:</strong> Personalizar sua experiência.</p>
                 <ul className="list-disc pl-6 space-y-1 text-[#1E1D40]/80 mb-4">
-                  <li>Lembrar preferências de busca</li>
-                  <li>Adaptar a interface às suas necessidades</li>
-                  <li>Salvar configurações de acessibilidade</li>
+                  <li>Lembrar preferências de busca.</li>
+                  <li>Adaptar interface às suas necessidades.</li>
+                  <li>Salvar configurações de acessibilidade.</li>
                 </ul>
 
-                <h4 className="font-semibold text-[#1E1D40] mb-3">3.4 Marketing</h4>
+                <h4 className="font-semibold text-[#1E1D40] mb-3">4.4 Cookies de Marketing</h4>
+                <p className="text-[#1E1D40]/80 mb-2"><strong>Finalidade:</strong> Publicidade relevante e eficácia de campanhas.</p>
                 <ul className="list-disc pl-6 space-y-1 text-[#1E1D40]/80">
-                  <li>Exibir anúncios relevantes</li>
-                  <li>Medir resultados de campanhas</li>
-                  <li>Evitar repetição excessiva de anúncios</li>
-                  <li>Rastrear conversões</li>
+                  <li>Mostrar anúncios personalizados.</li>
+                  <li>Medir resultados de campanhas.</li>
+                  <li>Evitar repetição excessiva de anúncios.</li>
+                  <li>Rastrear conversões.</li>
                 </ul>
               </CardContent>
             </Card>
 
             {/* 4. Cookies de Terceiros (exemplos) */}
             <Card className="border-[#F2E6D8] shadow-lg">
-              <CardHeader><CardTitle className="text-[#1E1D40]">4. Cookies de Terceiros</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="text-[#1E1D40]">5. Cookies de Terceiros</CardTitle></CardHeader>
               <CardContent className="prose prose-gray max-w-none">
-                <p className="text-[#1E1D40]/80 mb-3">
-                  Alguns cookies podem ser definidos por terceiros confiáveis para análise, segurança,
-                  autenticação ou publicidade. Exemplos:
+                <p className="text-[#1E1D40]/80 mb-4">
+                  Alguns cookies podem ser definidos por terceiros confiáveis para análise, segurança, autenticação ou 
+                  publicidade. Exemplos comuns:
                 </p>
-                <ul className="list-disc pl-6 space-y-1 text-[#1E1D40]/80">
-                  <li><code>_ga</code> (Google Analytics) — análise de tráfego — 2 anos</li>
-                  <li><code>_gid</code> (Google Analytics) — estatísticas de visitas — 24 horas</li>
-                  <li><code>fr</code> (Facebook) — publicidade personalizada — 90 dias</li>
-                  <li><code>__stripe_mid</code> (Stripe) — processamento seguro de pagamentos — 1 ano</li>
-                  <li><code>sb</code> (Facebook) — autenticação/widgets sociais — 2 anos</li>
-                  <li><code>c_user</code> (Facebook) — login social — sessão</li>
-                </ul>
-                <p className="text-[#1E1D40]/70 mt-3">
-                  Alguns provedores podem processar informações fora do Brasil — veja “Transferência Internacional”.
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse border border-gray-300 text-sm">
+                    <thead>
+                      <tr className="bg-gray-50">
+                        <th className="border border-gray-300 px-4 py-2 text-left font-semibold text-[#1E1D40]">Cookie</th>
+                        <th className="border border-gray-300 px-4 py-2 text-left font-semibold text-[#1E1D40]">Provedor</th>
+                        <th className="border border-gray-300 px-4 py-2 text-left font-semibold text-[#1E1D40]">Finalidade</th>
+                        <th className="border border-gray-300 px-4 py-2 text-left font-semibold text-[#1E1D40]">Duração</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td className="border border-gray-300 px-4 py-2 text-[#1E1D40]/80"><code>_ga</code></td>
+                        <td className="border border-gray-300 px-4 py-2 text-[#1E1D40]/80">Google Analytics</td>
+                        <td className="border border-gray-300 px-4 py-2 text-[#1E1D40]/80">Análise de tráfego/audiência</td>
+                        <td className="border border-gray-300 px-4 py-2 text-[#1E1D40]/80">2 anos</td>
+                      </tr>
+                      <tr>
+                        <td className="border border-gray-300 px-4 py-2 text-[#1E1D40]/80"><code>_gid</code></td>
+                        <td className="border border-gray-300 px-4 py-2 text-[#1E1D40]/80">Google Analytics</td>
+                        <td className="border border-gray-300 px-4 py-2 text-[#1E1D40]/80">Estatísticas de visitas</td>
+                        <td className="border border-gray-300 px-4 py-2 text-[#1E1D40]/80">24 horas</td>
+                      </tr>
+                      <tr>
+                        <td className="border border-gray-300 px-4 py-2 text-[#1E1D40]/80"><code>fr</code></td>
+                        <td className="border border-gray-300 px-4 py-2 text-[#1E1D40]/80">Facebook</td>
+                        <td className="border border-gray-300 px-4 py-2 text-[#1E1D40]/80">Publicidade personalizada</td>
+                        <td className="border border-gray-300 px-4 py-2 text-[#1E1D40]/80">90 dias</td>
+                      </tr>
+                      <tr>
+                        <td className="border border-gray-300 px-4 py-2 text-[#1E1D40]/80"><code>__stripe_mid</code></td>
+                        <td className="border border-gray-300 px-4 py-2 text-[#1E1D40]/80">Stripe</td>
+                        <td className="border border-gray-300 px-4 py-2 text-[#1E1D40]/80">Processamento seguro de pagamentos</td>
+                        <td className="border border-gray-300 px-4 py-2 text-[#1E1D40]/80">1 ano</td>
+                      </tr>
+                      <tr>
+                        <td className="border border-gray-300 px-4 py-2 text-[#1E1D40]/80"><code>sb</code></td>
+                        <td className="border border-gray-300 px-4 py-2 text-[#1E1D40]/80">Facebook</td>
+                        <td className="border border-gray-300 px-4 py-2 text-[#1E1D40]/80">Autenticação/Widgets sociais</td>
+                        <td className="border border-gray-300 px-4 py-2 text-[#1E1D40]/80">2 anos</td>
+                      </tr>
+                      <tr>
+                        <td className="border border-gray-300 px-4 py-2 text-[#1E1D40]/80"><code>c_user</code></td>
+                        <td className="border border-gray-300 px-4 py-2 text-[#1E1D40]/80">Facebook</td>
+                        <td className="border border-gray-300 px-4 py-2 text-[#1E1D40]/80">Login social</td>
+                        <td className="border border-gray-300 px-4 py-2 text-[#1E1D40]/80">Sessão</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <p className="text-[#1E1D40]/80 mt-4">
+                  Esses provedores podem processar informações fora do Brasil; veja o item sobre transferência 
+                  internacional de dados.
                 </p>
               </CardContent>
             </Card>
 
-            {/* 5. Transferência Internacional */}
+            {/* 6. Transferência Internacional */}
             <Card className="border-[#F2E6D8] shadow-lg">
-              <CardHeader><CardTitle className="text-[#1E1D40]">5. Transferência Internacional de Dados</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="text-[#1E1D40]">6. Transferência Internacional de Dados</CardTitle></CardHeader>
               <CardContent className="prose prose-gray max-w-none">
                 <p className="text-[#1E1D40]/80">
-                  Certos cookies (por ex., Google Analytics, Facebook/Meta, Stripe) podem envolver transferência
-                  internacional (ex.: EUA/Irlanda). Sempre que necessário, garantimos: grau de proteção adequado,
-                  salvaguardas contratuais apropriadas e, quando exigido, consentimento específico do usuário.
-                  Você poderá optar por manter somente cookies que não gerem transferência internacional.
+                  Alguns cookies de terceiros, como Google Analytics, Facebook/Meta ou Stripe, podem envolver 
+                  transferência internacional de dados para países como Estados Unidos ou Irlanda. Sempre que necessário, 
+                  buscamos garantir:
+                </p>
+                <ul className="list-disc pl-6 space-y-1 text-[#1E1D40]/80 mt-3">
+                  <li>Grau de proteção adequado.</li>
+                  <li>Salvaguardas contratuais apropriadas.</li>
+                  <li>Consentimento específico do usuário, conforme exigido em lei.</li>
+                </ul>
+                <p className="text-[#1E1D40]/80 mt-3">
+                  Você será informado sobre essas transferências, podendo optar por manter apenas cookies que 
+                  não resultem em transferência internacional.
                 </p>
               </CardContent>
             </Card>
 
-            {/* 6. Duração dos Cookies */}
+            {/* 7. Duração dos Cookies */}
             <Card className="border-[#F2E6D8] shadow-lg">
-              <CardHeader><CardTitle className="text-[#1E1D40]">6. Duração dos Cookies</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="text-[#1E1D40]">7. Duração dos Cookies</CardTitle></CardHeader>
               <CardContent className="prose prose-gray max-w-none">
                 <ul className="list-disc pl-6 space-y-1 text-[#1E1D40]/80">
-                  <li><strong>Sessão:</strong> removidos ao fechar o navegador</li>
-                  <li><strong>Preferências:</strong> até 1 ano</li>
-                  <li><strong>Analytics:</strong> até 2 anos</li>
-                  <li><strong>Marketing:</strong> até 90 dias</li>
-                  <li><strong>Segurança:</strong> até 6 meses</li>
+                  <li><strong>Sessão:</strong> removidos ao fechar o navegador.</li>
+                  <li><strong>Persistentes:</strong> armazenados por períodos específicos, variando conforme finalidade:</li>
+                  <ul className="list-disc pl-6 space-y-1 text-[#1E1D40]/80 ml-4">
+                    <li>Preferências: até 1 ano</li>
+                    <li>Analytics: até 2 anos</li>
+                    <li>Marketing: até 90 dias</li>
+                    <li>Segurança: até 6 meses</li>
+                  </ul>
                 </ul>
               </CardContent>
             </Card>
 
-            {/* 7. Como Gerenciar */}
+            {/* 8. Como Gerenciar */}
             <Card className="border-[#F2E6D8] shadow-lg">
-              <CardHeader><CardTitle className="text-[#1E1D40]">7. Como Gerenciar seus Cookies</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="text-[#1E1D40]">8. Como Gerenciar seus Cookies</CardTitle></CardHeader>
               <CardContent className="prose prose-gray max-w-none">
                 <ul className="list-disc pl-6 space-y-1 text-[#1E1D40]/80">
-                  <li>Painel de configurações na plataforma: personalize ou revogue consentimento a qualquer momento</li>
-                  <li>Configurações do navegador: Chrome, Firefox, Safari, Edge — bloquear, excluir ou gerenciar cookies</li>
+                  <li><strong>Painel de configurações na plataforma:</strong> personalize ou revogue consentimento a qualquer momento.</li>
+                  <li><strong>Configurações do navegador:</strong> Chrome, Firefox, Safari, Edge – cada navegador permite bloqueio, exclusão ou gerenciamento conforme seu interesse.</li>
                 </ul>
                 <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mt-4">
                   <p className="text-amber-800 text-sm">
-                    <strong>Importante:</strong> Desabilitar cookies essenciais pode limitar o funcionamento da plataforma.
+                    <strong>Atenção:</strong> Desabilitar cookies essenciais pode limitar o funcionamento pleno da plataforma.
                   </p>
                 </div>
               </CardContent>
             </Card>
 
-            {/* 8. Seus Direitos */}
+            {/* 9. Seus Direitos */}
             <Card className="border-[#F2E6D8] shadow-lg">
-              <CardHeader><CardTitle className="text-[#1E1D40]">8. Seus Direitos</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="text-[#1E1D40]">9. Seus Direitos</CardTitle></CardHeader>
               <CardContent className="prose prose-gray max-w-none">
+                <p className="text-[#1E1D40]/80 mb-3">Você tem direito de:</p>
                 <ul className="list-disc pl-6 space-y-2 text-[#1E1D40]/80">
-                  <li><strong>Consentimento:</strong> dar/retirar para cookies não essenciais</li>
-                  <li><strong>Acesso:</strong> saber quais cookies estão armazenados</li>
-                  <li><strong>Exclusão:</strong> solicitar remoção de cookies/dados associados</li>
-                  <li><strong>Portabilidade:</strong> receber dados coletados via cookies em formato estruturado</li>
-                  <li><strong>Oposição:</strong> recusar cookies para certas finalidades</li>
+                  <li><strong>Consentimento:</strong> Dar ou retirar consentimento para cookies não essenciais;</li>
+                  <li><strong>Acesso:</strong> Saber quais cookies estão armazenados;</li>
+                  <li><strong>Exclusão:</strong> Solicitar remoção de cookies/dados associados;</li>
+                  <li><strong>Portabilidade:</strong> Receber dados coletados via cookies em formato estruturado;</li>
+                  <li><strong>Oposição:</strong> Recusar cookies para certas finalidades.</li>
                 </ul>
               </CardContent>
             </Card>
 
-            {/* 9. Atualizações */}
+            {/* 10. Atualizações */}
             <Card className="border-[#F2E6D8] shadow-lg">
-              <CardHeader><CardTitle className="text-[#1E1D40]">9. Atualizações desta Política</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="text-[#1E1D40]">10. Atualizações desta Política</CardTitle></CardHeader>
               <CardContent className="prose prose-gray max-w-none">
                 <p className="text-[#1E1D40]/80">
-                  Esta Política pode ser alterada para refletir mudanças técnicas, legais ou operacionais.
-                  Verifique periodicamente — a data da última atualização está no topo desta página.
+                  Esta política poderá ser alterada a qualquer tempo para refletir mudanças técnicas, legais ou operacionais. 
+                  Recomenda-se revisá-la periodicamente. A data da última atualização será sempre indicada no topo desta 
+                  página.
                 </p>
               </CardContent>
             </Card>
 
-            {/* 10. Contato */}
+            {/* 8. Contato */}
             <Card className="border-[#4AB0D9]/20 shadow-lg bg-[#4AB0D9]/5">
-              <CardHeader><CardTitle className="text-[#1E1D40]">10. Contato e Suporte</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="text-[#1E1D40]">8. Contato e Suporte</CardTitle></CardHeader>
               <CardContent>
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-3">

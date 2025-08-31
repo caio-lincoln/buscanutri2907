@@ -52,7 +52,7 @@ export default function TermosPage() {
               Conheça os termos e condições para uso da plataforma Busca Nutri
             </p>
             <div className="mt-6 text-sm text-[#1E1D40]/60">
-              <p><strong>Última atualização:</strong> 21 de janeiro de 2025</p>
+              <p><strong>Última atualização:</strong> 30/08/2025</p>
               <p><strong>Versão:</strong> 2.0</p>
             </div>
           </div>
@@ -109,10 +109,12 @@ export default function TermosPage() {
               <CardHeader><CardTitle className="text-[#1E1D40]">1. Aceitação dos Termos</CardTitle></CardHeader>
               <CardContent className="prose prose-gray max-w-none">
                 <p className="text-[#1E1D40]/80">
-                  Ao acessar e utilizar a plataforma Busca Nutri, você concorda integralmente com estes Termos de Uso.
-                  Caso não concorde com qualquer parte, não deverá utilizar nossos serviços. Estes termos constituem
-                  um acordo legal entre você e a Busca Nutri (CNPJ: 57.370.073/0001-92), estabelecendo as condições
-                  de uso da plataforma digital.
+                  Ao acessar e utilizar a plataforma Busca Nutri, você concorda integralmente com estes Termos de Uso. Caso 
+                  não concorde com qualquer parte destes termos, não deverá utilizar nossos serviços.
+                </p>
+                <p className="text-[#1E1D40]/80">
+                  Estes termos constituem um acordo legal entre você e a Busca Nutri (CNPJ: 57.370.073/0001-92), 
+                  estabelecendo as condições de utilização de nossa plataforma digital.
                 </p>
               </CardContent>
             </Card>
@@ -121,16 +123,20 @@ export default function TermosPage() {
             <Card className="border-[#F2E6D8] shadow-lg">
               <CardHeader><CardTitle className="text-[#1E1D40]">2. Descrição dos Serviços</CardTitle></CardHeader>
               <CardContent className="prose prose-gray max-w-none">
-                <p className="text-[#1E1D40]/80">A Busca Nutri é uma plataforma de intermediação que conecta:</p>
+                <p className="text-[#1E1D40]/80">
+                  A Busca Nutri é uma plataforma digital de intermediação, que conecta três públicos distintos 
+                  — Nutricionistas, Pacientes e Empresas — oferecendo:
+                </p>
                 <ul className="list-disc pl-6 space-y-2 text-[#1E1D40]/80">
                   <li>Cadastro e verificação de profissionais de nutrição;</li>
-                  <li>Sistema de busca e agendamento de consultas presenciais e <strong>teleconsultas</strong>;</li>
-                  <li>Ferramentas de comunicação entre usuários (fórum, Q&amp;A públicos);</li>
+                  <li>Sistema de busca e agendamento de consultas presenciais e teleconsultas;</li>
+                  <li>Ferramentas de comunicação entre usuários, incluindo fórum e perguntas e respostas visíveis;</li>
                   <li>Publicação de conteúdo educativo e científico;</li>
-                  <li>Marketplace de oportunidades profissionais e serviços corporativos.</li>
+                  <li>Marketplace de oportunidades profissionais e contratação de serviços corporativos.</li>
                 </ul>
                 <p className="text-[#1E1D40]/80">
-                  A Busca Nutri <strong>não presta serviços de nutrição</strong>, atuando apenas como facilitadora entre usuários.
+                  A Busca Nutri não presta serviços de nutrição nem se responsabiliza pelo atendimento realizado pelos 
+                  profissionais cadastrados, atuando exclusivamente como facilitadora e intermediadora entre os usuários.
                 </p>
               </CardContent>
             </Card>
@@ -141,44 +147,49 @@ export default function TermosPage() {
               <CardContent className="prose prose-gray max-w-none">
                 <h4 className="font-semibold text-[#1E1D40] mb-3">3.1 Requisitos para Cadastro</h4>
                 <ul className="list-disc pl-6 space-y-2 text-[#1E1D40]/80 mb-4">
-                  <li>Ser maior de 18 anos ou possuir autorização dos responsáveis;</li>
+                  <li>Ser maior de 18 anos ou possuir autorização dos responsáveis legais;</li>
                   <li>Fornecer informações verdadeiras, precisas e atualizadas;</li>
-                  <li>Nutricionistas: registro ativo no CRN;</li>
-                  <li>Empresas: CNPJ ativo e documentação válida.</li>
+                  <li>Nutricionistas devem possuir registro ativo no Conselho Regional de Nutrição (CRN);</li>
+                  <li>Empresas devem possuir CNPJ ativo e documentação válida.</li>
                 </ul>
 
-                <h4 className="font-semibold text-[#1E1D40] mb-3">3.2 Responsabilidades e Especificidades</h4>
+                <h4 className="font-semibold text-[#1E1D40] mb-3">3.2 Responsabilidades e Especificidades por Público</h4>
                 <p className="text-[#1E1D40]/80 font-medium">Nutricionistas</p>
                 <ul className="list-disc pl-6 space-y-2 text-[#1E1D40]/80 mb-4">
-                  <li>Manter perfil profissional atualizado;</li>
-                  <li>Pagar assinatura mensal para funcionalidades ampliadas;</li>
-                  <li>Aceitar retenção de <em>percentual previamente acordado</em> sobre valores de teleconsultas e serviços corporativos contratados via plataforma;</li>
-                  <li>Cupons de desconto concedidos serão abatidos do valor pago pelo paciente;</li>
-                  <li>Conteúdo de blog é de responsabilidade do autor; a plataforma pode moderar/remover publicações denunciadas ou em desacordo;</li>
-                  <li>Permitir uso de imagem, nome e conteúdo profissional em campanhas de divulgação da plataforma, sem ônus adicional.</li>
+                  <li>Criar e manter perfil profissional atualizado;</li>
+                  <li>Efetuar pagamento de assinatura mensal para acesso às funcionalidades ampliadas;</li>
+                  <li>Aceitar que a Busca Nutri retenha percentual acordado sobre pagamentos recebidos por teleconsultas e serviços de nutrição corporativa contratados via plataforma;</li>
+                  <li>Concordar que, ao fornecer cupons de desconto para pacientes, estes serão descontados do valor final pago pelo paciente;</li>
+                  <li>Postagens no blog são de responsabilidade exclusiva do nutricionista, que não recebe remuneração da plataforma por este conteúdo; a Busca Nutri realizará curadoria, podendo suspender ou remover publicações que violem regras ou recebam denúncia;</li>
+                  <li>Aceitar participar da comercialização de pacotes de nutrição corporativa, com percentual retido pela plataforma conforme acordo;</li>
+                  <li>Conceder permissão para utilização da sua imagem, nome e conteúdo profissional em campanhas de marketing e divulgação da plataforma, incluindo redes sociais, sem ônus adicional, para promoção dos serviços da Busca Nutri.</li>
                 </ul>
-                <p className="text-[#1E1D40]/80 italic">
-                  Obrigação legal: toda atuação deve observar integralmente as normas do CFN/CRN. A qualidade técnica,
-                  ética e científica do atendimento e das informações prestadas é de responsabilidade exclusiva do nutricionista.
+                <p className="text-[#1E1D40]/80 italic mb-4">
+                  <strong>Obrigação legal dos nutricionistas:</strong> Todo nutricionista cadastrado deve exercer sua atividade 
+                  profissional em conformidade integral com as normas do Conselho Federal de Nutrição (CFN) e do 
+                  respectivo Conselho Regional de Nutrição (CRN) ao qual esteja inscrito. A responsabilidade pela qualidade 
+                  técnica, ética e científica do atendimento e das informações prestadas é exclusivamente do nutricionista, 
+                  sendo a Busca Nutri apenas canal de intermediação.
                 </p>
 
                 <p className="text-[#1E1D40]/80 font-medium mt-4">Pacientes</p>
                 <ul className="list-disc pl-6 space-y-2 text-[#1E1D40]/80 mb-4">
-                  <li>Podem navegar sem cadastro; cadastro é obrigatório para contatar profissionais, postar dúvidas e agendar consultas;</li>
-                  <li>Devem manter suas informações atualizadas.</li>
+                  <li>Podem visualizar perfis de nutricionistas e conteúdos da plataforma sem necessidade de cadastro;</li>
+                  <li>O cadastro é obrigatório para contato direto com nutricionistas, postagem de dúvidas, agendamento de consultas e acesso ao dashboard personalizado;</li>
+                  <li>Devem manter informações pessoais atualizadas e verdadeiras.</li>
                 </ul>
 
                 <p className="text-[#1E1D40]/80 font-medium">Empresas</p>
                 <ul className="list-disc pl-6 space-y-2 text-[#1E1D40]/80">
-                  <li>Devem possuir CNPJ válido e documentação adequada;</li>
-                  <li>Podem cadastrar vagas, contratar serviços e interagir com profissionais.</li>
+                  <li>Devem possuir CNPJ válido e documentação atual;</li>
+                  <li>Podem cadastrar vagas de emprego, contratar serviços e interagir com profissionais na plataforma.</li>
                 </ul>
 
-                <h4 className="font-semibold text-[#1E1D40] mb-3 mt-6">3.3 Responsabilidades Gerais</h4>
+                <h4 className="font-semibold text-[#1E1D40] mb-3 mt-6">3.3 Responsabilidades Gerais do Usuário</h4>
                 <ul className="list-disc pl-6 space-y-2 text-[#1E1D40]/80">
-                  <li>Manter confidencialidade das credenciais;</li>
-                  <li>Notificar uso não autorizado da conta;</li>
-                  <li>Usar a plataforma de forma ética e conforme estes Termos.</li>
+                  <li>Manter a confidencialidade das credenciais de acesso;</li>
+                  <li>Notificar imediatamente a plataforma sobre uso não autorizado de sua conta;</li>
+                  <li>Utilizar a plataforma de forma ética, responsável e em conformidade com estes Termos.</li>
                 </ul>
               </CardContent>
             </Card>
@@ -189,20 +200,21 @@ export default function TermosPage() {
               <CardContent className="prose prose-gray max-w-none">
                 <h4 className="font-semibold text-[#1E1D40] mb-3">4.1 Condutas Permitidas</h4>
                 <ul className="list-disc pl-6 space-y-2 text-[#1E1D40]/80 mb-4">
-                  <li>Uso profissional legítimo;</li>
-                  <li>Compartilhamento de conteúdo educativo e científico;</li>
-                  <li>Interações respeitosas;</li>
-                  <li>Reporte de condutas inadequadas.</li>
+                  <li>Uso da plataforma para fins profissionais legítimos;</li>
+                  <li>Compartilhamento de conteúdo educativo e científico relevante;</li>
+                  <li>Interações respeitosas entre usuários;</li>
+                  <li>Reportar comportamentos inadequados.</li>
                 </ul>
 
                 <h4 className="font-semibold text-[#1E1D40] mb-3">4.2 Condutas Proibidas</h4>
                 <ul className="list-disc pl-6 space-y-2 text-[#1E1D40]/80">
-                  <li>Publicar informações falsas;</li>
-                  <li>Spam ou mensagens não solicitadas;</li>
-                  <li>Violação de direitos autorais ou de terceiros;</li>
-                  <li>Atividades ilegais;</li>
-                  <li>Tentar acessar contas alheias ou interferir no funcionamento da plataforma;</li>
-                  <li><strong>Realizar acordos, parcerias, agendamentos ou teleconsultas diretamente entre usuários, sem intermediação e cobrança via plataforma</strong>.</li>
+                  <li>Publicação de informações falsas ou enganosas;</li>
+                  <li>Prática de spam ou envio de mensagens não solicitadas;</li>
+                  <li>Violação de direitos autorais ou propriedade intelectual;</li>
+                  <li>Utilização da plataforma para atividades ilegais;</li>
+                  <li>Tentativa de acesso não autorizado a contas ou informações;</li>
+                  <li>Interferência no funcionamento da plataforma;</li>
+                  <li><strong>Realizar acordos, parcerias, agendamentos ou teleconsultas diretamente entre usuários, sem passagem e cobrança via plataforma, caracterizando tentativa de burlar o sistema e prejudicando suas funcionalidades e segurança.</strong></li>
                 </ul>
               </CardContent>
             </Card>
@@ -212,9 +224,12 @@ export default function TermosPage() {
               <CardHeader><CardTitle className="text-[#1E1D40]">5. Propriedade Intelectual</CardTitle></CardHeader>
               <CardContent className="prose prose-gray max-w-none">
                 <p className="text-[#1E1D40]/80">
-                  Conteúdos, marcas, imagens e softwares são propriedade da Busca Nutri ou de seus fornecedores.
-                  Usuários mantêm direitos sobre o que publicam, concedendo licença não exclusiva para uso e
-                  distribuição dentro da plataforma.
+                  Todo o conteúdo da Busca Nutri, incluindo textos, gráficos, logotipos, ícones, imagens e softwares, é 
+                  propriedade da Busca Nutri ou de seus fornecedores.
+                </p>
+                <p className="text-[#1E1D40]/80">
+                  Os usuários mantêm direitos sobre o conteúdo que criam e publicam, concedendo à plataforma licença não 
+                  exclusiva para uso, modificação e distribuição dentro do ambiente da plataforma.
                 </p>
               </CardContent>
             </Card>
@@ -224,11 +239,15 @@ export default function TermosPage() {
               <CardHeader><CardTitle className="text-[#1E1D40]">6. Privacidade e Proteção de Dados</CardTitle></CardHeader>
               <CardContent className="prose prose-gray max-w-none">
                 <p className="text-[#1E1D40]/80">
-                  A coleta e o tratamento de dados seguem nossa{' '}
+                  A coleta, uso e proteção dos seus dados pessoais seguem nossa{' '}
                   <Link href="/privacidade" className="text-[#4AB0D9] hover:underline font-medium">
                     Política de Privacidade
                   </Link>{' '}
-                  e a LGPD. Ao usar a plataforma, você consente com o tratamento de dados conforme a política.
+                  , em conformidade com a Lei Geral de Proteção de Dados (LGPD).
+                </p>
+                <p className="text-[#1E1D40]/80">
+                  Ao utilizar nossos serviços, você consente expressamente com o tratamento dessas informações conforme 
+                  descrito na política.
                 </p>
               </CardContent>
             </Card>
@@ -239,19 +258,25 @@ export default function TermosPage() {
               <CardContent className="prose prose-gray max-w-none">
                 <h4 className="font-semibold text-[#1E1D40] mb-3">7.1 Responsabilidades da Busca Nutri</h4>
                 <ul className="list-disc pl-6 space-y-2 text-[#1E1D40]/80 mb-4">
-                  <li>Manter a plataforma operante;</li>
-                  <li>Proteger dados conforme LGPD;</li>
-                  <li>Verificar documentação de profissionais;</li>
+                  <li>Manter a plataforma operando adequadamente;</li>
+                  <li>Proteger os dados dos usuários conforme LGPD;</li>
+                  <li>Verificar documentação dos profissionais cadastrados;</li>
                   <li>Prestar suporte técnico.</li>
                 </ul>
                 <h4 className="font-semibold text-[#1E1D40] mb-3">7.2 Limitações de Responsabilidade</h4>
-                <p className="text-[#1E1D40]/80">
-                  A Busca Nutri é apenas intermediadora — não responde por qualidade dos serviços de terceiros,
-                  resultados de consultas, disputas entre usuários ou conteúdos publicados.
+                <p className="text-[#1E1D40]/80 mb-3">
+                  A Busca Nutri atua exclusivamente como plataforma de intermediação digital, não sendo responsável por:
                 </p>
-                <p className="text-[#1E1D40]/80 italic">
-                  O nutricionista é o único responsável, perante pacientes, empregadores e CFN/CRN, por suas condutas,
-                  atendimentos, conteúdos e pelo cumprimento das normas éticas e legais.
+                <ul className="list-disc pl-6 space-y-2 text-[#1E1D40]/80 mb-4">
+                  <li>Qualidade dos serviços prestados pelos profissionais;</li>
+                  <li>Resultados de tratamentos ou consultas;</li>
+                  <li>Disputas entre usuários;</li>
+                  <li>Conteúdos publicados por usuários.</li>
+                </ul>
+                <p className="text-[#1E1D40]/80">
+                  O nutricionista é o único responsável, perante seus pacientes, empregadores e órgãos de classe 
+                  (CFN/CRN), pelas condutas adotadas, atendimentos prestados, conteúdos veiculados e pelo 
+                  cumprimento das normas éticas e legais da profissão.
                 </p>
               </CardContent>
             </Card>
@@ -262,18 +287,19 @@ export default function TermosPage() {
               <CardContent className="prose prose-gray max-w-none">
                 <h4 className="font-semibold text-[#1E1D40] mb-3">8.1 Política de Pagamentos</h4>
                 <ul className="list-disc pl-6 space-y-2 text-[#1E1D40]/80 mb-4">
-                  <li>Pagamentos via parceiros seguros;</li>
-                  <li>Preços variam por serviço e podem ter taxas de transação;</li>
-                  <li>Nutricionistas pagam assinatura mensal para recursos ampliados;</li>
-                  <li>Retenção de <em>percentual previamente acordado</em> em teleconsultas e serviços corporativos;</li>
-                  <li>Cupons concedidos pelo nutricionista são abatidos do pagamento do paciente.</li>
+                  <li>Pagamentos realizados via parceiros seguros;</li>
+                  <li>Preços variam conforme o serviço;</li>
+                  <li>Taxas de transação podem ser aplicadas;</li>
+                  <li>Nutricionistas pagam assinatura mensal para acesso a funcionalidades;</li>
+                  <li>Percentuais previamente acordados serão retidos pela plataforma sobre teleconsultas e serviços corporativos;</li>
+                  <li>Cupons de desconto fornecidos pelos nutricionistas serão descontados do pagamento dos pacientes.</li>
                 </ul>
                 <h4 className="font-semibold text-[#1E1D40] mb-3">8.2 Política de Cancelamento</h4>
                 <ul className="list-disc pl-6 space-y-2 text-[#1E1D40]/80">
-                  <li>Consultas podem ser canceladas até 24h antes;</li>
+                  <li>Consultas podem ser canceladas até 24 horas antes;</li>
                   <li>Reembolsos seguem políticas dos profissionais;</li>
-                  <li>Cancelamentos de última hora podem gerar taxas;</li>
-                  <li>Contas podem ser encerradas conforme regras aplicáveis.</li>
+                  <li>Cancelamentos tardios podem acarretar taxas;</li>
+                  <li>Contas podem ser encerradas a qualquer momento conforme regras.</li>
                 </ul>
               </CardContent>
             </Card>
@@ -283,9 +309,16 @@ export default function TermosPage() {
               <CardHeader><CardTitle className="text-[#1E1D40]">9. Suspensão e Encerramento de Conta</CardTitle></CardHeader>
               <CardContent className="prose prose-gray max-w-none">
                 <p className="text-[#1E1D40]/80">
-                  Contas podem ser suspensas ou encerradas, sem aviso prévio, em casos de violação de políticas,
-                  atividades ilegais, comportamento inadequado, informações falsas ou uso não autorizado.
+                  A Busca Nutri reserva-se o direito de suspender ou encerrar contas que violem estes Termos, sem aviso 
+                  prévio, especialmente em casos de:
                 </p>
+                <ul className="list-disc pl-6 space-y-2 text-[#1E1D40]/80">
+                  <li>Violação das políticas;</li>
+                  <li>Atividades fraudulentas ou ilegais;</li>
+                  <li>Comportamento inadequado;</li>
+                  <li>Informações falsas;</li>
+                  <li>Uso não autorizado.</li>
+                </ul>
               </CardContent>
             </Card>
 
@@ -294,8 +327,12 @@ export default function TermosPage() {
               <CardHeader><CardTitle className="text-[#1E1D40]">10. Modificações dos Termos</CardTitle></CardHeader>
               <CardContent className="prose prose-gray max-w-none">
                 <p className="text-[#1E1D40]/80">
-                  A Busca Nutri pode alterar estes Termos a qualquer momento. As mudanças vigoram após a publicação.
-                  O uso contínuo representa aceitação dos novos termos.
+                  A Busca Nutri pode alterar estes Termos a qualquer momento, que passam a vigorar imediatamente após 
+                  publicação na plataforma.
+                </p>
+                <p className="text-[#1E1D40]/80">
+                  É responsabilidade do usuário revisar periodicamente estes termos. O uso continuado após alterações 
+                  constitui aceitação.
                 </p>
               </CardContent>
             </Card>
@@ -305,45 +342,25 @@ export default function TermosPage() {
               <CardHeader><CardTitle className="text-[#1E1D40]">11. Lei Aplicável e Foro</CardTitle></CardHeader>
               <CardContent className="prose prose-gray max-w-none">
                 <p className="text-[#1E1D40]/80">
-                  Estes Termos regem-se pelas leis brasileiras. O foro eleito é o da comarca de Aracaju/SE,
-                  com exclusão de qualquer outro, por mais privilegiado que seja.
+                  Estes Termos são regidos pelas leis brasileiras. Quaisquer disputas decorrentes do uso da plataforma serão 
+                  resolvidas no foro da comarca de Aracaju, Sergipe, com exclusão de qualquer outro, por mais privilegiado 
+                  que seja.
                 </p>
               </CardContent>
             </Card>
 
             {/* 12 */}
-            <Card className="border-[#4AB0D9]/20 shadow-lg bg-[#4AB0D9]/5">
+            <Card className="border-[#F2E6D8] shadow-lg">
               <CardHeader><CardTitle className="text-[#1E1D40]">12. Contato e Suporte</CardTitle></CardHeader>
-              <CardContent>
-                <p className="text-[#1E1D40]/80 mb-4">
-                  Para dúvidas, sugestões ou questões sobre estes Termos:
+              <CardContent className="prose prose-gray max-w-none">
+                <p className="text-[#1E1D40]/80">
+                  Para dúvidas, sugestões ou questões acerca destes Termos:
                 </p>
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <Mail className="h-4 w-4 text-[#4AB0D9]" />
-                      <a href="mailto:legal@buscanutri.com.br" className="text-[#4AB0D9] hover:underline">
-                        legal@buscanutri.com.br
-                      </a>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Phone className="h-4 w-4 text-[#4AB0D9]" />
-                      <a href="tel:+557999134938" className="text-[#4AB0D9] hover:underline">
-                        (79) 9 9813-4938
-                      </a>
-                    </div>
-                  </div>
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-[#4AB0D9]" />
-                      <span className="text-[#1E1D40]/70">Aracaju, SE - Brasil</span>
-                    </div>
-                    <div>
-                      <strong className="text-[#1E1D40]">Horário de Atendimento:</strong>
-                      <p className="text-[#1E1D40]/70">Segunda a Sexta, 9h às 18h</p>
-                    </div>
-                  </div>
-                </div>
+                <ul className="list-disc pl-6 space-y-2 text-[#1E1D40]/80">
+                  <li><strong>E-mail:</strong> legal@buscanutri.com.br</li>
+                  <li><strong>Telefone:</strong> (79) 9 9813-4938</li>
+                  <li><strong>Atendimento:</strong> Segunda a Sexta, das 9h às 18h</li>
+                </ul>
               </CardContent>
             </Card>
           </div>
