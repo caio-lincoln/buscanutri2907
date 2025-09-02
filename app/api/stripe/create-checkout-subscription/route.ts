@@ -14,13 +14,12 @@ export async function POST(req: NextRequest) {
 
   const data = await req.json()
 
-  // Busca customer_id já salvo (se existir)
   const { data: subRow } = await supabase
-    .from('user_subscriptions')
-    .select('stripe_customer_id')
-    .eq('user_id', user.id)
-    .single();
-
+  .from('user_subscriptions')
+  .select('stripe_customer_id')
+  .eq('user_id', user.id)
+  .single();
+  
   const customer =
     subRow?.stripe_customer_id ??
     (
@@ -29,17 +28,23 @@ export async function POST(req: NextRequest) {
         metadata: { user_id: user.id },
       })
     ).id;
-
+    try {
+      if (!subRow?.stripe_customer_id) {
+        console.log("Caiu aqui ")
+        await supabase
+          .from('user_subscriptions')
+          .insert({
+            user_id: user.id,
+            stripe_customer_id: customer,
+            status: 'incomplete',
+          });
+      }
+      
+    } catch (error) {
+      console.log("🚀 ~ POST ~ error:", error)
+      
+    }
   // Se não tinha customer, já persiste
-  if (!subRow?.stripe_customer_id) {
-    await supabase
-      .from('user_subscriptions')
-      .upsert({
-        user_id: user.id,
-        stripe_customer_id: customer,
-        status: 'incomplete',
-      });
-  }
 
   const origin = process.env[ 'APP_BASE_URL' ] || new URL(req.url).origin;
   const session = await stripe.checkout.sessions.create({

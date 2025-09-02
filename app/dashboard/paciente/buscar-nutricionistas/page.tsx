@@ -120,6 +120,7 @@ export default function BuscarNutricionistasPage() {
       })
       
       const response = await fetch(`/api/nutritionists?${params}`)
+      console.log("🚀 ~ loadNutritionists ~ response:", response)
       if (!response.ok) {
         throw new Error('Erro ao buscar nutricionistas')
       }

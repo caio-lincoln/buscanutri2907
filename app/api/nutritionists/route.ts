@@ -22,8 +22,7 @@ export async function GET(request: NextRequest) {
     const applyFilters = (q: ReturnType<typeof supabase.from> extends infer T
       ? T extends any ? any : never : never) => {
       // Somente quem tem Stripe conectado
-      q = q.not('stripe_account_id', 'is', null)
-           .eq('stripe_onboarding_complete', true) // <- remova se quiser listar quem só criou a conta
+      q = q.eq('is_listed', true) // <- remova se quiser listar quem só criou a conta
 
       if (onlineOnly) {
         q = q.eq('online_consultation_available', true)
@@ -105,6 +104,7 @@ export async function GET(request: NextRequest) {
     query = query.range(offset, offset + limit - 1)
 
     const { data: rows, error } = await query
+    console.log("🚀 ~ GET ~ rows:", rows)
 
     if (error) {
       console.error('Erro ao buscar nutricionistas:', error)

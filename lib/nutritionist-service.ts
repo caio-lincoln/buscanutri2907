@@ -108,6 +108,7 @@ export async function getNutritionistById(id: string): Promise<
     const { data, error } = await supabase.rpc('get_nutritionist_by_id', {
       p_id: id,
     }).maybeSingle()
+    console.log("🚀 ~ getNutritionistById ~ data:", data)
     
     if (error) {
       // Silent error handling: Error fetching nutritionist by ID

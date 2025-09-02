@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
 
   try {
     switch (event.type) {
-
+      // ===================== PAGAMENTOS DE TELECONSULTA ======================
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session
         const metadata = session.metadata || {}
@@ -44,7 +44,6 @@ export async function POST(req: NextRequest) {
           const price_brl = Number(metadata.price_brl || 0)
           const stripe_payment_intent_id = String(session.payment_intent || '')
 
-          // Atualiza a sessão/consulta
           const { error: upErr } = await supabaseAdmin
             .from('teleconsulta_sessions')
             .update({
@@ -59,7 +58,6 @@ export async function POST(req: NextRequest) {
 
           if (upErr) console.error('Erro ao atualizar teleconsulta:', upErr)
 
-          // Registra pagamento
           const { error: payErr } = await supabaseAdmin.from('payments').insert({
             patient_id,
             nutritionist_id,
@@ -76,34 +74,74 @@ export async function POST(req: NextRequest) {
         break
       }
 
+      // ======================= CONNECT (status da conta) ======================
       case 'account.updated': {
         const account = event.data.object as Stripe.Account
 
         const onboardingComplete =
-          !!account.details_submitted &&
-          !!account.charges_enabled &&
-          !!account.payouts_enabled
+          !!account.details_submitted && !!account.charges_enabled && !!account.payouts_enabled
 
-        const { error } = await supabaseAdmin
+        const { data: prof, error: profErr } = await supabaseAdmin
           .from('nutritionist_profiles')
           .update({
             stripe_onboarding_complete: onboardingComplete,
-
             updated_at: new Date().toISOString(),
           })
           .eq('stripe_account_id', account.id)
+          .select('user_id, stripe_account_id, stripe_onboarding_complete')
+          .single()
 
-        if (error) {
-          console.error('Erro ao marcar onboarding como completo:', error)
-        } else {
-          console.log(
-            `Connect account ${account.id} => onboarding_complete=${onboardingComplete}`
-          )
+        if (profErr) {
+          console.error('Erro ao marcar onboarding como completo:', profErr)
+          break
         }
+
+        if (!prof?.user_id) break
+
+        const connectOk = !!prof.stripe_account_id && !!onboardingComplete
+        const subOk = await isSubscriptionActive(prof.user_id)
+
+        await supabaseAdmin
+          .from('nutritionist_profiles')
+          .update({
+            is_listed: connectOk && subOk,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('user_id', prof.user_id)
 
         break
       }
 
+      case 'account.application.deauthorized': {
+        const data = event.data.object as { account: string }
+        const accountId = data.account
+
+        const { data: prof, error } = await supabaseAdmin
+          .from('nutritionist_profiles')
+          .update({
+            stripe_onboarding_complete: false,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('stripe_account_id', accountId)
+          .select('user_id')
+          .single()
+
+        if (error) {
+          console.error('Erro ao tratar deauthorized:', error)
+          break
+        }
+
+        if (prof?.user_id) {
+          // Se desconectou, não pode ser listado
+          await supabaseAdmin
+            .from('nutritionist_profiles')
+            .update({ is_listed: false, updated_at: new Date().toISOString() })
+            .eq('user_id', prof.user_id)
+        }
+        break
+      }
+
+      // ====================== ASSINATURAS (Stripe Billing) ====================
       case 'customer.subscription.created':
       case 'customer.subscription.updated':
       case 'customer.subscription.deleted': {
@@ -112,7 +150,7 @@ export async function POST(req: NextRequest) {
         const customerId =
           typeof sub.customer === 'string' ? sub.customer : sub.customer.id;
         const subscriptionId = sub.id;
-        const status = sub.status; 
+        const status = sub.status;
         const currentPeriodEndIso = sub.current_period_end
           ? new Date(sub.current_period_end * 1000).toISOString()
           : null;
@@ -132,6 +170,7 @@ export async function POST(req: NextRequest) {
           break;
         }
 
+        // Espelha assinatura
         const { error: upErr } = await supabaseAdmin
           .from('user_subscriptions')
           .upsert({
@@ -139,26 +178,59 @@ export async function POST(req: NextRequest) {
             stripe_customer_id: customerId,
             stripe_subscription_id: subscriptionId,
             status,
-            current_period_end: currentPeriodEndIso, // ✅ pode ser null
+            current_period_end: currentPeriodEndIso,
             cancel_at_period_end: cancelAtPeriodEnd,
             updated_at: new Date().toISOString(),
           });
+        if (upErr) {
+          console.error('Erro ao upsert user_subscriptions:', upErr);
+          break;
+        }
 
-        if (upErr) console.error('Erro ao upsert user_subscriptions:', upErr);
+        // Recalcula listagem
+        const subOk = isSubOk(status, currentPeriodEndIso);
+
+        if (!subOk) {
+          // assinatura inativa -> apenas deslista
+          await unlist(userId);
+        } else {
+          // assinatura ativa -> lista somente se Connect OK
+          const { data: prof, error: profErr } = await supabaseAdmin
+            .from('nutritionist_profiles')
+            .select('stripe_account_id, stripe_onboarding_complete')
+            .eq('user_id', userId)
+            .single();
+          if (profErr) {
+            console.error('Erro ao consultar perfil p/ is_listed:', profErr);
+            break;
+          }
+
+          const connectOk = !!prof?.stripe_account_id && !!prof?.stripe_onboarding_complete;
+
+          await supabaseAdmin
+            .from('nutritionist_profiles')
+            .update({
+              is_listed: connectOk, // volta a ser listado só se o Connect estiver ok
+              updated_at: new Date().toISOString(),
+            })
+            .eq('user_id', userId);
+        }
+
         break;
       }
 
       case 'invoice.payment_failed': {
-        const invoice = event.data.object as Stripe.Invoice
-        if (invoice.billing_reason !== 'subscription_cycle') break
+        const invoice = event.data.object as Stripe.Invoice;
+        if (invoice.billing_reason !== 'subscription_cycle') break;
+
         const customerId =
-          typeof invoice.customer === 'string' ? invoice.customer : invoice.customer?.id
+          typeof invoice.customer === 'string' ? invoice.customer : invoice.customer?.id;
+        if (!customerId) break;
 
-        if (!customerId) break
+        const userId = await findUserIdByStripeCustomerId(customerId);
+        if (!userId) break;
 
-        const userId = await findUserIdByStripeCustomerId(customerId)
-        if (!userId) break
-
+        // marca past_due e deslista
         const { error } = await supabaseAdmin
           .from('user_subscriptions')
           .update({
@@ -166,36 +238,14 @@ export async function POST(req: NextRequest) {
             updated_at: new Date().toISOString(),
           })
           .eq('user_id', userId)
-          .eq('stripe_customer_id', customerId)
+          .eq('stripe_customer_id', customerId);
+        if (error) console.error('Erro ao marcar past_due:', error);
 
-        if (error) console.error('Erro ao marcar past_due:', error)
-        break
+        await unlist(userId);
+        break;
       }
 
-      case 'account.application.deauthorized': {
-        const data = event.data.object as { account: string }
-        const accountId = data.account
-
-        const { error } = await supabaseAdmin
-          .from('nutritionist_profiles')
-          .update({
-            stripe_onboarding_complete: false,
-            // você pode optar por manter o account_id ou limpar:
-            // stripe_account_id: null,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('stripe_account_id', accountId)
-
-        if (error) console.error('Erro ao tratar deauthorized:', error)
-        break
-      }
-
-      // (Opcional) você também pode observar:
-      // - 'account.external_account.created/updated/deleted'
-      // - 'capability.updated'
-      // para refletir status mais granular da conta conectada
       default:
-        // Outros eventos não tratados
         break
     }
 
@@ -212,7 +262,34 @@ async function findUserIdByStripeCustomerId(customerId: string): Promise<string 
     .select('user_id')
     .eq('stripe_customer_id', customerId)
     .single()
-
   if (error) return null
   return (data?.user_id as string) ?? null
+}
+
+function isSubOk(status: string | null, currentPeriodEndIso: string | null): boolean {
+  const statusOk = status === 'active' || status === 'trialing'
+  const futureOk =
+    !!currentPeriodEndIso && new Date(currentPeriodEndIso).getTime() > Date.now()
+  return !!statusOk && !!futureOk
+}
+
+async function isSubscriptionActive(userId: string): Promise<boolean> {
+  const { data } = await supabaseAdmin
+    .from('user_subscriptions')
+    .select('status, current_period_end')
+    .eq('user_id', userId)
+    .single()
+  const status = (data as any)?.status ?? null
+  const cpe = (data as any)?.current_period_end ?? null
+  return isSubOk(status, cpe)
+}
+
+async function unlist(userId: string) {
+  await supabaseAdmin
+    .from('nutritionist_profiles')
+    .update({
+      is_listed: false,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('user_id', userId);
 }
