@@ -188,13 +188,11 @@ export async function POST(req: NextRequest) {
         }
 
         // Recalcula listagem
-        const subOk = isSubOk(status, currentPeriodEndIso);
+        const subOk = isSubOk(status);
 
         if (!subOk) {
-          // assinatura inativa -> apenas deslista
           await unlist(userId);
         } else {
-          // assinatura ativa -> lista somente se Connect OK
           const { data: prof, error: profErr } = await supabaseAdmin
             .from('nutritionist_profiles')
             .select('stripe_account_id, stripe_onboarding_complete')
@@ -266,22 +264,20 @@ async function findUserIdByStripeCustomerId(customerId: string): Promise<string 
   return (data?.user_id as string) ?? null
 }
 
-function isSubOk(status: string | null, currentPeriodEndIso: string | null): boolean {
-  const statusOk = status === 'active' || status === 'trialing'
-  const futureOk =
-    !!currentPeriodEndIso && new Date(currentPeriodEndIso).getTime() > Date.now()
-  return !!statusOk && !!futureOk
+const ACTIVE_STATUSES = new Set(['active', 'trialing']) 
+
+export function isSubOk(status: string | null): boolean {
+  return !!status && ACTIVE_STATUSES.has(status)
 }
 
 async function isSubscriptionActive(userId: string): Promise<boolean> {
   const { data } = await supabaseAdmin
     .from('user_subscriptions')
-    .select('status, current_period_end')
+    .select('status')
     .eq('user_id', userId)
     .single()
   const status = (data as any)?.status ?? null
-  const cpe = (data as any)?.current_period_end ?? null
-  return isSubOk(status, cpe)
+  return isSubOk(status)
 }
 
 async function unlist(userId: string) {

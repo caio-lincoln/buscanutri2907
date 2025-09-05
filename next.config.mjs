@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  allowedDevOrigins: ['pretty-words-post.loca.lt'],
   eslint: {
     ignoreDuringBuilds: true,
   },
