@@ -63,7 +63,7 @@ export default function AdminDashboard() {
   )
 
   useEffect(() => {
-    if (!loading && (!user || user.user_type !== 'admin')) {
+    if (!loading && (!user || user.user_metadata['user_type'] !== 'admin')) {
       router.push('/login')
     }
   }, [user, loading, router])
@@ -77,18 +77,18 @@ export default function AdminDashboard() {
     }
   }
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50/50 via-white to-white flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-4 border-emerald-200 border-t-emerald-500 mx-auto"></div>
-          <p className="text-[#1E1D40]/70 font-medium">
-            Carregando painel administrativo...
-          </p>
-        </div>
-      </div>
-    )
-  }
+  // if (loading) {
+  //   return (
+  //     <div className="min-h-screen bg-gradient-to-br from-emerald-50/50 via-white to-white flex items-center justify-center">
+  //       <div className="text-center space-y-4">
+  //         <div className="animate-spin rounded-full h-12 w-12 border-4 border-emerald-200 border-t-emerald-500 mx-auto"></div>
+  //         <p className="text-[#1E1D40]/70 font-medium">
+  //           Carregando painel administrativo...
+  //         </p>
+  //       </div>
+  //     </div>
+  //   )
+  // }
 
   return (
     <DashboardSidebar

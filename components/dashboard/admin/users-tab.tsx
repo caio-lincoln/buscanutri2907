@@ -50,98 +50,7 @@ import {
   Loader2,
 } from 'lucide-react'
 import { getAllUsers, type UserData } from '@/lib/admin-data-service'
-
-interface UserData {
-  id: string
-  name: string
-  email: string
-  type: 'paciente' | 'nutricionista' | 'empresa' | 'admin'
-  status: 'ativo' | 'inativo' | 'pendente' | 'suspenso'
-  registeredAt: string
-}
-
-const mockUsers: UserData[] = [
-  {
-    id: 'usr001',
-    name: 'Ana Paula Silva',
-    email: 'ana.silva@example.com',
-    type: 'paciente',
-    status: 'ativo',
-    registeredAt: '2023-01-15',
-  },
-  {
-    id: 'usr002',
-    name: 'Dr. Carlos Mendes',
-    email: 'carlos.mendes@example.com',
-    type: 'nutricionista',
-    status: 'ativo',
-    registeredAt: '2023-02-20',
-  },
-  {
-    id: 'usr003',
-    name: 'NutriTech Solutions',
-    email: 'contato@nutritech.com',
-    type: 'empresa',
-    status: 'ativo',
-    registeredAt: '2023-03-10',
-  },
-  {
-    id: 'usr004',
-    name: 'Iris Admin',
-    email: 'iris@buscanutri.com',
-    type: 'admin',
-    status: 'ativo',
-    registeredAt: '2022-11-01',
-  },
-  {
-    id: 'usr005',
-    name: 'Bruno Costa',
-    email: 'bruno.costa@example.com',
-    type: 'paciente',
-    status: 'inativo',
-    registeredAt: '2023-04-05',
-  },
-  {
-    id: 'usr006',
-    name: 'Dra. Fernanda Lima',
-    email: 'fernanda.lima@example.com',
-    type: 'nutricionista',
-    status: 'pendente',
-    registeredAt: '2023-05-12',
-  },
-  {
-    id: 'usr007',
-    name: 'Healthy Foods Ltda.',
-    email: 'rh@healthyfoods.com',
-    type: 'empresa',
-    status: 'suspenso',
-    registeredAt: '2023-06-01',
-  },
-  {
-    id: 'usr008',
-    name: 'Gabriela Santos',
-    email: 'gabriela.santos@example.com',
-    type: 'paciente',
-    status: 'ativo',
-    registeredAt: '2023-07-18',
-  },
-  {
-    id: 'usr009',
-    name: 'Dr. Ricardo Alves',
-    email: 'ricardo.alves@example.com',
-    type: 'nutricionista',
-    status: 'ativo',
-    registeredAt: '2023-08-25',
-  },
-  {
-    id: 'usr010',
-    name: 'Bem Estar Corporativo',
-    email: 'info@bemestar.com',
-    type: 'empresa',
-    status: 'ativo',
-    registeredAt: '2023-09-01',
-  },
-]
+import { VerifyNutritionistModal } from './VerifyNutritionistModal'
 
 const userTypeIcons = {
   paciente: User,
@@ -158,15 +67,22 @@ const userStatusColors = {
 }
 
 export function UsersTab() {
-  const [users, setUsers] = useState<UserData[]>([])
-  const [loading, setLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [filterType, setFilterType] = useState<UserData['type'] | 'all'>('all')
-  const [filterStatus, setFilterStatus] = useState<UserData['status'] | 'all'>(
+  const [ users, setUsers ] = useState<UserData[]>([])
+  const [ loading, setLoading ] = useState(true)
+  const [ searchTerm, setSearchTerm ] = useState('')
+  const [ filterType, setFilterType ] = useState<UserData[ 'type' ] | 'all'>('all')
+  const [ filterStatus, setFilterStatus ] = useState<UserData[ 'status' ] | 'all'>(
     'all'
   )
-  const [currentPage, setCurrentPage] = useState(1)
+  const [ currentPage, setCurrentPage ] = useState(1)
   const usersPerPage = 10
+  const [ verifyModalOpen, setVerifyModalOpen ] = useState(false)
+  const [ selectedUser, setSelectedUser ] = useState<{
+    id: string
+    email: string
+    name?: string | null
+    nutritionistProfileId: string
+  } | null>(null)
 
   useEffect(() => {
     async function loadUsers() {
@@ -174,7 +90,7 @@ export function UsersTab() {
         setLoading(true)
         const userData = await getAllUsers()
         setUsers(userData)
-      } catch (error) {
+      } catch {
         // Silent error handling - error loading users
       } finally {
         setLoading(false)
@@ -204,8 +120,36 @@ export function UsersTab() {
   }
 
   const handleAction = (action: string, user: UserData) => {
-    // Implementar lógica real para cada ação (e.g., abrir modal de edição, chamar API)
-    alert(`Ação: ${action} para ${user.name} (${user.type})`)
+    if (action === 'verify' && user.type === 'nutricionista' && user.nutritionist_profiles?.id) {
+      setSelectedUser({
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        nutritionistProfileId: user.id
+      })
+      setVerifyModalOpen(true)
+    } else {
+      // Implementar lógica real para cada ação (e.g., abrir modal de edição, chamar API)
+      alert(`Ação: ${action} para ${user.name} (${user.type})`)
+    }
+  }
+
+  const handleVerifyModalClose = () => {
+    setVerifyModalOpen(false)
+    setSelectedUser(null)
+  }
+
+  const handleUserApproved = async () => {
+    // Recarregar dados após aprovação
+    try {
+      setLoading(true)
+      const userData = await getAllUsers()
+      setUsers(userData)
+    } catch {
+      // Silent error handling: Error reloading users
+    } finally {
+      setLoading(false)
+    }
   }
 
   const formatDate = (dateString: string) => {
@@ -254,7 +198,7 @@ export function UsersTab() {
             <Select
               value={filterType}
               onValueChange={value =>
-                setFilterType(value as UserData['type'] | 'all')
+                setFilterType(value as UserData[ 'type' ] | 'all')
               }
             >
               <SelectTrigger className="w-full sm:w-[180px] rounded-lg border border-gray-200 focus:ring-emerald-500 focus:border-emerald-500">
@@ -271,7 +215,7 @@ export function UsersTab() {
             <Select
               value={filterStatus}
               onValueChange={value =>
-                setFilterStatus(value as UserData['status'] | 'all')
+                setFilterStatus(value as UserData[ 'status' ] | 'all')
               }
             >
               <SelectTrigger className="w-full sm:w-[180px] rounded-lg border border-gray-200 focus:ring-emerald-500 focus:border-emerald-500">
@@ -299,7 +243,7 @@ export function UsersTab() {
                   <TableHead>Tipo</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Registro</TableHead>
-                  <TableHead>Último Login</TableHead>
+                  <TableHead>Verificado</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
@@ -317,7 +261,7 @@ export function UsersTab() {
                   </TableRow>
                 ) : (
                   currentUsers.map(user => {
-                    const IconComponent = userTypeIcons[user.type]
+                    const IconComponent = userTypeIcons[ user.type ]
                     return (
                       <TableRow key={user.id} className="hover:bg-gray-50">
                         <TableCell className="font-medium text-gray-700">
@@ -336,7 +280,7 @@ export function UsersTab() {
                         </TableCell>
                         <TableCell>
                           <Badge
-                            className={`capitalize ${userStatusColors[user.status]}`}
+                            className={`capitalize ${userStatusColors[ user.status ]}`}
                           >
                             {user.status}
                           </Badge>
@@ -345,9 +289,20 @@ export function UsersTab() {
                           {formatDate(user.createdAt)}
                         </TableCell>
                         <TableCell className="text-gray-500 text-sm">
-                          {user.lastLogin
-                            ? formatDate(user.lastLogin)
-                            : 'Nunca'}
+                          {user.type === 'nutricionista' ? (
+                            user.is_verified ? (
+                              <Badge className="bg-green-100 text-green-700">
+                                <CheckCircle className="h-3 w-3 mr-1" />
+                                Verificado
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-yellow-600 border-yellow-300">
+                                Pendente
+                              </Badge>
+                            )
+                          ) : (
+                            <span className="text-gray-400">N/A</span>
+                          )}
                         </TableCell>
                         <TableCell className="text-right">
                           <DropdownMenu>
@@ -358,6 +313,14 @@ export function UsersTab() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
+                              {user.type === 'nutricionista' && !user.nutritionist_profiles?.is_verified && user.nutritionist_profiles?.id &&(
+                                <DropdownMenuItem
+                                  onClick={() => handleAction('verify', user)}
+                                  className="text-emerald-600"
+                                >
+                                  <CheckCircle className="mr-2 h-4 w-4" /> Verificar
+                                </DropdownMenuItem>
+                              )}
                               <DropdownMenuItem
                                 onClick={() => handleAction('view', user)}
                               >
@@ -440,6 +403,15 @@ export function UsersTab() {
           )}
         </CardContent>
       </Card>
+
+      {selectedUser && verifyModalOpen && (
+        <VerifyNutritionistModal
+          open={verifyModalOpen}
+          onOpenChange={handleVerifyModalClose}
+          user={selectedUser}
+          onApproved={handleUserApproved}
+        />
+      )}
     </div>
   )
 }

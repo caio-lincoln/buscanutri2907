@@ -17,10 +17,9 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Eye, EyeOff, Loader2, AlertCircle } from 'lucide-react'
-import { signIn, signInAdmin, getCurrentUser } from '@/lib/auth'
+import { signIn, signInAdmin } from '@/lib/auth'
 import { toast } from '@/components/ui/use-toast'
 import { useAuth } from '@/contexts/auth-context'
-import { User } from '@supabase/supabase-js'
 import { useAuthSync } from '../../hooks/use-auth-sync'
 
 export default function LoginPage() {
@@ -33,13 +32,10 @@ export default function LoginPage() {
 
   // Redirect if user is already logged in
   useEffect(() => {
-    console.log('🔍 Login useEffect - authLoading:', authLoading, 'user:', user)
     if (!authLoading && user) {
       const userType = user.user_metadata?.user_type || user.user_type
-      console.log('🔍 UserType encontrado:', userType)
       if (userType) {
         const redirectPath = getRedirectPath(userType)
-        console.log('🔍 Redirecionando para:', redirectPath)
         router.replace(redirectPath)
       }
     }
@@ -251,9 +247,20 @@ export default function LoginPage() {
             </div>
 
             <div className="mt-4 text-center">
-              <Link href="#" className="text-sm text-[#4AB0D9] hover:underline">
-                Esqueci minha senha
-              </Link>
+              <div className="flex flex-col items-center justify-between">
+                {/* <div className="flex items-center space-x-2">
+                  <Checkbox id="remember" />
+                  <label
+                    htmlFor="remember"
+                    className="text-sm text-gray-600 cursor-pointer"
+                  >
+                    Lembrar de mim
+                  </label>
+                </div> */}
+                <Link href="/esqueci-senha" className="text-sm text-[#4AB0D9] hover:underline">
+                  Esqueci minha senha
+                </Link>
+              </div>
             </div>
           </CardContent>
         </Card>

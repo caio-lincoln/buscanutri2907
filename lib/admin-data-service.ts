@@ -1,54 +1,23 @@
 import { createSupabaseClient } from './supabase'
+import type {
+  UserData,
+  TransactionData,
+  ReportMetric,
+  ReportData,
+  ServiceStatus,
+  NutritionistDocument
+} from './types'
 
 const supabase = createSupabaseClient()
 
-// Tipos para dados administrativos
-export interface UserData {
-  id: string
-  name: string
-  email: string
-  type: 'paciente' | 'nutricionista' | 'empresa'
-  status: 'ativo' | 'inativo' | 'pendente'
-  createdAt: string
-  lastLogin?: string
-}
-
-export interface TransactionData {
-  id: string
-  type: 'receita' | 'despesa'
-  amount: number
-  description: string
-  date: string
-  status: 'concluída' | 'pendente' | 'cancelada'
-  userId?: string
-  userName?: string
-}
-
-export interface ReportMetric {
-  id: string
-  title: string
-  value: number
-  change: number
-  period: string
-  type: 'users' | 'revenue' | 'consultations' | 'posts'
-}
-
-export interface ReportData {
-  id: string
-  type: 'spam' | 'conteudo_inadequado' | 'perfil_falso' | 'outros'
-  reportedItem: string
-  reportedBy: string
-  reason: string
-  status: 'pendente' | 'resolvido' | 'rejeitado'
-  createdAt: string
-}
-
-export interface ServiceStatus {
-  id: string
-  name: string
-  status: 'online' | 'offline' | 'manutencao'
-  uptime: number
-  lastCheck: string
+// Re-exportar tipos para compatibilidade
+export type {
+  UserData,
+  TransactionData,
+  ReportMetric,
+  ReportData,
+  ServiceStatus,
+  NutritionistDocument
 }
 
 // Funções para buscar dados reais
@@ -60,18 +29,15 @@ export async function getAllUsers(): Promise<UserData[]> {
   try {
     const { data: users, error } = await supabase
       .from('users')
-      .select(
-        `
+      .select(`
         id,
         email,
         user_type,
         created_at,
-        last_sign_in_at,
-        patient_profiles(full_name),
-        nutritionist_profiles(full_name),
-        company_profiles(company_name)
-      `
-      )
+        patient_profiles:patient_profiles!patient_profiles_user_id_fkey(full_name),
+        nutritionist_profiles:nutritionist_profiles!nutritionist_profiles_user_id_fkey(id, full_name, is_verified),
+        company_profiles:company_profiles!company_profiles_user_id_fkey(company_name)
+      `)
       .order('created_at', { ascending: false })
 
     if (error) {
@@ -82,17 +48,18 @@ export async function getAllUsers(): Promise<UserData[]> {
     return users.map(user => ({
       id: user.id,
       name:
-        user.patient_profiles?.[0]?.full_name ||
-        user.nutritionist_profiles?.[0]?.full_name ||
-        user.company_profiles?.[0]?.company_name ||
+        user.patient_profiles?.[ 0 ]?.full_name ||
+        user.nutritionist_profiles?.[ 0 ]?.full_name ||
+        user.company_profiles?.[ 0 ]?.company_name ||
         'Nome não disponível',
       email: user.email,
       type: user.user_type as 'paciente' | 'nutricionista' | 'empresa',
-      status: 'ativo', // Pode ser determinado por lógica de negócio
+      status: 'ativo',
       createdAt: user.created_at,
-      lastLogin: user.last_sign_in_at,
+      is_verified: user.nutritionist_profiles?.[ 0 ]?.is_verified,
+      nutritionist_profiles: user.nutritionist_profiles,
     }))
-  } catch (error) {
+  } catch {
     // Silent error handling: Error in getAllUsers
     return []
   }
@@ -161,7 +128,7 @@ export async function getReportMetrics(): Promise<ReportMetric[]> {
         type: 'posts',
       },
     ]
-  } catch (error) {
+  } catch {
     // Silent error handling: Error in getReportMetrics
     return []
   }
@@ -198,7 +165,7 @@ export async function getTransactions(): Promise<TransactionData[]> {
       id: apt.id,
       type: 'receita' as const,
       amount: apt.price || 0,
-      description: `Consulta - ${apt.patient_profiles?.full_name || 'Paciente'} com ${apt.nutritionist_profiles?.full_name || 'Nutricionista'}`,
+      description: `Consulta - ${apt.patient_profiles?.[ 0 ]?.full_name || 'Paciente'} com ${apt.nutritionist_profiles?.[ 0 ]?.full_name || 'Nutricionista'}`,
       date: apt.start_time,
       status:
         apt.status === 'completed'
@@ -206,9 +173,9 @@ export async function getTransactions(): Promise<TransactionData[]> {
           : apt.status === 'scheduled'
             ? 'pendente'
             : 'cancelada',
-      userName: apt.patient_profiles?.full_name || 'Usuário',
+      userName: apt.patient_profiles?.[ 0 ]?.full_name || 'Usuário',
     }))
-  } catch (error) {
+  } catch {
     // Silent error handling: Error in getTransactions
     return []
   }
@@ -254,13 +221,15 @@ export async function getSystemServices(): Promise<ServiceStatus[]> {
     // Testar conectividade com o banco
     try {
       await supabase.from('users').select('id').limit(1)
-    } catch (error) {
-      services[0].status = 'offline'
-      services[0].uptime = 0
+    } catch {
+      if (services[ 0 ]) {
+        services[ 0 ].status = 'offline'
+        services[ 0 ].uptime = 0
+      }
     }
 
     return services
-  } catch (error) {
+  } catch {
     // Silent error handling: Error in getSystemServices
     return []
   }
@@ -274,8 +243,89 @@ export async function getModerationReports(): Promise<ReportData[]> {
     // Por enquanto, retornar array vazio já que não temos tabela de reports ainda
     // Quando implementar, buscar da tabela de reports
     return []
-  } catch (error) {
+  } catch {
     // Silent error handling: Error in getModerationReports
     return []
+  }
+}
+
+/**
+ * Buscar documentos de um nutricionista
+ */
+export async function getNutritionistDocuments(nutritionistProfileId: string): Promise<NutritionistDocument[]> {
+  try {
+    const { data: documents, error } = await supabase
+      .from('nutritionist_documents')
+      .select('*')
+      .eq('nutritionist_id', nutritionistProfileId)
+      .order('created_at', { ascending: true })
+
+    if (error) {
+      // Silent error handling: Error fetching nutritionist documents
+      return []
+    }
+
+    // Transformar file_name em public_url
+    return documents.map(doc => {
+      // const { data } = supabase.storage.from('nutritionist_documents').getPublicUrl(doc.file_name)
+      return {
+        ...doc,
+        public_url: doc?.file_url ?? ''
+      }
+    })
+  } catch {
+    // Silent error handling: Error in getNutritionistDocuments
+    return []
+  }
+}
+
+/**
+ * Aprovar nutricionista
+ */
+export async function approveNutritionist(userId: string, nutritionistProfileId: string): Promise<boolean> {
+  try {
+    // Atualizar users.is_verified
+    const { error: userError } = await supabase
+      .from('users')
+      .update({ is_verified: true })
+      .eq('id', userId)
+
+    if (userError) {
+      // Silent error handling: Error updating user verification
+      return false
+    }
+
+    // Atualizar nutritionist_profiles.verified_at
+    const { error: profileError } = await supabase
+      .from('nutritionist_profiles')
+      .update({ verified_at: new Date().toISOString() })
+      .eq('id', nutritionistProfileId)
+
+    if (profileError) {
+      // Silent error handling: Error updating nutritionist profile
+      return false
+    }
+
+    return true
+  } catch {
+    // Silent error handling: Error in approveNutritionist
+    return false
+  }
+}
+
+/**
+ * Rejeitar nutricionista
+ */
+export async function rejectNutritionist(): Promise<boolean> {
+  try {
+    // MVP: apenas log do motivo
+    // TODO: Implementar envio de e-mail e registro de log
+    // - Criar tabela verification_logs
+    // - Enviar e-mail para o nutricionista
+
+    return true
+  } catch {
+    // Silent error handling: Error in rejectNutritionist
+    return false
   }
 }

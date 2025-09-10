@@ -55,7 +55,7 @@ export function getAddressDisplayText(address: AddressData): string {
   if (address.street) {
     parts.push(address.street)
     if (address.number) {
-      parts[parts.length - 1] += `, ${address.number}`
+      parts[ parts.length - 1 ] += `, ${address.number}`
     }
   }
 
