@@ -587,13 +587,15 @@ export default function Home({ initialStats }: Props) {
                       <ArrowRight className="ml-2 h-4 md:h-5 w-4 md:w-5" />
                     </Button>
                   </Link>
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    className="w-full sm:w-auto border-2 border-[#1E1D40] text-[#1E1D40] hover:bg-[#1E1D40] hover:text-white text-base md:text-lg px-6 md:px-8 py-4 md:py-6 bg-transparent"
-                  >
-                    Explorar funcionalidades
-                  </Button>
+                  <Link href="/cadastro" className="w-full sm:w-auto">
+                    <Button
+                      size="lg"
+                      variant="outline"
+                      className="w-full sm:w-auto border-2 border-[#1E1D40] text-[#1E1D40] hover:bg-[#1E1D40] hover:text-white text-base md:text-lg px-6 md:px-8 py-4 md:py-6 bg-transparent"
+                    >
+                      Explorar funcionalidades
+                    </Button>
+                  </Link>
                 </div>
                 <div className="flex items-center justify-center sm:justify-start gap-4 sm:gap-6 md:gap-8 pt-2 md:pt-4">
                   <div className="text-center">

@@ -33,9 +33,15 @@ export default function LoginPage() {
 
   // Redirect if user is already logged in
   useEffect(() => {
-    if (!authLoading && user && user.user_metadata['user_type']) {
-      const redirectPath = getRedirectPath(user.user_metadata['user_type'])
-      router.replace(redirectPath)
+    console.log('🔍 Login useEffect - authLoading:', authLoading, 'user:', user)
+    if (!authLoading && user) {
+      const userType = user.user_metadata?.user_type || user.user_type
+      console.log('🔍 UserType encontrado:', userType)
+      if (userType) {
+        const redirectPath = getRedirectPath(userType)
+        console.log('🔍 Redirecionando para:', redirectPath)
+        router.replace(redirectPath)
+      }
     }
   }, [ user, authLoading, router ])
 
@@ -71,7 +77,9 @@ export default function LoginPage() {
       let result
       // Special login for admin
       if (email === 'iris@buscanutri.com') {
+        console.log('🔍 Fazendo login admin...')
         result = await signInAdmin(email, password)
+        console.log('🔍 Resultado signInAdmin:', result)
       } else {
         result = await signIn(email, password)
       }
@@ -91,7 +99,8 @@ export default function LoginPage() {
 
       if (result && result.data?.user) {
         broadcastAuthChange('SIGN_IN')
-        const redirectPath = getRedirectPath(result.data?.user?.user_metadata['user_type'])
+        const userType = result.data?.user?.user_metadata?.user_type || result.data?.user?.user_type
+        const redirectPath = getRedirectPath(userType)
 
         toast({
           title: 'Login realizado com sucesso!',

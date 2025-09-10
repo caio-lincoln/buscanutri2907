@@ -306,13 +306,19 @@ export default function ParaEmpresasPage() {
                       <ArrowRight className="ml-2 h-5 w-5" />
                     </Button>
                   </Link>
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    className="border-2 border-[#1E1D40] text-[#1E1D40] bg-transparent"
+                  <Link
+                    href="https://wa.me/5579998134938?text=Olá! Gostaria de tirar dúvidas sobre a plataforma Busca Nutri para empresas."
+                    target="_blank"
+                    rel="noopener noreferrer"
                   >
-                    Agendar Demonstração
-                  </Button>
+                    <Button
+                      size="lg"
+                      variant="outline"
+                      className="border-2 border-[#1E1D40] text-[#1E1D40] bg-transparent"
+                    >
+                      Agendar Demonstração
+                    </Button>
+                  </Link>
                 </div>
 
                 {/* Quick Stats */}
@@ -408,9 +414,15 @@ export default function ParaEmpresasPage() {
                         </li>
                       ))}
                     </ul>
-                    <Button className="w-full mt-6 bg-[#1E1D40] hover:bg-[#1E1D40]/90">
-                      Saiba Mais
-                    </Button>
+                    <Link
+                      href={`https://wa.me/5579998134938?text=Olá! Gostaria de saber mais sobre ${solution.title.toLowerCase()} da plataforma Busca Nutri.`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <Button className="w-full mt-6 bg-[#1E1D40] hover:bg-[#1E1D40]/90">
+                        Saiba Mais
+                      </Button>
+                    </Link>
                   </CardContent>
                 </Card>
               ))}
@@ -674,14 +686,20 @@ export default function ParaEmpresasPage() {
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
                 </Link>
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="border-2 border-white text-white hover:bg-white hover:text-[#1E1D40] bg-transparent"
+                <Link
+                  href="https://wa.me/5579998134938?text=Olá! Gostaria de tirar dúvidas sobre a plataforma Busca Nutri para empresas."
+                  target="_blank"
+                  rel="noopener noreferrer"
                 >
-                  Falar com Especialista
-                  <Phone className="ml-2 h-5 w-5" />
-                </Button>
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="border-2 border-white text-white hover:bg-white hover:text-[#1E1D40] bg-transparent"
+                  >
+                    Falar com Especialista
+                    <Phone className="ml-2 h-5 w-5" />
+                  </Button>
+                </Link>
               </div>
               <div className="flex items-center justify-center gap-8 text-sm text-white/70">
                 <div className="flex items-center gap-2">

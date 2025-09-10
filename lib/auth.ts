@@ -287,6 +287,9 @@ export async function signInAdmin(email: string, password: string) {
           id: 'admin-001',
           email: 'iris@buscanutri.com',
           user_type: 'admin' as UserType,
+          user_metadata: {
+            user_type: 'admin' as UserType,
+          },
         },
       },
       error: null,

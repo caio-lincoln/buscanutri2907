@@ -121,6 +121,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const loadUser = useCallback(async () => {
     try {
+      // Verificar se é admin primeiro (verificação segura para SSR)
+      if (typeof window !== 'undefined' && window.sessionStorage) {
+        try {
+          const adminSession = sessionStorage.getItem('admin_session')
+          console.log('🔍 Admin session encontrada:', adminSession)
+          if (adminSession === 'iris@buscanutri.com') {
+            const adminUser = {
+              id: 'admin-001',
+              email: 'iris@buscanutri.com',
+              user_type: 'admin',
+              user_metadata: { user_type: 'admin' }
+            } as any
+            console.log('🔍 Definindo usuário admin:', adminUser)
+            setUser(adminUser)
+            setUserProfile(adminUser)
+            resetSubProfiles()
+            setLoading(false)
+            return
+          }
+        } catch (error) {
+          // Ignorar erros de sessionStorage em modo privado/incógnito
+          console.warn('Erro ao acessar sessionStorage:', error)
+        }
+      }
+
       const sessionUser = await supabase.auth.getUser()
 
       if (!sessionUser.data?.user) {
@@ -160,7 +185,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setLoading(false)
     }
-  }, [ supabase ])
+  }, [ supabase, resetSubProfiles ])
 
   const handleSignOut = useCallback(async () => {
     try {

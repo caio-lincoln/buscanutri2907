@@ -240,13 +240,15 @@ export default function ParaNutricionistasPage() {
                       <ArrowRight className="ml-2 h-5 w-5" />
                     </Button>
                   </Link>
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    className="border-2 border-[#4AB0D9] text-[#4AB0D9] bg-transparent"
-                  >
-                    Ver Demonstração
-                  </Button>
+                  <Link href="https://wa.me/5579998134938?text=Olá! Gostaria de tirar dúvidas sobre a plataforma Busca Nutri na visão de nutricionista." target="_blank" rel="noopener noreferrer">
+                    <Button
+                      size="lg"
+                      variant="outline"
+                      className="border-2 border-[#4AB0D9] text-[#4AB0D9] bg-transparent"
+                    >
+                      Ver Demonstração
+                    </Button>
+                  </Link>
                 </div>
 
                 {/* Stats */}
@@ -449,14 +451,16 @@ export default function ParaNutricionistasPage() {
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
                 </Link>
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="border-2 border-white text-white hover:bg-white hover:text-[#4AB0D9] bg-transparent"
-                >
-                  Agendar Demonstração
-                  <Calendar className="ml-2 h-5 w-5" />
-                </Button>
+                <Link href="https://wa.me/5579998134938?text=Olá! Gostaria de tirar dúvidas sobre a plataforma Busca Nutri na visão de nutricionista." target="_blank" rel="noopener noreferrer">
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="border-2 border-white text-white hover:bg-white hover:text-[#4AB0D9] bg-transparent"
+                  >
+                    Agendar Demonstração
+                    <Calendar className="ml-2 h-5 w-5" />
+                  </Button>
+                </Link>
               </div>
               <p className="text-sm text-white/70">
                 Sem compromisso • Cancele quando quiser • Suporte especializado
