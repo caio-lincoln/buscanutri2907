@@ -97,7 +97,6 @@ function SubmittingOverlay({ message = 'Enviando seu cadastro...' }: { message?:
   )
 }
 
-
 export default function CadastroPage() {
   const [ showPassword, setShowPassword ] = useState(false)
   const [ userType, setUserType ] = useState('paciente')

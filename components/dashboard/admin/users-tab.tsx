@@ -125,7 +125,7 @@ export function UsersTab() {
         id: user.id,
         email: user.email,
         name: user.name,
-        nutritionistProfileId: user.id
+        nutritionistProfileId: user?.nutritionist_profiles?.id
       })
       setVerifyModalOpen(true)
     } else {

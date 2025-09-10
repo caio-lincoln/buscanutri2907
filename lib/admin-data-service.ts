@@ -48,15 +48,15 @@ export async function getAllUsers(): Promise<UserData[]> {
     return users.map(user => ({
       id: user.id,
       name:
-        user.patient_profiles?.[ 0 ]?.full_name ||
-        user.nutritionist_profiles?.[ 0 ]?.full_name ||
-        user.company_profiles?.[ 0 ]?.company_name ||
+        user.patient_profiles?.full_name ||
+        user.nutritionist_profiles?.full_name ||
+        user.company_profiles?.company_name ||
         'Nome não disponível',
       email: user.email,
       type: user.user_type as 'paciente' | 'nutricionista' | 'empresa',
       status: 'ativo',
       createdAt: user.created_at,
-      is_verified: user.nutritionist_profiles?.[ 0 ]?.is_verified,
+      is_verified: user.nutritionist_profiles?.is_verified,
       nutritionist_profiles: user.nutritionist_profiles,
     }))
   } catch {
@@ -255,60 +255,80 @@ export async function getModerationReports(): Promise<ReportData[]> {
 export async function getNutritionistDocuments(nutritionistProfileId: string): Promise<NutritionistDocument[]> {
   try {
     const { data: documents, error } = await supabase
-      .from('nutritionist_documents')
-      .select('*')
+    .from('nutritionist_documents')
+    .select('id, nutritionist_id, document_type, title, file_url, file_name, storage_path, created_at')
       .eq('nutritionist_id', nutritionistProfileId)
       .order('created_at', { ascending: true })
+      
+      console.log("🚀 ~ getNutritionistDocuments ~ documents:", documents)
+    if (error || !documents?.length) return []
 
-    if (error) {
-      // Silent error handling: Error fetching nutritionist documents
-      return []
-    }
-
-    // Transformar file_name em public_url
-    return documents.map(doc => {
-      // const { data } = supabase.storage.from('nutritionist_documents').getPublicUrl(doc.file_name)
-      return {
-        ...doc,
-        public_url: doc?.file_url ?? ''
-      }
+    const paths = documents.map(d => d.storage_path)
+    const res = await fetch('/api/admin/storage/signed-urls', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ bucket: 'nutritionist-documents', paths, expiresIn: 60 * 5 })
     })
+    const j = await res.json().catch(() => ({}))
+    const map: Record<string, string> = j?.results ?? {}
+
+    // return documents.map(doc => {
+    //   // const response  = supabase.storage.from('nutritionist-documents').createSignedUrl(doc.storage_path, 60 * 5)
+    //   return {
+    //     ...doc,
+    //     public_url: doc?.file_url ?? ''
+    //   }
+    // })
+    return documents.map(doc => ({
+      ...doc,
+      public_url: map[ doc.storage_path ] ?? ''   // use isso no <img src> e no botão "Abrir"
+    }))
   } catch {
-    // Silent error handling: Error in getNutritionistDocuments
     return []
   }
 }
 
+// export async function getNutritionistDocuments(nutritionistProfileId: string): Promise<NutritionistDocument[]> {
+//   try {
+//     const { data: documents, error } = await supabase
+//       .from('nutritionist_documents')
+//       .select('*')
+//       .eq('nutritionist_id', nutritionistProfileId)
+//       .order('created_at', { ascending: true })
+
+//     if (error) {
+//       // Silent error handling: Error fetching nutritionist documents
+//       return []
+//     }
+
+//     // Transformar file_name em public_url
+//     return documents.map(doc => {
+//       // const { data } = supabase.storage.from('nutritionist_documents').getPublicUrl(doc.file_name)
+//       return {
+//         ...doc,
+//         public_url: doc?.file_url ?? ''
+//       }
+//     })
+//   } catch {
+//     // Silent error handling: Error in getNutritionistDocuments
+//     return []
+//   }
+// }
+
 /**
  * Aprovar nutricionista
  */
-export async function approveNutritionist(userId: string, nutritionistProfileId: string): Promise<boolean> {
+export async function approveNutritionist(nutritionistProfileId: string): Promise<boolean> {
   try {
-    // Atualizar users.is_verified
-    const { error: userError } = await supabase
-      .from('users')
-      .update({ is_verified: true })
-      .eq('id', userId)
-
-    if (userError) {
-      // Silent error handling: Error updating user verification
-      return false
-    }
-
-    // Atualizar nutritionist_profiles.verified_at
-    const { error: profileError } = await supabase
-      .from('nutritionist_profiles')
-      .update({ verified_at: new Date().toISOString() })
-      .eq('id', nutritionistProfileId)
-
-    if (profileError) {
-      // Silent error handling: Error updating nutritionist profile
-      return false
-    }
-
-    return true
+    const res = await fetch('/api/admin/nutritionists/approve', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nutritionistProfileId }),
+    })
+    if (!res.ok) return false
+    const j = await res.json()
+    return !!j?.ok
   } catch {
-    // Silent error handling: Error in approveNutritionist
     return false
   }
 }

@@ -7,7 +7,6 @@ import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Loader2, FileText, Image, ExternalLink, CheckCircle, XCircle } from 'lucide-react'
-import { toast } from '@/hooks/use-toast'
 import {
   getNutritionistDocuments,
   approveNutritionist,
@@ -15,6 +14,7 @@ import {
   type NutritionistDocument
 } from '@/lib/admin-data-service'
 import { isImageFile, getDocumentTypeLabel } from '@/lib/storage'
+import { toast } from '../../ui/use-toast'
 
 interface VerifyNutritionistModalProps {
   open: boolean
@@ -42,9 +42,9 @@ export function VerifyNutritionistModal({
 
   // Carrega docs quando abrir
   useEffect(() => {
-    if (open && user?.nutritionistProfileId) void loadDocuments()
+    if (open && user?.id) void loadDocuments()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, user?.nutritionistProfileId])
+  }, [open, user?.id])
 
   // Bloqueia scroll e adiciona ESC para fechar
   useEffect(() => {
@@ -64,7 +64,7 @@ export function VerifyNutritionistModal({
   const loadDocuments = async () => {
     try {
       setLoadingDocs(true)
-      const documents = await getNutritionistDocuments(user.nutritionistProfileId)
+      const documents = await getNutritionistDocuments(user.id)
       setDocs(documents)
     } catch {
       toast({
@@ -80,7 +80,7 @@ export function VerifyNutritionistModal({
   const handleApprove = async () => {
     try {
       setProcessing(true)
-      const success = await approveNutritionist(user.id, user.nutritionistProfileId)
+      const success = await approveNutritionist(user.nutritionistProfileId)
       if (success) {
         toast({ title: 'Sucesso', description: 'Nutricionista verificado com sucesso!' })
         onApproved()
@@ -89,7 +89,7 @@ export function VerifyNutritionistModal({
         toast({ title: 'Erro', description: 'Não foi possível aprovar o nutricionista', variant: 'destructive' })
       }
     } catch {
-      toast({ title: 'Erro', description: 'Ocorreu um erro ao aprovar o nutricionista', variant: 'destructive' })
+      toast({ type: '', description: 'Ocorreu um erro ao aprovar o nutricionista', variant: 'destructive' })
     } finally {
       setProcessing(false)
     }
@@ -97,7 +97,7 @@ export function VerifyNutritionistModal({
 
   const handleReject = async () => {
     if (!reason.trim()) {
-      toast({ title: 'Erro', description: 'Por favor, informe o motivo da rejeição', variant: 'destructive' })
+      toast({ title: 'Erro', description: 'Por favor, informe o motivo da rejeição',  })
       return
     }
     try {
