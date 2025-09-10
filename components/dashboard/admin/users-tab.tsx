@@ -290,7 +290,7 @@ export function UsersTab() {
                         </TableCell>
                         <TableCell className="text-gray-500 text-sm">
                           {user.type === 'nutricionista' ? (
-                            user.is_verified ? (
+                            user?.nutritionist_profiles?.is_verified ? (
                               <Badge className="bg-green-100 text-green-700">
                                 <CheckCircle className="h-3 w-3 mr-1" />
                                 Verificado
@@ -406,6 +406,7 @@ export function UsersTab() {
 
       {selectedUser && verifyModalOpen && (
         <VerifyNutritionistModal
+          key={selectedUser?.id}  
           open={verifyModalOpen}
           onOpenChange={handleVerifyModalClose}
           user={selectedUser}

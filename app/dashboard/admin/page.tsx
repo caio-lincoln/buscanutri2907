@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -36,11 +36,13 @@ import { ModerationTab } from '@/components/dashboard/admin/moderation-tab'
 import { SystemTab } from '@/components/dashboard/admin/system-tab'
 import { SettingsTab } from '@/components/dashboard/admin/settings-tab'
 import { BadgesTab } from '@/components/dashboard/admin/badges-tab' // Importar a nova aba de insígnias
+import { getAllUsers } from '../../../lib/admin-data-service'
 
 export default function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState('overview') // Default to overview
+  const [ activeTab, setActiveTab ] = useState('overview') // Default to overview
   const router = useRouter()
   const { user, loading, signOut } = useAuth()
+  const [ totalUsers, setTotalUsers ] = useState(0)
 
   // Hook para estatísticas dinâmicas do dashboard
   const { stats: dashboardStats, loading: statsLoading } = useDashboardStats({
@@ -48,6 +50,12 @@ export default function AdminDashboard() {
     userId: '',
     enabled: false,
   })
+  useEffect(() => {
+    (async () => {
+      const users = await getAllUsers()
+      setTotalUsers(users.length)
+    })()
+  }, [])
 
   // Adicionar "insignias" ao menu de itens do admin
   const menuItems = getMenuItems('admin', dashboardStats).map(item => {
@@ -63,10 +71,10 @@ export default function AdminDashboard() {
   )
 
   useEffect(() => {
-    if (!loading && (!user || user.user_metadata['user_type'] !== 'admin')) {
+    if (!loading && (!user || user.user_metadata[ 'user_type' ] !== 'admin')) {
       router.push('/login')
     }
-  }, [user, loading, router])
+  }, [ user, loading, router ])
 
   const handleSignOut = async () => {
     try {
@@ -127,7 +135,7 @@ export default function AdminDashboard() {
                       <p className="text-sm text-emerald-100">
                         Usuários ativos
                       </p>
-                      <p className="font-semibold">1,247 online</p>
+                      <p className="font-semibold">{totalUsers} online</p>
                     </div>
                     <div className="bg-white/10 backdrop-blur-sm rounded-xl px-4 py-2">
                       <p className="text-sm text-emerald-100">Sistema</p>
@@ -148,31 +156,31 @@ export default function AdminDashboard() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               <StatsCard
                 title="Total de Usuários"
-                value="2,847"
+                value={totalUsers}
                 icon={Users}
                 color="blue"
-                trend={{ value: 12, isPositive: true }}
+                // trend={{ value: 12, isPositive: true }}
                 description="Este mês"
               />
               <StatsCard
                 title="Vagas Ativas"
-                value="156"
+                value="0"
                 icon={Briefcase}
                 color="green"
-                trend={{ value: 8, isPositive: true }}
+                // trend={{ value: 8, isPositive: true }}
                 description="Publicadas"
               />
               <StatsCard
                 title="Receita Mensal"
-                value="R$ 45.2k"
+                value="0"
                 icon={DollarSign}
                 color="purple"
-                trend={{ value: 15, isPositive: true }}
+                // trend={{ value: 15, isPositive: true }}
                 description="Assinaturas"
               />
               <StatsCard
                 title="Taxa de Conversão"
-                value="23.4%"
+                value="80.4%"
                 icon={TrendingUp}
                 color="orange"
                 description="Visitantes → Usuários"
@@ -209,6 +217,7 @@ export default function AdminDashboard() {
                     <Button
                       size="sm"
                       variant="ghost"
+                      onClick={() => setActiveTab('usuarios')}
                       className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                     >
                       Acessar <ArrowRight className="h-3 w-3 ml-1" />
@@ -230,6 +239,7 @@ export default function AdminDashboard() {
                     <Button
                       size="sm"
                       variant="ghost"
+                      onClick={() => setActiveTab('vagas')}
                       className="text-green-600 hover:text-green-700 hover:bg-green-50"
                     >
                       Moderar <ArrowRight className="h-3 w-3 ml-1" />
@@ -250,6 +260,7 @@ export default function AdminDashboard() {
                     </p>
                     <Button
                       size="sm"
+                      onClick={() => setActiveTab('relatorios')}
                       variant="ghost"
                       className="text-purple-600 hover:text-purple-700 hover:bg-purple-50"
                     >
@@ -272,6 +283,9 @@ export default function AdminDashboard() {
                     <Button
                       size="sm"
                       variant="ghost"
+                      onClick={() => {
+                        setActiveTab('configuracoes')
+                      }}
                       className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
                     >
                       Configurar <ArrowRight className="h-3 w-3 ml-1" />
@@ -312,12 +326,12 @@ export default function AdminDashboard() {
                       uptime: '99.7%',
                       color: 'green',
                     },
-                    {
-                      service: 'Notificações',
-                      status: 'warning',
-                      uptime: '98.2%',
-                      color: 'yellow',
-                    },
+                    // {
+                    //   service: 'Notificações',
+                    //   status: 'warning',
+                    //   uptime: '98.2%',
+                    //   color: 'yellow',
+                    // },
                   ].map((item, i) => (
                     <div
                       key={i}
@@ -369,34 +383,34 @@ export default function AdminDashboard() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {[
-                    {
-                      action: 'Novo usuário registrado',
-                      user: 'Maria Silva',
-                      time: '2 min',
-                      type: 'user',
-                      color: 'blue',
-                    },
-                    {
-                      action: 'Vaga aprovada',
-                      user: 'TechCorp',
-                      time: '15 min',
-                      type: 'job',
-                      color: 'green',
-                    },
-                    {
-                      action: 'Pagamento processado',
-                      user: 'Dr. João Santos',
-                      time: '1h',
-                      type: 'payment',
-                      color: 'purple',
-                    },
-                    {
-                      action: 'Relatório de abuso',
-                      user: 'Sistema',
-                      time: '2h',
-                      type: 'report',
-                      color: 'red',
-                    },
+                    // {
+                    //   action: 'Novo usuário registrado',
+                    //   user: 'Maria Silva',
+                    //   time: '2 min',
+                    //   type: 'user',
+                    //   color: 'blue',
+                    // },
+                    // {
+                    //   action: 'Vaga aprovada',
+                    //   user: 'TechCorp',
+                    //   time: '15 min',
+                    //   type: 'job',
+                    //   color: 'green',
+                    // },
+                    // {
+                    //   action: 'Pagamento processado',
+                    //   user: 'Dr. João Santos',
+                    //   time: '1h',
+                    //   type: 'payment',
+                    //   color: 'purple',
+                    // },
+                    // {
+                    //   action: 'Relatório de abuso',
+                    //   user: 'Sistema',
+                    //   time: '2h',
+                    //   type: 'report',
+                    //   color: 'red',
+                    // },
                   ].map((item, i) => (
                     <div
                       key={i}
@@ -432,13 +446,13 @@ export default function AdminDashboard() {
                     </div>
                   ))}
 
-                  <Button
+                  {/* <Button
                     variant="ghost"
                     className="w-full mt-4 text-gray-600 hover:text-gray-800"
                   >
                     Ver todas as atividades{' '}
                     <ArrowRight className="h-4 w-4 ml-1" />
-                  </Button>
+                  </Button> */}
                 </CardContent>
               </Card>
             </div>

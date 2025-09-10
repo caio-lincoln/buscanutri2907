@@ -56,54 +56,54 @@ interface JobData {
 }
 
 const mockJobs: JobData[] = [
-  {
-    id: 'job001',
-    title: 'Nutricionista Clínico',
-    company: 'Hospital Saúde Plena',
-    status: 'ativa',
-    applicants: 25,
-    postedAt: '2024-07-01',
-  },
-  {
-    id: 'job002',
-    title: 'Consultor de Bem-Estar',
-    company: 'Bem Estar Corporativo',
-    status: 'pendente',
-    applicants: 0,
-    postedAt: '2024-07-10',
-  },
-  {
-    id: 'job003',
-    title: 'Nutricionista Esportivo',
-    company: 'Academia Fitness Total',
-    status: 'ativa',
-    applicants: 18,
-    postedAt: '2024-06-15',
-  },
-  {
-    id: 'job004',
-    title: 'Estágio em Nutrição',
-    company: 'Clínica NutriVida',
-    status: 'expirada',
-    applicants: 30,
-    postedAt: '2024-05-20',
-  },
-  {
-    id: 'job005',
-    title: 'Nutricionista Home Care',
-    company: 'Saúde em Casa',
-    status: 'ativa',
-    applicants: 12,
-    postedAt: '2024-07-05',
-  },
-  {
-    id: 'job006',
-    title: 'Pesquisador em Nutrição',
-    company: 'Instituto de Pesquisa Alimentar',
-    status: 'rejeitada',
-    applicants: 0,
-    postedAt: '2024-07-02',
-  },
+  // {
+  //   id: 'job001',
+  //   title: 'Nutricionista Clínico',
+  //   company: 'Hospital Saúde Plena',
+  //   status: 'ativa',
+  //   applicants: 25,
+  //   postedAt: '2024-07-01',
+  // },
+  // {
+  //   id: 'job002',
+  //   title: 'Consultor de Bem-Estar',
+  //   company: 'Bem Estar Corporativo',
+  //   status: 'pendente',
+  //   applicants: 0,
+  //   postedAt: '2024-07-10',
+  // },
+  // {
+  //   id: 'job003',
+  //   title: 'Nutricionista Esportivo',
+  //   company: 'Academia Fitness Total',
+  //   status: 'ativa',
+  //   applicants: 18,
+  //   postedAt: '2024-06-15',
+  // },
+  // {
+  //   id: 'job004',
+  //   title: 'Estágio em Nutrição',
+  //   company: 'Clínica NutriVida',
+  //   status: 'expirada',
+  //   applicants: 30,
+  //   postedAt: '2024-05-20',
+  // },
+  // {
+  //   id: 'job005',
+  //   title: 'Nutricionista Home Care',
+  //   company: 'Saúde em Casa',
+  //   status: 'ativa',
+  //   applicants: 12,
+  //   postedAt: '2024-07-05',
+  // },
+  // {
+  //   id: 'job006',
+  //   title: 'Pesquisador em Nutrição',
+  //   company: 'Instituto de Pesquisa Alimentar',
+  //   status: 'rejeitada',
+  //   applicants: 0,
+  //   postedAt: '2024-07-02',
+  // },
 ]
 
 const jobStatusColors = {
@@ -185,9 +185,9 @@ export function JobsTab() {
                 <SelectItem value="rejeitada">Rejeitada</SelectItem>
               </SelectContent>
             </Select>
-            <Button className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-md">
+            {/* <Button className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-md">
               <PlusCircle className="h-4 w-4 mr-2" /> Nova Vaga
-            </Button>
+            </Button> */}
           </div>
         </CardHeader>
         <CardContent>
