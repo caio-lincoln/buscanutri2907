@@ -13,13 +13,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+
 import { MultiSelect } from '@/components/ui/multi-select'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { ImageCropUpload } from '@/components/ui/image-crop-upload'
@@ -64,6 +58,12 @@ import {
   logNormalizationEvent,
 } from '@/lib/structured-data-utils'
 import { useAuth } from '../contexts/auth-context'
+import { Checkbox } from './ui/checkbox'
+import { getMyNutritionistProfileMinimal, updateMyCorporateFlags } from '../lib/nutritionist-profile-service'
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
+import { AddressCard } from './address-card'
+import DocumentsCard from './documents-card'
+import ScrollableTabs from './tabs'
 
 // Interface para opções do MultiSelect
 interface Option {
@@ -228,6 +228,12 @@ export function UserProfileModal({
     message: string
   }>({ status: 'idle', message: '' })
 
+  const [ acceptsCorporate, setAcceptsCorporate ] = useState(false)
+  const [ acceptsCoupons, setAcceptsCoupons ] = useState(false)
+  const [ savingCorporateFlags, setSavingCorporateFlags ] = useState(false)
+
+  const [ activeTab, setActiveTab ] = useState('personal')
+
   const [ cnpjValidation, setCnpjValidation ] = useState<{
     status: 'idle' | 'validating' | 'valid' | 'invalid'
     message: string
@@ -383,10 +389,47 @@ export function UserProfileModal({
       // Carregar especialidades e horários para nutricionistas
       if (userType === 'nutricionista') {
         loadNutritionistSpecialties()
+        loadCorporateFlags()
         loadNutritionistAvailability()
       }
     }
   }, [ open, userType, initialData?.id ])
+
+  const loadCorporateFlags = async () => {
+    try {
+      const profile = await getMyNutritionistProfileMinimal()
+      if (profile) {
+        setAcceptsCorporate(profile.accepts_corporate_plans || false)
+        setAcceptsCoupons(profile.aceita_cupons || false)
+      }
+    } catch (error) {
+      console.error('Erro ao carregar flags corporativos:', error)
+    }
+  }
+
+  const handleSaveCorporateFlags = async () => {
+    setSavingCorporateFlags(true)
+    try {
+      await updateMyCorporateFlags({
+        accepts_corporate_plans: acceptsCorporate,
+        aceita_cupons: acceptsCoupons,
+      })
+
+      toast({
+        title: 'Preferências salvas',
+        description: 'Suas preferências de atendimento corporativo foram atualizadas com sucesso.',
+      })
+    } catch (error) {
+      console.log('Erro ao salvar flags corporativos:', error)
+      toast({
+        title: 'Erro ao salvar',
+        description: 'Ocorreu um erro ao salvar suas preferências. Tente novamente.',
+        variant: 'destructive',
+      })
+    } finally {
+      setSavingCorporateFlags(false)
+    }
+  }
 
   // Função para carregar especialidades do nutricionista
   const loadNutritionistSpecialties = async () => {
@@ -1013,11 +1056,27 @@ export function UserProfileModal({
     return null
   }
 
+  const tabs = [
+    { id: 'personal', label: 'Dados Pessoais' },
+    { id: 'address', label: 'Endereço' },
+    ...(userType === 'nutricionista' ? [
+      { id: 'professional', label: 'Dados Profissionais' },
+      { id: 'specialties', label: 'Especialidades' },
+      { id: 'availability', label: 'Disponibilidade' },
+      { id: 'corporate', label: 'Planos Corporativos' },
+      { id: 'addresses', label: 'Endereços de Atendimento' },
+      { id: 'documents', label: 'Documentos' }
+    ] : []),
+    ...(userType === 'paciente' ? [
+      { id: 'anamnese', label: 'Anamnese Nutricional' }
+    ] : [])
+  ]
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto p-0 overflow-x-hidden">
+        <DialogHeader className="px-4 py-3 sm:px-6 sm:py-4 border-b">
+          <DialogTitle className="text-lg sm:text-xl font-semibold text-gray-900 flex items-center gap-2">
             <User className="h-5 w-5" />
             Editar Perfil (
             {userType === 'paciente'
@@ -1036,7 +1095,25 @@ export function UserProfileModal({
           </div>
         )}
 
-        <form id="profile-form" onSubmit={handleSubmit} className="space-y-6">
+        <form id="profile-form" onSubmit={handleSubmit} className="space-y-6 px-4 sm:px-6">
+
+          {/* <div className="border-b border-gray-200 -mx-4 sm:-mx-6 px-4 sm:px-6 ">
+            <nav className="-mb-px flex space-x-2 sm:space-x-8 overflow-x-auto scrollbar-hide">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  type='button'
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex-shrink-0 whitespace-nowrap py-3 px-2 sm:px-1 border-b-2 font-medium text-xs sm:text-sm transition-colors duration-200 ${activeTab === tab.id
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </nav>
+          </div> */}
           <div className="space-y-4 mb-6">
             <div className="flex flex-col items-center gap-4">
               <Avatar className="h-24 w-24">
@@ -1592,6 +1669,7 @@ export function UserProfileModal({
               {currentPage === 1 && (
                 <>
                   <div>
+
                     <Label htmlFor="crn">CRN</Label>
                     <div className="relative">
                       <Input
@@ -1733,7 +1811,7 @@ export function UserProfileModal({
                     />
                   </div>
 
-                  <div>
+                  {/* <div>
                     <Label htmlFor="address">Endereço do Consultório</Label>
                     <Textarea
                       id="address"
@@ -1741,7 +1819,7 @@ export function UserProfileModal({
                       onChange={handleChange}
                       placeholder="Rua, número, bairro, cidade, CEP"
                     />
-                  </div>
+                  </div> */}
 
                   <div>
                     <Label htmlFor="specialties">Especialidades</Label>
@@ -1821,6 +1899,75 @@ export function UserProfileModal({
                       placeholder="Configure seus horários de atendimento"
                     />
                   </div>
+
+                  {userType === 'nutricionista' && (
+                    <>
+                      <Card className="mt-6">
+                        <CardHeader>
+                          <CardTitle>Atende no modo corporativo?</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <p className="text-sm text-muted-foreground">
+                            Defina se você aceita atender pacientes através de planos corporativos e se disponibiliza cupons de desconto.
+                          </p>
+
+                          <div className="space-y-4">
+                            <div>
+                              <Label className="text-base font-medium">Aceita planos corporativos?</Label>
+                              <div className="flex gap-2 mt-2">
+                                <Button
+                                  type="button"
+                                  variant={acceptsCorporate ? "default" : "outline"}
+                                  onClick={() => setAcceptsCorporate(true)}
+                                  disabled={savingCorporateFlags}
+                                >
+                                  Sim
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant={!acceptsCorporate ? "default" : "outline"}
+                                  onClick={() => setAcceptsCorporate(false)}
+                                  disabled={savingCorporateFlags}
+                                >
+                                  Não
+                                </Button>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                id="aceita-cupons"
+                                checked={acceptsCoupons}
+                                onCheckedChange={(checked) => setAcceptsCoupons(checked as boolean)}
+                                disabled={savingCorporateFlags}
+                              />
+                              <Label htmlFor="aceita-cupons" className="text-sm">
+                                Aceito disponibilizar cupons de desconto para meus pacientes
+                              </Label>
+                            </div>
+
+                            <Button
+                              onClick={handleSaveCorporateFlags}
+                              disabled={savingCorporateFlags}
+                              className="w-full"
+                            >
+                              {savingCorporateFlags ? (
+                                <>
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  Salvando...
+                                </>
+                              ) : (
+                                'Salvar preferências'
+                              )}
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      <AddressCard userType={userType} open={open} />
+                      <DocumentsCard userType={userType} />
+                    </>
+                  )}
                 </>
               )}
 
