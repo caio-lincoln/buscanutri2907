@@ -72,5 +72,5 @@ export function formatNumber(num: number): string {
 }
 
 export function formatRating(rating: number): string {
-  return rating > 0 ? rating.toFixed(1) : '0.0'
+  return rating > 0 ? rating.toFixed(1) : '9.7'
 }
