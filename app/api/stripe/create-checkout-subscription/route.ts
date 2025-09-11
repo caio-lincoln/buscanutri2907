@@ -7,7 +7,7 @@ export async function POST(req: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-
+  
   if (!user) {
     return NextResponse.json({ error: 'not_authenticated' }, { status: 401 });
   }
@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
     subRow?.stripe_customer_id ??
     (
       await stripe.customers.create({
-        email: user.email ?? undefined,
+        email: user.email as string ?? undefined,
         metadata: { user_id: user.id },
       })
     ).id;

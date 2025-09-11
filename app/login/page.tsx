@@ -28,7 +28,7 @@ export default function LoginPage() {
   const [ error, setError ] = useState('')
   const router = useRouter()
   const { user, loading: authLoading } = useAuth()
-  const {broadcastAuthChange} = useAuthSync()
+  const { broadcastAuthChange } = useAuthSync()
 
   // Redirect if user is already logged in
   useEffect(() => {
@@ -70,15 +70,8 @@ export default function LoginPage() {
         throw new Error('Email e senha sao obrigatorios')
       }
 
-      let result
       // Special login for admin
-      if (email === 'iris@buscanutri.com') {
-        console.log('🔍 Fazendo login admin...')
-        result = await signInAdmin(email, password)
-        console.log('🔍 Resultado signInAdmin:', result)
-      } else {
-        result = await signIn(email, password)
-      }
+      const result = await signIn(email, password)
 
       if (result.error) {
         throw new Error(result.error)

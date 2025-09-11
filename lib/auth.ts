@@ -40,7 +40,7 @@ export async function signUp(
         },
       },
     })
-    
+
     if (authError) {
       // Silent error handling: Error in auth.signUp
       throw new Error(authError.message)
@@ -57,11 +57,11 @@ export async function signUp(
 
     // 4. Fazer login automático (agora deve funcionar pois o usuário está confirmado)
     const { data: signInData, error: signInError } =
-    await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
-    
+      await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+
     if (signInError) {
       console.log("🚀 ~ signUp ~ signInError:", signInError)
       // Silent error handling: Error in automatic login
@@ -107,7 +107,7 @@ export async function signUp(
       .select()
       .single()
 
-      if (userError) {
+    if (userError) {
       console.log("🚀 ~ signUp ~ userError:", userError)
       // Silent error handling: Error creating user record
     } else {
@@ -144,9 +144,9 @@ export async function signUp(
           })
           .select()
           .single()
-          outProfileData = profileData
+        outProfileData = profileData
         if (profileError) {
-            
+
           // Silent error handling: Error creating nutritionist profile
         } else {
           // Silent logging: Nutritionist profile created
@@ -162,7 +162,7 @@ export async function signUp(
           })
           .select()
           .single()
-          outProfileData = profileData
+        outProfileData = profileData
         if (profileError) {
           // Silent error handling: Error creating patient profile
         } else {
@@ -181,8 +181,8 @@ export async function signUp(
           })
           .select()
           .single()
-        
-          outProfileData = profileData
+
+        outProfileData = profileData
         if (profileError) {
           // Silent error handling: Error creating company profile
         } else {
@@ -265,58 +265,13 @@ export async function signOut() {
   }
 }
 
-export async function isAdmin(email: string): Promise<boolean> {
-  return email === 'iris@buscanutri.com'
-}
-
 export async function signInAdmin(email: string, password: string) {
-  if (email === 'iris@buscanutri.com' && password === 'iris123456') {
-    // Verificação segura para SSR
-    if (typeof window !== 'undefined' && window.sessionStorage) {
-      try {
-        sessionStorage.setItem('admin_session', 'iris@buscanutri.com')
-      } catch (error) {
-        // Ignorar erros de sessionStorage em modo privado/incógnito
-        console.warn('Erro ao salvar no sessionStorage:', error)
-      }
-    }
-    // Silent logging: Admin login performed
-    return {
-      data: {
-        user: {
-          id: 'admin-001',
-          email: 'iris@buscanutri.com',
-          user_type: 'admin' as UserType,
-          user_metadata: {
-            user_type: 'admin' as UserType,
-          },
-        },
-      },
-      error: null,
-    }
-  }
-
   return signIn(email, password)
 }
 
 export async function getCurrentUser() {
   try {
     // Verificar se é admin primeiro (verificação segura para SSR)
-    if (typeof window !== 'undefined' && window.sessionStorage) {
-      try {
-        const adminSession = sessionStorage.getItem('admin_session')
-        if (adminSession === 'iris@buscanutri.com') {
-          return {
-            id: 'admin-001',
-            email: 'iris@buscanutri.com',
-            user_type: 'admin' as UserType,
-          }
-        }
-      } catch (error) {
-        // Ignorar erros de sessionStorage em modo privado/incógnito
-        console.warn('Erro ao acessar sessionStorage:', error)
-      }
-    }
 
     // Obter usuário atual do Supabase
     const {
@@ -395,11 +350,11 @@ export async function getUserProfile(userId: string, userType?: UserType) {
       .select('user_type')
       .eq('id', userId)
       .single()
-    
+
     if (userError || !userData) {
       return { data: null, error: 'Usuário não encontrado' }
     }
-    
+
     resolvedUserType = userData.user_type as UserType
   }
 
