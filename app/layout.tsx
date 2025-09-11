@@ -4,8 +4,9 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import { Toaster } from '@/components/ui/toaster'
 import { AuthProvider } from '@/contexts/auth-context'
+import { Suspense } from 'react'
 
-const inter = Inter({ subsets: ['latin'] })
+const inter = Inter({ subsets: [ 'latin' ] })
 
 export const metadata: Metadata = {
   title: 'Busca Nutri - Conectando Nutricionistas, Transformando Vidas',
@@ -31,8 +32,10 @@ export default function RootLayout({
     <html lang="pt-BR">
       <body className={inter.className}>
         <AuthProvider>
-          {children}
-          <Toaster />
+          <Suspense fallback={<div>Carregando...</div>}>
+            {children}
+            <Toaster />
+          </Suspense>
         </AuthProvider>
       </body>
     </html>

@@ -7,7 +7,6 @@ export default async function AdminPage() {
   const supabase = await createClient()
 
   const { data, error } = await supabase.auth.getUser()
-  console.log("🚀 ~ AdminPage ~ data:", data)
   const user = data?.user ?? null
 
   // Sem sessão → manda pro login (com next param opcional)

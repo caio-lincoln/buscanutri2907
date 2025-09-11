@@ -85,13 +85,17 @@ export function UsersTab() {
   } | null>(null)
 
   useEffect(() => {
-    async function loadUsers() {
+    const loadUsers = async () => {
       try {
-        setLoading(true)
-        const userData = await getAllUsers()
-        setUsers(userData)
-      } catch {
-        // Silent error handling - error loading users
+        const response = await fetch('/api/admin/users')
+        if (response.ok) {
+          const { data } = await response.json()
+          setUsers(data)
+        } else {
+          console.error('Erro ao carregar usuários')
+        }
+      } catch (error) {
+        console.error('Erro na requisição:', error)
       } finally {
         setLoading(false)
       }

@@ -59,7 +59,7 @@ export function withAuth(
   handler: (req: NextRequest, user: any, context?: any) => Promise<NextResponse>
 ) {
   return withErrorHandling(async (req: NextRequest, context?: any) => {
-    const supabase = createClient()
+    const supabase = await createClient()
     
     const { data: { user }, error } = await supabase.auth.getUser()
     

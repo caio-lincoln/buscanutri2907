@@ -1,5 +1,5 @@
 import nodemailer from 'nodemailer'
-import { getRefreshToken, getAccessToken } from './oauth'
+import { getCurrentGmailConfig, getAccessToken } from './oauth'
 
 const {
   GMAIL_SENDER_EMAIL,
@@ -15,8 +15,8 @@ if (!GMAIL_SENDER_EMAIL || !GMAIL_SENDER_NAME || !GOOGLE_CLIENT_ID || !GOOGLE_CL
 
 export async function getTransporter() {
   // Tenta obter o refresh token do banco de dados primeiro
-  let refreshToken =  await getRefreshToken() || GMAIL_SENDER_EMAIL 
-  
+  const gmailConfig = await getCurrentGmailConfig()
+  let refreshToken = gmailConfig?.refresh_token
   // Se não encontrar no banco, usa o da variável de ambiente
   if (!refreshToken) {
     if (!GOOGLE_REFRESH_TOKEN) {
@@ -24,19 +24,19 @@ export async function getTransporter() {
     }
     refreshToken = GOOGLE_REFRESH_TOKEN
   }
-  
+
   // Obtém o access token usando o refresh token
   const accessToken = await getAccessToken(refreshToken)
-  
+
   if (!accessToken) {
     throw new Error('Falha ao obter accessToken do Gmail OAuth2')
   }
-  
+
   return nodemailer.createTransport({
     service: 'gmail',
     auth: {
       type: 'OAuth2',
-      user: GMAIL_SENDER_EMAIL,
+      user: gmailConfig?.email || GMAIL_SENDER_EMAIL,
       clientId: GOOGLE_CLIENT_ID,
       clientSecret: GOOGLE_CLIENT_SECRET,
       refreshToken,
@@ -45,4 +45,3 @@ export async function getTransporter() {
   })
 }
 
-export const FROM = `${GMAIL_SENDER_NAME} <${GMAIL_SENDER_EMAIL}>`

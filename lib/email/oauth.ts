@@ -57,12 +57,12 @@ export async function saveRefreshToken(email: string, refreshToken: string) {
   return data
 }
 
-export async function getRefreshToken() {
+export async function getCurrentGmailConfig() {
   const supabase = createAdminClient()
 
   const { data, error } = await supabase
     .from('gmail_credentials')
-    .select('refresh_token')
+    .select('refresh_token, email')
     .eq('in_use', true)
     .single()
 
@@ -71,7 +71,7 @@ export async function getRefreshToken() {
     return null
   }
 
-  return data?.refresh_token
+  return data
 }
 
 export async function getAccessToken(refreshToken: string, client?: OAuth2Client) {

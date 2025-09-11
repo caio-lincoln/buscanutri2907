@@ -27,7 +27,7 @@ export function htmlByRole(role: UserRole, { name }: { name?: string } = {}) {
 <li>✔️ Conecte sua conta para receber (Stripe/PIX, conforme seu setup)</li>
 <li>✔️ Personalize seu cartão de visita</li>
 </ul>
-${btn(process.env[ 'NEXT_PUBLIC_APP_URL' ] ?? 'https://www.buscanutri.com.br/')}
+${btn(process.env[ 'NEXT_PUBLIC_APP_URL' ] ?? 'https://www.buscanutri.com.br/dashboard/nutricionistas')}
 <p style="margin-top:24px;font-size:13px;color:#6b7280">Dica: perfis completos recebem mais agendamentos.</p>
 </div>
 `
@@ -42,7 +42,7 @@ ${btn(process.env[ 'NEXT_PUBLIC_APP_URL' ] ?? 'https://www.buscanutri.com.br/')}
 <li>🗓️ Agende no melhor horário para você</li>
 <li>💬 Tire dúvidas no pré-atendimento (se habilitado)</li>
 </ul>
-${btn(process.env[ 'NEXT_PUBLIC_APP_URL' ] ?? 'https://www.buscanutri.com.br/')}
+${btn(process.env[ 'NEXT_PUBLIC_APP_URL' ] ?? 'https://www.buscanutri.com.br/dashboard/pacientes')}
 </div>
 `
   }
@@ -56,7 +56,7 @@ ${btn(process.env[ 'NEXT_PUBLIC_APP_URL' ] ?? 'https://www.buscanutri.com.br/')}
 <li>👤 Convide colaboradores com um clique</li>
 <li>📊 Acompanhe relatórios de utilização</li>
 </ul>
-${btn(process.env[ 'NEXT_PUBLIC_APP_URL' ] ?? 'https://www.buscanutri.com.br/')}
+${btn(process.env[ 'NEXT_PUBLIC_APP_URL' ] ?? 'https://www.buscanutri.com.br/dashboard/empresas')}
 </div>
 `
 }

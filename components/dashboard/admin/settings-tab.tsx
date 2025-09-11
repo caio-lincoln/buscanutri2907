@@ -7,20 +7,38 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
-import { Settings, Mail, Key, Save, RefreshCw } from 'lucide-react'
+import { Settings, Mail, Key, Save, RefreshCw, Info, Code, FileText } from 'lucide-react'
 import { toast } from '../../ui/use-toast'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 
 export function SettingsTab() {
   const [platformName, setPlatformName] = useState('Busca Nutri')
   const [contactEmail, setContactEmail] = useState('contato@buscanutri.com')
   const [allowNewRegistrations, setAllowNewRegistrations] = useState(true)
   const [defaultUserRole, setDefaultUserRole] = useState('paciente')
-  const [welcomeEmailTemplate, setWelcomeEmailTemplate] = useState(
-    'Olá [Nome do Usuário],\n\nBem-vindo à Busca Nutri! Estamos felizes em tê-lo(a) conosco.\n\nAtenciosamente,\nEquipe Busca Nutri'
-  )
+  
+  // Templates de email HTML para cada tipo de usuário
+  const [nutritionistEmailHtml, setNutritionistEmailHtml] = useState('')
+  const [patientEmailHtml, setPatientEmailHtml] = useState('')
+  const [companyEmailHtml, setCompanyEmailHtml] = useState('')
+  
+  // Templates de email texto para cada tipo de usuário
+  const [nutritionistEmailText, setNutritionistEmailText] = useState('')
+  const [patientEmailText, setPatientEmailText] = useState('')
+  const [companyEmailText, setCompanyEmailText] = useState('')
+  
+  // Formato selecionado para cada tipo de usuário (padrão: text)
+  const [nutritionistFormat, setNutritionistFormat] = useState('text')
+  const [patientFormat, setPatientFormat] = useState('text')
+  const [companyFormat, setCompanyFormat] = useState('text')
+  
   const [apiKey, setApiKey] = useState('sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')
-  const [isConnectingGmail, setIsConnectingGmail] = useState(false)
+  const [isConnectingGmail, setIsConnectingGmail] = useState(true)
   const [gmailConnected, setGmailConnected] = useState(false)
+
+  // Placeholders permitidos
+  const placeholders = ['name', 'role', 'dashboard_url', 'app_name', 'support_email']
 
   useEffect(() => {
     // Verifica se há parâmetros de sucesso ou erro na URL
@@ -35,6 +53,7 @@ export function SettingsTab() {
         variant: 'default',
       })
       setGmailConnected(true)
+      setIsConnectingGmail(false)
       // Limpa os parâmetros da URL
       window.history.replaceState({}, document.title, window.location.pathname)
     } else if (error) {
@@ -56,6 +75,7 @@ export function SettingsTab() {
       const response = await fetch('/api/admin/gmail/status')
       const data = await response.json()
       setGmailConnected(data.connected)
+      setIsConnectingGmail(false)
     } catch (error) {
       console.error('Erro ao verificar conexão do Gmail:', error)
     }
@@ -85,15 +105,131 @@ export function SettingsTab() {
     }
   }
 
-  const handleSaveChanges = () => {
-    // Save settings logic would go here
-    toast({
-      title: 'Configurações salvas',
-      description: 'As configurações foram salvas com sucesso!',
-      variant: 'success',
-    })
+  const handleSaveChanges = async () => {
+    try {
+      const response = await fetch('/api/admin/settings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          platform_name: platformName,
+          contact_email: contactEmail,
+          allow_registrations: allowNewRegistrations,
+          default_user_role: defaultUserRole,
+          welcome_nutritionist_html: nutritionistEmailHtml,
+          welcome_nutritionist_text: nutritionistEmailText,
+          welcome_patient_html: patientEmailHtml,
+          welcome_patient_text: patientEmailText,
+          welcome_company_html: companyEmailHtml,
+          welcome_company_text: companyEmailText,
+          api_key: apiKey
+        }),
+      })
+  
+      const data = await response.json()
+      
+      if (data.error) {
+        throw new Error(data.error.message)
+      }
+      
+      toast({
+        title: 'Configurações salvas',
+        description: 'As configurações foram salvas com sucesso!',
+        variant: 'default',
+      })
+    } catch (error) {
+      console.error('Erro ao salvar configurações:', error)
+      toast({
+        title: 'Erro ao salvar configurações',
+        description: String(error),
+        variant: 'destructive',
+      })
+    }
   }
-
+  
+  // Adicionar useEffect para carregar as configurações
+  useEffect(() => {
+    // Função para carregar as configurações
+    const loadSettings = async () => {
+      try {
+        const response = await fetch('/api/admin/settings')
+        const data = await response.json()
+        
+        if (data.data) {
+          const settings = data.data
+          setPlatformName(settings.platform_name || 'Busca Nutri')
+          setContactEmail(settings.contact_email || 'contato@buscanutri.com')
+          setAllowNewRegistrations(settings.allow_registrations !== false)
+          setDefaultUserRole(settings.default_user_role || 'paciente')
+          
+          // Carregar templates de email HTML
+          setNutritionistEmailHtml(settings.welcome_nutritionist_html || '')
+          setPatientEmailHtml(settings.welcome_patient_html || '')
+          setCompanyEmailHtml(settings.welcome_company_html || '')
+          
+          // Carregar templates de email texto
+          setNutritionistEmailText(settings.welcome_nutritionist_text || '')
+          setPatientEmailText(settings.welcome_patient_text || '')
+          setCompanyEmailText(settings.welcome_company_text || '')
+          
+          setApiKey(settings.api_key || '')
+        }
+      } catch (error) {
+        console.error('Erro ao carregar configurações:', error)
+      }
+    }
+    
+    // Carrega as configurações ao montar o componente
+    loadSettings()
+    
+    // Verifica se o Gmail já está conectado
+    checkGmailConnection()
+  }, [])
+  
+  // Componente para exibir os placeholders disponíveis
+  const PlaceholdersInfo = () => (
+    <div className="mt-2 p-3 bg-gray-50 rounded-md border border-gray-200">
+      <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
+        <Info className="h-4 w-4" />
+        <span className="font-medium">Placeholders disponíveis:</span>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        {placeholders.map(placeholder => (
+          <code key={placeholder} className="px-2 py-1 bg-gray-100 rounded text-xs inline-block">
+            {`{{${placeholder}}}`}
+          </code>
+        ))}
+      </div>
+      <p className="text-xs text-gray-500 mt-2">
+        Exemplo: Olá {'{name}'}, bem-vindo ao {'{{app_name}}'}!
+      </p>
+    </div>
+  )
+  
+  // Componente para selecionar o formato (HTML ou texto)
+  const FormatSelector = ({ value, onChange, id }) => (
+    <RadioGroup
+      value={value}
+      onValueChange={onChange}
+      className="flex space-x-4 mb-4"
+      id={id}
+    >
+      <div className="flex items-center space-x-2">
+        <RadioGroupItem value="text" id={`${id}-text`} />
+        <Label htmlFor={`${id}-text`} className="flex items-center gap-1">
+          <FileText className="h-4 w-4" /> Texto
+        </Label>
+      </div>
+      <div className="flex items-center space-x-2">
+        <RadioGroupItem value="html" id={`${id}-html`} />
+        <Label htmlFor={`${id}-html`} className="flex items-center gap-1">
+          <Code className="h-4 w-4" /> HTML
+        </Label>
+      </div>
+    </RadioGroup>
+  )
+  
   return (
     <div className="space-y-6">
       <h2 className="text-3xl font-bold text-[#1E1D40]">
@@ -179,22 +315,78 @@ export function SettingsTab() {
           </div>
           
           <div className="grid gap-2">
-            <Label htmlFor="welcome-email">
-              Template de Email de Boas-Vindas
-            </Label>
-            <Textarea
-              id="welcome-email"
-              value={welcomeEmailTemplate}
-              onChange={e => setWelcomeEmailTemplate(e.target.value)}
-              className="min-h-[150px] border-gray-200 focus:ring-emerald-500 focus:border-emerald-500"
-              placeholder="Edite o conteúdo do email de boas-vindas. Use [Nome do Usuário] para o nome."
-            />
+            <Label>Templates de Email de Boas-Vindas</Label>
+            <Tabs defaultValue="nutritionist" className="w-full">
+              <TabsList className="grid grid-cols-3 mb-4">
+                <TabsTrigger value="nutritionist">Nutricionistas</TabsTrigger>
+                <TabsTrigger value="patient">Pacientes</TabsTrigger>
+                <TabsTrigger value="company">Empresas</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="nutritionist" className="space-y-4">
+                <FormatSelector 
+                  value={nutritionistFormat} 
+                  onChange={setNutritionistFormat} 
+                  id="nutritionist-format" 
+                />
+                <Textarea
+                  value={nutritionistFormat === 'html' ? nutritionistEmailHtml : nutritionistEmailText}
+                  onChange={e => nutritionistFormat === 'html' 
+                    ? setNutritionistEmailHtml(e.target.value) 
+                    : setNutritionistEmailText(e.target.value)}
+                  className="min-h-[200px] font-mono text-sm border-gray-200 focus:ring-emerald-500 focus:border-emerald-500"
+                  placeholder={nutritionistFormat === 'html' 
+                    ? '<h2>Olá {{name}}!</h2><p>Bem-vindo ao {{app_name}}...</p>' 
+                    : 'Olá {{name}}, bem-vindo ao {{app_name}}...'}
+                />
+                <PlaceholdersInfo />
+              </TabsContent>
+              
+              <TabsContent value="patient" className="space-y-4">
+                <FormatSelector 
+                  value={patientFormat} 
+                  onChange={setPatientFormat} 
+                  id="patient-format" 
+                />
+                <Textarea
+                  value={patientFormat === 'html' ? patientEmailHtml : patientEmailText}
+                  onChange={e => patientFormat === 'html' 
+                    ? setPatientEmailHtml(e.target.value) 
+                    : setPatientEmailHtml(e.target.value)}
+                  className="min-h-[200px] font-mono text-sm border-gray-200 focus:ring-emerald-500 focus:border-emerald-500"
+                  placeholder={patientFormat === 'html' 
+                    ? '<h2>Olá {{name}}!</h2><p>Bem-vindo ao {{app_name}}...</p>' 
+                    : 'Olá {{name}}, bem-vindo ao {{app_name}}...'}
+                />
+                <PlaceholdersInfo />
+              </TabsContent>
+              
+              <TabsContent value="company" className="space-y-4">
+                <FormatSelector 
+                  value={companyFormat} 
+                  onChange={setCompanyFormat} 
+                  id="company-format" 
+                />
+                <Textarea
+                  value={companyFormat === 'html' ? companyEmailHtml : companyEmailText}
+                  onChange={e => companyFormat === 'html' 
+                    ? setCompanyEmailHtml(e.target.value) 
+                    : setCompanyEmailText(e.target.value)}
+                  className="min-h-[200px] font-mono text-sm border-gray-200 focus:ring-emerald-500 focus:border-emerald-500"
+                  placeholder={companyFormat === 'html' 
+                    ? '<h2>Olá {{name}}!</h2><p>Bem-vindo ao {{app_name}}...</p>' 
+                    : 'Olá {{name}}, bem-vindo ao {{app_name}}...'}
+                />
+                <PlaceholdersInfo />
+              </TabsContent>
+            </Tabs>
           </div>
+          
           <Button
             className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
             onClick={handleSaveChanges}
           >
-            <Save className="h-4 w-4 mr-2" /> Salvar Template
+            <Save className="h-4 w-4 mr-2" /> Salvar Templates
           </Button>
         </CardContent>
       </Card>

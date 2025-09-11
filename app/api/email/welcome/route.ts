@@ -34,7 +34,6 @@ export async function POST(req: NextRequest) {
     .single()
 
   if (error) {
-    console.error('Erro ao buscar perfil:', error)
     return NextResponse.json({ ok: false, error: 'Erro ao buscar perfil' }, { status: 500 })
   }
 
@@ -43,6 +42,35 @@ export async function POST(req: NextRequest) {
 
   if (!email) return NextResponse.json({ ok: false, error: 'no email' }, { status: 400 })
 
-  await sendWelcomeEmail({ to: email, name, role })
-  return NextResponse.json({ ok: true })
+  const { data: settings, error: settingsError } = await supabase
+  .from('platform_settings')
+  .select('platform_name, contact_email, welcome_nutritionist_html, welcome_nutritionist_text, welcome_patient_html, welcome_patient_text, welcome_company_html, welcome_company_text')
+    .eq('id', 1)
+    .single()
+
+  console.log("🚀 ~ POST ~ settings:", settings)
+  console.log("🚀 ~ POST ~ settingsError:", settingsError)
+  if (settingsError || !settings) {
+    return NextResponse.json({ ok: false, error: 'Erro ao buscar configurações' }, { status: 500 })
+  }
+
+  try {
+    await sendWelcomeEmail({
+      to: email,
+      name,
+      role,
+      app_name: settings.platform_name,
+      support_email: settings.contact_email,
+      welcome_nutritionist_html: settings.welcome_nutritionist_html,
+      welcome_nutritionist_text: settings.welcome_nutritionist_text,
+      welcome_patient_html: settings.welcome_patient_html,
+      welcome_patient_text: settings.welcome_patient_text,
+      welcome_company_html: settings.welcome_company_html,
+      welcome_company_text: settings.welcome_company_text,
+      welcome_email_template: ''
+    })
+    return NextResponse.json({ ok: true })
+  } catch (error) {
+    return NextResponse.json({ ok: false, error: 'Erro ao enviar email' }, { status: 500 })
+  }
 }
