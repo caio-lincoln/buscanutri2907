@@ -125,7 +125,7 @@ export default function NutritionistProfilePageClient({
     uniqueViews: nutritionist.unique_views || 0,
     lastViewAt: nutritionist.last_view_at || null,
   })
-  const { user } = useAuth()
+  const { user, signOut } = useAuth()
 
   if (!nutritionist) {
     notFound()
@@ -334,7 +334,7 @@ export default function NutritionistProfilePageClient({
                     </Link>
                     <Button
                       variant="ghost"
-                      onClick={() => { }}
+                      onClick={signOut}
                       className="hidden md:flex items-center gap-2 text-[#1E1D40] hover:text-red-600 hover:bg-red-50"
                     >
                       <LogOut className="h-4 w-4" />

@@ -49,67 +49,76 @@ export function useRealtimeNutritionists(filters: UseRealtimeNutritionistsProps 
       setLoading(true)
       setError(null)
 
-      const specJoin = (filters.specialty && filters.specialty !== 'Todas')
-        ? `,nutritionist_specialties!inner (
-           specialty_id,
-           specialties:specialties ( id, name )
-         )`
-        : `,nutritionist_specialties (
-           specialty_id,
-           specialties:specialties ( id, name )
-         )`
+      // specialty: inner join só quando filtra
+      const specJoin =
+        filters.specialty && filters.specialty !== 'Todas'
+          ? `,nutritionist_specialties!inner(
+             specialty_id,
+             specialties:specialties ( id, name )
+           )`
+          : `,nutritionist_specialties(
+             specialty_id,
+             specialties:specialties ( id, name )
+           )`
+
+      // addresses: inner join só quando filtra UF
+      const addrJoin =
+        filters.state && filters.state !== 'Todas'
+          ? `,nutritionist_addresses!inner(*)`
+          : `,nutritionist_addresses(*)`
 
       let query = supabase
         .from('nutritionist_profiles')
         .select(`
-          id,
-          user_id,
-          full_name,
-          bio,
-          location,
-          profile_image_url,
-          crn,
-          rating,
-          total_reviews,
-          experience_years,
-          is_verified,
-          online_available:service_online_available,
-          nutritionist_services(*)
-          ${specJoin}
-        `)
+        id,
+        user_id,
+        full_name,
+        bio,
+        location,
+        profile_image_url,
+        crn,
+        rating,
+        total_reviews,
+        experience_years,
+        is_verified,
+        online_available:service_online_available,
+        nutritionist_services(*)
+        ${addrJoin}
+        ${specJoin}
+      `)
+        .eq('is_listed', true)
 
-      query = query.eq('is_listed', true)
-
-      // Filtros
+      // busca por texto
       if (filters.searchTerm) {
         query = query.or(
           `full_name.ilike.%${filters.searchTerm}%,bio.ilike.%${filters.searchTerm}%`
         )
       }
 
+      // filtro por UF (ex.: 'SE', 'PB'...)
       if (filters.state && filters.state !== 'Todas') {
-        query = query.ilike('location', `%${filters.state}%`)
+        // usar eq; com !inner acima restringe também o pai
+        query = query.eq('nutritionist_addresses.state', filters.state)
+        // se preferir por nome completo do estado (quando sua UI envia o nome):
+        // query = query.ilike('nutritionist_addresses.state', `%${filters.state}%`)
       }
 
       if (filters.verifiedOnly) {
         query = query.eq('verification_status', 'aprovado')
       }
 
-      if (filters.specialty !== "Todas" && filters.specialty) {
+      if (filters.specialty && filters.specialty !== 'Todas') {
         query = query.eq('nutritionist_specialties.specialty_id', filters.specialty)
       }
 
       const { data, error } = await query
-
       if (error) throw error
 
       let filteredData: NutritionistProfile[] = (data as any) || []
+      filteredData = filteredData.filter(n => n.id && n.id !== 'null' && n.id !== 'undefined')
 
-      // remove ids ruins
-      filteredData = filteredData.filter((n) => n.id && n.id !== 'null' && n.id !== 'undefined')
-
-      if (filters.priceRange && filters.priceRange.label !== "Todos") {
-        filteredData = filteredData.filter((n) => {
+      if (filters.priceRange && filters.priceRange.label !== 'Todos') {
+        filteredData = filteredData.filter(n => {
           const minPrice = getMinPrice(n.nutritionist_services)
           return minPrice != null &&
             minPrice >= filters.priceRange!.min &&
@@ -118,9 +127,9 @@ export function useRealtimeNutritionists(filters: UseRealtimeNutritionistsProps 
       }
 
       if (filters.onlineOnly) {
-        filteredData = filteredData.filter((n) =>
-          n.nutritionist_services?.some((s: any) => s.online_available
-          ) || n.online_available
+        filteredData = filteredData.filter(n =>
+          n.nutritionist_services?.some((s: any) => s.online_available) ||
+          n.online_available
         )
       }
 
@@ -160,6 +169,7 @@ export function useRealtimeNutritionists(filters: UseRealtimeNutritionistsProps 
     filters.sortBy,
     filters.specialty
   ])
+
 
   // mantém o ref apontando para a versão atual do loader
   useEffect(() => {

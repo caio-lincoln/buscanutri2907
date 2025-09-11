@@ -7,7 +7,7 @@ import { Suspense } from 'react'
 import Script from 'next/script'
 import MetaPixelRouteChange from './MetaPixelRouteChange'
 
-const inter = Inter({ subsets: ['latin'] })
+const inter = Inter({ subsets: [ 'latin' ] })
 
 export const metadata: Metadata = {
   title: 'Busca Nutri - Conectando Nutricionistas, Transformando Vidas',
@@ -16,7 +16,7 @@ export const metadata: Metadata = {
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const pixelId = process.env['NEXT_PUBLIC_FB_PIXEL_ID']
+  const pixelId = process.env[ 'NEXT_PUBLIC_FB_PIXEL_ID' ]
 
   return (
     <html lang="pt-BR">
@@ -50,7 +50,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </noscript>
 
             {/* Dispara PageView a cada navegação */}
-            <MetaPixelRouteChange />
+            <Suspense fallback={<div>Carregando...</div>}>
+              <MetaPixelRouteChange />
+            </Suspense>
           </>
         )}
 

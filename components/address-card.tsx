@@ -10,6 +10,7 @@ import { Label } from "./ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"
 import { Input } from "./ui/input"
 import { Checkbox } from "./ui/checkbox"
+import { getStates, getCitiesByUF, type BRState, type BRCity } from '../lib/geo'
 
 type Props = {
   userType: UserType;
@@ -27,7 +28,52 @@ export function AddressCard({ userType, open }: Props) {
     status: 'ativo',
     is_primary: false,
   })
+
+  const [ states, setStates ] = useState<BRState[]>([])
+  const [ cities, setCities ] = useState<BRCity[]>([])
+  const [ loadingStates, setLoadingStates ] = useState(false)
+  const [ loadingCities, setLoadingCities ] = useState(false)
   const [ savingAddress, setSavingAddress ] = useState(false)
+
+  async function loadStatesOnce() {
+    setLoadingStates(true)
+    try {
+      const s = await getStates()
+      setStates(s)
+    } finally {
+      setLoadingStates(false)
+    }
+  }
+
+  async function loadCitiesForUF(uf: string) {
+    setLoadingCities(true)
+    try {
+      const c = await getCitiesByUF(uf)
+      setCities(c)
+    } finally {
+      setLoadingCities(false)
+    }
+  }
+
+  async function fillByCEP(cep: string) {
+    const clean = cep.replace(/\D/g, '')
+    if (clean.length !== 8) return
+    const r = await fetch(`https://viacep.com.br/ws/${clean}/json/`)
+    const j = await r.json()
+    if (j.erro) return
+
+    const uf = j.uf?.toUpperCase() || ''
+    setAddressFormData(prev => ({
+      ...prev,
+      cep,
+      state: uf,
+      city: j.localidade || prev.city,
+      neighborhood: j.bairro || prev.neighborhood,
+      street: j.logradouro || prev.street,
+    }))
+    if (uf) await loadCitiesForUF(uf)
+  }
+
 
   const loadAddresses = async () => {
     if (userType !== 'nutricionista' || !nutritionistProfile?.id) return
@@ -175,6 +221,21 @@ export function AddressCard({ userType, open }: Props) {
       loadAddresses()
     }
   }, [ open, userType, nutritionistProfile?.id ])
+
+  useEffect(() => {
+    if (open && userType === 'nutricionista') {
+      loadStatesOnce()
+    }
+  }, [ open, userType ])
+
+  // Se estiver editando e já houver estado, carrega cidades
+  useEffect(() => {
+    if (showAddressForm && addressFormData.state) {
+      loadCitiesForUF(addressFormData.state as string)
+    } else {
+      setCities([])
+    }
+  }, [ showAddressForm, addressFormData.state ])
 
   return (
     <Card className="mt-6">
@@ -331,29 +392,77 @@ export function AddressCard({ userType, open }: Props) {
                       <Label htmlFor="cep">CEP</Label>
                       <Input
                         id="cep"
+                        onBlur={(event) => {
+                          fillByCEP(event.target.value)
+                        }}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter') {
+                            fillByCEP(event.target.value)
+                          }
+                        }}
                         value={addressFormData.cep || ''}
-                        onChange={(e) => setAddressFormData(prev => ({ ...prev, cep: e.target.value }))}
+                        onChange={(e) => {
+                          if (!e.target.value.length) {
+                            setAddressFormData((prev) => ({ ...prev, city: '', state: '', cep: '' }))
+                            return
+                          }
+                          setAddressFormData(prev => ({ ...prev, cep: e.target.value }))
+                        }}
                         placeholder="00000-000"
                       />
                     </div>
                     <div>
-                      <Label htmlFor="state">Estado</Label>
-                      <Input
-                        id="state"
-                        value={addressFormData.state || ''}
-                        onChange={(e) => setAddressFormData(prev => ({ ...prev, state: e.target.value }))}
-                      />
+                      <Label htmlFor="state">Estado *</Label>
+                      <Select
+                        value={(addressFormData.state as string) || ''}
+                        onValueChange={async (uf: string) => {
+                          setAddressFormData(prev => ({ ...prev, state: uf, city: '' }))
+                          await loadCitiesForUF(uf)
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder={loadingStates ? 'Carregando...' : 'Selecione o estado'} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {states.map(s => (
+                            <SelectItem key={s.uf} value={s.uf}>
+                              {s.name} ({s.uf})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="city">Cidade</Label>
-                      <Input
-                        id="city"
-                        value={addressFormData.city || ''}
-                        onChange={(e) => setAddressFormData(prev => ({ ...prev, city: e.target.value }))}
-                      />
+                      <Label htmlFor="city">Cidade *</Label>
+                      <Select
+                        disabled={!addressFormData.state || loadingCities}
+                        value={(addressFormData.city as string) || ''}
+                        onValueChange={(cityName: string) =>
+                          setAddressFormData(prev => ({ ...prev, city: cityName }))
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue
+                            placeholder={
+                              !addressFormData.state
+                                ? 'Selecione o estado antes'
+                                : loadingCities
+                                  ? 'Carregando...'
+                                  : 'Selecione a cidade'
+                            }
+                          />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {cities.map(c => (
+                            <SelectItem key={c.ibge_id} value={c.name}>
+                              {c.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div>
                       <Label htmlFor="neighborhood">Bairro</Label>

@@ -116,6 +116,7 @@ const nextConfig = {
     ]
   },
   experimental: {
+    missingSuspenseWithCSRBailout: false,
     staleTimes: {
       dynamic: 30,
       static: 180,

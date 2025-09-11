@@ -39,6 +39,31 @@ const PROFILE_TABLE_BY_TYPE: Record<Exclude<UserType, 'admin'>, string> = {
   empresa: 'company_profiles',
 }
 
+const NUTRI_PUBLIC_COLS = `
+  id,user_id,full_name,crn,phone,bio,profile_image_url,verification_status,trust_seal,
+  rating,total_reviews,consultation_price,online_consultation_available,created_at,updated_at,
+  specialties,consultation_fee,experience_years,location,education,languages,home_visit,crn_number,
+  birth_date,rg,cpf,rg_document_url,cpf_document_url,gender,crn_document_url,specialties_documents,
+  academic_background,experience,curriculum_pdf_url,lattes_url,services_offered,service_locations,
+  availability,price_range,certifications,website,instagram,linkedin,online_consultation,achievements,
+  available_times,total_views,unique_views,last_view_at,is_verified,cancellation_policy,
+  default_consultation_duration,identity_document_url,min_time_between_appointments,online_only_consultation,
+  instagram_username,linkedin_username,facebook_username,youtube_channel,tiktok_username,website_url,
+  service_consultation_price,service_followup_price,service_meal_plan_price,service_group_consultation,
+  service_online_available,service_home_visit,monday_hours,tuesday_hours,wednesday_hours,thursday_hours,
+  friday_hours,saturday_hours,sunday_hours,break_time,accepts_insurance,emergency_consultation,
+  consultation_languages,payment_methods,max_patients_per_day,accepts_corporate_plans,
+  in_person_consultation_price,online_consultation_price,in_person_followup_price,online_followup_price,
+  pricing_strategy,in_person_pricing_type,online_pricing_type,in_person_combined_price,online_combined_price,
+  cover_image_url,aceita_cupons,address,is_listed,verified_at
+`.replace(/\s+/g, '')
+
+const SELECT_BY_TYPE = {
+  nutricionista: NUTRI_PUBLIC_COLS,
+  paciente: '*',  // ajuste depois se precisar
+  empresa: '*',   // idem
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [ user, setUser ] = useState<User | null>(null)
   const [ userProfile, setUserProfile ] = useState<UserProfile | null>(null)
@@ -145,7 +170,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (table) {
           const { data: spec } = await supabase
             .from(table)
-            .select('*')
+            .select(SELECT_BY_TYPE[utype as 'nutricionista'|'paciente'|'empresa'])
             .eq('user_id', row.id)
             .maybeSingle()
   
