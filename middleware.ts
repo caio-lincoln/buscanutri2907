@@ -10,8 +10,8 @@ export async function middleware(req: NextRequest) {
   }
 
   const supabase = createServerClient(
-    process.env['NEXT_PUBLIC_SUPABASE_URL']!,
-    process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!,
+    process.env[ 'NEXT_PUBLIC_SUPABASE_URL' ]!,
+    process.env[ 'NEXT_PUBLIC_SUPABASE_ANON_KEY' ]!,
     {
       cookies: {
         get(name) {
@@ -27,8 +27,8 @@ export async function middleware(req: NextRequest) {
     }
   )
 
-  const { data } = await supabase.auth.getSession()
-  const user = data?.session?.user
+  const { data } = await supabase.auth.getUser()
+  const user = data?.user
 
   if (!user) {
     const url = new URL('/login', req.url)
@@ -48,5 +48,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/dashboard/admin/:path*'],
+  matcher: [ '/dashboard/admin/:path*' ],
 }
