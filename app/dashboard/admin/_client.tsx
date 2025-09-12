@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect, useCallback } from 'react'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {
@@ -40,14 +40,51 @@ import { getAllUsers } from '../../../lib/admin-data-service'
 import { User } from '@supabase/supabase-js'
 
 type Props = {
-  initialUser: Pick<User, 'id' | 'email' | 'user_metadata' | 'app_metadata'> 
+  initialUser: Pick<User, 'id' | 'email' | 'user_metadata' | 'app_metadata'>
 }
+
+const TABS = [
+  'overview',
+  'usuarios',
+  'vagas',
+  'relatorios',
+  'financeiro',
+  'analytics',
+  'moderacao',
+  'sistema',
+  'configuracoes',
+  'insignias',
+  'notificacoes',
+] as const
+
+export type Tab = typeof TABS[ number ];
+const isTab = (v: unknown): v is Tab =>
+  typeof v === 'string' && (TABS as readonly string[]).includes(v as string);
 
 export default function AdminDashboard({ initialUser }: Props) {
   const [ activeTab, setActiveTab ] = useState('overview') // Default to overview
   const router = useRouter()
   const { loading, signOut } = useAuth()
   const [ totalUsers, setTotalUsers ] = useState(0)
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const setTab = useCallback(
+    (tab: Tab) => {
+      setActiveTab(tab);
+      const sp = new URLSearchParams(searchParams);
+      sp.set('activeTab', tab);
+      router.replace(`${pathname}?${sp.toString()}`, { scroll: false });
+    },
+    [ router, pathname, searchParams ]
+  );
+
+  useEffect(() => {
+    const param = searchParams.get('activeTab');
+    if (isTab(param) && param !== activeTab) {
+      setActiveTab(param);
+    }
+  }, [ searchParams, activeTab ]);
 
   // Hook para estatísticas dinâmicas do dashboard
   const { stats: dashboardStats } = useDashboardStats({
@@ -109,7 +146,7 @@ export default function AdminDashboard({ initialUser }: Props) {
       userName="Administrador"
       menuItems={menuItems}
       activeItem={activeTab}
-      onItemClick={setActiveTab}
+      onItemClick={setTab}
       onSignOut={handleSignOut}
     >
       <div className="space-y-8">

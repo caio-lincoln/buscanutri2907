@@ -114,7 +114,7 @@ export async function getCompletedConsultationsForRating(
           .from('consultation_reviews')
           .select('id')
           .eq('consultation_id', consultation.id)
-          .single()
+          .maybeSingle()
 
         return rating ? null : consultation
       })

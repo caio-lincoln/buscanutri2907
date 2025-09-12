@@ -6,8 +6,8 @@ export default async function AdminPage() {
 
   const supabase = await createClient()
 
-  const { data, error } = await supabase.auth.getUser()
-  const user = data?.user ?? null
+  const { data, error } = await supabase.auth.getSession()
+  const user = data?.session?.user ?? null
 
   // Sem sessão → manda pro login (com next param opcional)
   if (!user) {

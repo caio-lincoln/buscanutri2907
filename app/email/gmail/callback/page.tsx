@@ -5,46 +5,27 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { Mail, CheckCircle, XCircle, Loader2 } from 'lucide-react'
 
 export default function GmailCallbackPage() {
-  const router = useRouter()
   const searchParams = useSearchParams()
-  const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading')
-  const [message, setMessage] = useState('Processando autenticação do Gmail...')
+  const router = useRouter()
 
+  const [ status, setStatus ] = useState<'loading' | 'success' | 'error'>('loading')
+  const [ message, setMessage ] = useState('Processando autenticação do Gmail...')
   useEffect(() => {
-    const code = searchParams?.get('code')
-    const error = searchParams?.get('error')
-
-    if (error) {
-      setStatus('error')
-      setMessage(`Erro na autenticação: ${error}`)
-      // Redireciona após 3 segundos em caso de erro
-      setTimeout(() => {
-        router.push('/dashboard/admin?error=gmail_auth_failed')
-      }, 3000)
-      return
-    }
-
-    if (!code) {
-      setStatus('error')
-      setMessage('Código de autorização não encontrado')
-      // Redireciona após 3 segundos em caso de erro
-      setTimeout(() => {
-        router.push('/dashboard/admin?error=no_code')
-      }, 3000)
-      return
-    }
-
-    // A API já foi criada e vai processar o código automaticamente
-    // Apenas aguardamos um tempo para mostrar a animação e depois redirecionamos
-    setTimeout(() => {
-      setStatus('success')
-      setMessage('Autenticação concluída com sucesso!')
-      
-      // Redireciona após 2 segundos em caso de sucesso
-      setTimeout(() => {
+    (async () => {
+      const code = searchParams?.get('code')
+      const response = await fetch('/api/admin/gmail/callback?code=' + code)
+      const json = await response.json()
+      if (json.connected) {
+        setStatus('success')
+        setMessage('Conta conectada com sucesso')
         router.push('/dashboard/admin?success=gmail_connected')
-      }, 2000)
-    }, 2000)
+      } else {
+        setStatus('error')
+        setMessage('Erro ao conectar a conta')
+        router.push('/dashboard/admin?error=' + json.error)
+      }
+
+    })()
   }, [])
 
   return (
@@ -69,11 +50,11 @@ export default function GmailCallbackPage() {
                 </div>
               )}
             </div>
-            
+
             <h2 className="mt-2 text-2xl font-bold text-gray-900">
               Autenticação do Gmail
             </h2>
-            
+
             <p className="mt-2 text-sm text-gray-600">
               {message}
             </p>
