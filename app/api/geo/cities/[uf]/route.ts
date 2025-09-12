@@ -8,7 +8,8 @@ export async function GET(
   _req: Request,
   ctx: { params: { uf: string } }
 ) {
-  const uf = (ctx.params.uf || '').toUpperCase()
+  const paramsAwaited = await ctx.params
+  const uf = (paramsAwaited.uf || '').toUpperCase()
   if (!/^[A-Z]{2}$/.test(uf)) {
     return NextResponse.json({ cities: [] }, { status: 200 })
   }
@@ -16,7 +17,7 @@ export async function GET(
   try {
     const r = await fetch(
       `https://servicodados.ibge.gov.br/api/v1/localidades/estados/${uf}/municipios?orderBy=nome`,
-      { next: { revalidate } }
+
     )
     if (!r.ok) throw new Error('IBGE error')
     const data = (await r.json()) as IBGECity[]

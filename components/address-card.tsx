@@ -223,7 +223,7 @@ export function AddressCard({ userType, open }: Props) {
   }, [ open, userType, nutritionistProfile?.id ])
 
   useEffect(() => {
-    if (open && userType === 'nutricionista') {
+    if (open) {
       loadStatesOnce()
     }
   }, [ open, userType ])

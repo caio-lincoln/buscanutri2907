@@ -1708,7 +1708,7 @@ export function UserProfileModal({
                     />
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1  gap-4">
                     <div>
                       <Label htmlFor="experience_years">
                         Anos de Experiência
@@ -1723,7 +1723,7 @@ export function UserProfileModal({
                         placeholder="Ex: 5"
                       />
                     </div>
-                    <div>
+                    {/* <div>
                       <Label htmlFor="consultation_price">
                         Preço da Consulta (R$)
                       </Label>
@@ -1736,7 +1736,7 @@ export function UserProfileModal({
                         onChange={handleChange}
                         placeholder="Ex: 150.00"
                       />
-                    </div>
+                    </div> */}
                   </div>
 
                   <div className="space-y-3">
@@ -1960,6 +1960,77 @@ export function UserProfileModal({
                                 'Salvar preferências'
                               )}
                             </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+
+                      <Card className="mt-6">
+                        <CardHeader>
+                          <CardTitle>Preços dos Serviços</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <p className="text-sm text-muted-foreground">
+                            Configure os preços dos seus serviços para que os pacientes possam visualizar os valores.
+                          </p>
+
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                              <Label htmlFor="service_consultation_price">
+                                Preço da Consulta (R$)
+                              </Label>
+                              <Input
+                                id="service_consultation_price"
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={formData?.service_consultation_price || ''}
+                                onChange={(e) => {
+                                  setFormData({
+                                    ...formData,
+                                    service_consultation_price: e.target.value,
+                                    consultation_price: e.target.value,
+                                  })
+                                }}
+                                placeholder="Ex: 150.00"
+                              />
+                            </div>
+
+                            <div>
+                              <Label htmlFor="service_followup_price">
+                                Preço do Retorno (R$)
+                              </Label>
+                              <Input
+                                id="service_followup_price"
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={formData?.service_followup_price || ''}
+                                onChange={handleChange}
+                                placeholder="Ex: 80.00"
+                              />
+                            </div>
+
+                            <div>
+                              <Label htmlFor="service_meal_plan_price">
+                                Preço do Plano Alimentar (R$)
+                              </Label>
+                              <Input
+                                id="service_meal_plan_price"
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={formData?.service_meal_plan_price || ''}
+                                onChange={handleChange}
+                                placeholder="Ex: 120.00"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="text-xs text-muted-foreground">
+                            <p>• Os preços configurados aqui serão exibidos para os pacientes durante o agendamento</p>
+                            <p>• Você pode deixar campos em branco para serviços que não oferece</p>
+                            <p>• Os valores podem ser alterados a qualquer momento</p>
                           </div>
                         </CardContent>
                       </Card>
