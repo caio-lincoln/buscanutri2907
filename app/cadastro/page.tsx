@@ -54,7 +54,6 @@ import {
 } from '@/lib/address-utils'
 import { useAuth } from '../../contexts/auth-context'
 
-// Tipos para validação de senha
 type PasswordStrength = 'weak' | 'medium' | 'strong'
 
 interface PasswordValidation {
@@ -70,7 +69,6 @@ interface PasswordValidation {
   }
 }
 
-// Tipos para documentos de nutricionistas
 interface Certificate {
   id?: string
   title: string
@@ -126,7 +124,6 @@ export default function CadastroPage() {
     },
   })
 
-  // Estados para validação de senha
   const [ password, setPassword ] = useState('')
   const [ passwordValidation, setPasswordValidation ] =
     useState<PasswordValidation>({
@@ -141,16 +138,6 @@ export default function CadastroPage() {
         special: false,
       },
     })
-
-
-
-  // useEffect(() => {
-  //   if (!authLoading && user) {
-  //     router.replace('/')
-  //   }
-  // }, [ user, authLoading ])
-
-  // Estados para validação de CRN
   const [ crnValue, setCrnValue ] = useState('')
   const [ crnValidation, setCrnValidation ] = useState<{
     status: 'idle' | 'validating' | 'valid' | 'invalid'
@@ -160,15 +147,12 @@ export default function CadastroPage() {
     message: '',
   })
 
-  // Estados para documentos de nutricionistas
   const [ crnProofFile, setCrnProofFile ] = useState<File | null>(null)
   const [ certificates, setCertificates ] = useState<Certificate[]>([])
   const [ documentsUploading, setDocumentsUploading ] = useState(false)
 
-  // Estado para especialidades
   const [ selectedSpecialties, setSelectedSpecialties ] = useState<string[]>([])
 
-  // Função para validar força da senha
   const validatePasswordStrength = (password: string): PasswordValidation => {
     const requirements = {
       length: password.length >= 8,
@@ -218,7 +202,6 @@ export default function CadastroPage() {
   }>({ status: 'idle', message: '' })
 
   const router = useRouter()
-
 
   // Função para upload de documentos
   const uploadNutritionistDocuments = async (
@@ -665,7 +648,7 @@ export default function CadastroPage() {
       // Aguardar antes de redirecionar
       setTimeout(() => {
         if (userType === 'nutricionista') {
-          router.push('/dashboard/nutricionistas')
+          router.push('/dashboard/nutricionistas?activeTab=assinatura')
         } else if (userType === 'paciente') {
           router.push('/dashboard/paciente')
         } else if (userType === 'empresa') {
