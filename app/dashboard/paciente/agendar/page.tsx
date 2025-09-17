@@ -180,7 +180,6 @@ export default function AgendarPage() {
       }
 
       const data = await response.json()
-      console.log("🚀 ~ loadAvailableSlots ~ data:", data)
       setAvailableSlots(data.availableSlots || [])
     } catch (error) {
       console.error('Erro ao carregar horários:', error)
@@ -301,7 +300,6 @@ export default function AgendarPage() {
     acc[ slot.date ].push(slot)
     return acc
   }, {} as Record<string, AvailableSlot[]>)
-  console.log("🚀 ~ AgendarPage ~ slotsByDate:", slotsByDate)
 
   if (loading && step === 'search') {
     return (
