@@ -1,23 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
 import { withErrorHandling } from '@/lib/api-middleware'
 import { validateAuth } from '@/src/lib/middleware/error-handler'
-import { addDays, format, parseISO, isAfter, isBefore, addMinutes } from 'date-fns'
+import { addDays, parseISO } from 'date-fns'
 import { z } from 'zod'
 import { createClient } from '../../../../lib/supabase/server'
 
-// Schema de validação
 const availableTimesQuerySchema = z.object({
   nutritionistId: z.string().uuid('ID do nutricionista inválido'),
   startDate: z.string().optional(),
   endDate: z.string().optional()
 })
 
-// GET /api/teleconsulta/horarios-disponiveis - Buscar horários disponíveis
 export const GET = withErrorHandling(async (request: NextRequest) => {
   const supabase = await createClient()
 
-  // Verificar autenticação
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   validateAuth(authError ? null : user?.id || null)
 
@@ -28,25 +24,21 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
     endDate: searchParams.get('endDate')
   }
 
-  // Validar parâmetros de query
   const { nutritionistId, startDate, endDate } = availableTimesQuerySchema.parse(queryParams)
 
-  // Definir datas padrão se não fornecidas
   const start = startDate ? parseISO(startDate) : new Date()
   const end = endDate ? parseISO(endDate) : addDays(new Date(), 14)
 
-  // Buscar perfil do nutricionista
   const { data: nutritionist, error: nutritionistError } = await supabase
-    .from('nutritionist_profiles')
-    .select('id, user_id')
-    .eq('id', nutritionistId)
-    .single()
+  .from('nutritionist_profiles')
+  .select('id, user_id, default_consultation_duration, min_time_between_appointments')
+  .eq('id', nutritionistId)
+  .single()
 
   if (nutritionistError || !nutritionist) {
     throw new Error('Nutricionista não encontrado')
   }
 
-  // Buscar disponibilidade do nutricionista
   const { data: availability, error: availabilityError } = await supabase
     .from('nutritionist_availability')
     .select('*')
@@ -57,7 +49,6 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
     throw new Error('Erro ao buscar disponibilidade')
   }
 
-  // Buscar teleconsultas já agendadas no período
   const { data: bookedSessions, error: sessionsError } = await supabase
     .from('teleconsulta_sessions')
     .select('scheduled_at, duration_minutes')
@@ -74,7 +65,9 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
     availability || [],
     bookedSessions || [],
     start,
-    end
+    end,
+    nutritionist.default_consultation_duration || 60,
+    nutritionist.min_time_between_appointments ?? 0
   )
 
   return NextResponse.json({ availableSlots })
@@ -88,48 +81,58 @@ function getField<T = any>(obj: any, keys: string[], def?: T): T {
   return def as T;
 }
 function normWeekday(v: number) {
-  if (v >= 1 && v <= 7) return v % 7;
+  if (v >= 1 && v <= 7) return v % 7; 
   if (v >= 0 && v <= 6) return v;
   throw new Error(`weekday inválido: ${v}`);
+}
+const pad2 = (n: number) => n.toString().padStart(2, '0');
+const ymdLocal = (d: Date) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+const hmLocal = (d: Date) => `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+const gcd = (a: number, b: number) => {
+  a = Math.abs(a); b = Math.abs(b);
+  while (b) { const t = b; b = a % b; a = t; }
+  return a || 1;
+};
+function overlaps(aStart: number, aEnd: number, bStart: number, bEnd: number) {
+  return Math.max(aStart, bStart) < Math.min(aEnd, bEnd);
 }
 
 export function generateAvailableSlots(
   availabilityRows: RawAvailability[],
   bookedSessions: Booked[],
   start: Date,
-  end: Date
+  end: Date,
+  defaultDurationMinutes: number,   
+  minGapMinutes: number            
 ) {
   const availability = (availabilityRows ?? [])
     .filter(r => getField(r, [ 'is_available', 'available' ], true))
     .map(r => {
       const weekdayRaw = getField<number>(r, [ 'weekday', 'day_of_week', 'week_day', 'day' ]);
-      const startStr = getField<string>(r, [ 'start_time', 'start', 'from', 'opens_at' ]);
-      const endStr = getField<string>(r, [ 'end_time', 'end', 'to', 'closes_at' ]);
-      const dur = getField<number>(r, [ 'slot_duration_minutes', 'slot_duration', 'duration_minutes' ], 60);
+      const startStr = getField<string>(r, [ 'start_time', 'start', 'from', 'opens_at' ]); // "HH:mm"
+      const endStr = getField<string>(r, [ 'end_time', 'end', 'to', 'closes_at' ]);      // "HH:mm"
+      const dur = getField<number>(r, [ 'slot_duration_minutes', 'slot_duration', 'duration_minutes' ], defaultDurationMinutes);
       if (weekdayRaw == null || !startStr || !endStr) return null;
       return {
         weekday: normWeekday(Number(weekdayRaw)),
         start_time: startStr,
         end_time: endStr,
-        slot_duration_minutes: Number(dur),
+        slot_duration_minutes: Number(dur) || defaultDurationMinutes || 60,
       };
     })
     .filter(Boolean) as { weekday: number; start_time: string; end_time: string; slot_duration_minutes: number; }[];
 
+  const gapMs = (Number(minGapMinutes) || 0) * 60_000;
   const bookedRanges = (bookedSessions ?? []).map(b => {
     const s = new Date(b.scheduled_at).getTime();
     const e = s + b.duration_minutes * 60_000;
-    return [ s, e ] as const;
+    return [ s, e + gapMs ] as const; 
   });
-
-  const pad2 = (n: number) => n.toString().padStart(2, '0');
-  const ymdLocal = (d: Date) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
-  const hmLocal = (d: Date) => `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
 
   const slots: Array<{ datetime: string; date: string; time: string; duration: number; available: boolean }> = [];
 
-  const cursor = new Date(start.getFullYear(), start.getMonth(), start.getDate());       
-  const endLocal = new Date(end.getFullYear(), end.getMonth(), end.getDate());          
+  const cursor = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+  const endLocal = new Date(end.getFullYear(), end.getMonth(), end.getDate());
 
   while (cursor <= endLocal) {
     const wd = cursor.getDay(); 
@@ -138,7 +141,12 @@ export function generateAvailableSlots(
     for (const rule of rules) {
       const [ sh, sm ] = rule.start_time.split(':').map(Number);
       const [ eh, em ] = rule.end_time.split(':').map(Number);
-      const slotMs = rule.slot_duration_minutes * 60_000;
+
+      const durationMin = rule.slot_duration_minutes;
+      const durationMs = durationMin * 60_000;
+
+      const stepMin = gcd(durationMin, minGapMinutes || durationMin);
+      const stepMs = stepMin * 60_000;
 
       let slotStart = new Date(
         cursor.getFullYear(),
@@ -154,10 +162,10 @@ export function generateAvailableSlots(
         eh, em, 0, 0
       ).getTime();
 
-      while (slotStart + slotMs <= dayEnd) {
-        const slotEnd = slotStart + slotMs;
+      while (slotStart + durationMs <= dayEnd) {
+        const slotEnd = slotStart + durationMs;
 
-        const busy = bookedRanges.some(([ bs, be ]) => Math.max(slotStart, bs) < Math.min(slotEnd, be));
+        const collides = bookedRanges.some(([ bs, be ]) => overlaps(slotStart, slotEnd, bs, be));
         const past = slotStart < Date.now();
 
         const dt = new Date(slotStart);
@@ -165,11 +173,11 @@ export function generateAvailableSlots(
           datetime: dt.toISOString(), 
           date: ymdLocal(dt),         
           time: hmLocal(dt),          
-          duration: rule.slot_duration_minutes,
-          available: !busy && !past,
+          duration: durationMin,
+          available: !collides && !past,
         });
 
-        slotStart += slotMs;
+        slotStart += stepMs;
       }
     }
 
@@ -178,4 +186,3 @@ export function generateAvailableSlots(
 
   return slots.sort((a, b) => a.datetime.localeCompare(b.datetime));
 }
-
