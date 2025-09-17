@@ -120,9 +120,10 @@ export default function TeleconsultasPage() {
           )
         `)
         .eq('patient_id', patientProfile.id)
-        .order('scheduled_at', { ascending: true })
+        .order('scheduled_at', { ascending: false })
 
       const { status, dateFrom, dateTo, priceMin, priceMax } = debouncedServerFilters
+      console.log("🚀 ~ TeleconsultasPage ~ status:", status)
 
       if (status !== 'all') q = q.eq('status', status)
       if (dateFrom) q = q.gte('scheduled_at', startOfDay(dateFrom).toISOString())
@@ -131,6 +132,7 @@ export default function TeleconsultasPage() {
       if (priceMax) q = q.lte('price', Number(priceMax))
 
       const { data, error } = await q
+      console.log("🚀 ~ TeleconsultasPage ~ data:", data)
       if (error) throw error
 
       setSessions((data as TeleconsultaSession[]) ?? [])
@@ -182,12 +184,14 @@ export default function TeleconsultasPage() {
     s.nutritionist.full_name.toLowerCase().includes(filters.search.toLowerCase())
   )
 
+  const inProgressSessions = textFiltered.filter(s => s.status === 'in_progress')
+
   const upcomingSessions = textFiltered.filter(
     s => s.status === 'scheduled' && parseISO(s.scheduled_at) > new Date()
-  )
+  ).concat(inProgressSessions)
 
   const pastSessions = textFiltered.filter(
-    s => s.status === 'completed' ||
+    s => s.status === 'completed' || s.status === 'cancelled' ||
       (s.status === 'scheduled' && parseISO(s.scheduled_at) <= new Date())
   )
 

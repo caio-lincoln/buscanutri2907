@@ -68,7 +68,6 @@ export async function generateMetadata({ params }: PageProps) {
 export default async function NutritionistProfilePage({ params }: PageProps) {
   const { id } = await params
   const nutritionist = await getNutritionistById(id)
-  console.log("🚀 ~ NutritionistProfilePage ~ nutritionist:", nutritionist)
 
   if (!nutritionist) {
     notFound()

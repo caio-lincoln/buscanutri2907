@@ -120,7 +120,7 @@ export default function NutricionistaTeleconsultasTab() {
           )
         `)
         .eq('nutritionist_id', nutritionistProfile.id)
-        .order('scheduled_at', { ascending: true })
+        .order('scheduled_at', { ascending: false })
 
       const { status, dateFrom, dateTo, priceMin, priceMax } = debouncedServerFilters
 
