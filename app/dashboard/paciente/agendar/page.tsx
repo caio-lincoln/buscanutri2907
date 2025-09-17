@@ -180,6 +180,7 @@ export default function AgendarPage() {
       }
 
       const data = await response.json()
+      console.log("🚀 ~ loadAvailableSlots ~ data:", data)
       setAvailableSlots(data.availableSlots || [])
     } catch (error) {
       console.error('Erro ao carregar horários:', error)
@@ -227,11 +228,11 @@ export default function AgendarPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          patient_id: patientProfile?.id, 
-          patient_email: patientProfile?.email ?? user?.email, 
+          patient_id: patientProfile?.id,
+          patient_email: patientProfile?.email ?? user?.email,
           nutritionist_id: selectedNutritionist.id,
           nutritionist_name: selectedNutritionist.full_name,
-          scheduled_for: selectedSlot.datetime,      
+          scheduled_for: selectedSlot.datetime,
           duration_minutes: selectedSlot.duration,
           price_brl: selectedNutritionist.consultation_price,
           teleconsulta_session_id: sessionData.session.id
@@ -255,7 +256,6 @@ export default function AgendarPage() {
       setBooking(false)
     }
   }
-
 
   // const handleBooking = async () => {
   //   if (!selectedSlot || !profile || !selectedNutritionist) {
@@ -301,6 +301,7 @@ export default function AgendarPage() {
     acc[ slot.date ].push(slot)
     return acc
   }, {} as Record<string, AvailableSlot[]>)
+  console.log("🚀 ~ AgendarPage ~ slotsByDate:", slotsByDate)
 
   if (loading && step === 'search') {
     return (
