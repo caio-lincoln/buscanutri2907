@@ -121,9 +121,9 @@ export default function NutritionistProfilePageClient({
 }: NutritionistProfileClientProps) {
   const [ mobileMenuOpen, setMobileMenuOpen ] = useState(false)
   const { viewStats, recordView } = useRealtimeProfileViews(nutritionist.id, {
-    totalViews: nutritionist.total_views || 0,
-    uniqueViews: nutritionist.unique_views || 0,
-    lastViewAt: nutritionist.last_view_at || null,
+    totalViews: nutritionist.totalViews || 0,
+    uniqueViews: nutritionist.uniqueViews || 0,
+    lastViewAt: nutritionist.lastViewAt || null,
   })
   const { user, signOut } = useAuth()
 
@@ -143,7 +143,7 @@ export default function NutritionistProfilePageClient({
   const formattedRating = nutritionist.rating?.toFixed(1) || '0.0'
   const formattedReviews = nutritionist.total_reviews || 0
   const formattedExperience = nutritionist.experience_years || 0
-  const formattedPatients = 0 // Placeholder, pois não está diretamente na interface
+  const formattedPatients = 0 
   const formattedPrice = nutritionist.consultation_price || 0
   // Gerar variantes de imagem otimizadas
   const avatarVariants = generateImageVariants(

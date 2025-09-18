@@ -37,7 +37,7 @@ export function useRealtimeProfileViews(
         setViewStats({
           totalViews: stats.total_views,
           uniqueViews: stats.unique_views,
-          lastViewAt: stats.last_view_at,
+          lastViewAt: stats.last_view_at as string,
         })
       }
     } catch (error) {
@@ -55,7 +55,7 @@ export function useRealtimeProfileViews(
         setViewStats({
           totalViews: stats.total_views,
           uniqueViews: stats.unique_views,
-          lastViewAt: stats.last_view_at,
+          lastViewAt: stats.last_view_at || null,
         })
       }
     } catch (error) {
@@ -63,35 +63,29 @@ export function useRealtimeProfileViews(
     }
   }, [nutritionistId])
 
-  // Configurar realtime
   useEffect(() => {
     if (!nutritionistId) return
 
-    // Carregar estatísticas iniciais
     loadViewStats()
 
-    // Configurar canal realtime para escutar novas visualizações
     const realtimeChannel = supabase
       .channel(`profile_views_${nutritionistId}`)
       .on(
         'postgres_changes',
         {
-          event: 'INSERT',
+          event: 'UPDATE',
           schema: 'public',
-          table: 'profile_views',
-          filter: `nutritionist_id=eq.${nutritionistId}`,
+          table: 'nutritionist_profiles',
+          filter: `id=eq.${nutritionistId}`,
         },
         payload => {
-          console.log('Nova visualização registrada:', payload)
+          console.log("🚀 ~ useRealtimeProfileViews ~ payload:", payload)
           // Atualizar estatísticas quando uma nova visualização é inserida
           handleNewView()
         }
       )
       .subscribe(status => {
         if (status === 'SUBSCRIBED') {
-          console.log(
-            `✅ Inscrito em atualizações de visualização para nutricionista: ${nutritionistId}`
-          )
         } else if (status === 'CHANNEL_ERROR') {
           console.error(
             '❌ Erro ao inscrever-se em atualizações de visualização'
@@ -105,9 +99,7 @@ export function useRealtimeProfileViews(
     return () => {
       if (realtimeChannel) {
         realtimeChannel.unsubscribe()
-        console.log(
-          `🔌 Desconectado das atualizações de visualização para nutricionista: ${nutritionistId}`
-        )
+        
       }
     }
   }, [nutritionistId, loadViewStats, handleNewView, supabase])
