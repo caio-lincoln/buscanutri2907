@@ -1078,7 +1078,7 @@ export default function Home({ initialStats }: Props) {
                 <ul className="space-y-3 text-sm">
                   <li>
                     <Link
-                      href="/ajuda"
+                      href="/central-ajuda"
                       className="text-white/70 hover:text-[#4AB0D9] transition-colors"
                     >
                       Central de Ajuda

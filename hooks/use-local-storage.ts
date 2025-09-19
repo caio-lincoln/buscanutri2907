@@ -1,11 +1,6 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-<<<<<<< HEAD
-import { useStorage } from '@/lib/storage/index'
-=======
-// import { useStorage } from '@/lib/storage'
->>>>>>> d67201e340a0a040942bfb85ff0fb70e9c3b5b55
 
 // export function useLocalStorage<T>(
 //   key: string,
