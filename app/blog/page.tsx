@@ -28,12 +28,12 @@ import {
 import { getAllBlogPosts, blogCategories, type BlogPost } from '@/lib/blog-data'
 
 export default function BlogPage() {
-  const [ allBlogPosts, setAllBlogPosts ] = useState<BlogPost[]>([])
-  const [ selectedCategory, setSelectedCategory ] = useState('Todos')
-  const [ searchTerm, setSearchTerm ] = useState('')
-  const [ sortBy, setSortBy ] = useState('recent')
-  const [ viewMode, setViewMode ] = useState<'grid' | 'list'>('grid')
-  const [ visiblePosts, setVisiblePosts ] = useState(6)
+  const [allBlogPosts, setAllBlogPosts] = useState<BlogPost[]>([])
+  const [selectedCategory, setSelectedCategory] = useState('Todos')
+  const [searchTerm, setSearchTerm] = useState('')
+  const [sortBy, setSortBy] = useState('recent')
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  const [visiblePosts, setVisiblePosts] = useState(6)
 
   useEffect(() => {
     const loadPosts = async () => {
@@ -84,12 +84,9 @@ export default function BlogPage() {
     })
 
     return filtered
-  }, [ allBlogPosts, selectedCategory, searchTerm, sortBy, getUpdatedViews ])
+  }, [allBlogPosts, selectedCategory, searchTerm, sortBy, getUpdatedViews])
 
-  const featuredPost = allBlogPosts.find(post => post.featured)
-  const regularPosts = filteredAndSortedPosts
-    .filter(post => !post.featured)
-    .slice(0, visiblePosts)
+  const displayedPosts = filteredAndSortedPosts.slice(0, visiblePosts)
 
   const loadMorePosts = () => {
     setVisiblePosts(prev => prev + 6)
@@ -152,7 +149,7 @@ export default function BlogPage() {
           <div className="flex flex-col lg:flex-row gap-6 items-center justify-between">
             {/* Categories */}
             <div className="flex flex-wrap gap-2">
-              {[ 'Todos', ...blogCategories ].map(category => (
+              {['Todos', ...blogCategories].map(category => (
                 <Button
                   key={category}
                   variant={
@@ -217,7 +214,7 @@ export default function BlogPage() {
 
           {/* Results Info */}
           <div className="mt-4 pt-4 border-t text-sm text-gray-600">
-            Mostrando {Math.min(regularPosts.length, visiblePosts)} de{' '}
+            Mostrando {Math.min(displayedPosts.length, visiblePosts)} de{' '}
             {filteredAndSortedPosts.length} artigos
             {searchTerm && (
               <span className="ml-2">
@@ -227,205 +224,115 @@ export default function BlogPage() {
           </div>
         </div>
 
-        {/* Featured Post */}
-        {featuredPost && selectedCategory === 'Todos' && !searchTerm && (
-          <div className="mb-16">
-            <div className="flex items-center gap-3 mb-8">
-              <div className="h-1 w-12 bg-[#4AB0D9] rounded"></div>
-              <h2 className="text-3xl font-bold text-[#1E1D40]">
-                Artigo em Destaque
-              </h2>
-            </div>
-
-            <Card className="overflow-hidden hover:shadow-2xl transition-all duration-300 border-0 shadow-lg">
-              <div className="lg:flex">
-                <div className="lg:w-1/2 relative">
-                  <Image
-                    src={featuredPost.image || '/placeholder.svg'}
-                    alt={featuredPost.title}
-                    width={500}
-                    height={300}
-                    className="w-full h-80 lg:h-full object-cover"
-                  />
-                  <div className="absolute top-4 left-4">
-                    <Badge className="bg-red-500 text-white">⭐ Destaque</Badge>
-                  </div>
-                </div>
-                <div className="lg:w-1/2 p-8 lg:p-12">
-                  <div className="flex items-center gap-3 mb-6">
-                    <Badge
-                      variant="secondary"
-                      className="bg-[#4AB0D9]/10 text-[#4AB0D9] px-3 py-1"
-                    >
-                      {featuredPost.category}
-                    </Badge>
-                    <Badge variant="outline" className="text-gray-600">
-                      {getUpdatedViews(featuredPost).toLocaleString()}{' '}
-                      visualizações
-                    </Badge>
-                  </div>
-
-                  <h3 className="text-3xl font-bold text-[#1E1D40] mb-4 leading-tight">
-                    {featuredPost.title}
-                  </h3>
-
-                  <p className="text-gray-600 mb-6 text-lg leading-relaxed">
-                    {featuredPost.excerpt}
-                  </p>
-
-                  <div className="flex items-center gap-6 text-sm text-gray-500 mb-8">
-                    <div className="flex items-center gap-2">
-                      <User className="h-4 w-4" />
-                      {featuredPost.author}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4" />
-                      {new Date(featuredPost.date).toLocaleDateString('pt-BR')}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4" />
-                      {featuredPost.readTime}
-                    </div>
-                  </div>
-
-                  <Link href={`/blog/${featuredPost.id}`}>
-                    <Button className="bg-[#4AB0D9] hover:bg-[#4AB0D9]/90 text-white px-8 py-3 rounded-full text-lg font-medium transition-all duration-200 hover:shadow-lg">
-                      Ler Artigo Completo
-                      <ArrowRight className="ml-2 h-5 w-5" />
-                    </Button>
-                  </Link>
-                </div>
-              </div>
-            </Card>
-          </div>
-        )}
-
         {/* Regular Posts Grid */}
         <div className="mb-16">
           <div className="flex items-center gap-3 mb-8">
             <div className="h-1 w-12 bg-[#4AB0D9] rounded"></div>
             <h2 className="text-3xl font-bold text-[#1E1D40]">
-              {selectedCategory === 'Todos'
-                ? 'Todos os Artigos'
-                : `Categoria: ${selectedCategory}`}
+              Todos os Artigos
             </h2>
           </div>
 
-          {regularPosts.length === 0 ? (
-            <div className="text-center py-16">
-              <div className="text-gray-400 mb-4">
-                <Search className="h-16 w-16 mx-auto" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-600 mb-2">
-                Nenhum artigo encontrado
-              </h3>
-              <p className="text-gray-500">
-                {searchTerm
-                  ? `Não encontramos artigos para "${searchTerm}"`
-                  : 'Não há artigos nesta categoria no momento'}
+          {displayedPosts.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-gray-600 text-lg">
+                Nenhum artigo encontrado com os filtros selecionados.
               </p>
             </div>
           ) : (
-            <div
-              className={
-                viewMode === 'grid'
-                  ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8'
-                  : 'space-y-6'
-              }
-            >
-              {regularPosts.map(post => (
-                <Card
-                  key={post.id}
-                  className={`overflow-hidden hover:shadow-xl transition-all duration-300 border-0 shadow-md group ${viewMode === 'list' ? 'flex' : ''
-                    }`}
-                >
-                  <Link href={`/blog/${post.id}`}>
-                    <div className={viewMode === 'list' ? 'w-1/3' : ''}>
+            <>
+              <div
+                className={
+                  viewMode === 'grid'
+                    ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8'
+                    : 'space-y-6'
+                }
+              >
+                {displayedPosts.map(post => (
+                  <Card
+                    key={post.id}
+                    className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg overflow-hidden"
+                  >
+                    <Link href={`/blog/${post.id}`}>
                       <div className="relative">
                         <Image
-                          src={post.image || '/placeholder.svg'}
+                          src={post.image}
                           alt={post.title}
                           width={400}
                           height={250}
-                          className={`object-cover group-hover:scale-105 transition-transform duration-300 ${viewMode === 'list' ? 'h-full w-full' : 'w-full h-48'
-                            }`}
+                          className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
                         />
-                        <div className="absolute top-3 left-3">
-                          <Badge
-                            variant="secondary"
-                            className="bg-white/90 text-gray-700"
-                          >
+                        <div className="absolute top-4 left-4">
+                          <Badge className="bg-[#4AB0D9] text-white hover:bg-[#4AB0D9]/90">
                             {post.category}
                           </Badge>
                         </div>
                       </div>
-                    </div>
 
-                    <CardContent
-                      className={`p-6 ${viewMode === 'list' ? 'flex-1' : ''}`}
-                    >
-                      <div className="flex items-center gap-2 mb-3">
-                        <Badge
-                          variant="outline"
-                          className="text-xs text-gray-600"
-                        >
-                          {getUpdatedViews(post).toLocaleString()} visualizações
-                        </Badge>
-                        <div className="flex items-center gap-4 text-xs text-gray-500">
-                          <div className="flex items-center gap-1">
-                            <Calendar className="h-3 w-3" />
-                            {new Date(post.date).toLocaleDateString('pt-BR')}
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            {post.readTime}
-                          </div>
-                        </div>
-                      </div>
-
-                      <h3 className="text-xl font-bold text-[#1E1D40] mb-3 line-clamp-2 group-hover:text-[#4AB0D9] transition-colors">
-                        {post.title}
-                      </h3>
-
-                      <p className="text-gray-600 mb-4 line-clamp-3">
-                        {post.excerpt}
-                      </p>
-
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 text-sm text-gray-500">
-                          <User className="h-4 w-4" />
-                          {post.author}
-                        </div>
-
-
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-[#4AB0D9] hover:text-[#4AB0D9]/80 hover:bg-[#4AB0D9]/10 p-2"
-                        >
-                          <ArrowRight className="h-4 w-4" />
-                        </Button>
-
-                      </div>
-
-                      {/* Tags */}
-                      <div className="flex flex-wrap gap-1 mt-4">
-                        {post.tags.slice(0, 3).map(tag => (
-                          <Badge key={tag} variant="outline" className="text-xs">
-                            {tag}
+                      <CardContent
+                        className={`p-6 ${viewMode === 'list' ? 'flex-1' : ''}`}
+                      >
+                        <div className="flex items-center gap-2 mb-3">
+                          <Badge
+                            variant="outline"
+                            className="text-xs text-gray-600"
+                          >
+                            {getUpdatedViews(post).toLocaleString()} visualizações
                           </Badge>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Link>
-                </Card>
-              ))}
-            </div>
+                          <div className="flex items-center gap-4 text-xs text-gray-500">
+                            <div className="flex items-center gap-1">
+                              <Calendar className="h-3 w-3" />
+                              {new Date(post.date).toLocaleDateString('pt-BR')}
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              {post.readTime}
+                            </div>
+                          </div>
+                        </div>
+
+                        <h3 className="text-xl font-bold text-[#1E1D40] mb-3 line-clamp-2 group-hover:text-[#4AB0D9] transition-colors">
+                          {post.title}
+                        </h3>
+
+                        <p className="text-gray-600 mb-4 line-clamp-3">
+                          {post.excerpt}
+                        </p>
+
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 text-sm text-gray-500">
+                            <User className="h-4 w-4" />
+                            {post.author}
+                          </div>
+
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-[#4AB0D9] hover:text-[#4AB0D9]/80 hover:bg-[#4AB0D9]/10 p-2"
+                          >
+                            <ArrowRight className="h-4 w-4" />
+                          </Button>
+                        </div>
+
+                        {/* Tags */}
+                        <div className="flex flex-wrap gap-1 mt-4">
+                          {post.tags.slice(0, 3).map(tag => (
+                            <Badge key={tag} variant="outline" className="text-xs">
+                              {tag}
+                            </Badge>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Link>
+                  </Card>
+                ))}
+              </div>
+            </>
           )}
         </div>
 
         {/* Load More Button */}
-        {regularPosts.length > 0 &&
+        {displayedPosts.length > 0 &&
           visiblePosts < filteredAndSortedPosts.length && (
             <div className="text-center">
               <Button

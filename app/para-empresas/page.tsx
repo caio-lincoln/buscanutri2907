@@ -1,4 +1,5 @@
-import type { Metadata } from 'next'
+'use client'
+
 import Link from 'next/link'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
@@ -6,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import CalculadoraCorporativa from '@/components/calculadora-corporativa'
 import {
   Building,
   Users,
@@ -19,12 +21,6 @@ import {
   Phone,
   Mail,
 } from 'lucide-react'
-
-export const metadata: Metadata = {
-  title: 'Para Empresas - Busca Nutri',
-  description:
-    'Soluções corporativas em nutrição. Programas de bem-estar, contratação de profissionais e consultoria especializada para sua empresa.',
-}
 
 const solutions = [
   {
@@ -219,6 +215,46 @@ const plans = [
 ]
 
 export default function ParaEmpresasPage() {
+  const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    
+    const formData = new FormData(e.currentTarget)
+    const nome = formData.get('nome') as string
+    const email = formData.get('email') as string
+    const empresa = formData.get('empresa') as string
+    const funcionarios = formData.get('funcionarios') as string
+    const interesse = formData.get('interesse') as string
+    const mensagem = formData.get('mensagem') as string
+    
+    // Criar mensagem para WhatsApp
+    const whatsappMessage = `🏢 *SOLICITAÇÃO DE PROPOSTA CORPORATIVA*
+
+👤 *Responsável:* ${nome}
+📧 *E-mail:* ${email}
+🏢 *Empresa:* ${empresa}
+👥 *Funcionários:* ${funcionarios}
+🎯 *Interesse:* ${interesse}
+
+💬 *Mensagem:*
+${mensagem}
+
+Aguardo retorno para mais informações sobre os planos corporativos!`
+    
+    const encodedMessage = encodeURIComponent(whatsappMessage)
+    const whatsappUrl = `https://wa.me/5579998134938?text=${encodedMessage}`
+    
+    console.log('Enviando proposta corporativa via WhatsApp:', whatsappUrl)
+    
+    // Tentar abrir em nova aba
+    const newWindow = window.open(whatsappUrl, '_blank')
+    
+    // Se não conseguir abrir (popup blocker), redirecionar na mesma aba
+    if (!newWindow || newWindow.closed || typeof newWindow.closed == 'undefined') {
+      console.log('Popup bloqueado, redirecionando na mesma aba')
+      window.location.href = whatsappUrl
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-gray-50">
       {/* Header */}
@@ -469,114 +505,14 @@ export default function ParaEmpresasPage() {
           </div>
         </section>
 
-        {/* Pricing Section */}
-        <section className="py-20 bg-white">
+        {/* Calculator Section */}
+        <section className="py-20 bg-gradient-to-br from-slate-50 to-blue-50/30">
           <div className="container px-4 md:px-6">
-            <div className="text-center mb-16">
-              <h2 className="text-3xl md:text-4xl font-bold text-[#1E1D40] mb-6">
-                Planos Corporativos
-              </h2>
-              <p className="text-lg text-[#1E1D40]/70">
-                Soluções flexíveis que se adaptam ao tamanho da sua empresa
-              </p>
-              <p className="text-sm text-[#1E1D40]/60 mt-4 italic">
-                * Os valores podem sofrer alterações
-              </p>
-            </div>
-
-            <div className="grid md:grid-cols-3 gap-8 max-w-7xl mx-auto">
-              {plans.map((plan, index) => (
-                <Card
-                  key={index}
-                  className={`relative ${
-                    plan.popular
-                      ? 'border-2 border-[#1E1D40] shadow-lg scale-105'
-                      : 'border border-gray-200'
-                  }`}
-                >
-                  {plan.popular && (
-                    <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                      <Badge className="bg-[#1E1D40] text-white px-4 py-1">
-                        Mais Escolhido
-                      </Badge>
-                    </div>
-                  )}
-                  <CardHeader className="text-center">
-                    <CardTitle className="text-2xl text-[#1E1D40]">
-                      {plan.name}
-                    </CardTitle>
-                    <div className="text-2xl font-bold text-[#4AB0D9] mb-1">
-                      {plan.price}
-                    </div>
-                    {plan.priceDetails && (
-                      <div className="text-sm text-[#1E1D40]/60 mb-2">
-                        {plan.priceDetails}
-                      </div>
-                    )}
-                    <p className="text-[#1E1D40]/70">{plan.description}</p>
-                  </CardHeader>
-                  <CardContent>
-                    {plan.subPlans ? (
-                      <div className="space-y-6">
-                        {plan.subPlans.map((subPlan, subIndex) => (
-                          <div
-                            key={subIndex}
-                            className="border-l-4 border-[#4AB0D9] pl-4"
-                          >
-                            <h4 className="font-semibold text-[#1E1D40] mb-2">
-                              {subPlan.type}
-                            </h4>
-                            <div className="text-lg font-bold text-[#4AB0D9] mb-3">
-                              {subPlan.price}
-                            </div>
-                            <ul className="space-y-2">
-                              {subPlan.features.map((feature, featureIndex) => (
-                                <li
-                                  key={featureIndex}
-                                  className="flex items-center gap-2"
-                                >
-                                  <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
-                                  <span className="text-xs text-[#1E1D40]/80">
-                                    {feature}
-                                  </span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <ul className="space-y-3 mb-8">
-                        {plan.features.map((feature, featureIndex) => (
-                          <li
-                            key={featureIndex}
-                            className="flex items-center gap-3"
-                          >
-                            <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
-                            <span className="text-sm text-[#1E1D40]/80">
-                              {feature}
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                    <Button
-                      className={`w-full mt-6 ${
-                        plan.popular
-                          ? 'bg-[#1E1D40] hover:bg-[#1E1D40]/90 text-white'
-                          : 'bg-gray-100 hover:bg-gray-200 text-[#1E1D40]'
-                      }`}
-                    >
-                      {plan.price === 'Sob consulta'
-                        ? 'Falar com Consultor'
-                        : 'Solicitar Proposta'}
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+            <CalculadoraCorporativa />
           </div>
         </section>
+
+
 
         {/* Contact Form Section */}
         <section className="py-20 bg-slate-50/30">
@@ -593,19 +529,19 @@ export default function ParaEmpresasPage() {
 
               <Card className="shadow-lg border-0">
                 <CardContent className="p-8">
-                  <form className="space-y-6">
+                  <form className="space-y-6" onSubmit={handleFormSubmit}>
                     <div className="grid md:grid-cols-2 gap-6">
                       <div className="space-y-2">
                         <label className="text-sm font-medium text-[#1E1D40]">
                           Nome do Responsável
                         </label>
-                        <Input placeholder="Seu nome completo" />
+                        <Input name="nome" placeholder="Seu nome completo" required />
                       </div>
                       <div className="space-y-2">
                         <label className="text-sm font-medium text-[#1E1D40]">
                           E-mail Corporativo
                         </label>
-                        <Input type="email" placeholder="seu@empresa.com" />
+                        <Input name="email" type="email" placeholder="seu@empresa.com" required />
                       </div>
                     </div>
                     <div className="grid md:grid-cols-2 gap-6">
@@ -613,18 +549,18 @@ export default function ParaEmpresasPage() {
                         <label className="text-sm font-medium text-[#1E1D40]">
                           Nome da Empresa
                         </label>
-                        <Input placeholder="Nome da sua empresa" />
+                        <Input name="empresa" placeholder="Nome da sua empresa" required />
                       </div>
                       <div className="space-y-2">
                         <label className="text-sm font-medium text-[#1E1D40]">
                           Número de Funcionários
                         </label>
-                        <select className="w-full h-10 px-3 border border-gray-300 rounded-md">
-                          <option>Selecione</option>
-                          <option>1-50</option>
-                          <option>51-200</option>
-                          <option>201-500</option>
-                          <option>500+</option>
+                        <select name="funcionarios" className="w-full h-10 px-3 border border-gray-300 rounded-md" required>
+                          <option value="">Selecione</option>
+                          <option value="1-50">1-50</option>
+                          <option value="51-200">51-200</option>
+                          <option value="201-500">201-500</option>
+                          <option value="500+">500+</option>
                         </select>
                       </div>
                     </div>
@@ -632,12 +568,12 @@ export default function ParaEmpresasPage() {
                       <label className="text-sm font-medium text-[#1E1D40]">
                         Interesse
                       </label>
-                      <select className="w-full h-10 px-3 border border-gray-300 rounded-md">
-                        <option>Selecione o tipo de solução</option>
-                        <option>Bem-estar Corporativo</option>
-                        <option>Recrutamento de Nutricionistas</option>
-                        <option>Consultoria Nutricional</option>
-                        <option>Solução Personalizada</option>
+                      <select name="interesse" className="w-full h-10 px-3 border border-gray-300 rounded-md" required>
+                        <option value="">Selecione o tipo de solução</option>
+                        <option value="Bem-estar Corporativo">Bem-estar Corporativo</option>
+                        <option value="Recrutamento de Nutricionistas">Recrutamento de Nutricionistas</option>
+                        <option value="Consultoria Nutricional">Consultoria Nutricional</option>
+                        <option value="Solução Personalizada">Solução Personalizada</option>
                       </select>
                     </div>
                     <div className="space-y-2">
@@ -645,11 +581,14 @@ export default function ParaEmpresasPage() {
                         Mensagem
                       </label>
                       <Textarea
+                        name="mensagem"
                         placeholder="Conte-nos mais sobre suas necessidades..."
                         className="min-h-[120px]"
+                        required
                       />
                     </div>
                     <Button
+                      type="submit"
                       size="lg"
                       className="w-full bg-[#1E1D40] hover:bg-[#1E1D40]/90"
                     >

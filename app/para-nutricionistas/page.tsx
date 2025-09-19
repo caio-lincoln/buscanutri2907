@@ -72,19 +72,6 @@ const benefits = [
 ]
 
 const plans = [
-  // {
-  //   name: 'Básico',
-  //   price: 'Gratuito',
-  //   description: 'Ideal para começar',
-  //   features: [
-  //     'Perfil profissional',
-  //     'Até 10 pacientes',
-  //     'Agendamento básico',
-  //     'Chat com pacientes',
-  //     'Suporte por email',
-  //   ],
-  //   popular: false,
-  // },
   {
     name: 'Profissional',
     price: 'R$ 24,90/mês',
@@ -108,20 +95,6 @@ const plans = [
       'Gerenciamento de consultas',
     ],
     popular: true,
-  },
-  {
-    name: 'Clínica',
-    price: 'R$ 99/mês',
-    description: 'Para clínicas e equipes',
-    features: [
-      'Múltiplos profissionais',
-      'Dashboard gerencial',
-      'API personalizada',
-      'White label',
-      'Suporte dedicado',
-      'Treinamento incluído',
-    ],
-    popular: false,
   },
 ]
 
@@ -236,7 +209,7 @@ export default function ParaNutricionistasPage() {
                       size="lg"
                       className="bg-[#4AB0D9] hover:bg-[#4AB0D9]/90 text-white"
                     >
-                      Começar Gratuitamente
+                      Começar Agora
                       <ArrowRight className="ml-2 h-5 w-5" />
                     </Button>
                   </Link>
@@ -355,7 +328,7 @@ export default function ParaNutricionistasPage() {
               </p>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            <div className="grid md:grid-cols-1 gap-8 max-w-2xl mx-auto">
               {plans.map((plan, index) => (
                 <Card
                   key={index}
@@ -416,10 +389,11 @@ export default function ParaNutricionistasPage() {
                         ? 'bg-[#4AB0D9] hover:bg-[#4AB0D9]/90 text-white'
                         : 'bg-gray-100 hover:bg-gray-200 text-[#1E1D40]'
                         }`}
+                      onClick={() => {
+                        window.open('https://wa.me/5579998134938?text=Olá! Gostaria de contratar o plano Profissional da Busca Nutri para nutricionistas.', '_blank')
+                      }}
                     >
-                      {plan.price === 'Gratuito'
-                        ? 'Começar Grátis'
-                        : 'Escolher Plano'}
+                      Escolher Plano
                     </Button>
                   </CardContent>
                 </Card>

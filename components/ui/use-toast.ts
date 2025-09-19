@@ -22,11 +22,14 @@ const actionTypes = {
   REMOVE_TOAST: 'REMOVE_TOAST',
 } as const
 
-let count = 0
-
 function genId() {
-  count = (count + 1) % Number.MAX_SAFE_INTEGER
-  return count.toString()
+  // Use crypto.randomUUID() if available (modern browsers and Node.js 16+)
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID()
+  }
+  
+  // Fallback for older environments
+  return Math.random().toString(36).substring(2) + Date.now().toString(36)
 }
 
 type ActionType = typeof actionTypes
