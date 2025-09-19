@@ -75,7 +75,6 @@ export default function AgendarPage() {
   const [ viewMode, setViewMode ] = useState<'grid' | 'list'>('grid')
   const [ loading, setLoading ] = useState(false)
 
-  // Estados para agendamento
   const [ selectedNutritionist, setSelectedNutritionist ] = useState<NutritionistProfile | null>(null)
   const [ availableSlots, setAvailableSlots ] = useState<AvailableSlot[]>([])
   const [ selectedSlot, setSelectedSlot ] = useState<AvailableSlot | null>(null)
@@ -83,9 +82,7 @@ export default function AgendarPage() {
   const [ booking, setBooking ] = useState(false)
   const [ step, setStep ] = useState<'search' | 'schedule'>('search')
 
-  // Verificar se há um nutricionista pré-selecionado
   useEffect(() => {
-
     if (nutritionistId && nutritionists.length > 0) {
       const currentNutritionist = nutritionists.find(nutritionist => nutritionist.id === nutritionistId)
       // Buscar dados do nutricionista específico
@@ -115,25 +112,6 @@ export default function AgendarPage() {
       setProfile(profileData)
     } catch (error) {
       console.error('Erro ao carregar perfil:', error)
-    }
-  }
-
-  const loadSpecificNutritionist = async (nutritionistId: string) => {
-    try {
-      setLoading(true)
-      const response = await fetch(`/api/nutritionists/${nutritionistId}`)
-      if (!response.ok) {
-        throw new Error('Nutricionista não encontrado')
-      }
-      const data = await response.json()
-      setSelectedNutritionist(data)
-      setStep('schedule')
-      loadAvailableSlots(nutritionistId)
-    } catch (error) {
-      console.error('Erro ao carregar nutricionista:', error)
-      toast.error('Erro ao carregar dados do nutricionista')
-    } finally {
-      setLoading(false)
     }
   }
 
@@ -227,11 +205,11 @@ export default function AgendarPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          patient_id: patientProfile?.id, 
-          patient_email: patientProfile?.email ?? user?.email, 
+          patient_id: patientProfile?.id,
+          patient_email: patientProfile?.email ?? user?.email,
           nutritionist_id: selectedNutritionist.id,
           nutritionist_name: selectedNutritionist.full_name,
-          scheduled_for: selectedSlot.datetime,      
+          scheduled_for: selectedSlot.datetime,
           duration_minutes: selectedSlot.duration,
           price_brl: selectedNutritionist.consultation_price,
           teleconsulta_session_id: sessionData.session.id
@@ -255,7 +233,6 @@ export default function AgendarPage() {
       setBooking(false)
     }
   }
-
 
   // const handleBooking = async () => {
   //   if (!selectedSlot || !profile || !selectedNutritionist) {
@@ -615,7 +592,7 @@ export default function AgendarPage() {
                           <div className="flex items-center gap-2 text-green-800">
                             <Calendar className="h-4 w-4" />
                             <span className="font-medium">
-                              {format(parseISO(selectedSlot.datetime.slice(0, -1)), "dd 'de' MMMM 'de' yyyy", {
+                              {format(parseISO(selectedSlot.date), "dd 'de' MMMM 'de' yyyy", {
                                 locale: ptBR,
                               })}
                             </span>
@@ -623,9 +600,7 @@ export default function AgendarPage() {
                           <div className="flex items-center gap-2 text-green-800 mt-1">
                             <Clock className="h-4 w-4" />
                             <span className="font-medium">
-                              {format(parseISO(selectedSlot.datetime.slice(0, -1)), 'HH:mm', {
-                                locale: ptBR,
-                              })}
+                              {selectedSlot.time}
                             </span>
                           </div>
                         </div>

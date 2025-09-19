@@ -8,7 +8,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import {
-  Video, VideoOff, Mic, MicOff, PhoneOff, MessageSquare, Maximize, Minimize, Clock, Camera, User
+  Video, VideoOff, Mic, MicOff, PhoneOff, MessageSquare, Maximize, Minimize, Clock, Camera, User,
+  Router
 } from 'lucide-react'
 
 import {
@@ -271,12 +272,16 @@ function TeleconsultaInner(props: {
   } = props
 
   const room = useRoomContext()
+  const { user } = useAuth()
+
   const [ isConnected, setIsConnected ] = useState(room.state === 'connected')
   const [ isAudioEnabled, setIsAudioEnabled ] = useState(true)
   const [ isVideoEnabled, setIsVideoEnabled ] = useState(true)
 
   const { label } = useCallTimer(session?.started_at ?? null)
   const [ endingSoon, setEndingSoon ] = useState(false)
+
+  const router = useRouter()
 
   // helper: milissegundos até o fim da consulta
   function getMsUntilEnd(s: TeleconsultaSession) {
@@ -370,7 +375,13 @@ function TeleconsultaInner(props: {
     setIsVideoEnabled(next)
   }
   const handleEndCall = async () => {
-    try { await room.disconnect() } catch { }
+    try {
+      await room.disconnect();
+      const dashboardUrl = user?.user_metadata.user_type === 'paciente' ?
+        '/dashboard/paciente?activeTab=teleconsultas' :
+        '/dashboard/nutricionistas?activeTab=teleconsultas'
+      router.push(dashboardUrl)
+    } catch { }
 
     // await fetch(`/api/teleconsulta/sessions/${session.session_token}`, { method: 'PATCH', ... })
   }

@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
         type: "teleconsulta",
         price_brl: String(price_brl),
       },
-      success_url: `${origin}/pagamento/sucesso?session_id={CHECKOUT_SESSION_ID}`,
+      success_url: `${origin}/dashboard/paciente?activeTab=teleconsultas&sucesso=true`,
       cancel_url: `${origin}/pagamento/cancelado`,
       billing_address_collection: 'auto',
     })

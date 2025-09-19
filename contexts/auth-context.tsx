@@ -39,6 +39,31 @@ const PROFILE_TABLE_BY_TYPE: Record<Exclude<UserType, 'admin'>, string> = {
   empresa: 'company_profiles',
 }
 
+const NUTRI_PUBLIC_COLS = `
+  id,user_id,full_name,crn,phone,bio,profile_image_url,verification_status,trust_seal,
+  rating,total_reviews,consultation_price,online_consultation_available,created_at,updated_at,
+  specialties,consultation_fee,experience_years,location,education,languages,home_visit,crn_number,
+  birth_date,rg,cpf,rg_document_url,cpf_document_url,gender,crn_document_url,specialties_documents,
+  academic_background,experience,curriculum_pdf_url,lattes_url,services_offered,service_locations,
+  availability,price_range,certifications,website,instagram,linkedin,online_consultation,achievements,
+  available_times,total_views,unique_views,last_view_at,is_verified,cancellation_policy,
+  default_consultation_duration,identity_document_url,min_time_between_appointments,online_only_consultation,
+  instagram_username,linkedin_username,facebook_username,youtube_channel,tiktok_username,website_url,
+  service_consultation_price,service_followup_price,service_meal_plan_price,service_group_consultation,
+  service_online_available,service_home_visit,monday_hours,tuesday_hours,wednesday_hours,thursday_hours,
+  friday_hours,saturday_hours,sunday_hours,break_time,accepts_insurance,emergency_consultation,
+  consultation_languages,payment_methods,max_patients_per_day,accepts_corporate_plans,
+  in_person_consultation_price,online_consultation_price,in_person_followup_price,online_followup_price,
+  pricing_strategy,in_person_pricing_type,online_pricing_type,in_person_combined_price,online_combined_price,
+  cover_image_url,aceita_cupons,address,is_listed,verified_at
+`.replace(/\s+/g, '')
+
+const SELECT_BY_TYPE = {
+  nutricionista: NUTRI_PUBLIC_COLS,
+  paciente: '*',  // ajuste depois se precisar
+  empresa: '*',   // idem
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [ user, setUser ] = useState<User | null>(null)
   const [ userProfile, setUserProfile ] = useState<UserProfile | null>(null)
@@ -46,6 +71,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [ patientProfile, setPatientProfile ] = useState<PatientProfile | null>(null)
   const [ companyProfile, setCompanyProfile ] = useState<CompanyProfile | null>(null)
   const [ loading, setLoading ] = useState(true)
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const lastRefreshTime = useRef(0)
+  const refreshCooldown = 5000 // 5 segundos entre refreshes
   const supabase = useMemo(() => createSupabaseClient(), [])
   const isClient = useIsClient()
   const resetSubProfiles = useCallback(() => {
@@ -120,32 +148,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { broadcastAuthChange } = useAuthSync()
 
   const loadUser = useCallback(async () => {
+    // Previne múltiplas chamadas simultâneas
+    if (isRefreshing) return
+    
+    // Cooldown para evitar refresh excessivo
+    const now = Date.now()
+    if (now - lastRefreshTime.current < refreshCooldown) {
+      return
+    }
+    
+    setIsRefreshing(true)
+    lastRefreshTime.current = now
+    
     try {
-      // Verificar se é admin primeiro (verificação segura para SSR)
-      if (typeof window !== 'undefined' && window.sessionStorage) {
-        try {
-          const adminSession = sessionStorage.getItem('admin_session')
-          console.log('🔍 Admin session encontrada:', adminSession)
-          if (adminSession === 'iris@buscanutri.com') {
-            const adminUser = {
-              id: 'admin-001',
-              email: 'iris@buscanutri.com',
-              user_type: 'admin',
-              user_metadata: { user_type: 'admin' }
-            } as any
-            console.log('🔍 Definindo usuário admin:', adminUser)
-            setUser(adminUser)
-            setUserProfile(adminUser)
-            resetSubProfiles()
-            setLoading(false)
-            return
-          }
-        } catch (error) {
-          // Ignorar erros de sessionStorage em modo privado/incógnito
-          console.warn('Erro ao acessar sessionStorage:', error)
-        }
-      }
-
       const sessionUser = await supabase.auth.getUser()
 
       if (!sessionUser.data?.user) {
@@ -156,7 +171,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       setUser(sessionUser.data.user)
-      setUserProfile(sessionUser.data.user)
+      setUserProfile(sessionUser.data.user as User)
       const { data: row } = await supabase
       .from('users')
       .select('*')
@@ -170,7 +185,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (table) {
           const { data: spec } = await supabase
             .from(table)
-            .select('*')
+            .select(SELECT_BY_TYPE[utype as 'nutricionista'|'paciente'|'empresa'])
             .eq('user_id', row.id)
             .maybeSingle()
   
@@ -178,14 +193,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (utype === 'paciente') setPatientProfile(spec ?? null)
           if (utype === 'empresa') setCompanyProfile(spec ?? null)
         }
-        
       }
     } catch (error) {
       console.error('Erro ao carregar usuário:', error)
     } finally {
       setLoading(false)
+      setIsRefreshing(false)
     }
-  }, [ supabase, resetSubProfiles ])
+  }, [ supabase, resetSubProfiles, isRefreshing ])
 
   const handleSignOut = useCallback(async () => {
     try {
@@ -211,6 +226,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await loadUser()
   }, [ loadUser ])
 
+  // Controle de visibilidade da página para evitar refresh desnecessário
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      // Só recarrega se a página ficou invisível por mais de 30 segundos
+      if (!document.hidden) {
+        const timeSinceLastRefresh = Date.now() - lastRefreshTime.current
+        if (timeSinceLastRefresh > 30000) { // 30 segundos
+          loadUser()
+        }
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }, [loadUser])
+
   const subscribedRef = useRef(false);
   const handledSignOutRef = useRef(false);
 
@@ -218,23 +249,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!isClient || subscribedRef.current) return;
     subscribedRef.current = true;
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event) => {
-
-      if (event === 'SIGNED_IN') {
-        setLoading(true)
-
-        loadUser()
-        handledSignOutRef.current = false; // reset
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      // Só processa eventos relevantes
+      if (event === 'SIGNED_IN' && session) {
+        handledSignOutRef.current = false;
+        // Só carrega se não há usuário atual ou se é um usuário diferente
+        if (!user || user.id !== session.user.id) {
+          loadUser()
+        }
       } else if (event === 'SIGNED_OUT') {
-        console.log("Antes")
-        if (handledSignOutRef.current) return; // dedupe do SIGNED_OUT
+        if (handledSignOutRef.current) return;
         handledSignOutRef.current = true;
-        console.log("Depois")
+        console.log("Usuário deslogado")
         setUser(null);
         setUserProfile(null);
         setNutritionistProfile(null);
         setPatientProfile(null);
         setCompanyProfile(null);
+      } else if (event === 'TOKEN_REFRESHED') {
+        // Não recarrega dados no refresh do token
+        console.log("Token refreshed - mantendo dados atuais")
       }
     });
 
@@ -242,11 +276,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       subscribedRef.current = false;
       subscription.unsubscribe();
     };
-  }, [ isClient, supabase ]);
+  }, [ isClient, supabase, user, loadUser ]);
 
+  // Só carrega usuário na inicialização
   useEffect(() => {
-    loadUser()
-  }, [])
+    if (isClient && !user) {
+      loadUser()
+    }
+  }, [isClient])
 
   const value = useMemo(
     () => ({

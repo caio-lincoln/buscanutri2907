@@ -62,9 +62,9 @@ export function SubscriptionProvider({ initial, children }: { initial: Initial; 
     return () => { supabase.removeChannel(ch); };
   }, [ supabase, userId, refetch ]);
 
-  useEffect(() => {
-    refetch()
-  }, [userId])
+  // useEffect(() => {
+  //   refetch()
+  // }, [userId])
 
   const value = useMemo<Ctx>(() => ({
     hasActiveSubscription: hasActive,

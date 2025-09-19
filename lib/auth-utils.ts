@@ -51,7 +51,7 @@ export interface CompanyProfile extends UserProfile {
 }
 
 export async function getCurrentUser(): Promise<User | null> {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   try {
     const { data: { user }, error } = await supabase.auth.getUser()
@@ -69,7 +69,7 @@ export async function getCurrentUser(): Promise<User | null> {
 }
 
 export async function getUserProfile(userId: string): Promise<UserProfile | null> {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   try {
     const { data, error } = await supabase
@@ -91,7 +91,7 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
 }
 
 export async function getNutritionistProfile(userId: string): Promise<NutritionistProfile | null> {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   try {
     const { data, error } = await supabase
@@ -120,7 +120,7 @@ export async function getNutritionistProfile(userId: string): Promise<Nutritioni
 }
 
 export async function getPatientProfile(userId: string): Promise<PatientProfile | null> {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   try {
     const { data, error } = await supabase
@@ -149,7 +149,7 @@ export async function getPatientProfile(userId: string): Promise<PatientProfile 
 }
 
 export async function getCompanyProfile(userId: string): Promise<CompanyProfile | null> {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   try {
     const { data, error } = await supabase

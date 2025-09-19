@@ -7,7 +7,7 @@ export async function POST(req: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-
+  
   if (!user) {
     return NextResponse.json({ error: 'not_authenticated' }, { status: 401 });
   }
@@ -24,13 +24,12 @@ export async function POST(req: NextRequest) {
     subRow?.stripe_customer_id ??
     (
       await stripe.customers.create({
-        email: user.email ?? undefined,
+        email: user.email as string ?? undefined,
         metadata: { user_id: user.id },
       })
     ).id;
     try {
       if (!subRow?.stripe_customer_id) {
-        console.log("Caiu aqui ")
         await supabase
           .from('user_subscriptions')
           .insert({
@@ -51,7 +50,7 @@ export async function POST(req: NextRequest) {
     mode: 'subscription',
     customer,
     line_items: [ { price: data.priceId, quantity: 1 } ],
-    success_url: `${origin}/dashboard/nutricionistas?activeTab=assinatura&success=1`,
+    success_url: `${origin}/pagamento/sucesso?from=stripe&session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${origin}/dashboard/nutricionistas?activeTab=assinatura&canceled=1`,
     // Para permitir trials se o Price tiver trial configurado
     allow_promotion_codes: true,

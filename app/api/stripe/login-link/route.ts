@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { stripe } from '@/lib/stripe'
-import { createAdminClient } from '@/lib/supabase/server'
+import { createClient } from '@/lib/supabase/server'
 
 export async function POST(req: NextRequest) {
   try {
@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'nutritionistUserId requerido' }, { status: 400 })
     }
 
-    const supabase = createAdminClient()
+    const supabase = await createClient()
     const { data: np, error } = await supabase
       .from('nutritionist_profiles')
       .select('stripe_account_id')

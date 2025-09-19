@@ -35,7 +35,13 @@ export const createSupabaseClient = () =>
       storage: typeof window !== 'undefined' ? window.sessionStorage : undefined,
       autoRefreshToken: true,
       persistSession: true,
-      detectSessionInUrl: true
+      detectSessionInUrl: false, // Desabilita detecção de sessão na URL
+      flowType: 'pkce'
+    },
+    global: {
+      headers: {
+        'x-client-info': 'buscanutri-web'
+      }
     }
   })
 

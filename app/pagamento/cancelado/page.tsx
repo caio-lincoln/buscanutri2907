@@ -5,7 +5,7 @@ export default function Cancelado() {
       <p className="text-gray-600 mb-6">
         O pagamento foi cancelado e o agendamento não foi criado.
       </p>
-      <a href="/dashboard/paciente/teleconsultas/agendar" className="underline">
+      <a href="/dashboard/paciente?activeTab=teleconsultas" className="underline">
         Escolher outro horário
       </a>
     </div>

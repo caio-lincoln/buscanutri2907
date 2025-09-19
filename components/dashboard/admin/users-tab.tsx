@@ -85,13 +85,17 @@ export function UsersTab() {
   } | null>(null)
 
   useEffect(() => {
-    async function loadUsers() {
+    const loadUsers = async () => {
       try {
-        setLoading(true)
-        const userData = await getAllUsers()
-        setUsers(userData)
-      } catch {
-        // Silent error handling - error loading users
+        const response = await fetch('/api/admin/users')
+        if (response.ok) {
+          const { data } = await response.json()
+          setUsers(data)
+        } else {
+          console.error('Erro ao carregar usuários')
+        }
+      } catch (error) {
+        console.error('Erro na requisição:', error)
       } finally {
         setLoading(false)
       }
@@ -125,7 +129,7 @@ export function UsersTab() {
         id: user.id,
         email: user.email,
         name: user.name,
-        nutritionistProfileId: user.id
+        nutritionistProfileId: user?.nutritionist_profiles?.id
       })
       setVerifyModalOpen(true)
     } else {
@@ -290,7 +294,7 @@ export function UsersTab() {
                         </TableCell>
                         <TableCell className="text-gray-500 text-sm">
                           {user.type === 'nutricionista' ? (
-                            user.is_verified ? (
+                            user?.nutritionist_profiles?.is_verified ? (
                               <Badge className="bg-green-100 text-green-700">
                                 <CheckCircle className="h-3 w-3 mr-1" />
                                 Verificado
@@ -406,6 +410,7 @@ export function UsersTab() {
 
       {selectedUser && verifyModalOpen && (
         <VerifyNutritionistModal
+          key={selectedUser?.id}  
           open={verifyModalOpen}
           onOpenChange={handleVerifyModalClose}
           user={selectedUser}

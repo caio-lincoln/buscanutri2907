@@ -583,7 +583,7 @@ export default function Home({ initialStats }: Props) {
                       size="lg"
                       className="w-full sm:w-auto bg-[#4AB0D9] hover:bg-[#4AB0D9]/90 text-white shadow-lg text-base md:text-lg px-6 md:px-8 py-4 md:py-6"
                     >
-                      Quero me cadastrar
+                      Assinar com 50% OFF
                       <ArrowRight className="ml-2 h-4 md:h-5 w-4 md:w-5" />
                     </Button>
                   </Link>
@@ -879,12 +879,11 @@ export default function Home({ initialStats }: Props) {
             <div className="max-w-2xl mx-auto">
               <div className="text-center space-y-4 md:space-y-6 mb-8 md:mb-12">
                 <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold leading-tight">
-                  Comece agora a transformar sua prática com a{' '}
+                  O Conhecimento Nutre. A Carreira e a Vida.{' '}
                   <span className="text-[#4AB0D9]">Busca Nutri</span>
                 </h2>
                 <p className="text-base md:text-lg text-white/80">
-                  Cadastre-se gratuitamente e descubra como é fácil crescer em
-                  comunidade.
+                  Inscreva-se e receba em seu e-mail artigos, dicas de gestão e tendências do mercado da nutrição. Conteúdo exclusivo para te ajudar a crescer.
                 </p>
               </div>
               <Card className="border-0 shadow-2xl bg-white">
@@ -975,7 +974,7 @@ export default function Home({ initialStats }: Props) {
                       size="lg"
                       className="w-full bg-[#4AB0D9] hover:bg-[#4AB0D9]/90 text-white shadow-lg h-12 text-base font-medium rounded-lg"
                     >
-                      Quero fazer parte
+                      Quero Receber o Conteúdo
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
                   </form>

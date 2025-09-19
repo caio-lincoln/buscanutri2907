@@ -19,98 +19,69 @@ export interface ProfileViewStats {
 }
 
 class ProfileViewsService {
-  // Registrar uma nova visualização
   async recordView(nutritionistId: string, referrer?: string): Promise<void> {
     try {
-      // Verificação segura para SSR
-      if (typeof window === 'undefined' || !window.sessionStorage || !window.navigator) {
-        return // Não executar no servidor
-      }
+      if (typeof window === 'undefined' || !window.navigator) return
 
-      // Gerar um session_id único para esta sessão do navegador
-      let sessionId: string | null = null
+      let sessionId = 'no-session'
       try {
-        sessionId = sessionStorage.getItem('profile_view_session')
+        sessionId = sessionStorage.getItem('profile_view_session') || ''
         if (!sessionId) {
-          sessionId = `sess_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+          sessionId = `sess_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`
           sessionStorage.setItem('profile_view_session', sessionId)
         }
-      } catch (error) {
-        // Fallback se sessionStorage não estiver disponível (modo privado)
-        sessionId = `sess_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-        console.warn('Erro ao acessar sessionStorage:', error)
+      } catch {
+        sessionId = `sess_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`
       }
 
-      // Verificar se já registrou uma visualização para este nutricionista nesta sessão
-      const viewedKey = `viewed_${nutritionistId}`
-      let alreadyViewed = false
+      // const viewedKey = `viewed_${nutritionistId}`
       try {
-        alreadyViewed = !!sessionStorage.getItem(viewedKey)
-      } catch (error) {
-        // Ignorar erro de sessionStorage
-        console.warn('Erro ao verificar sessionStorage:', error)
-      }
+        // if (sessionStorage.getItem(viewedKey)) return
+      } catch { }
 
-      if (alreadyViewed) {
-        return // Já registrou uma visualização nesta sessão
-      }
+      const effectiveRef =
+        referrer || (typeof document !== 'undefined' ? document.referrer : '') || 'direct'
 
-      const { error } = await supabase.from('profile_views').insert({
-        nutritionist_id: nutritionistId,
-        viewer_user_agent: navigator.userAgent,
-        session_id: sessionId,
-        referrer: referrer || (typeof document !== 'undefined' ? document.referrer : '') || 'direct',
+      const response = await fetch('/api/profile-views/record', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          nutritionistId,
+          sessionId,
+          referrer: effectiveRef,
+          userAgent: navigator.userAgent,
+        }),
       })
-      console.log("🚀 ~ ProfileViewsService ~ recordView ~ error:", error)
+      const json = await response.json()
 
-      if (error) {
-        // Silent error handling - error registering view
-        return
-      }
-
-      // Marcar como visualizado nesta sessão
       try {
-        sessionStorage.setItem(viewedKey, 'true')
-      } catch (error) {
-        // Ignorar erro de sessionStorage
-        console.warn('Erro ao salvar no sessionStorage:', error)
-      }
-    } catch (error) {
-      // Silent error handling - error recording view
+        // sessionStorage.setItem(viewedKey, 'true') 
+        
+      } catch { }
+    } catch {
+      // silencioso
     }
   }
 
-  // Obter estatísticas de visualizações para um nutricionista
   async getViewStats(nutritionistId: string): Promise<ProfileViewStats> {
-    try {
-      const { data, error } = await supabase
-        .from('nutritionist_profiles')
-        .select('total_views, unique_views, last_view_at')
-        .eq('id', nutritionistId)
-        .single()
+    if (typeof window === 'undefined' || !window.navigator) {
+      const { data, error } = await supabase.rpc('get_profile_view_stats', {
+        p_nutritionist_id: nutritionistId,
+      })
 
       if (error) {
-        // Silent error handling - error getting view stats
-        // Retorna valores padrão em caso de erro
-        return {
-          total_views: 0,
-          unique_views: 0,
-        }
+        return { total_views: 0, unique_views: 0, last_view_at: '' }
       }
 
-      return {
-        total_views: data.total_views || 0,
-        unique_views: data.unique_views || 0,
-        last_view_at: data.last_view_at,
-      }
-    } catch (error) {
-      // Silent error handling - error getting view stats
-      // Retorna valores padrão em caso de erro
-      return {
-        total_views: 0,
-        unique_views: 0,
-      }
+      return data?.stats || { total_views: 0, unique_views: 0, last_view_at: '' }
     }
+
+    const response = await fetch(`/api/profile-views/stats/${nutritionistId}`)
+    if (!response.ok) return { total_views: 0, unique_views: 0, last_view_at: '' }
+    const data = await response.json()
+    return { total_views: data.stats.totalViews || 0, unique_views: data.stats.uniqueViews || 0, last_view_at: data.stats.lastViewAt }
   }
 
   // Obter visualizações diárias para um nutricionista (últimos 30 dias)
@@ -136,19 +107,19 @@ class ProfileViewsService {
       }
 
       // Processar dados para agrupar por dia
-      const dailyViews: { [key: string]: Set<string> } = {}
+      const dailyViews: { [ key: string ]: Set<string> } = {}
       data?.forEach(view => {
-        const date = new Date(view.viewed_at).toISOString().split('T')[0]
-        if (date && !dailyViews[date]) {
-          dailyViews[date] = new Set()
+        const date = new Date(view.viewed_at).toISOString().split('T')[ 0 ]
+        if (date && !dailyViews[ date ]) {
+          dailyViews[ date ] = new Set()
         }
-        if (date && dailyViews[date]) {
-          dailyViews[date].add(view.viewed_at) // Usar timestamp como identificador único
+        if (date && dailyViews[ date ]) {
+          dailyViews[ date ].add(view.viewed_at) // Usar timestamp como identificador único
         }
       })
 
       return Object.entries(dailyViews)
-        .map(([date, views]) => ({
+        .map(([ date, views ]) => ({
           date,
           unique_views: views.size,
         }))

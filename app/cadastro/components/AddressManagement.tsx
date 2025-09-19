@@ -13,15 +13,14 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Badge } from '@/components/ui/badge'
-import { Trash2, Plus, MapPin, Home } from 'lucide-react'
+import { MapPin, Plus } from 'lucide-react'
 import { toast } from '@/components/ui/use-toast'
 import { nutritionistAddressService } from '@/lib/nutritionist-address-service'
 import { useUser } from '@/hooks/use-user'
 import { AddressData } from '@/lib/address-utils'
 import type { NutritionistAddress } from '@/lib/supabase'
 
-// Função para converter NutritionistAddress para AddressData
+// Converte DB -> DTO do formulário (mantido)
 const convertToAddressData = (address: NutritionistAddress): AddressData => ({
   id: address.id,
   nutritionist_id: address.nutritionist_id,
@@ -43,38 +42,12 @@ const convertToAddressData = (address: NutritionistAddress): AddressData => ({
 
 interface AddressManagementProps {
   className?: string
-  nutritionistId?: string // Para usar durante o cadastro
-  onAddressesChange?: (addresses: AddressData[]) => void // Callback para notificar mudanças
+  nutritionistId?: string // opcional no cadastro
+  onAddressesChange?: (addresses: AddressData[]) => void
 }
 
 const BRAZILIAN_STATES = [
-  'AC',
-  'AL',
-  'AP',
-  'AM',
-  'BA',
-  'CE',
-  'DF',
-  'ES',
-  'GO',
-  'MA',
-  'MT',
-  'MS',
-  'MG',
-  'PA',
-  'PB',
-  'PR',
-  'PE',
-  'PI',
-  'RJ',
-  'RN',
-  'RS',
-  'RO',
-  'RR',
-  'SC',
-  'SP',
-  'SE',
-  'TO',
+  'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO',
 ]
 
 export default function AddressManagement({
@@ -83,10 +56,10 @@ export default function AddressManagement({
   onAddressesChange,
 }: AddressManagementProps) {
   const { user } = useUser()
-  const [addresses, setAddresses] = useState<AddressData[]>([])
-  const [editingIndex, setEditingIndex] = useState<number | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [formData, setFormData] = useState<AddressData>({
+  const [ addresses, setAddresses ] = useState<AddressData[]>([])
+  const [ editingIndex, setEditingIndex ] = useState<number | null>(null) // -1 = novo
+  const [ loading, setLoading ] = useState(false)
+  const [ formData, setFormData ] = useState<AddressData>({
     type: 'in_person',
     status: 'active',
     is_main: false,
@@ -95,250 +68,190 @@ export default function AddressManagement({
     city: '',
   })
 
-  // Load addresses from Supabase
-  // const loadAddresses = async () => {
+  // Se quiser carregar do banco, descomente este bloco
+  // async function loadAddresses() {
   //   const currentNutritionistId = nutritionistId || user?.id
   //   if (!currentNutritionistId) return
-
   //   try {
   //     setLoading(true)
-  //     const addressesData =
-  //       await nutritionistAddressService.getAddressesByNutritionist(
-  //         currentNutritionistId
-  //       )
-  //     setAddresses(addressesData.map(convertToAddressData))
-  //   } catch (error) {
-  //     // Error loading addresses - handled silently
-  //     toast({
-  //       title: 'Erro',
-  //       description: 'Erro ao carregar endereços',
-  //       variant: 'destructive',
-  //     })
+  //     const rows = await nutritionistAddressService.getAddressesByNutritionist(currentNutritionistId)
+  //     setAddresses(rows.map(convertToAddressData))
+  //   } catch {
+  //     toast({ title: 'Erro', description: 'Erro ao carregar endereços', variant: 'destructive' })
   //   } finally {
   //     setLoading(false)
   //   }
   // }
 
-  // Load addresses on component mount
   useEffect(() => {
     // loadAddresses()
-  }, [nutritionistId, user?.id])
+  }, [ nutritionistId, user?.id ])
 
-  // Notify parent component of address changes
+  // Notifica o pai sempre que a lista muda
   useEffect(() => {
-    if (onAddressesChange) {
-      onAddressesChange(addresses)
-    }
-  }, [addresses, onAddressesChange])
+    onAddressesChange?.(addresses)
+  }, [ addresses, onAddressesChange ])
 
-  // Auto-set first address as main
+  // Garante 1 principal quando a lista existir e nenhum marcado
   useEffect(() => {
-    if (addresses.length === 0) {
-      return
+    if (addresses.length === 0) return
+    const hasMain = addresses.some(a => a.is_main)
+    if (!hasMain) {
+      setAddresses(prev =>
+        prev.map((a, i) => ({ ...a, is_main: i === 0 }))
+      )
     }
+  }, [ addresses.length ])
 
-    const hasMainAddress = addresses.some(addr => addr.is_main)
-    if (!hasMainAddress) {
-      const updatedAddresses = addresses.map((addr, index) => ({
-        ...addr,
-        is_main: index === 0,
-      }))
-      setAddresses(updatedAddresses)
-    }
-  }, [addresses])
-
-  const handleAddAddress = () => {
-    setFormData({
+  function handleAddAddress() {
+    const newAddress: AddressData = {
+      id: `tmp-${crypto.randomUUID()}`, // id temporário para UI
       type: 'in_person',
       status: 'active',
-      is_main: addresses.length === 0, // First address is automatically main
+      is_main: addresses.length === 0, // primeiro é principal
       country: 'Brasil',
       state: '',
       city: '',
       service_radius_km: 30,
-    })
-    setEditingIndex(-1) // -1 indicates new address
+    }
+    setFormData(newAddress)
+    setEditingIndex(-1) // novo
   }
 
-  const handleEditAddress = (index: number) => {
-    setFormData({ ...addresses[index] })
+  function handleEditAddress(index: number) {
+    setFormData({ ...addresses[ index ] })
     setEditingIndex(index)
   }
 
-  const handleSaveAddress = async () => {
-    // const currentNutritionistId = nutritionistId || user?.id
-    // if (!currentNutritionistId) {
-    //   toast({
-    //     title: 'Erro',
-    //     description: 'ID do nutricionista não encontrado',
-    //     variant: 'destructive',
-    //   })
-    //   return
-    // }
-
-    // Validation
-    if (!formData.state || !formData.state.trim()) {
-      toast({
-        title: 'Erro de validação',
-        description: 'Estado é obrigatório',
-        variant: 'destructive',
-      })
-      return
-    }
-
-    if (!formData.city || !formData.city.trim()) {
-      toast({
-        title: 'Erro de validação',
-        description: 'Cidade é obrigatória',
-        variant: 'destructive',
-      })
-      return
-    }
-
-    // if (formData.zip_code) {
-    //   toast({
-    //     title: 'Erro de validação',
-    //     description: 'CEP deve estar no formato 00000-000',
-    //     variant: 'destructive',
-    //   })
-    //   return
-    // }
-
-    try {
-      setLoading(true)
-
-      if (editingIndex === -1) {
-        // Adding new address
-        const addressData = {
-          ...formData,
-          type: formData.type || 'in_person',
-          status: formData.status || 'active',
-          is_main: formData.is_main || false,
-          country: formData.country || 'Brasil',
-          state: formData.state || '',
-          city: formData.city || '',
-        }
-        onAddressesChange && onAddressesChange([addressData])
-        // await nutritionistAddressService.createAddress(addressData)
-        toast({
-          title: 'Sucesso',
-          description: 'Endereço salvo para cadastro',
-        })
-      }
-      // else {
-      //   // Editing existing address
-      //   if (editingIndex !== null) {
-      //     const addressId = addresses[editingIndex]?.id
-      //     if (addressId) {
-      //       await nutritionistAddressService.updateAddress(addressId, formData)
-      //       toast({
-      //         title: 'Sucesso',
-      //         description: 'Endereço atualizado com sucesso',
-      //       })
-      //     }
-      //   }
-      // }
-
-      // Reload addresses from database
-      // await loadAddresses()
-      // setEditingIndex(null)
-    } catch (error) {
-      // Error saving address - handled silently
-      toast({
-        title: 'Erro',
-        description: 'Erro ao salvar endereço',
-        variant: 'destructive',
-      })
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleDeleteAddress = async (index: number) => {
-    const address = addresses[index]
-    if (!address?.id) return
-    const addressId = address.id
-
-    try {
-      setLoading(true)
-      await nutritionistAddressService.deleteAddress(addressId)
-
-      // Reload addresses from database
-      // await loadAddresses()
-
-      toast({
-        title: 'Sucesso',
-        description: 'Endereço removido com sucesso',
-      })
-    } catch (error) {
-      // Error deleting address - handled silently
-      toast({
-        title: 'Erro',
-        description: 'Erro ao remover endereço',
-        variant: 'destructive',
-      })
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleSetMainAddress = async (index: number) => {
-    const address = addresses[index]
-    if (!address?.id) return
-    const addressId = address.id
-
-    try {
-      setLoading(true)
-      await nutritionistAddressService.setMainAddress(addressId)
-
-      // Reload addresses from database
-      // await loadAddresses()
-
-      toast({
-        title: 'Sucesso',
-        description: 'Endereço principal definido com sucesso',
-      })
-    } catch (error) {
-      // Error setting main address
-      toast({
-        title: 'Erro',
-        description: 'Erro ao definir endereço principal',
-        variant: 'destructive',
-      })
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleCancelEdit = () => {
+  function finishEditing() {
     setEditingIndex(null)
+    setFormData({
+      type: 'in_person',
+      status: 'active',
+      is_main: false,
+      country: 'Brasil',
+      state: '',
+      city: '',
+    })
   }
 
-  const handleZipCodeChange = async (zipCode: string) => {
-    setFormData(prev => ({ ...prev, zip_code: zipCode }))
-
-    // Auto-fill address from CEP (Brazilian postal code)
-    if (/^d{5}-?d{3}$/.test(zipCode)) {
-      try {
-        const cleanZip = zipCode.replace('-', '')
-        const response = await fetch(
-          `https://viacep.com.br/ws/${cleanZip}/json/`
-        )
-        const data = await response.json()
-
-        if (!data.erro) {
-          setFormData(prev => ({
-            ...prev,
-            street: data.logradouro || prev.street,
-            neighborhood: data.bairro || prev.neighborhood,
-            city: data.localidade || prev.city,
-            state: data.uf || prev.state,
-          }))
-        }
-      } catch (error) {
-        // Error fetching address from CEP
-      }
+  async function handleSaveAddress() {
+    // Validações básicas
+    if (!formData.state?.trim()) {
+      toast({ title: 'Erro de validação', description: 'Estado é obrigatório', variant: 'destructive' })
+      return
     }
+    if (!formData.city?.trim()) {
+      toast({ title: 'Erro de validação', description: 'Cidade é obrigatória', variant: 'destructive' })
+      return
+    }
+
+    try {
+      setLoading(true)
+
+      setAddresses(prev => {
+        let next = [ ...prev ]
+
+        const normalized = (list: AddressData[]) =>
+          formData.is_main
+            ? list.map(a => ({ ...a, is_main: false }))
+            : list
+
+        if (editingIndex === -1) {
+          next = normalized(next)
+          next.unshift({
+            ...formData,
+            is_main: formData.is_main || next.length === 0,
+          })
+        } else if (editingIndex !== null) {
+          next = normalized(next)
+          next[ editingIndex ] = {
+            ...next[ editingIndex ],
+            ...formData,
+          }
+        }
+
+        return next
+      })
+
+      toast({ title: 'Sucesso', description: 'Endereço salvo' })
+      finishEditing()
+
+      // Persistência opcional:
+      // const currentNutritionistId = nutritionistId || user?.id
+      // if (currentNutritionistId) {
+      //   if (editingIndex === -1) {
+      //     await nutritionistAddressService.createAddress({ ...formData, nutritionist_id: currentNutritionistId })
+      //   } else if (editingIndex !== null && addresses[editingIndex]?.id) {
+      //     await nutritionistAddressService.updateAddress(addresses[editingIndex].id!, formData)
+      //   }
+      //   await loadAddresses()
+      // }
+    } catch {
+      toast({ title: 'Erro', description: 'Erro ao salvar endereço', variant: 'destructive' })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleDeleteAddress(index: number) {
+    const item = addresses[ index ]
+    try {
+      setLoading(true)
+
+      setAddresses(prev => prev.filter((_, i) => i !== index))
+
+      if (item?.id && !String(item.id).startsWith('tmp-')) {
+        await nutritionistAddressService.deleteAddress(item.id)
+      }
+
+      toast({ title: 'Sucesso', description: 'Endereço removido' })
+    } catch {
+      toast({ title: 'Erro', description: 'Erro ao remover endereço', variant: 'destructive' })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleSetMainAddress(index: number) {
+    const item = addresses[ index ]
+    try {
+      setLoading(true)
+
+      setAddresses(prev =>
+        prev.map((a, i) => ({ ...a, is_main: i === index }))
+      )
+
+      if (item?.id && !String(item.id).startsWith('tmp-')) {
+        await nutritionistAddressService.setMainAddress(item.id)
+      }
+
+      toast({ title: 'Sucesso', description: 'Endereço principal definido' })
+    } catch {
+      toast({ title: 'Erro', description: 'Erro ao definir principal', variant: 'destructive' })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // CEP -> autofill (regex corrigido)
+  async function handleZipCodeChange(zip: string) {
+    setFormData(prev => ({ ...prev, zip_code: zip }))
+    const clean = zip.replace(/\D/g, '')
+    if (!/^\d{8}$/.test(clean)) return
+
+    try {
+      const r = await fetch(`https://viacep.com.br/ws/${clean}/json/`)
+      const data = await r.json()
+      if (data?.erro) return
+      setFormData(prev => ({
+        ...prev,
+        street: data.logradouro || prev.street,
+        neighborhood: data.bairro || prev.neighborhood,
+        city: data.localidade || prev.city,
+        state: data.uf || prev.state,
+      }))
+    } catch { }
   }
 
   return (
@@ -346,155 +259,92 @@ export default function AddressManagement({
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold">Endereços de Atendimento</h3>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={handleAddAddress}
-            className="flex items-center gap-2"
-          >
+          <Button type="button" variant="outline" size="sm" onClick={handleAddAddress} className="flex items-center gap-2">
             <Plus className="h-4 w-4" />
             Adicionar Endereço
           </Button>
         </div>
 
-        {/* Address List */}
-        <div className="space-y-3">
-          {addresses.map((address, index) => (
-            <Card key={index} className="relative">
-              <CardContent className="pt-4">
-                <div className="flex items-start justify-between">
+        {/* Lista de endereços */}
+        {addresses.length > 0 && (
+          <div className="space-y-3">
+            {addresses.map((addr, i) => (
+              <Card key={addr.id ?? i}>
+                <CardContent className="p-4 flex items-start justify-between gap-4">
                   <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Badge
-                        variant={
-                          address.type === 'in_person' ? 'default' : 'secondary'
-                        }
-                      >
-                        {address.type === 'in_person' ? (
-                          <>
-                            <MapPin className="h-3 w-3 mr-1" />
-                            Presencial
-                          </>
-                        ) : (
-                          <>
-                            <Home className="h-3 w-3 mr-1" />
-                            Teleconsulta
-                          </>
-                        )}
-                      </Badge>
-                      {address.is_main && (
-                        <Badge variant="outline">Principal</Badge>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-sm font-medium">
+                        {addr.type === 'in_person' ? 'Presencial' : 'Teleconsulta'}
+                      </span>
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${addr.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>
+                        {addr.status === 'active' ? 'Ativo' : 'Inativo'}
+                      </span>
+                      {addr.is_main && (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">
+                          Principal
+                        </span>
                       )}
-                      <Badge
-                        variant={
-                          address.status === 'active' ? 'default' : 'secondary'
-                        }
-                      >
-                        {address.status === 'active' ? 'Ativo' : 'Inativo'}
-                      </Badge>
                     </div>
-
                     <div className="text-sm text-gray-600">
-                      <p className="font-medium">
-                        {address.city}/{address.state}
-                      </p>
-                      {address.street && (
-                        <p>
-                          {address.street}
-                          {address.number ? `, ${address.number}` : ''}
-                        </p>
-                      )}
-                      {address.neighborhood && <p>{address.neighborhood}</p>}
-                      {address.zip_code && <p>CEP: {address.zip_code}</p>}
-                      {address.service_radius_km &&
-                        address.type === 'in_person' && (
-                          <p>
-                            Raio de atendimento: {address.service_radius_km} km
-                          </p>
-                        )}
+                      {[ addr.street, addr.number, addr.neighborhood, addr.city, addr.state, addr.zip_code ]
+                        .filter(Boolean)
+                        .join(', ') || 'Endereço não informado'}
                     </div>
                   </div>
-
-                  <div className="flex items-center gap-2">
-                    {!address.is_main && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleSetMainAddress(index)}
-                        disabled={loading}
-                      >
-                        Definir como principal
+                  <div className="flex gap-2">
+                    <Button type="button" variant="outline" size="sm" onClick={() => handleEditAddress(i)}>Editar</Button>
+                    {!addr.is_main && (
+                      <Button type="button" variant="outline" size="sm" onClick={() => handleSetMainAddress(i)}>
+                        Definir Principal
                       </Button>
                     )}
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleEditAddress(index)}
-                      disabled={loading}
-                    >
-                      Editar
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDeleteAddress(index)}
-                      className="text-red-600 hover:text-red-700"
-                      disabled={loading}
-                    >
-                      <Trash2 className="h-4 w-4" />
+                    <Button type="button"variant="destructive" size="sm" onClick={() => handleDeleteAddress(i)}>
+                      Excluir
                     </Button>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
 
-        {/* Address Form */}
+        {/* Placeholder quando não há itens */}
+        {addresses.length === 0 && editingIndex === null && (
+          <div className="text-center py-8 text-gray-500">
+            <MapPin className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <p>Nenhum endereço cadastrado</p>
+            <p className="text-sm">Adicione pelo menos um endereço para seus atendimentos</p>
+          </div>
+        )}
+
+        {/* Formulário */}
         {editingIndex !== null && (
           <Card>
             <CardHeader>
-              <CardTitle>
-                {editingIndex === -1 ? 'Adicionar Endereço' : 'Editar Endereço'}
-              </CardTitle>
+              <CardTitle>{editingIndex === -1 ? 'Adicionar Endereço' : 'Editar Endereço'}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="type">Tipo de Atendimento</Label>
+                  <Label>Tipo de Atendimento</Label>
                   <Select
                     value={formData.type || ''}
-                    onValueChange={(value: 'in_person' | 'teleconsultation') =>
-                      setFormData(prev => ({ ...prev, type: value }))
-                    }
+                    onValueChange={(v: 'in_person' | 'teleconsultation') => setFormData(p => ({ ...p, type: v }))}
                   >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="in_person">Presencial</SelectItem>
-                      <SelectItem value="teleconsultation">
-                        Teleconsulta
-                      </SelectItem>
+                      <SelectItem value="teleconsultation">Teleconsulta</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-
                 <div>
-                  <Label htmlFor="status">Status</Label>
+                  <Label>Status</Label>
                   <Select
                     value={formData.status || ''}
-                    onValueChange={(value: 'active' | 'inactive') =>
-                      setFormData(prev => ({ ...prev, status: value }))
-                    }
+                    onValueChange={(v: 'active' | 'inactive') => setFormData(p => ({ ...p, status: v }))}
                   >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="active">Ativo</SelectItem>
                       <SelectItem value="inactive">Inativo</SelectItem>
@@ -503,13 +353,11 @@ export default function AddressManagement({
                 </div>
               </div>
 
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center gap-2">
                 <Checkbox
                   id="is_main"
-                  checked={formData.is_main || false}
-                  onCheckedChange={checked =>
-                    setFormData(prev => ({ ...prev, is_main: !!checked }))
-                  }
+                  checked={!!formData.is_main}
+                  onCheckedChange={(ck) => setFormData(p => ({ ...p, is_main: !!ck }))}
                 />
                 <Label htmlFor="is_main">Endereço principal</Label>
               </div>
@@ -520,43 +368,32 @@ export default function AddressManagement({
                   <Input
                     id="zip_code"
                     value={formData.zip_code || ''}
-                    onChange={e => handleZipCodeChange(e.target.value)}
+                    onChange={(e) => handleZipCodeChange(e.target.value)}
                     placeholder="00000-000"
                     maxLength={9}
                   />
                 </div>
-
                 <div>
                   <Label htmlFor="state">Estado *</Label>
                   <Select
                     value={formData.state || ''}
-                    onValueChange={value =>
-                      setFormData(prev => ({ ...prev, state: value }))
-                    }
+                    onValueChange={(uf) => setFormData(p => ({ ...p, state: uf }))}
                   >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione o estado" />
-                    </SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder="Selecione o estado" /></SelectTrigger>
                     <SelectContent>
-                      {BRAZILIAN_STATES.map(state => (
-                        <SelectItem key={state} value={state}>
-                          {state}
-                        </SelectItem>
+                      {BRAZILIAN_STATES.map(uf => (
+                        <SelectItem key={uf} value={uf}>{uf}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
-
                 <div>
                   <Label htmlFor="city">Cidade *</Label>
                   <Input
                     id="city"
                     value={formData.city || ''}
-                    onChange={e =>
-                      setFormData(prev => ({ ...prev, city: e.target.value }))
-                    }
+                    onChange={(e) => setFormData(p => ({ ...p, city: e.target.value }))}
                     placeholder="Nome da cidade"
-                    required
                   />
                 </div>
               </div>
@@ -567,22 +404,15 @@ export default function AddressManagement({
                   <Input
                     id="street"
                     value={formData.street || ''}
-                    onChange={e =>
-                      setFormData(prev => ({ ...prev, street: e.target.value }))
-                    }
-                    placeholder="Nome da rua"
+                    onChange={(e) => setFormData(p => ({ ...p, street: e.target.value }))}
                   />
                 </div>
-
                 <div>
                   <Label htmlFor="number">Número</Label>
                   <Input
                     id="number"
                     value={formData.number || ''}
-                    onChange={e =>
-                      setFormData(prev => ({ ...prev, number: e.target.value }))
-                    }
-                    placeholder="123"
+                    onChange={(e) => setFormData(p => ({ ...p, number: e.target.value }))}
                   />
                 </div>
               </div>
@@ -593,90 +423,49 @@ export default function AddressManagement({
                   <Input
                     id="neighborhood"
                     value={formData.neighborhood || ''}
-                    onChange={e =>
-                      setFormData(prev => ({
-                        ...prev,
-                        neighborhood: e.target.value,
-                      }))
-                    }
-                    placeholder="Nome do bairro"
+                    onChange={(e) => setFormData(p => ({ ...p, neighborhood: e.target.value }))}
                   />
                 </div>
-
                 <div>
                   <Label htmlFor="complement">Complemento</Label>
                   <Input
                     id="complement"
                     value={formData.complement || ''}
-                    onChange={e =>
-                      setFormData(prev => ({
-                        ...prev,
-                        complement: e.target.value,
-                      }))
-                    }
-                    placeholder="Apto, sala, etc."
+                    onChange={(e) => setFormData(p => ({ ...p, complement: e.target.value }))}
                   />
                 </div>
               </div>
 
               {formData.type === 'in_person' && (
                 <div>
-                  <Label htmlFor="service_radius_km">
-                    Raio de Atendimento (km)
-                  </Label>
+                  <Label htmlFor="service_radius_km">Raio de Atendimento (km)</Label>
                   <Input
                     id="service_radius_km"
                     type="number"
-                    min="0"
-                    max="500"
-                    value={formData.service_radius_km || ''}
-                    onChange={e =>
-                      setFormData(prev => ({
-                        ...prev,
-                        service_radius_km: e.target.value
-                          ? parseInt(e.target.value)
-                          : undefined,
-                      }))
+                    min={0}
+                    max={500}
+                    value={formData.service_radius_km ?? ''}
+                    onChange={(e) =>
+                      setFormData(p => ({ ...p, service_radius_km: e.target.value ? parseInt(e.target.value) : undefined }))
                     }
                     placeholder="30"
                   />
                   <p className="text-sm text-gray-500 mt-1">
-                    Distância máxima que você atende a partir deste endereço
+                    Distância máxima a partir deste endereço
                   </p>
                 </div>
               )}
 
               <div className="flex justify-end gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleCancelEdit}
-                  disabled={loading}
-                >
+                <Button type="button" variant="outline" onClick={finishEditing} disabled={loading}>
                   Cancelar
                 </Button>
-                <Button
-                  type="button"
-                  onClick={handleSaveAddress}
-                  disabled={loading}
-                >
-                  {loading
-                    ? 'Salvando...'
-                    :  'Salvar'}
+                <Button type="button" onClick={handleSaveAddress} disabled={loading}>
+                  {loading ? 'Salvando...' : 'Salvar'}
                 </Button>
               </div>
             </CardContent>
           </Card>
-        )}
-
-        {addresses.length === 0 && editingIndex === null && (
-          <div className="text-center py-8 text-gray-500">
-            <MapPin className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>Nenhum endereço cadastrado</p>
-            <p className="text-sm">
-              Adicione pelo menos um endereço para seus atendimentos
-            </p>
-          </div>
         )}
       </div>
     </div>

@@ -1,47 +1,52 @@
-import { createServerClient } from '@supabase/ssr'
+// middleware.ts
 import { NextResponse, type NextRequest } from 'next/server'
+import { createServerClient } from '@supabase/ssr'
 
-export async function middleware(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({
-    request,
-  })
+export async function middleware(req: NextRequest) {
+  const res = NextResponse.next()
+
+  if (!req.nextUrl.pathname.startsWith('/dashboard/admin')) {
+    return res
+  }
 
   const supabase = createServerClient(
-    process.env['NEXT_PUBLIC_SUPABASE_URL']!,
-    process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!,
+    process.env[ 'NEXT_PUBLIC_SUPABASE_URL' ]!,
+    process.env[ 'NEXT_PUBLIC_SUPABASE_ANON_KEY' ]!,
     {
       cookies: {
-        getAll() {
-          return request.cookies.getAll()
+        get(name) {
+          return req.cookies.get(name)?.value
         },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
-          supabaseResponse = NextResponse.next({
-            request,
-          })
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          )
+        set(name, value, options) {
+          res.cookies.set({ name, value, ...options })
+        },
+        remove(name, options) {
+          res.cookies.set({ name, value: '', ...options })
         },
       },
     }
   )
 
-  // Refresh session if expired - required for Server Components
-  // await supabase.auth.getUser()
+  const { data } = await supabase.auth.getUser()
+  const user = data?.user
 
-  return supabaseResponse
+  if (!user) {
+    const url = new URL('/login', req.url)
+    url.searchParams.set('next', req.nextUrl.pathname)
+    return NextResponse.redirect(url)
+  }
+
+  const role =
+    (user.user_metadata && (user.user_metadata as any).user_type) ||
+    (user.app_metadata && (user.app_metadata as any).user_type)
+
+  if (role !== 'admin') {
+    return NextResponse.redirect(new URL('/', req.url))
+  }
+
+  return res
 }
 
 export const config = {
-  matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * Feel free to modify this pattern to include more paths.
-     */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
-  ],
-} 
+  matcher: [ '/dashboard/admin/:path*' ],
+}

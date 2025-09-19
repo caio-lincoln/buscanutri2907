@@ -1,5 +1,26 @@
 import { supabase } from './supabase'
-import type { NutritionistAddress } from './supabase'
+
+// Novos tipos conforme especificação
+export type ServiceType = 'presencial' | 'online' | 'hibrido'
+export type AddressStatus = 'ativo' | 'inativo'
+
+export type NutritionistAddress = {
+  id: string
+  nutritionist_id: string
+  service_type: ServiceType
+  status: AddressStatus
+  is_primary: boolean
+  cep?: string | null
+  state?: string | null
+  city?: string | null
+  street?: string | null
+  number?: string | null
+  neighborhood?: string | null
+  complement?: string | null
+  radius_km?: number | undefined
+  created_at?: string
+  updated_at?: string
+}
 
 export interface CreateAddressData {
   nutritionist_id: string
@@ -351,3 +372,113 @@ class NutritionistAddressService {
 }
 
 export const nutritionistAddressService = new NutritionistAddressService()
+
+// Novas funções para o modal
+export async function listMyAddresses(nutritionistId: string): Promise<NutritionistAddress[]> {
+  const { data, error } = await supabase
+    .from('nutritionist_addresses')
+    .select('*')
+    .eq('nutritionist_id', nutritionistId)
+    .order('is_main', { ascending: false })
+    .order('created_at', { ascending: true })
+
+  if (error) {
+    throw new Error(`Failed to fetch addresses: ${error.message}`)
+  }
+
+  // Mapear os dados existentes para o novo formato
+  return (data || []).map(address => ({
+    id: address.id,
+    nutritionist_id: address.nutritionist_id,
+    service_type: address.type === 'in_person' ? 'presencial' : 
+                  address.type === 'teleconsultation' ? 'online' : 'hibrido',
+    status: address.status === 'active' ? 'ativo' : 'inativo',
+    is_primary: address.is_main || false,
+    cep: address.zip_code,
+    state: address.state,
+    city: address.city,
+    street: address.street,
+    number: address.number,
+    neighborhood: address.neighborhood,
+    complement: address.complement,
+    radius_km: address.service_radius_km,
+    created_at: address.created_at,
+    updated_at: address.updated_at,
+  }))
+}
+
+export async function upsertMyAddress(address: Partial<NutritionistAddress> & { nutritionist_id: string }) {
+  // Mapear do novo formato para o formato do banco
+  const dbAddress = {
+    nutritionist_id: address.nutritionist_id,
+    type: address.service_type === 'presencial' ? 'in_person' as const :
+          address.service_type === 'online' ? 'teleconsultation' as const : 'in_person' as const,
+    status: address.status === 'ativo' ? 'active' as const : 'inactive' as const,
+    is_main: address.is_primary || false,
+    zip_code: address.cep,
+    state: address.state,
+    city: address.city,
+    street: address.street,
+    number: address.number,
+    neighborhood: address.neighborhood,
+    complement: address.complement,
+    service_radius_km: address.radius_km,
+    country: 'Brasil',
+  }
+
+  if (address.id) {
+    // Update existing
+    const { data, error } = await supabase
+      .from('nutritionist_addresses')
+      .update(dbAddress)
+      .eq('id', address.id)
+      .select()
+      .single()
+
+    if (error) {
+      throw new Error(`Failed to update address: ${error.message}`)
+    }
+    return data
+  } else {
+    // Create new
+    const { data, error } = await supabase
+      .from('nutritionist_addresses')
+      .insert(dbAddress)
+      .select()
+      .single()
+
+    if (error) {
+      throw new Error(`Failed to create address: ${error.message}`)
+    }
+    return data
+  }
+}
+
+export async function deleteMyAddress(id: string) {
+  const { error } = await supabase
+    .from('nutritionist_addresses')
+    .delete()
+    .eq('id', id)
+
+  if (error) {
+    throw new Error(`Failed to delete address: ${error.message}`)
+  }
+}
+
+export async function setPrimaryAddress(nutritionistId: string, id: string) {
+  // Zerar outras como principais
+  await supabase
+    .from('nutritionist_addresses')
+    .update({ is_main: false })
+    .eq('nutritionist_id', nutritionistId)
+
+  // Definir a selecionada como principal
+  const { error } = await supabase
+    .from('nutritionist_addresses')
+    .update({ is_main: true })
+    .eq('id', id)
+
+  if (error) {
+    throw new Error(`Failed to set primary address: ${error.message}`)
+  }
+}

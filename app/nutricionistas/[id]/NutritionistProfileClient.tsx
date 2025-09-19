@@ -121,11 +121,11 @@ export default function NutritionistProfilePageClient({
 }: NutritionistProfileClientProps) {
   const [ mobileMenuOpen, setMobileMenuOpen ] = useState(false)
   const { viewStats, recordView } = useRealtimeProfileViews(nutritionist.id, {
-    totalViews: nutritionist.total_views || 0,
-    uniqueViews: nutritionist.unique_views || 0,
-    lastViewAt: nutritionist.last_view_at || null,
+    totalViews: nutritionist.totalViews || 0,
+    uniqueViews: nutritionist.uniqueViews || 0,
+    lastViewAt: nutritionist.lastViewAt || null,
   })
-  const { user } = useAuth()
+  const { user, signOut } = useAuth()
 
   if (!nutritionist) {
     notFound()
@@ -143,7 +143,7 @@ export default function NutritionistProfilePageClient({
   const formattedRating = nutritionist.rating?.toFixed(1) || '0.0'
   const formattedReviews = nutritionist.total_reviews || 0
   const formattedExperience = nutritionist.experience_years || 0
-  const formattedPatients = 0 // Placeholder, pois não está diretamente na interface
+  const formattedPatients = 0 
   const formattedPrice = nutritionist.consultation_price || 0
   // Gerar variantes de imagem otimizadas
   const avatarVariants = generateImageVariants(
@@ -334,7 +334,7 @@ export default function NutritionistProfilePageClient({
                     </Link>
                     <Button
                       variant="ghost"
-                      onClick={() => { }}
+                      onClick={signOut}
                       className="hidden md:flex items-center gap-2 text-[#1E1D40] hover:text-red-600 hover:bg-red-50"
                     >
                       <LogOut className="h-4 w-4" />

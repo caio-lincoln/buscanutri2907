@@ -2,7 +2,7 @@ import type { PlatformStats } from '@/lib/stats'
 import Home from './_client';
 import { createClient } from '../lib/supabase/server';
 
-export const revalidate = 1800; // ISR: revalida a cada 30min
+export const revalidate = 1800; 
 
 async function loadStats(): Promise<PlatformStats | null> {
   try {

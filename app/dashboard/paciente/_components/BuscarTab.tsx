@@ -38,6 +38,7 @@ import { openConversationWithNutritionist } from '../../../../lib/chat-forum-ser
 import { toast } from 'sonner'
 import { addFavoriteNutritionist, FavoriteNutritionist, getPatientFavoriteNutritionists, removeFavoriteNutritionist } from '../../../../lib/consultation-service'
 import { useAuth } from '../../../../contexts/auth-context'
+import { BRState, getStates } from '../../../../lib/geo'
 
 const getSpecialtiesText = (nutritionist: NutritionistProfile) => {
   return (
@@ -89,37 +90,6 @@ const priceRanges = [
   { label: 'R$ 100 - R$ 150', min: 100, max: 150 },
   { label: 'R$ 150 - R$ 200', min: 150, max: 200 },
   { label: 'Acima de R$ 200', min: 200, max: 1000 },
-]
-
-const statesOptions = [
-  'Todas',
-  'SP',
-  'RJ',
-  'MG',
-  'RS',
-  'PR',
-  'SC',
-  'BA',
-  'GO',
-  'PE',
-  'CE',
-  'PA',
-  'DF',
-  'ES',
-  'PB',
-  'RN',
-  'MT',
-  'MS',
-  'AL',
-  'PI',
-  'SE',
-  'RO',
-  'AC',
-  'AM',
-  'RR',
-  'AP',
-  'TO',
-  'MA',
 ]
 
 export default function BuscarTab() {
@@ -174,6 +144,15 @@ export default function BuscarTab() {
     verifiedOnly: showVerifiedOnlyNutritionist || undefined,
     sortBy: sortByNutritionist,
   })
+
+  const [ statesOptions, setStatesOptions ] = useState<BRState[]>([])
+
+  useEffect(() => {
+    (async () => {
+      const geoStates = await getStates()
+      setStatesOptions([ { ibge_id: Number.POSITIVE_INFINITY, name: 'Todas', uf: 'Todas', region: '' }, ...geoStates ])
+    })()
+  }, [])
 
   useEffect(() => {
     const loadSpecialties = async () => {
@@ -322,8 +301,8 @@ export default function BuscarTab() {
               </SelectTrigger>
               <SelectContent>
                 {statesOptions.map(state => (
-                  <SelectItem key={state} value={state}>
-                    {state}
+                  <SelectItem key={state.ibge_id} value={state.uf}>
+                    {state.uf}
                   </SelectItem>
                 ))}
               </SelectContent>
