@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { Navbar } from '@/components/navbar'
 import { Footer } from '@/components/footer'
 import {
@@ -184,7 +185,9 @@ export default function FAQPage() {
             <Button className="bg-[#4AB0D9] hover:bg-[#4AB0D9]/90">
               Entrar em Contato
             </Button>
-            <Button variant="outline">Central de Ajuda</Button>
+            <Link href="/central-ajuda">
+              <Button variant="outline">Central de Ajuda</Button>
+            </Link>
           </div>
         </div>
       </main>

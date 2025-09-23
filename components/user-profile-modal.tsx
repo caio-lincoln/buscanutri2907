@@ -93,6 +93,34 @@ const LANGUAGE_OPTIONS: Option[] = [
   { label: 'Libras', value: 'libras' },
 ]
 
+// Opções para empresas
+const COMPANY_SIZE_OPTIONS: Option[] = [
+  { label: 'Microempresa (até 9 funcionários)', value: 'micro' },
+  { label: 'Pequena empresa (10-49 funcionários)', value: 'pequena' },
+  { label: 'Média empresa (50-249 funcionários)', value: 'media' },
+  { label: 'Grande empresa (250+ funcionários)', value: 'grande' },
+]
+
+const COMPANY_SECTOR_OPTIONS: Option[] = [
+  { label: 'Tecnologia', value: 'tecnologia' },
+  { label: 'Saúde e Medicina', value: 'saude' },
+  { label: 'Educação', value: 'educacao' },
+  { label: 'Financeiro', value: 'financeiro' },
+  { label: 'Varejo', value: 'varejo' },
+  { label: 'Indústria', value: 'industria' },
+  { label: 'Serviços', value: 'servicos' },
+  { label: 'Construção', value: 'construcao' },
+  { label: 'Alimentação', value: 'alimentacao' },
+  { label: 'Transporte e Logística', value: 'transporte' },
+  { label: 'Energia', value: 'energia' },
+  { label: 'Agronegócio', value: 'agronegocio' },
+  { label: 'Consultoria', value: 'consultoria' },
+  { label: 'Marketing e Publicidade', value: 'marketing' },
+  { label: 'Recursos Humanos', value: 'rh' },
+  { label: 'Jurídico', value: 'juridico' },
+  { label: 'Outro', value: 'outro' },
+]
+
 // Opções para anamnese nutricional
 const GENERO_OPTIONS = [
   { value: 'masculino', label: 'Masculino' },
@@ -254,7 +282,7 @@ export function UserProfileModal({
   // Estado para paginação
   const [ currentPage, setCurrentPage ] = useState(1)
   const totalPages =
-    userType === 'paciente' ? 3 : userType === 'nutricionista' ? 2 : 1
+    userType === 'paciente' ? 3 : userType === 'nutricionista' ? 2 : userType === 'empresa' ? 3 : 1
 
   // Estado para controlar se está editando (modo de edição)
   const [ isEditing ] = useState(true)
@@ -289,7 +317,11 @@ export function UserProfileModal({
       const safeFormData = {
         ...initialData,
         profile_image_url: initialData?.profile_image_url || '',
-        full_name: initialData?.full_name || '',
+      }
+
+      // Adicionar full_name apenas para pacientes e nutricionistas
+      if (userType !== 'empresa') {
+        safeFormData.full_name = initialData?.full_name || ''
       }
 
       // Adicionar logo_url apenas para empresas
@@ -834,6 +866,11 @@ export function UserProfileModal({
     try {
       const dataToSubmit = { ...formData }
 
+      // Para empresas, remover o campo full_name que não existe na tabela company_profiles
+      if (userType === 'empresa') {
+        delete dataToSubmit.full_name
+      }
+
       // Processamento específico para pacientes foi removido pois os dados
       // de condições de saúde, alergias e preferências alimentares agora
       // são coletados através da anamnese nutricional
@@ -1280,26 +1317,50 @@ export function UserProfileModal({
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="full_name">Nome Completo</Label>
-              <Input
-                id="full_name"
-                value={formData?.full_name || ''}
-                onChange={handleChange}
-                required
-              />
+          {/* Campos específicos por tipo de usuário */}
+          {userType === 'empresa' ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="company_name">Nome da Empresa</Label>
+                <Input
+                  id="company_name"
+                  value={formData?.company_name || ''}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="phone">Telefone</Label>
+                <Input
+                  id="phone"
+                  value={formData?.phone || ''}
+                  onChange={handleChange}
+                  placeholder="(XX) XXXXX-XXXX"
+                />
+              </div>
             </div>
-            <div>
-              <Label htmlFor="phone">Telefone</Label>
-              <Input
-                id="phone"
-                value={formData?.phone || ''}
-                onChange={handleChange}
-                placeholder="(XX) XXXXX-XXXX"
-              />
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="full_name">Nome Completo</Label>
+                <Input
+                  id="full_name"
+                  value={formData?.full_name || ''}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="phone">Telefone</Label>
+                <Input
+                  id="phone"
+                  value={formData?.phone || ''}
+                  onChange={handleChange}
+                  placeholder="(XX) XXXXX-XXXX"
+                />
+              </div>
             </div>
-          </div>
+          )}
 
           {(userType === 'paciente' || userType === 'nutricionista') && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -2042,8 +2103,231 @@ export function UserProfileModal({
                 </>
               )}
 
-              {/* Página 2 */}
-              {currentPage === 2 && (
+              {/* Conteúdo específico para empresas */}
+              {userType === 'empresa' && (
+                <>
+                  {/* Indicador de página para empresas */}
+                  <div className="flex justify-center items-center gap-2 mb-4">
+                    <span className="text-sm text-gray-500">
+                      Página {currentPage} de {totalPages}
+                    </span>
+                  </div>
+
+                  {/* Página 1 - Dados Básicos da Empresa */}
+                  {currentPage === 1 && (
+                    <>
+                      <div className="space-y-4">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                          Dados Básicos da Empresa
+                        </h3>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="company_name">Nome da Empresa</Label>
+                            <Input
+                              id="company_name"
+                              value={formData?.company_name || ''}
+                              readOnly
+                              className="bg-gray-100 cursor-not-allowed"
+                              placeholder="Nome da empresa não pode ser alterado"
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                              O nome da empresa não pode ser alterado após o cadastro.
+                            </p>
+                          </div>
+                          <div>
+                            <Label htmlFor="cnpj">CNPJ</Label>
+                            <Input
+                              id="cnpj"
+                              value={formData?.cnpj || ''}
+                              readOnly
+                              className="bg-gray-100 cursor-not-allowed"
+                              placeholder="CNPJ não pode ser alterado"
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                              O CNPJ não pode ser alterado após o cadastro.
+                            </p>
+                          </div>
+                        </div>
+
+                        <div>
+                          <Label htmlFor="description">Descrição da Empresa</Label>
+                          <Textarea
+                            id="description"
+                            value={formData?.description || ''}
+                            onChange={handleChange}
+                            placeholder="Descreva sua empresa, seus serviços e diferenciais..."
+                            rows={4}
+                          />
+                        </div>
+
+                        <div className="text-center text-gray-600">
+                          <p>
+                            Complete as próximas páginas com as informações da empresa e dos responsáveis.
+                          </p>
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {/* Página 2 - Informações da Empresa */}
+                  {currentPage === 2 && (
+                    <>
+                      <div className="space-y-4">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                          Informações da Empresa
+                        </h3>
+
+                        <div>
+                          <Label htmlFor="website_url">Website da Empresa</Label>
+                          <Input
+                            id="website_url"
+                            type="url"
+                            value={formData?.website_url || ''}
+                            onChange={handleChange}
+                            placeholder="https://www.suaempresa.com.br"
+                          />
+                          <p className="text-xs text-gray-500 mt-1">
+                            Informe o site oficial da sua empresa.
+                          </p>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="company_size">Tamanho da Empresa</Label>
+                            <Select
+                              value={formData?.company_size || ''}
+                              onValueChange={(value) => {
+                                setFormData(prev => ({ ...prev, company_size: value }))
+                              }}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecione o tamanho" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {COMPANY_SIZE_OPTIONS.map(option => (
+                                  <SelectItem key={option.value} value={option.value}>
+                                    {option.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <Label htmlFor="company_sector">Setor da Empresa</Label>
+                            <Select
+                              value={formData?.company_sector || ''}
+                              onValueChange={(value) => {
+                                setFormData(prev => ({ ...prev, company_sector: value }))
+                              }}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecione o setor" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {COMPANY_SECTOR_OPTIONS.map(option => (
+                                  <SelectItem key={option.value} value={option.value}>
+                                    {option.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+
+                        <div>
+                          <Label htmlFor="address">Endereço da Empresa</Label>
+                          <Textarea
+                            id="address"
+                            value={formData?.address || ''}
+                            onChange={handleChange}
+                            placeholder="Rua, número, bairro, cidade, CEP"
+                            rows={3}
+                          />
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {/* Página 3 - Dados dos Responsáveis */}
+                  {currentPage === 3 && (
+                    <>
+                      <div className="space-y-4">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                          Dados dos Responsáveis
+                        </h3>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="responsible_name">Nome do Responsável</Label>
+                            <Input
+                              id="responsible_name"
+                              value={formData?.responsible_name || ''}
+                              onChange={handleChange}
+                              placeholder="Nome completo do responsável"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="responsible_role">Cargo do Responsável</Label>
+                            <Input
+                              id="responsible_role"
+                              value={formData?.responsible_role || ''}
+                              onChange={handleChange}
+                              placeholder="Ex: Diretor, Gerente, CEO"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="responsible_cpf">CPF do Responsável</Label>
+                            <Input
+                              id="responsible_cpf"
+                              value={formData?.responsible_cpf || ''}
+                              onChange={handleChange}
+                              placeholder="XXX.XXX.XXX-XX"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="responsible_email">E-mail do Responsável</Label>
+                            <Input
+                              id="responsible_email"
+                              type="email"
+                              value={formData?.responsible_email || ''}
+                              onChange={handleChange}
+                              placeholder="email@empresa.com"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <Label htmlFor="responsible_address">Endereço do Responsável</Label>
+                          <Textarea
+                            id="responsible_address"
+                            value={formData?.responsible_address || ''}
+                            onChange={handleChange}
+                            placeholder="Endereço completo do responsável"
+                            rows={3}
+                          />
+                        </div>
+
+                        <div>
+                          <Label htmlFor="responsible_phone">Telefone do Responsável</Label>
+                          <Input
+                            id="responsible_phone"
+                            value={formData?.responsible_phone || ''}
+                            onChange={handleChange}
+                            placeholder="(XX) XXXXX-XXXX"
+                          />
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </>
+              )}
+
+              {/* Página 2 para nutricionistas */}
+              {userType === 'nutricionista' && currentPage === 2 && (
                 <>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
@@ -2136,7 +2420,7 @@ export function UserProfileModal({
         </form>
 
         {/* Navegação entre páginas - movida para fora do form */}
-        {isEditing && (
+        {isEditing && totalPages > 1 && (
           <div className="flex justify-between items-center mt-6 px-6">
             <Button
               type="button"
@@ -2168,7 +2452,7 @@ export function UserProfileModal({
               type="button"
               variant="outline"
               onClick={nextPage}
-              disabled={currentPage === totalPages}
+              disabled={currentPage >= totalPages}
               className="flex items-center gap-2"
             >
               Próxima
