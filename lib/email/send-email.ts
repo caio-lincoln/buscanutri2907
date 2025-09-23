@@ -47,8 +47,6 @@ export async function sendWelcomeEmail({
     textTemplate = welcome_company_text;
   }
 
-  console.log("🚀 ~ sendWelcomeEmail ~ htmlTemplate:", htmlTemplate)
-
   const template = await renderEmailTemplate(role, {
     name,
     role,

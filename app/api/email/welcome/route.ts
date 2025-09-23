@@ -23,6 +23,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Dados de usuário inválidos' }, { status: 400 })
   }
 
+  await new Promise(resolve => setTimeout(resolve, 5000));
+
   const userType = rec?.raw_user_meta_data?.user_type
   const collection = userType === 'paciente' ? "patient_profiles" : "nutritionist_profiles"
 
@@ -43,13 +45,11 @@ export async function POST(req: NextRequest) {
   if (!email) return NextResponse.json({ ok: false, error: 'no email' }, { status: 400 })
 
   const { data: settings, error: settingsError } = await supabase
-  .from('platform_settings')
-  .select('platform_name, contact_email, welcome_nutritionist_html, welcome_nutritionist_text, welcome_patient_html, welcome_patient_text, welcome_company_html, welcome_company_text')
+    .from('platform_settings')
+    .select('platform_name, contact_email, welcome_nutritionist_html, welcome_nutritionist_text, welcome_patient_html, welcome_patient_text, welcome_company_html, welcome_company_text')
     .eq('id', 1)
     .single()
 
-  console.log("🚀 ~ POST ~ settings:", settings)
-  console.log("🚀 ~ POST ~ settingsError:", settingsError)
   if (settingsError || !settings) {
     return NextResponse.json({ ok: false, error: 'Erro ao buscar configurações' }, { status: 500 })
   }
