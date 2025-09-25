@@ -33,6 +33,7 @@ export async function updateUserProfile(
 
   // Remover campos que não devem ser atualizados ou que são gerados automaticamente
   const dataToUpdate: any = { ...profileData }
+
   delete dataToUpdate.id
   delete dataToUpdate.user_id
   delete dataToUpdate.created_at

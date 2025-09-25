@@ -2045,7 +2045,7 @@ export function UserProfileModal({
                                 type="number"
                                 min="0"
                                 step="0.01"
-                                value={formData?.service_consultation_price || ''}
+                                value={formData?.service_consultation_price || '0'}
                                 onChange={(e) => {
                                   setFormData({
                                     ...formData,
@@ -2066,7 +2066,7 @@ export function UserProfileModal({
                                 type="number"
                                 min="0"
                                 step="0.01"
-                                value={formData?.service_followup_price || ''}
+                                value={formData?.service_followup_price || '0'}
                                 onChange={handleChange}
                                 placeholder="Ex: 80.00"
                               />
@@ -2081,7 +2081,7 @@ export function UserProfileModal({
                                 type="number"
                                 min="0"
                                 step="0.01"
-                                value={formData?.service_meal_plan_price || ''}
+                                value={formData?.service_meal_plan_price || '0'}
                                 onChange={handleChange}
                                 placeholder="Ex: 120.00"
                               />
