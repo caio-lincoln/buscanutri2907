@@ -21,14 +21,18 @@ import {
   HelpCircle,
   Award,
   Plus,
+  Trash2,
 } from 'lucide-react'
 
 import {
   type ForumQuestion,
   getAllForumQuestions,
   getNutritionistForumQuestions,
+  deleteNutritionistQuestion,
 } from '@/lib/forum-data'
 import { QuestionModal } from '@/components/question-modal'
+import { DeleteQuestionModal } from '@/components/delete-question-modal'
+import { getCurrentUser } from '@/lib/auth'
 
 // Função para formatar datas de forma segura
 const formatQuestionDate = (timestamp: string): string => {
@@ -61,6 +65,10 @@ export function ForumTab() {
     ForumQuestion[]
   >([])
   const [isQuestionModalOpen, setIsQuestionModalOpen] = useState(false)
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
+  const [questionToDelete, setQuestionToDelete] = useState<ForumQuestion | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [currentUser, setCurrentUser] = useState<any>(null)
 
   useEffect(() => {
     // Initialize questions from forum data with badges
@@ -72,11 +80,47 @@ export function ForumTab() {
         await getNutritionistForumQuestions()
       setNutritionistQuestions(nutritionistQuestionsWithBadges)
     }
+    
+    // Load current user
+    const loadCurrentUser = async () => {
+      const user = await getCurrentUser()
+      setCurrentUser(user)
+    }
+    
     loadQuestions()
+    loadCurrentUser()
   }, [])
 
   const handleQuestionPosted = (newQuestion: ForumQuestion) => {
     setQuestions(prev => [newQuestion, ...prev])
+  }
+
+  // Função para iniciar o processo de deletar pergunta
+  const handleDeleteQuestion = (question: ForumQuestion) => {
+    setQuestionToDelete(question)
+    setIsDeleteModalOpen(true)
+  }
+
+  // Função para confirmar e executar a exclusão
+  const confirmDeleteQuestion = async () => {
+    if (!questionToDelete) return
+
+    setIsDeleting(true)
+    try {
+      await deleteNutritionistQuestion(questionToDelete.id)
+      
+      // Remove a pergunta da lista apropriada
+      setNutritionistQuestions(prev => 
+        prev.filter(q => q.id !== questionToDelete.id)
+      )
+      
+      setIsDeleteModalOpen(false)
+      setQuestionToDelete(null)
+    } catch (error) {
+      console.error('Erro ao deletar pergunta:', error)
+    } finally {
+      setIsDeleting(false)
+    }
   }
 
   // Calculate forum statistics
@@ -260,19 +304,38 @@ export function ForumTab() {
                         {question.content}
                       </p>
                     </Link>
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <span className="flex items-center gap-1">
-                        <ThumbsUp className="h-4 w-4" /> {question.likes}
-                      </span>
-                      <span>•</span>
-                      <span className="flex items-center gap-1">
-                        <MessageCircle className="h-4 w-4" />{' '}
-                        {question.repliesCount}
-                      </span>
-                      <span>•</span>
-                      <span className="flex items-center gap-1">
-                        <Eye className="h-4 w-4" /> {question.views}
-                      </span>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <span className="flex items-center gap-1">
+                          <ThumbsUp className="h-4 w-4" /> {question.likes}
+                        </span>
+                        <span>•</span>
+                        <span className="flex items-center gap-1">
+                          <MessageCircle className="h-4 w-4" />{' '}
+                          {question.repliesCount}
+                        </span>
+                        <span>•</span>
+                        <span className="flex items-center gap-1">
+                          <Eye className="h-4 w-4" /> {question.views}
+                        </span>
+                      </div>
+                      
+                      {/* Botão de deletar - apenas para o autor da pergunta */}
+                      {currentUser?.id === question.author.id && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          onClick={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            handleDeleteQuestion(question)
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4 mr-1" />
+                          Excluir
+                        </Button>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -406,6 +469,15 @@ export function ForumTab() {
         open={isQuestionModalOpen}
         onOpenChange={setIsQuestionModalOpen}
         onQuestionPosted={handleQuestionPosted}
+      />
+
+      {/* Delete Question Modal */}
+      <DeleteQuestionModal
+        open={isDeleteModalOpen}
+        onOpenChange={setIsDeleteModalOpen}
+        onConfirm={confirmDeleteQuestion}
+        questionTitle={questionToDelete?.title || ''}
+        isDeleting={isDeleting}
       />
     </div>
   )

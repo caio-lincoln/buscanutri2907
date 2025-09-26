@@ -21,13 +21,16 @@ import {
   Stethoscope,
   User,
   ArrowLeft,
+  Trash2,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/auth-context'
 import { QuestionModal } from '@/components/question-modal'
+import { DeleteQuestionModal } from '@/components/delete-question-modal'
 import {
   getNutritionistForumQuestions,
   getAllForumQuestions,
   likeForumItem,
+  deleteNutritionistQuestion,
   type ForumQuestion,
 } from '@/lib/forum-data'
 
@@ -78,6 +81,11 @@ export default function NutritionistForumPage() {
   // Modal state
   const [isQuestionModalOpen, setIsQuestionModalOpen] = useState(false)
   const [activeTab, setActiveTab] = useState('patients')
+  
+  // Delete modal states
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
+  const [questionToDelete, setQuestionToDelete] = useState<ForumQuestion | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   // Load data
   useEffect(() => {
@@ -190,12 +198,55 @@ export default function NutritionistForumPage() {
 
   // Handle new question success
   const handleQuestionSuccess = (newQuestion: ForumQuestion) => {
-    if (newQuestion.author.userType === 'paciente') {
-      setPatientQuestions(prev => [newQuestion, ...prev])
-    } else {
+    // Add to appropriate array based on author type
+    if (newQuestion.author.userType === 'nutricionista') {
       setNutritionistQuestions(prev => [newQuestion, ...prev])
+    } else {
+      setPatientQuestions(prev => [newQuestion, ...prev])
     }
     setIsQuestionModalOpen(false)
+  }
+
+  // Handle delete question
+  const handleDeleteQuestion = (question: ForumQuestion) => {
+    setQuestionToDelete(question)
+    setIsDeleteModalOpen(true)
+  }
+
+  // Confirm delete question
+  const confirmDeleteQuestion = async () => {
+    if (!questionToDelete || !currentUser) return
+
+    setIsDeleting(true)
+    try {
+      const result = await deleteNutritionistQuestion(
+        questionToDelete.id,
+        currentUser.id
+      )
+
+      if (result.success) {
+        // Remove from the appropriate array
+        if (activeTab === 'patients') {
+          setPatientQuestions(prev =>
+            prev.filter(q => q.id !== questionToDelete.id)
+          )
+        } else {
+          setNutritionistQuestions(prev =>
+            prev.filter(q => q.id !== questionToDelete.id)
+          )
+        }
+        
+        setIsDeleteModalOpen(false)
+        setQuestionToDelete(null)
+      } else {
+        // Handle error - could show a toast notification
+        console.error('Erro ao deletar pergunta:', result.error)
+      }
+    } catch (error) {
+      console.error('Erro ao deletar pergunta:', error)
+    } finally {
+      setIsDeleting(false)
+    }
   }
 
   if (authLoading || loading) {
@@ -414,6 +465,15 @@ export default function NutritionistForumPage() {
             onOpenChange={setIsQuestionModalOpen}
             onQuestionPosted={handleQuestionSuccess}
           />
+
+          {/* Delete Question Modal */}
+          <DeleteQuestionModal
+            open={isDeleteModalOpen}
+            onOpenChange={setIsDeleteModalOpen}
+            onConfirm={confirmDeleteQuestion}
+            questionTitle={questionToDelete?.title || ''}
+            isDeleting={isDeleting}
+          />
         </div>
       </div>
     </div>
@@ -519,8 +579,13 @@ export default function NutritionistForumPage() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="text-red-600"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleDeleteQuestion(question)
+                            }}
                           >
+                            <Trash2 className="h-4 w-4 mr-1" />
                             Excluir
                           </Button>
                         </div>
