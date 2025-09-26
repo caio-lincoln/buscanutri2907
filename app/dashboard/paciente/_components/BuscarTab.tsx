@@ -167,7 +167,6 @@ export default function BuscarTab() {
         const data = await response.json()
         setSpecialties(data.specialties || [])
       } catch (err) {
-        console.log("🚀 ~ loadSpecialties ~ err:", err)
         // Silent error handling - error loading specialties
       } finally {
         setLoading(false)

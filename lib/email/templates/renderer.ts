@@ -3,6 +3,7 @@ import { UserRole } from '../templates'
 
 interface TemplateData {
   name?: string
+  company_name?: string
   welcome_email_template?: string;
   welcome_email_text?: string;
   [key: string]: any
@@ -16,10 +17,10 @@ export async function renderEmailTemplate(role: UserRole, data: TemplateData = {
   const textTemplate = customTextTemplate || defaultTextTemplates[role]
   const subject = defaultSubjects[role]
   
-  console.log("🚀 ~ renderEmailTemplate ~ data:", data)
   // Prepara os dados para substituição
   const templateData = {
     ...data,
+    ...(role === 'COMPANY' ? { companyName: data.company_name } : {}),
     platformUrl: process.env['NEXT_PUBLIC_APP_URL'] || 'https://www.buscanutri.com.br'
   }
   
@@ -34,7 +35,7 @@ export async function renderEmailTemplate(role: UserRole, data: TemplateData = {
   }
 }
 
-export const allowedVars = ['name', 'role', 'dashboard_url', 'app_name', 'support_email']
+export const allowedVars = ['name', 'role', 'dashboard_url', 'app_name', 'support_email', 'company_name']
 
 export function renderTemplate(str: string, vars: Record<string, string>): string {
   // Sanitizar as variáveis para permitir apenas as chaves permitidas

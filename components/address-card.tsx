@@ -168,7 +168,6 @@ export function AddressCard({ userType, open }: Props) {
       setShowAddressForm(false)
       await loadAddresses()
     } catch (error) {
-      console.log('Erro ao excluir endereço:', error)
       toast({
         title: 'Erro ao excluir',
         description: 'Não foi possível excluir o endereço.',

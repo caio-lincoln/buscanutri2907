@@ -23,33 +23,34 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Dados de usuário inválidos' }, { status: 400 })
   }
 
-  await new Promise(resolve => setTimeout(resolve, 5000));
+  await new Promise(resolve => setTimeout(resolve, 3000));
 
   const userType = rec?.raw_user_meta_data?.user_type
-  const collection = userType === 'paciente' ? "patient_profiles" : "nutritionist_profiles"
+  const collection = userType === 'paciente' ? "patient_profiles" :  userType === 'nutricionista' ? "nutritionist_profiles" : "company_profiles"
 
   const supabase = createAdminClient()
   const { data: profile, error } = await supabase
-    .from(collection)
-    .select('*')
-    .eq('user_id', rec.id)
-    .single()
-
+  .from(collection)
+  .select('*')
+  .eq('user_id', rec.id)
+  .single()
+  
   if (error) {
     return NextResponse.json({ ok: false, error: 'Erro ao buscar perfil' }, { status: 500 })
   }
 
-  const name = profile?.name
+  const name = profile?.full_name?.split(' ')?.[0]
+  const companyName = profile?.responsible_name?.split(' ')?.[0]
   const role = mapRole(userType ?? rec?.user_metadata?.user_type)
 
   if (!email) return NextResponse.json({ ok: false, error: 'no email' }, { status: 400 })
 
   const { data: settings, error: settingsError } = await supabase
-    .from('platform_settings')
-    .select('platform_name, contact_email, welcome_nutritionist_html, welcome_nutritionist_text, welcome_patient_html, welcome_patient_text, welcome_company_html, welcome_company_text')
-    .eq('id', 1)
-    .single()
-
+  .from('platform_settings')
+  .select('platform_name, contact_email, welcome_nutritionist_html, welcome_nutritionist_text, welcome_patient_html, welcome_patient_text, welcome_company_html, welcome_company_text')
+  .eq('id', 1)
+  .single()
+  
   if (settingsError || !settings) {
     return NextResponse.json({ ok: false, error: 'Erro ao buscar configurações' }, { status: 500 })
   }
@@ -58,6 +59,7 @@ export async function POST(req: NextRequest) {
     await sendWelcomeEmail({
       to: email,
       name,
+      company_name: companyName,
       role,
       app_name: settings.platform_name,
       support_email: settings.contact_email,
@@ -71,6 +73,7 @@ export async function POST(req: NextRequest) {
     })
     return NextResponse.json({ ok: true })
   } catch (error) {
+    console.log("🚀 ~ POST ~ error:", error)
     return NextResponse.json({ ok: false, error: 'Erro ao enviar email' }, { status: 500 })
   }
 }

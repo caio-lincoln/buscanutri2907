@@ -123,7 +123,6 @@ export default function TeleconsultasPage() {
         .order('scheduled_at', { ascending: false })
 
       const { status, dateFrom, dateTo, priceMin, priceMax } = debouncedServerFilters
-      console.log("🚀 ~ TeleconsultasPage ~ status:", status)
 
       if (status !== 'all') q = q.eq('status', status)
       if (dateFrom) q = q.gte('scheduled_at', startOfDay(dateFrom).toISOString())
@@ -132,7 +131,6 @@ export default function TeleconsultasPage() {
       if (priceMax) q = q.lte('price', Number(priceMax))
 
       const { data, error } = await q
-      console.log("🚀 ~ TeleconsultasPage ~ data:", data)
       if (error) throw error
 
       setSessions((data as TeleconsultaSession[]) ?? [])

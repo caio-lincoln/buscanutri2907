@@ -17,6 +17,7 @@ export async function signUp(
 ) {
   try {
     // Silent logging: Starting signup with auto-confirmation
+      console.log("🚀 ~ signUp ~ userType:", userType)
 
     // 1. Verificar se o usuário já existe
     const { data: existingUser } = await supabase
@@ -108,7 +109,6 @@ export async function signUp(
       .single()
 
     if (userError) {
-      console.log("🚀 ~ signUp ~ userError:", userError)
       // Silent error handling: Error creating user record
     } else {
       // Silent logging: User record created in users table

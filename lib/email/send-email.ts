@@ -5,6 +5,7 @@ import { renderEmailTemplate } from './templates/renderer'
 export interface SendWelcomeInput {
   to: string
   name: string
+  company_name?: string
   role: UserRole
   app_name: string;
   support_email: string;
@@ -20,6 +21,7 @@ export interface SendWelcomeInput {
 export async function sendWelcomeEmail({
   to,
   name,
+  company_name,
   role,
   app_name,
   support_email,
@@ -33,7 +35,7 @@ export async function sendWelcomeEmail({
 }: SendWelcomeInput) {
   const transporter = await getTransporter()
 
-  let htmlTemplate = welcome_email_template; 
+  let htmlTemplate = welcome_email_template;
   let textTemplate;
 
   if (role === 'NUTRITIONIST') {
@@ -49,6 +51,7 @@ export async function sendWelcomeEmail({
 
   const template = await renderEmailTemplate(role, {
     name,
+    ...(role === 'COMPANY' ? { company_name } : {}),
     role,
     dashboard_url: `${process.env[ 'NEXT_PUBLIC_APP_URL' ] || 'https://www.buscanutri.com.br'}/dashboard`,
     app_name: app_name ?? 'Busca Nutri',

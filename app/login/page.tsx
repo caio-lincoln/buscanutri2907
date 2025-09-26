@@ -97,7 +97,6 @@ export default function LoginPage() {
         })
 
         // Use replace to avoid back button issues
-        console.log("redirecionado", redirectPath)
         router.replace(redirectPath)
         return // Exit early to prevent further execution
       } else {
