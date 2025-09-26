@@ -30,9 +30,8 @@ import { useDashboardStats } from '@/hooks/use-dashboard-stats'
 import { UsersTab } from '@/components/dashboard/admin/users-tab'
 import { JobsTab } from '@/components/dashboard/admin/jobs-tab'
 import { ReportsTab } from '@/components/dashboard/admin/reports-tab'
-import { FinancialTab } from '@/components/dashboard/admin/financial-tab'
-import { AnalyticsTab } from '@/components/dashboard/admin/analytics-tab'
-import { ModerationTab } from '@/components/dashboard/admin/moderation-tab'
+import FinancialTab from '@/components/dashboard/admin/financial-tab'
+import AnalyticsTab from '@/components/dashboard/admin/analytics-tab'
 import { SystemTab } from '@/components/dashboard/admin/system-tab'
 import { SettingsTab } from '@/components/dashboard/admin/settings-tab'
 import { BadgesTab } from '@/components/dashboard/admin/badges-tab' // Importar a nova aba de insígnias
@@ -50,11 +49,8 @@ const TABS = [
   'relatorios',
   'financeiro',
   'analytics',
-  'moderacao',
-  'sistema',
   'configuracoes',
   'insignias',
-  'notificacoes',
 ] as const
 
 export type Tab = typeof TABS[ number ];
@@ -505,9 +501,7 @@ export default function AdminDashboard({ initialUser }: Props) {
         {activeTab === 'relatorios' && <ReportsTab />}
         {activeTab === 'financeiro' && <FinancialTab />}
         {activeTab === 'analytics' && <AnalyticsTab />}
-        {activeTab === 'moderacao' && <ModerationTab />}
-        {activeTab === 'sistema' && <SystemTab />}
-        {activeTab === 'insignias' && <BadgesTab />}{' '}
+        {activeTab === 'insignias' && <BadgesTab initialUser={initialUser} />}{' '}
         {/* Renderiza a nova aba de insígnias */}
         {activeTab === 'configuracoes' && <SettingsTab />}
       </div>

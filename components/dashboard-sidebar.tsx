@@ -520,28 +520,9 @@ export const getMenuItems = (
         { id: 'overview', label: 'Visão Geral', icon: Home },
         { id: 'usuarios', label: 'Usuários', icon: Users },
         { id: 'vagas', label: 'Vagas', icon: Briefcase },
-        {
-          id: 'relatorios',
-          label: 'Relatórios',
-          icon: FileText,
-          badge: pendingReports > 0 ? { count: pendingReports, variant: 'destructive' } : undefined,
-        },
         { id: 'financeiro', label: 'Financeiro', icon: DollarSign },
         { id: 'analytics', label: 'Analytics', icon: TrendingUp },
-        {
-          id: 'moderacao',
-          label: 'Moderação',
-          icon: Shield,
-          badge: pendingModerations > 0 ? { count: pendingModerations, variant: 'outline' } : undefined,
-        },
-        { id: 'sistema', label: 'Sistema', icon: Cog },
         { id: 'configuracoes', label: 'Configurações', icon: Settings },
-        {
-          id: 'notificacoes',
-          label: 'Notificações',
-          icon: Bell,
-          badge: unreadNotifications > 0 ? { count: unreadNotifications, variant: 'destructive' } : undefined,
-        },
       ]
       return items
     }
