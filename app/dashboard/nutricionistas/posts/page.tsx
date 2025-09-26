@@ -53,6 +53,7 @@ import { useDashboardStats } from '@/hooks/use-dashboard-stats'
 import { BlogPostsService, CreateBlogPostData, BlogPostStats } from '@/lib/blog-posts-service'
 import { BlogPost, createSupabaseClient } from '@/lib/supabase'
 import { toast } from 'sonner'
+import { ContentModeration, ModerationAction } from '@/components/ui/content-moderation'
 
 export default function PostsPage() {
   const [posts, setPosts] = useState<BlogPost[]>([])
@@ -261,6 +262,77 @@ export default function PostsPage() {
     } catch (error) {
       console.error('Erro ao publicar post:', error)
       toast.error('Erro ao publicar post')
+    }
+  }
+
+  const handleModerationAction = async (postId: string, action: ModerationAction): Promise<boolean> => {
+    try {
+      const supabase = createSupabaseClient()
+      
+      if (action.type === 'delete') {
+        // Delete the blog post
+        const { error } = await supabase
+          .from('blog_posts')
+          .delete()
+          .eq('id', postId)
+        
+        if (error) {
+          console.error('Erro ao excluir post:', error)
+          return false
+        }
+        
+        // Log the moderation action
+        await supabase
+          .from('moderation_logs')
+          .insert({
+            content_id: postId,
+            content_type: 'blog_post',
+            action_type: action.type,
+            reason: action.reason,
+            category: action.category,
+            notes: action.notes,
+            moderator_id: user?.id
+          })
+        
+        loadPosts()
+        loadStats()
+        return true
+      } else if (action.type === 'flag') {
+        // Flag the post for review
+        const { error } = await supabase
+          .from('blog_posts')
+          .update({ 
+            status: 'flagged',
+            moderation_notes: action.notes 
+          })
+          .eq('id', postId)
+        
+        if (error) {
+          console.error('Erro ao sinalizar post:', error)
+          return false
+        }
+        
+        // Log the moderation action
+        await supabase
+          .from('moderation_logs')
+          .insert({
+            content_id: postId,
+            content_type: 'blog_post',
+            action_type: action.type,
+            reason: action.reason,
+            category: action.category,
+            notes: action.notes,
+            moderator_id: user?.id
+          })
+        
+        loadPosts()
+        return true
+      }
+      
+      return false
+    } catch (error) {
+      console.error('Erro na ação de moderação:', error)
+      return false
     }
   }
 
@@ -625,6 +697,13 @@ export default function PostsPage() {
                             <Share2 className="h-4 w-4" />
                           </Button>
                         )}
+                        <ContentModeration
+                          contentId={post.id}
+                          contentType="blog_post"
+                          contentTitle={post.title}
+                          authorId={post.author_id}
+                          onModerationAction={(action) => handleModerationAction(post.id, action)}
+                        />
                       </div>
                     </div>
                   </div>

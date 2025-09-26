@@ -39,18 +39,20 @@ import {
   getCompanyOverviewData,
   type CompanyOverviewStats,
 } from '@/lib/company-data-service'
+import { PermissionWrapper, usePermissions } from '@/components/ui/permission-wrapper'
+import PerfilTab from './_components/PerfilTab'
 
 export default function CompanyDashboard() {
   const [profile, setProfile] = useState<CompanyProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('overview')
-  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
   const [overviewData, setOverviewData] = useState<CompanyOverviewStats | null>(
     null
   )
   const [overviewLoading, setOverviewLoading] = useState(false)
   const router = useRouter()
   const { user, loading: authLoading, signOut } = useAuth()
+  const { hasPermission } = usePermissions()
 
   // Funções definidas antes dos useEffect
   const loadProfile = async () => {
@@ -252,101 +254,109 @@ export default function CompanyDashboard() {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                <Card
-                  className="group hover-lift cursor-pointer transition-all duration-300 border-0 shadow-lg hover:shadow-xl bg-gradient-to-br from-blue-50 to-blue-100/50 backdrop-blur-sm"
-                  onClick={() => setActiveTab('vagas')}
-                >
-                  <CardContent className="p-6 text-center">
-                    <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300">
-                      <Plus className="h-7 w-7 text-white" />
-                    </div>
-                    <h3 className="font-semibold text-[#1E1D40] mb-2 text-lg">
-                      Publicar Vaga
-                    </h3>
-                    <p className="text-sm text-gray-600 mb-4">
-                      Crie uma nova oportunidade
-                    </p>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                    >
-                      Criar vaga <ArrowRight className="h-3 w-3 ml-1" />
-                    </Button>
-                  </CardContent>
-                </Card>
+                <PermissionWrapper permission="manage_jobs">
+                  <Card
+                    className="group hover-lift cursor-pointer transition-all duration-300 border-0 shadow-lg hover:shadow-xl bg-gradient-to-br from-blue-50 to-blue-100/50 backdrop-blur-sm"
+                    onClick={() => setActiveTab('vagas')}
+                  >
+                    <CardContent className="p-6 text-center">
+                      <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                        <Plus className="h-7 w-7 text-white" />
+                      </div>
+                      <h3 className="font-semibold text-[#1E1D40] mb-2 text-lg">
+                        Publicar Vaga
+                      </h3>
+                      <p className="text-sm text-gray-600 mb-4">
+                        Crie uma nova oportunidade
+                      </p>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                      >
+                        Criar vaga <ArrowRight className="h-3 w-3 ml-1" />
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </PermissionWrapper>
 
-                <Card
-                  className="group hover-lift cursor-pointer transition-all duration-300 border-0 shadow-lg hover:shadow-xl bg-gradient-to-br from-green-50 to-green-100/50 backdrop-blur-sm"
-                  onClick={() => setActiveTab('candidatos')}
-                >
-                  <CardContent className="p-6 text-center">
-                    <div className="w-14 h-14 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300">
-                      <Users className="h-7 w-7 text-white" />
-                    </div>
-                    <h3 className="font-semibold text-[#1E1D40] mb-2 text-lg">
-                      Candidatos
-                    </h3>
-                    <p className="text-sm text-gray-600 mb-4">
-                      Gerencie candidaturas
-                    </p>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="text-green-600 hover:text-green-700 hover:bg-green-50"
-                    >
-                      Ver candidatos <ArrowRight className="h-3 w-3 ml-1" />
-                    </Button>
-                  </CardContent>
-                </Card>
+                <PermissionWrapper permission="manage_candidates">
+                  <Card
+                    className="group hover-lift cursor-pointer transition-all duration-300 border-0 shadow-lg hover:shadow-xl bg-gradient-to-br from-green-50 to-green-100/50 backdrop-blur-sm"
+                    onClick={() => setActiveTab('candidatos')}
+                  >
+                    <CardContent className="p-6 text-center">
+                      <div className="w-14 h-14 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                        <Users className="h-7 w-7 text-white" />
+                      </div>
+                      <h3 className="font-semibold text-[#1E1D40] mb-2 text-lg">
+                        Candidatos
+                      </h3>
+                      <p className="text-sm text-gray-600 mb-4">
+                        Gerencie candidaturas
+                      </p>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                      >
+                        Ver candidatos <ArrowRight className="h-3 w-3 ml-1" />
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </PermissionWrapper>
 
-                <Card
-                  className="group hover-lift cursor-pointer transition-all duration-300 border-0 shadow-lg hover:shadow-xl bg-gradient-to-br from-purple-50 to-purple-100/50 backdrop-blur-sm"
-                  onClick={() => setActiveTab('processos')}
-                >
-                  <CardContent className="p-6 text-center">
-                    <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300">
-                      <Calendar className="h-7 w-7 text-white" />
-                    </div>
-                    <h3 className="font-semibold text-[#1E1D40] mb-2 text-lg">
-                      Entrevistas
-                    </h3>
-                    <p className="text-sm text-gray-600 mb-4">
-                      Agende e gerencie entrevistas
-                    </p>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="text-purple-600 hover:text-purple-700 hover:bg-purple-50"
-                    >
-                      Ver agenda <ArrowRight className="h-3 w-3 ml-1" />
-                    </Button>
-                  </CardContent>
-                </Card>
+                <PermissionWrapper permission="manage_interviews">
+                  <Card
+                    className="group hover-lift cursor-pointer transition-all duration-300 border-0 shadow-lg hover:shadow-xl bg-gradient-to-br from-purple-50 to-purple-100/50 backdrop-blur-sm"
+                    onClick={() => setActiveTab('processos')}
+                  >
+                    <CardContent className="p-6 text-center">
+                      <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                        <Calendar className="h-7 w-7 text-white" />
+                      </div>
+                      <h3 className="font-semibold text-[#1E1D40] mb-2 text-lg">
+                        Entrevistas
+                      </h3>
+                      <p className="text-sm text-gray-600 mb-4">
+                        Agende e gerencie entrevistas
+                      </p>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-purple-600 hover:text-purple-700 hover:bg-purple-50"
+                      >
+                        Ver agenda <ArrowRight className="h-3 w-3 ml-1" />
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </PermissionWrapper>
 
-                <Card
-                  className="group hover-lift cursor-pointer transition-all duration-300 border-0 shadow-lg hover:shadow-xl bg-gradient-to-br from-orange-50 to-orange-100/50 backdrop-blur-sm"
-                  onClick={() => setActiveTab('relatorios')}
-                >
-                  <CardContent className="p-6 text-center">
-                    <div className="w-14 h-14 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300">
-                      <FileText className="h-7 w-7 text-white" />
-                    </div>
-                    <h3 className="font-semibold text-[#1E1D40] mb-2 text-lg">
-                      Relatórios
-                    </h3>
-                    <p className="text-sm text-gray-600 mb-4">
-                      Analise métricas de RH
-                    </p>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
-                    >
-                      Ver relatórios <ArrowRight className="h-3 w-3 ml-1" />
-                    </Button>
-                  </CardContent>
-                </Card>
+                <PermissionWrapper permission="view_reports">
+                  <Card
+                    className="group hover-lift cursor-pointer transition-all duration-300 border-0 shadow-lg hover:shadow-xl bg-gradient-to-br from-orange-50 to-orange-100/50 backdrop-blur-sm"
+                    onClick={() => setActiveTab('relatorios')}
+                  >
+                    <CardContent className="p-6 text-center">
+                      <div className="w-14 h-14 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                        <FileText className="h-7 w-7 text-white" />
+                      </div>
+                      <h3 className="font-semibold text-[#1E1D40] mb-2 text-lg">
+                        Relatórios
+                      </h3>
+                      <p className="text-sm text-gray-600 mb-4">
+                        Analise métricas de RH
+                      </p>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                      >
+                        Ver relatórios <ArrowRight className="h-3 w-3 ml-1" />
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </PermissionWrapper>
               </div>
             </div>
 
@@ -537,179 +547,7 @@ export default function CompanyDashboard() {
 
         {/* Perfil */}
         {activeTab === 'perfil' && (
-          <div className="space-y-8">
-            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
-              <div>
-                <h1 className="text-3xl lg:text-4xl font-bold text-[#1E1D40] mb-2">
-                  Perfil da Empresa
-                </h1>
-                <p className="text-gray-600">
-                  Gerencie as informações da sua empresa
-                </p>
-              </div>
-              <Button
-                variant="outline"
-                className="hover-lift bg-white/80 backdrop-blur-sm border-gray-200"
-                onClick={() => setIsProfileModalOpen(true)}
-              >
-                <Settings className="h-4 w-4 mr-2" />
-                Editar Perfil
-              </Button>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              <Card className="border-0 shadow-lg backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-                      <Building className="h-4 w-4 text-white" />
-                    </div>
-                    <span>Informações da Empresa</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex flex-col items-center">
-                    <Avatar className="h-20 w-20 mb-4">
-                      <AvatarImage
-                        src={
-                          profile?.logo_url ||
-                          `/placeholder.svg?height=80&width=80&query=${profile?.company_name || '/placeholder.svg'} logo`
-                        }
-                      />
-                      <AvatarFallback className="bg-gray-200 text-gray-600 text-xl font-semibold">
-                        {profile?.company_name?.charAt(0).toUpperCase() || 'E'}
-                      </AvatarFallback>
-                    </Avatar>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">
-                      Nome da Empresa
-                    </label>
-                    <p className="text-[#1E1D40] font-semibold text-lg">
-                      {profile?.company_name || 'Não informado'}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">
-                      CNPJ
-                    </label>
-                    <p className="text-[#1E1D40] font-semibold">
-                      {profile?.cnpj || 'Não informado'}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">
-                      Setor
-                    </label>
-                    <p className="text-[#1E1D40] font-semibold">
-                      {profile?.industry || 'Não informado'}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">
-                      Tamanho da Empresa
-                    </label>
-                    <p className="text-[#1E1D40] font-semibold">
-                      {profile?.company_size || 'Não informado'}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">
-                      Telefone
-                    </label>
-                    <p className="text-[#1E1D40] font-semibold">
-                      {profile?.phone || 'Não informado'}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">
-                      Website
-                    </label>
-                    <p className="text-[#1E1D40] font-semibold text-sm mt-1">
-                      {profile?.website ? (
-                        <a
-                          href={profile.website}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:underline"
-                        >
-                          {profile.website}
-                        </a>
-                      ) : (
-                        'Não informado'
-                      )}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="border-0 shadow-lg backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center">
-                      <FileText className="h-4 w-4 text-white" />
-                    </div>
-                    <span>Descrição</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">
-                      Sobre a Empresa
-                    </label>
-                    <p className="text-[#1E1D40] font-semibold text-sm mt-1">
-                      {profile?.description || 'Nenhuma descrição informada'}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="border-0 shadow-lg backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
-                      <User className="h-4 w-4 text-white" />
-                    </div>
-                    <span>Responsável</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">
-                      Nome do Responsável
-                    </label>
-                    <p className="text-[#1E1D40] font-semibold">
-                      {profile?.responsible_name || 'Não informado'}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">
-                      Cargo
-                    </label>
-                    <p className="text-[#1E1D40] font-semibold">
-                      {profile?.responsible_position || 'Não informado'}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">
-                      CPF do Responsável
-                    </label>
-                    <p className="text-[#1E1D40] font-semibold">
-                      {profile?.responsible_cpf || 'Não informado'}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">
-                      Endereço
-                    </label>
-                    <p className="text-[#1E1D40] font-semibold">
-                      {profile?.address || 'Não informado'}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
+          <PerfilTab profile={profile} onProfileUpdate={loadProfile} />
         )}
 
         {/* Vagas */}
@@ -775,16 +613,7 @@ export default function CompanyDashboard() {
         )}
       </div>
 
-      {profile && (
-        <UserProfileModal
-          open={isProfileModalOpen}
-          onOpenChange={setIsProfileModalOpen}
-          userType="empresa"
-          initialData={profile}
-          onProfileUpdate={loadProfile}
-          userId={profile.user_id}
-        />
-      )}
+
     </DashboardSidebar>
   )
 }

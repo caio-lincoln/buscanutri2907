@@ -15,6 +15,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 
 import { MultiSelect } from '@/components/ui/multi-select'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { ImageCropUpload } from '@/components/ui/image-crop-upload'
 import {
@@ -235,7 +236,7 @@ interface UserProfileModalProps {
   userType: UserType
   initialData: PatientProfile | NutritionistProfile | CompanyProfile
   userId: string
-  // onProfileUpdate?: () => void
+  onProfileUpdate?: () => void
 }
 
 export function UserProfileModal({
@@ -244,6 +245,7 @@ export function UserProfileModal({
   userType,
   initialData,
   userId,
+  onProfileUpdate,
 }: UserProfileModalProps) {
   const supabase = useMemo(() => createSupabaseClient(), [])
   const { refreshUser, nutritionistProfile } = useAuth()
@@ -316,7 +318,11 @@ export function UserProfileModal({
       // Garantir que formData sempre tenha as propriedades necessárias
       const safeFormData = {
         ...initialData,
-        profile_image_url: initialData?.profile_image_url || '',
+      }
+
+      // Adicionar profile_image_url apenas para pacientes e nutricionistas
+      if (userType !== 'empresa') {
+        safeFormData.profile_image_url = initialData?.profile_image_url || ''
       }
 
       // Adicionar full_name apenas para pacientes e nutricionistas
@@ -1037,7 +1043,7 @@ export function UserProfileModal({
         description: 'Suas informações foram salvas com sucesso.',
       })
       await refreshUser()
-      // onProfileUpdate?.()
+      onProfileUpdate?.()
       onOpenChange(false)
     } catch (err: any) {
       console.log("🚀 ~ handleSubmit ~ err:", err)

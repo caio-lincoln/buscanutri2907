@@ -31,9 +31,11 @@ import { useHasActiveSubscription } from '../../../hooks/use-has-active-subscrip
 import { Tab } from '../../../app/dashboard/nutricionistas/_client'
 import NutritionistRecentChatsList from '../../../app/dashboard/nutricionistas/_components/NutriotinistRecentChatsList'
 import { createSupabaseClient } from '../../../lib/supabase'
+import { PermissionWrapper, usePermissions } from '../../../components/ui/permission-wrapper'
 
 export default function OverviewTab({ setActiveTab }: { setActiveTab: (tab: Tab) => void }) {
   const { nutritionistProfile } = useAuth()
+  const { hasPermission } = usePermissions()
   const [ upcomingAppointments, setUpcomingAppointments ] = useState<
     ScheduledAppointment[]
   >([])
@@ -255,53 +257,57 @@ export default function OverviewTab({ setActiveTab }: { setActiveTab: (tab: Tab)
             </CardContent>
           </Card> */}
 
-              <Card
-                className="group hover-lift cursor-pointer transition-all duration-300 border-0 shadow-lg hover:shadow-xl bg-gradient-to-br from-purple-50 to-purple-100/50 backdrop-blur-sm h-full"
-                onClick={() => setActiveTab('vagas')}
-              >
-                <CardContent className="p-6 text-center flex flex-col h-full">
-                  <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300">
-                    <Briefcase className="h-7 w-7 text-white" />
-                  </div>
-                  <h3 className="font-semibold text-[#1E1D40] mb-2 text-lg">
-                    Oportunidades
-                  </h3>
-                  <p className="text-sm text-gray-600 mb-4 flex-grow">
-                    Explore vagas disponíveis
-                  </p>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="text-purple-600 hover:text-purple-700 hover:bg-purple-50 mt-auto"
-                  >
-                    Ver vagas <ArrowRight className="h-3 w-3 ml-1" />
-                  </Button>
-                </CardContent>
-              </Card>
+              <PermissionWrapper requiredPermissions={['manage_jobs']}>
+                <Card
+                  className="group hover-lift cursor-pointer transition-all duration-300 border-0 shadow-lg hover:shadow-xl bg-gradient-to-br from-purple-50 to-purple-100/50 backdrop-blur-sm h-full"
+                  onClick={() => setActiveTab('vagas')}
+                >
+                  <CardContent className="p-6 text-center flex flex-col h-full">
+                    <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                      <Briefcase className="h-7 w-7 text-white" />
+                    </div>
+                    <h3 className="font-semibold text-[#1E1D40] mb-2 text-lg">
+                      Oportunidades
+                    </h3>
+                    <p className="text-sm text-gray-600 mb-4 flex-grow">
+                      Explore vagas disponíveis
+                    </p>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-purple-600 hover:text-purple-700 hover:bg-purple-50 mt-auto"
+                    >
+                      Ver vagas <ArrowRight className="h-3 w-3 ml-1" />
+                    </Button>
+                  </CardContent>
+                </Card>
+              </PermissionWrapper>
 
-              <Card
-                className="group hover-lift cursor-pointer transition-all duration-300 border-0 shadow-lg hover:shadow-xl bg-gradient-to-br from-orange-50 to-orange-100/50 backdrop-blur-sm h-full"
-                onClick={() => setActiveTab('cursos')}
-              >
-                <CardContent className="p-6 text-center flex flex-col h-full">
-                  <div className="w-14 h-14 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300">
-                    <BookOpen className="h-7 w-7 text-white" />
-                  </div>
-                  <h3 className="font-semibold text-[#1E1D40] mb-2 text-lg">
-                    Cursos & Educação
-                  </h3>
-                  <p className="text-sm text-gray-600 mb-4 flex-grow">
-                    Continue sua formação
-                  </p>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="text-orange-600 hover:text-orange-700 hover:bg-orange-50 mt-auto"
-                  >
-                    Explorar <ArrowRight className="h-3 w-3 ml-1" />
-                  </Button>
-                </CardContent>
-              </Card>
+              <PermissionWrapper requiredPermissions={['access_courses']}>
+                <Card
+                  className="group hover-lift cursor-pointer transition-all duration-300 border-0 shadow-lg hover:shadow-xl bg-gradient-to-br from-orange-50 to-orange-100/50 backdrop-blur-sm h-full"
+                  onClick={() => setActiveTab('cursos')}
+                >
+                  <CardContent className="p-6 text-center flex flex-col h-full">
+                    <div className="w-14 h-14 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                      <BookOpen className="h-7 w-7 text-white" />
+                    </div>
+                    <h3 className="font-semibold text-[#1E1D40] mb-2 text-lg">
+                      Cursos & Educação
+                    </h3>
+                    <p className="text-sm text-gray-600 mb-4 flex-grow">
+                      Continue sua formação
+                    </p>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-orange-600 hover:text-orange-700 hover:bg-orange-50 mt-auto"
+                    >
+                      Explorar <ArrowRight className="h-3 w-3 ml-1" />
+                    </Button>
+                  </CardContent>
+                </Card>
+              </PermissionWrapper>
             </div>
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-8">

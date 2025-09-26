@@ -391,6 +391,11 @@ export async function getUserProfile(userId: string, userType?: UserType) {
   // Processar dados para garantir tipos corretos, especialmente para nutricionistas
   let processedData: any = data // Usar "any" temporariamente para flexibilidade no processamento
 
+  // Garantir que o user_id esteja sempre presente no retorno
+  if (processedData && !processedData.user_id) {
+    processedData.user_id = userId
+  }
+
   if (resolvedUserType === 'nutricionista') {
     const nutritionistProfile = processedData as any // Cast para any para acessar propriedades dinamicamente
 

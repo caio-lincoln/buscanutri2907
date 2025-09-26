@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "BUSCANUTRI": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@supabase/mcp-server-supabase@latest",
+        "--project-ref=lutokoucdfhfbwtppzwe"
+      ],
+      "env": {
+        "SUPABASE_ACCESS_TOKEN": "sbp_fa0aa27b34f39aca723d8c8244ac5aca99eafce0"
+      }
+    }
+  }
+}

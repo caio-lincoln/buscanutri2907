@@ -17,9 +17,11 @@ import {
   Home,
   Users,
 } from 'lucide-react'
-import { getAllForumQuestions, type ForumQuestion } from '@/lib/forum-data'
+import { getAllForumQuestions, ForumQuestion } from '@/lib/forum-data'
 import { formatDistanceToNow } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+import { ContentModeration, ModerationAction } from '@/components/ui/content-moderation'
+import { createSupabaseClient } from '@/lib/supabase'
 
 export default function DuvidasPacientesPage() {
   const [questions, setQuestions] = useState<ForumQuestion[]>([])
@@ -62,16 +64,81 @@ export default function DuvidasPacientesPage() {
   }, [searchTerm, questions])
 
   const formatTimeAgo = (timestamp: string) => {
+    return formatDistanceToNow(new Date(timestamp), {
+      addSuffix: true,
+      locale: ptBR,
+    })
+  }
+
+  const handleModerationAction = async (questionId: string, action: ModerationAction): Promise<boolean> => {
     try {
-      const date = new Date(
-        timestamp.replace(
-          /(d{2})\/(d{2})\/(d{4}), (d{2}):(d{2}):(d{2})/,
-          '$3-$2-$1T$4:$5:$6'
-        )
-      )
-      return formatDistanceToNow(date, { addSuffix: true, locale: ptBR })
-    } catch {
-      return timestamp
+      const supabase = createSupabaseClient()
+      
+      if (action.type === 'delete') {
+        // Delete the forum question
+        const { error } = await supabase
+          .from('forum_questions')
+          .delete()
+          .eq('id', questionId)
+        
+        if (error) {
+          console.error('Erro ao excluir pergunta:', error)
+          return false
+        }
+        
+        // Log the moderation action
+        await supabase
+          .from('moderation_logs')
+          .insert({
+            content_id: questionId,
+            content_type: 'forum_question',
+            action_type: action.type,
+            reason: action.reason,
+            category: action.category,
+            notes: action.notes,
+            moderator_id: 'current_user_id' // This should be replaced with actual user ID
+          })
+        
+        // Refresh questions list
+        const data = await getAllForumQuestions()
+        setQuestions(data)
+        setFilteredQuestions(data)
+        return true
+      } else if (action.type === 'flag') {
+        // Flag the question for review
+        const { error } = await supabase
+          .from('forum_questions')
+          .update({ 
+            is_flagged: true,
+            moderation_notes: action.notes 
+          })
+          .eq('id', questionId)
+        
+        if (error) {
+          console.error('Erro ao sinalizar pergunta:', error)
+          return false
+        }
+        
+        // Log the moderation action
+        await supabase
+          .from('moderation_logs')
+          .insert({
+            content_id: questionId,
+            content_type: 'forum_question',
+            action_type: action.type,
+            reason: action.reason,
+            category: action.category,
+            notes: action.notes,
+            moderator_id: 'current_user_id' // This should be replaced with actual user ID
+          })
+        
+        return true
+      }
+      
+      return false
+    } catch (error) {
+      console.error('Erro na ação de moderação:', error)
+      return false
     }
   }
 
@@ -319,6 +386,13 @@ export default function DuvidasPacientesPage() {
                         <ArrowRight className="h-4 w-4 ml-1" />
                       </Button>
                     </Link>
+                    <ContentModeration
+                      contentId={question.id}
+                      contentType="forum_question"
+                      contentTitle={question.title}
+                      authorId={question.author.id}
+                      onModerationAction={(action) => handleModerationAction(question.id, action)}
+                    />
                   </div>
 
                   {/* Author info */}

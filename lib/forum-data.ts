@@ -1181,3 +1181,70 @@ export async function cleanupForumData(): Promise<{
     throw error
   }
 }
+
+// Função para deletar pergunta de nutricionista
+export async function deleteNutritionistQuestion(questionId: string, nutritionistId: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    // Verificar se a pergunta existe e pertence ao nutricionista
+    const { data: question, error: fetchError } = await supabase
+      .from('forum_questions')
+      .select('id, nutritionist_id')
+      .eq('id', questionId)
+      .eq('nutritionist_id', nutritionistId)
+      .single()
+
+    if (fetchError || !question) {
+      return {
+        success: false,
+        error: 'Pergunta não encontrada ou você não tem permissão para deletá-la'
+      }
+    }
+
+    // Deletar primeiro as respostas relacionadas
+    const { error: answersError } = await supabase
+      .from('forum_answers')
+      .delete()
+      .eq('question_id', questionId)
+
+    if (answersError) {
+      return {
+        success: false,
+        error: 'Erro ao deletar respostas da pergunta'
+      }
+    }
+
+    // Deletar os likes da pergunta
+    const { error: likesError } = await supabase
+      .from('forum_question_likes')
+      .delete()
+      .eq('question_id', questionId)
+
+    if (likesError) {
+      return {
+        success: false,
+        error: 'Erro ao deletar likes da pergunta'
+      }
+    }
+
+    // Deletar a pergunta
+    const { error: deleteError } = await supabase
+      .from('forum_questions')
+      .delete()
+      .eq('id', questionId)
+      .eq('nutritionist_id', nutritionistId)
+
+    if (deleteError) {
+      return {
+        success: false,
+        error: 'Erro ao deletar a pergunta'
+      }
+    }
+
+    return { success: true }
+  } catch (error) {
+    return {
+      success: false,
+      error: 'Erro interno do servidor'
+    }
+  }
+}
