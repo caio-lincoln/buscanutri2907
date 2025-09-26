@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { Mail, Phone, Globe, Instagram, MapPin } from 'lucide-react'
 
 export function Footer() {
@@ -9,7 +10,13 @@ export function Footer() {
         <div className="py-16 grid gap-12 md:grid-cols-2 lg:grid-cols-4">
           {/* Brand Info */}
           <div className="space-y-6">
-            <div className="text-2xl font-bold">buscaNutri</div>
+            <Image
+              src="/logo-busca-nutri-white.png"
+              alt="Busca Nutri"
+              width={160}
+              height={32}
+              className="h-8 w-auto"
+            />
             <p className="text-white/70 text-sm leading-relaxed">
               Conectando nutricionistas e transformando vidas através da
               tecnologia e colaboração. A plataforma que revoluciona o cuidado
