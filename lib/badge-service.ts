@@ -4,10 +4,19 @@ import type { Database } from './supabase'
 
 // Cliente administrativo para operações que precisam contornar RLS
 const createAdminClient = () => {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY
+  
+  console.log('Creating admin client with:', {
+    url: supabaseUrl ? 'URL found' : 'URL missing',
+    key: supabaseKey ? 'Key found' : 'Key missing'
+  })
+  
+  if (!supabaseUrl || !supabaseKey) {
+    throw new Error(`Missing Supabase configuration: URL=${!!supabaseUrl}, Key=${!!supabaseKey}`)
+  }
+  
+  return createClient(supabaseUrl, supabaseKey)
 }
 
 export type Badge = Database['public']['Tables']['badges']['Row']
