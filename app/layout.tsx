@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import { Toaster } from '@/components/ui/toaster'
+import { Toaster as Sonner } from '@/components/ui/sonner'
 import { AuthProvider } from '@/contexts/auth-context'
 import { Suspense } from 'react'
 import Script from 'next/script'
@@ -60,6 +61,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <Suspense fallback={<div>Carregando...</div>}>
             {children}
             <Toaster />
+            <Sonner />
           </Suspense>
         </AuthProvider>
       </body>

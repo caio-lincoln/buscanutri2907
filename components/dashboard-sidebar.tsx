@@ -54,7 +54,7 @@ import {
 import Image from 'next/image'
 import { useMediaQuery } from '../hooks/use-media-query'
 import { useRouter } from 'next/navigation'
-import { useAuth } from '../contexts/auth-context'
+import { useProfile } from '@/contexts/profile-context'
 
 export interface DashboardMenuItem {
   id: string
@@ -190,12 +190,18 @@ function SidebarShell({
   onItemClick,
   onSignOut,
 }: DashboardSidebarProps) {
-  const config = userTypeConfig[ userType ] || userTypeConfig.paciente
+  const router = useRouter()
+  const { profileData } = useProfile()
+  
+  // Use profile data if available, otherwise fall back to props
+   const displayName = profileData?.full_name || userName || ''
+   const displayAvatar = profileData?.avatar_url || userAvatar || '/placeholder.svg'
+   
+   const config = userTypeConfig[userType] || userTypeConfig.paciente
   const { setOpen, setOpenMobile, openMobile } = useSidebar()
   const isMobile = useMediaQuery('(max-width: 800px)')
 
-  const router = useRouter()
-  const { nutritionistProfile, patientProfile, companyProfile } = useAuth()
+
 
   const myProfileUrl = useMemo(() => {
     switch (userType) {
@@ -205,6 +211,8 @@ function SidebarShell({
         return `/dashboard/nutricionistas/${patientProfile?.id}`
       case 'empresa':
         return `/dashboard/nutricionistas/${companyProfile?.id}`
+      case 'admin':
+        return `/dashboard/admin?activeTab=perfil`
     }
 
     return ''
@@ -319,16 +327,16 @@ function SidebarShell({
             >
               <div className="flex items-center gap-3">
                 <Avatar className="h-10 w-10 ring-2 ring-gray-200 shadow-md">
-                  <AvatarImage src={userAvatar || '/placeholder.svg'} />
+                  <AvatarImage src={displayAvatar} />
                   <AvatarFallback className={config.iconBg}>
                     <span className="text-white font-semibold text-sm">
-                      {userName.charAt(0)}
+                      {displayName.charAt(0)}
                     </span>
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col items-start">
                   <span className="text-sm font-semibold text-[#1E1D40] truncate max-w-[120px]">
-                    {userName}
+                    {displayName}
                   </span>
                   <span
                     className={cn(
@@ -523,6 +531,7 @@ export const getMenuItems = (
         { id: 'financeiro', label: 'Financeiro', icon: DollarSign },
         { id: 'analytics', label: 'Analytics', icon: TrendingUp },
         { id: 'configuracoes', label: 'Configurações', icon: Settings },
+        { id: 'perfil', label: 'Perfil', icon: User },
       ]
       return items
     }
