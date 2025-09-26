@@ -35,6 +35,31 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '../../../../../contexts/auth-context'
 import { User } from '@supabase/supabase-js'
 
+// Função para formatar datas de forma segura
+const formatQuestionDate = (timestamp: string): string => {
+  try {
+    // Se o timestamp for undefined ou null
+    if (!timestamp) {
+      return 'Data não disponível'
+    }
+    
+    // Se o timestamp já está formatado (contém espaços ou barras), retorna como está
+    if (timestamp.includes('/') || timestamp.includes(' ')) {
+      return timestamp
+    }
+    
+    // Caso contrário, tenta converter de ISO string
+    const date = new Date(timestamp)
+    if (isNaN(date.getTime())) {
+      return 'Data inválida'
+    }
+    
+    return date.toLocaleDateString('pt-BR')
+  } catch (error) {
+    return 'Data inválida'
+  }
+}
+
 interface Author {
   id: string
   name: string
@@ -875,7 +900,7 @@ export default function NutritionistForumQuestionPage() {
                         )}
                     </div>
                     <p className="text-sm text-gray-500">
-                      {new Date(question.timestamp).toLocaleDateString('pt-BR')}
+                      {formatQuestionDate(question.timestamp)}
                     </p>
                   </div>
                 </div>
@@ -1086,9 +1111,7 @@ export default function NutritionistForumQuestionPage() {
                                 )}
                               </div>
                               <p className="text-sm text-gray-500">
-                                {new Date(reply.timestamp).toLocaleDateString(
-                                  'pt-BR'
-                                )}
+                                {formatQuestionDate(reply.timestamp)}
                               </p>
                             </div>
                           </div>

@@ -39,6 +39,7 @@ import {
   getCompanyOverviewData,
   type CompanyOverviewStats,
 } from '@/lib/company-data-service'
+import { PermissionWrapper, usePermissions } from '@/components/ui/permission-wrapper'
 
 export default function CompanyDashboard() {
   const [profile, setProfile] = useState<CompanyProfile | null>(null)
@@ -51,6 +52,7 @@ export default function CompanyDashboard() {
   const [overviewLoading, setOverviewLoading] = useState(false)
   const router = useRouter()
   const { user, loading: authLoading, signOut } = useAuth()
+  const { hasPermission } = usePermissions()
 
   // Funções definidas antes dos useEffect
   const loadProfile = async () => {
@@ -252,101 +254,109 @@ export default function CompanyDashboard() {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                <Card
-                  className="group hover-lift cursor-pointer transition-all duration-300 border-0 shadow-lg hover:shadow-xl bg-gradient-to-br from-blue-50 to-blue-100/50 backdrop-blur-sm"
-                  onClick={() => setActiveTab('vagas')}
-                >
-                  <CardContent className="p-6 text-center">
-                    <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300">
-                      <Plus className="h-7 w-7 text-white" />
-                    </div>
-                    <h3 className="font-semibold text-[#1E1D40] mb-2 text-lg">
-                      Publicar Vaga
-                    </h3>
-                    <p className="text-sm text-gray-600 mb-4">
-                      Crie uma nova oportunidade
-                    </p>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                    >
-                      Criar vaga <ArrowRight className="h-3 w-3 ml-1" />
-                    </Button>
-                  </CardContent>
-                </Card>
+                <PermissionWrapper permission="manage_jobs">
+                  <Card
+                    className="group hover-lift cursor-pointer transition-all duration-300 border-0 shadow-lg hover:shadow-xl bg-gradient-to-br from-blue-50 to-blue-100/50 backdrop-blur-sm"
+                    onClick={() => setActiveTab('vagas')}
+                  >
+                    <CardContent className="p-6 text-center">
+                      <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                        <Plus className="h-7 w-7 text-white" />
+                      </div>
+                      <h3 className="font-semibold text-[#1E1D40] mb-2 text-lg">
+                        Publicar Vaga
+                      </h3>
+                      <p className="text-sm text-gray-600 mb-4">
+                        Crie uma nova oportunidade
+                      </p>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                      >
+                        Criar vaga <ArrowRight className="h-3 w-3 ml-1" />
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </PermissionWrapper>
 
-                <Card
-                  className="group hover-lift cursor-pointer transition-all duration-300 border-0 shadow-lg hover:shadow-xl bg-gradient-to-br from-green-50 to-green-100/50 backdrop-blur-sm"
-                  onClick={() => setActiveTab('candidatos')}
-                >
-                  <CardContent className="p-6 text-center">
-                    <div className="w-14 h-14 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300">
-                      <Users className="h-7 w-7 text-white" />
-                    </div>
-                    <h3 className="font-semibold text-[#1E1D40] mb-2 text-lg">
-                      Candidatos
-                    </h3>
-                    <p className="text-sm text-gray-600 mb-4">
-                      Gerencie candidaturas
-                    </p>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="text-green-600 hover:text-green-700 hover:bg-green-50"
-                    >
-                      Ver candidatos <ArrowRight className="h-3 w-3 ml-1" />
-                    </Button>
-                  </CardContent>
-                </Card>
+                <PermissionWrapper permission="manage_candidates">
+                  <Card
+                    className="group hover-lift cursor-pointer transition-all duration-300 border-0 shadow-lg hover:shadow-xl bg-gradient-to-br from-green-50 to-green-100/50 backdrop-blur-sm"
+                    onClick={() => setActiveTab('candidatos')}
+                  >
+                    <CardContent className="p-6 text-center">
+                      <div className="w-14 h-14 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                        <Users className="h-7 w-7 text-white" />
+                      </div>
+                      <h3 className="font-semibold text-[#1E1D40] mb-2 text-lg">
+                        Candidatos
+                      </h3>
+                      <p className="text-sm text-gray-600 mb-4">
+                        Gerencie candidaturas
+                      </p>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                      >
+                        Ver candidatos <ArrowRight className="h-3 w-3 ml-1" />
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </PermissionWrapper>
 
-                <Card
-                  className="group hover-lift cursor-pointer transition-all duration-300 border-0 shadow-lg hover:shadow-xl bg-gradient-to-br from-purple-50 to-purple-100/50 backdrop-blur-sm"
-                  onClick={() => setActiveTab('processos')}
-                >
-                  <CardContent className="p-6 text-center">
-                    <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300">
-                      <Calendar className="h-7 w-7 text-white" />
-                    </div>
-                    <h3 className="font-semibold text-[#1E1D40] mb-2 text-lg">
-                      Entrevistas
-                    </h3>
-                    <p className="text-sm text-gray-600 mb-4">
-                      Agende e gerencie entrevistas
-                    </p>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="text-purple-600 hover:text-purple-700 hover:bg-purple-50"
-                    >
-                      Ver agenda <ArrowRight className="h-3 w-3 ml-1" />
-                    </Button>
-                  </CardContent>
-                </Card>
+                <PermissionWrapper permission="manage_interviews">
+                  <Card
+                    className="group hover-lift cursor-pointer transition-all duration-300 border-0 shadow-lg hover:shadow-xl bg-gradient-to-br from-purple-50 to-purple-100/50 backdrop-blur-sm"
+                    onClick={() => setActiveTab('processos')}
+                  >
+                    <CardContent className="p-6 text-center">
+                      <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                        <Calendar className="h-7 w-7 text-white" />
+                      </div>
+                      <h3 className="font-semibold text-[#1E1D40] mb-2 text-lg">
+                        Entrevistas
+                      </h3>
+                      <p className="text-sm text-gray-600 mb-4">
+                        Agende e gerencie entrevistas
+                      </p>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-purple-600 hover:text-purple-700 hover:bg-purple-50"
+                      >
+                        Ver agenda <ArrowRight className="h-3 w-3 ml-1" />
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </PermissionWrapper>
 
-                <Card
-                  className="group hover-lift cursor-pointer transition-all duration-300 border-0 shadow-lg hover:shadow-xl bg-gradient-to-br from-orange-50 to-orange-100/50 backdrop-blur-sm"
-                  onClick={() => setActiveTab('relatorios')}
-                >
-                  <CardContent className="p-6 text-center">
-                    <div className="w-14 h-14 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300">
-                      <FileText className="h-7 w-7 text-white" />
-                    </div>
-                    <h3 className="font-semibold text-[#1E1D40] mb-2 text-lg">
-                      Relatórios
-                    </h3>
-                    <p className="text-sm text-gray-600 mb-4">
-                      Analise métricas de RH
-                    </p>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
-                    >
-                      Ver relatórios <ArrowRight className="h-3 w-3 ml-1" />
-                    </Button>
-                  </CardContent>
-                </Card>
+                <PermissionWrapper permission="view_reports">
+                  <Card
+                    className="group hover-lift cursor-pointer transition-all duration-300 border-0 shadow-lg hover:shadow-xl bg-gradient-to-br from-orange-50 to-orange-100/50 backdrop-blur-sm"
+                    onClick={() => setActiveTab('relatorios')}
+                  >
+                    <CardContent className="p-6 text-center">
+                      <div className="w-14 h-14 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                        <FileText className="h-7 w-7 text-white" />
+                      </div>
+                      <h3 className="font-semibold text-[#1E1D40] mb-2 text-lg">
+                        Relatórios
+                      </h3>
+                      <p className="text-sm text-gray-600 mb-4">
+                        Analise métricas de RH
+                      </p>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                      >
+                        Ver relatórios <ArrowRight className="h-3 w-3 ml-1" />
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </PermissionWrapper>
               </div>
             </div>
 

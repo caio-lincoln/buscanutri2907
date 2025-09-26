@@ -23,6 +23,7 @@ import { ConsultationsToRate } from '../../../../components/dashboard/consultati
 import { useRouter } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from '../../../../components/ui/avatar';
 import { createSupabaseClient } from '../../../../lib/supabase';
+import { PermissionWrapper, usePermissions } from '../../../../components/ui/permission-wrapper';
 
 async function fetchPatientStats(p_patient_id: string, supabase: any): Promise<PatientStats> {
   const { data, error } = await supabase
@@ -43,6 +44,7 @@ async function fetchPatientStats(p_patient_id: string, supabase: any): Promise<P
 
 export default function OverviewTab({ setActiveTab, setIsAnamneseModalOpen }: { setActiveTab: (tab: any) => void, setIsAnamneseModalOpen: (ans: boolean) => void; }) {
   const { patientProfile: profile } = useAuth()
+  const { hasPermission } = usePermissions()
   const [ consultations, setConsultations ] = useState<Consultation[]>([])
   const [ favoriteNutritionists, setFavoriteNutritionists ] = useState<
     FavoriteNutritionist[]
@@ -187,99 +189,107 @@ export default function OverviewTab({ setActiveTab, setIsAnamneseModalOpen }: { 
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card
-            className="group hover-lift cursor-pointer transition-all duration-300 border-0 shadow-lg hover:shadow-xl bg-gradient-to-br from-green-50 to-green-100/50 backdrop-blur-sm"
-            onClick={() => setIsAnamneseModalOpen(true)}
-          >
-            <CardContent className="p-6 text-center">
-              <div className="w-14 h-14 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300">
-                <FileText className="h-7 w-7 text-white" />
-              </div>
-              <h3 className="font-semibold text-[#1E1D40] mb-2 text-lg">
-                Anamnese Nutricional
-              </h3>
-              <p className="text-sm text-gray-600 mb-4">
-                Complete seu histórico de saúde
-              </p>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="text-green-600 hover:text-green-700 hover:bg-green-50"
-              >
-                Iniciar <ArrowRight className="h-3 w-3 ml-1" />
-              </Button>
-            </CardContent>
-          </Card>
+          <PermissionWrapper permission="access_anamnese">
+            <Card
+              className="group hover-lift cursor-pointer transition-all duration-300 border-0 shadow-lg hover:shadow-xl bg-gradient-to-br from-green-50 to-green-100/50 backdrop-blur-sm"
+              onClick={() => setIsAnamneseModalOpen(true)}
+            >
+              <CardContent className="p-6 text-center">
+                <div className="w-14 h-14 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                  <FileText className="h-7 w-7 text-white" />
+                </div>
+                <h3 className="font-semibold text-[#1E1D40] mb-2 text-lg">
+                  Anamnese Nutricional
+                </h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Complete seu histórico de saúde
+                </p>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                >
+                  Iniciar <ArrowRight className="h-3 w-3 ml-1" />
+                </Button>
+              </CardContent>
+            </Card>
+          </PermissionWrapper>
 
-          <Card
-            className="group hover-lift cursor-pointer transition-all duration-300 border-0 shadow-lg hover:shadow-xl bg-gradient-to-br from-blue-50 to-blue-100/50 backdrop-blur-sm"
-            onClick={() => setActiveTab('buscar')}
-          >
-            <CardContent className="p-6 text-center">
-              <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300">
-                <Search className="h-7 w-7 text-white" />
-              </div>
-              <h3 className="font-semibold text-[#1E1D40] mb-2 text-lg">
-                Buscar Nutricionista
-              </h3>
-              <p className="text-sm text-gray-600 mb-4">
-                Encontre profissionais próximos a você
-              </p>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-              >
-                Buscar agora <ArrowRight className="h-3 w-3 ml-1" />
-              </Button>
-            </CardContent>
-          </Card>
+          <PermissionWrapper permission="book_consultations">
+            <Card
+              className="group hover-lift cursor-pointer transition-all duration-300 border-0 shadow-lg hover:shadow-xl bg-gradient-to-br from-blue-50 to-blue-100/50 backdrop-blur-sm"
+              onClick={() => setActiveTab('buscar')}
+            >
+              <CardContent className="p-6 text-center">
+                <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                  <Search className="h-7 w-7 text-white" />
+                </div>
+                <h3 className="font-semibold text-[#1E1D40] mb-2 text-lg">
+                  Buscar Nutricionista
+                </h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Encontre profissionais próximos a você
+                </p>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                >
+                  Buscar agora <ArrowRight className="h-3 w-3 ml-1" />
+                </Button>
+              </CardContent>
+            </Card>
+          </PermissionWrapper>
 
-          <Card className="group hover-lift cursor-pointer transition-all duration-300 border-0 shadow-lg hover:shadow-xl bg-gradient-to-br from-purple-50 to-purple-100/50 backdrop-blur-sm">
-            <CardContent className="p-6 text-center">
-              <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300">
-                <Bot className="h-7 w-7 text-white" />
-              </div>
-              <h3 className="font-semibold text-[#1E1D40] mb-2 text-lg">
-                Chat com IrisBot
-              </h3>
-              <p className="text-sm text-gray-600 mb-4">
-                Tire suas dúvidas com IA
-              </p>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="text-purple-600 hover:text-purple-700 hover:bg-purple-50"
-                onClick={() => setActiveTab('iris')}
-              >
-                Conversar <ArrowRight className="h-3 w-3 ml-1" />
-              </Button>
-            </CardContent>
-          </Card>
+          <PermissionWrapper permission="use_iris_bot">
+            <Card className="group hover-lift cursor-pointer transition-all duration-300 border-0 shadow-lg hover:shadow-xl bg-gradient-to-br from-purple-50 to-purple-100/50 backdrop-blur-sm">
+              <CardContent className="p-6 text-center">
+                <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                  <Bot className="h-7 w-7 text-white" />
+                </div>
+                <h3 className="font-semibold text-[#1E1D40] mb-2 text-lg">
+                  Chat com IrisBot
+                </h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Tire suas dúvidas com IA
+                </p>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="text-purple-600 hover:text-purple-700 hover:bg-purple-50"
+                  onClick={() => setActiveTab('iris')}
+                >
+                  Conversar <ArrowRight className="h-3 w-3 ml-1" />
+                </Button>
+              </CardContent>
+            </Card>
+          </PermissionWrapper>
 
-          <Card
-            className="group hover-lift cursor-pointer transition-all duration-300 border-0 shadow-lg hover:shadow-xl bg-gradient-to-br from-orange-50 to-orange-100/50 backdrop-blur-sm"
-            onClick={() => router.push('/blog')}
-          >
-            <CardContent className="p-6 text-center">
-              <div className="w-14 h-14 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300">
-                <BookOpen className="h-7 w-7 text-white" />
-              </div>
-              <h3 className="font-semibold text-[#1E1D40] mb-2 text-lg">
-                Dúvidas Públicas
-              </h3>
-              <p className="text-sm text-gray-600 mb-4">
-                Perguntas da comunidade
-              </p>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
-              >
-                Explorar <ArrowRight className="h-3 w-3 ml-1" />
-              </Button>
-            </CardContent>
-          </Card>
+          <PermissionWrapper permission="view_public_content">
+            <Card
+              className="group hover-lift cursor-pointer transition-all duration-300 border-0 shadow-lg hover:shadow-xl bg-gradient-to-br from-orange-50 to-orange-100/50 backdrop-blur-sm"
+              onClick={() => router.push('/blog')}
+            >
+              <CardContent className="p-6 text-center">
+                <div className="w-14 h-14 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                  <BookOpen className="h-7 w-7 text-white" />
+                </div>
+                <h3 className="font-semibold text-[#1E1D40] mb-2 text-lg">
+                  Dúvidas Públicas
+                </h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Perguntas da comunidade
+                </p>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                >
+                  Explorar <ArrowRight className="h-3 w-3 ml-1" />
+                </Button>
+              </CardContent>
+            </Card>
+          </PermissionWrapper>
         </div>
       </div>
 

@@ -14,6 +14,7 @@ import {
   Filter,
   ArrowDownWideNarrow,
   Award,
+  Trash2,
 } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
@@ -24,17 +25,67 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
 import { QuestionModal } from '@/components/question-modal'
 import {
   getAllForumQuestionsWithNutritionists,
   likeForumItem,
   incrementQuestionViews,
+  deleteForumQuestion,
   type ForumQuestion,
 } from '@/lib/forum-data'
 import { getCurrentUser } from '@/lib/auth'
+import { createSupabaseClient } from '@/lib/supabase'
+import { useToast } from '@/hooks/use-toast'
+
+// Função para formatar datas de forma segura
+const formatQuestionDate = (timestamp: string): string => {
+  console.log('Formatando timestamp:', timestamp, 'Tipo:', typeof timestamp)
+  
+  try {
+    // Se o timestamp for undefined ou null
+    if (!timestamp) {
+      console.log('Timestamp vazio ou undefined')
+      return 'Data não disponível'
+    }
+    
+    // Se o timestamp já está formatado (contém espaços ou barras), retorna como está
+    if (timestamp.includes('/') || timestamp.includes(' ')) {
+      console.log('Timestamp já formatado:', timestamp)
+      return timestamp
+    }
+    
+    // Caso contrário, tenta converter de ISO string
+    const date = new Date(timestamp)
+    console.log('Data convertida:', date, 'É válida:', !isNaN(date.getTime()))
+    
+    if (isNaN(date.getTime())) {
+      console.log('Data inválida para timestamp:', timestamp)
+      return 'Data inválida'
+    }
+    
+    const formatted = date.toLocaleDateString('pt-BR')
+    console.log('Data formatada:', formatted)
+    return formatted
+  } catch (error) {
+    console.error('Erro ao formatar data:', error, 'Timestamp:', timestamp)
+    return 'Data inválida'
+  }
+}
 
 export function PatientForumTab() {
   const router = useRouter()
+  const { toast } = useToast()
   const [questions, setQuestions] = useState<ForumQuestion[]>([])
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedQuestionForModal, setSelectedQuestionForModal] =
@@ -42,6 +93,8 @@ export function PatientForumTab() {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('Todas')
   const [sortOrder, setSortOrder] = useState('recent') // 'recent', 'likes', 'replies', 'views'
+  const [currentUser, setCurrentUser] = useState<any>(null)
+  const [currentPatientProfile, setCurrentPatientProfile] = useState<any>(null)
 
   const specialtiesOptions = [
     'Todas', // Option to clear category filter
@@ -53,9 +106,24 @@ export function PatientForumTab() {
   ]
 
   useEffect(() => {
-    // Initialize questions from forum data
-    const loadQuestions = async () => {
+    // Initialize questions from forum data and load current user
+    const loadData = async () => {
       try {
+        // Load current user and patient profile
+        const user = await getCurrentUser()
+        setCurrentUser(user)
+
+        if (user) {
+          const supabaseClient = createSupabaseClient()
+          const { data: patientProfile } = await supabaseClient
+            .from('patient_profiles')
+            .select('*')
+            .eq('user_id', user.id)
+            .single()
+          
+          setCurrentPatientProfile(patientProfile)
+        }
+
         // Silent operation: Loading real forum questions
         const allQuestions = await getAllForumQuestionsWithNutritionists()
         // Silent operation: Forum questions loaded successfully
@@ -64,7 +132,7 @@ export function PatientForumTab() {
         // Silent error handling: Error loading forum questions
       }
     }
-    loadQuestions()
+    loadData()
   }, [])
 
   const handleOpenAskQuestionModal = () => {
@@ -117,6 +185,48 @@ export function PatientForumTab() {
     }
   }
 
+  const handleDeleteQuestion = async (questionId: string) => {
+    if (!currentUser || !currentPatientProfile) {
+      toast({
+        title: 'Erro',
+        description: 'Você precisa estar logado para excluir uma pergunta.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    try {
+      const supabaseClient = createSupabaseClient()
+      
+      // Delete the question using the patient profile ID
+      const { error } = await supabaseClient
+        .from('forum_questions')
+        .delete()
+        .eq('id', questionId)
+        .eq('patient_id', currentPatientProfile.id) // Use patient_id for verification
+
+      if (error) {
+        throw error
+      }
+
+      toast({
+        title: 'Pergunta deletada',
+        description: 'Sua pergunta foi removida com sucesso.',
+      })
+
+      // Reload questions to reflect the change
+      const allQuestions = await getAllForumQuestionsWithNutritionists()
+      setQuestions(allQuestions)
+    } catch (error) {
+      console.error('Error deleting question:', error)
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível deletar a pergunta. Tente novamente.',
+        variant: 'destructive',
+      })
+    }
+  }
+
   const applyFiltersAndSort = (
     allQuestions: ForumQuestion[],
     searchTerm: string,
@@ -162,6 +272,11 @@ export function PatientForumTab() {
       applyFiltersAndSort(questions, searchTerm, selectedCategory, sortOrder),
     [questions, searchTerm, selectedCategory, sortOrder]
   )
+
+  // Check if current user is the author of a question
+  const isQuestionAuthor = (question: ForumQuestion) => {
+    return currentPatientProfile && question.author?.id === currentPatientProfile.id
+  }
 
   return (
     <div className="space-y-8">
@@ -251,11 +366,43 @@ export function PatientForumTab() {
                         )}
                     </div>
                     <p className="text-xs text-gray-500">
-                      {new Date(question.timestamp).toLocaleDateString('pt-BR')}
+                      {formatQuestionDate(question.timestamp)}
                     </p>
                   </div>
                 </div>
-                <Badge variant="outline">{question.category || 'Geral'}</Badge>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline">{question.category || 'Geral'}</Badge>
+                  {isQuestionAuthor(question) && (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50 p-2"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Excluir pergunta</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Tem certeza que deseja excluir esta pergunta? Esta ação não pode ser desfeita e todas as respostas também serão removidas.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => handleDeleteQuestion(question.id)}
+                            className="bg-red-600 hover:bg-red-700"
+                          >
+                            Excluir
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  )}
+                </div>
               </CardHeader>
               <CardContent className="space-y-4">
                 <h3 className="text-xl font-bold text-[#1E1D40]">

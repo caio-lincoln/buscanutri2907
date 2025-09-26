@@ -30,6 +30,31 @@ import {
 } from '@/lib/forum-data'
 import { QuestionModal } from '@/components/question-modal'
 
+// Função para formatar datas de forma segura
+const formatQuestionDate = (timestamp: string): string => {
+  try {
+    // Se o timestamp for undefined ou null
+    if (!timestamp) {
+      return 'Data não disponível'
+    }
+    
+    // Se o timestamp já está formatado (contém espaços ou barras), retorna como está
+    if (timestamp.includes('/') || timestamp.includes(' ')) {
+      return timestamp
+    }
+    
+    // Caso contrário, tenta converter de ISO string
+    const date = new Date(timestamp)
+    if (isNaN(date.getTime())) {
+      return 'Data inválida'
+    }
+    
+    return date.toLocaleDateString('pt-BR')
+  } catch (error) {
+    return 'Data inválida'
+  }
+}
+
 export function ForumTab() {
   const [questions, setQuestions] = useState<ForumQuestion[]>([])
   const [nutritionistQuestions, setNutritionistQuestions] = useState<
@@ -218,9 +243,7 @@ export function ForumTab() {
                             )}
                         </div>
                         <p className="text-xs text-gray-500">
-                          {new Date(question.timestamp).toLocaleDateString(
-                            'pt-BR'
-                          )}
+                          {formatQuestionDate(question.timestamp)}
                         </p>
                       </div>
                     </div>
@@ -329,9 +352,7 @@ export function ForumTab() {
                             )}
                         </div>
                         <p className="text-xs text-gray-500">
-                          {new Date(question.timestamp).toLocaleDateString(
-                            'pt-BR'
-                          )}
+                          {formatQuestionDate(question.timestamp)}
                         </p>
                       </div>
                     </div>

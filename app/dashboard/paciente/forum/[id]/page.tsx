@@ -17,6 +17,17 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
+import {
   MessageSquare,
   ThumbsUp,
   MessageCircle,
@@ -28,9 +39,11 @@ import {
   Search,
   Filter,
   ArrowDownWideNarrow,
+  Trash2,
 } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { toast } from '@/components/ui/use-toast'
+import { createSupabaseClient } from '@/lib/supabase'
 
 import {
   type ForumQuestion,
@@ -40,6 +53,31 @@ import {
 } from '@/lib/forum-data'
 import { getCurrentUser } from '@/lib/auth'
 
+// Função para formatar datas de forma segura
+const formatQuestionDate = (timestamp: string): string => {
+  try {
+    // Se o timestamp for undefined ou null
+    if (!timestamp) {
+      return 'Data não disponível'
+    }
+    
+    // Se o timestamp já está formatado (contém espaços ou barras), retorna como está
+    if (timestamp.includes('/') || timestamp.includes(' ')) {
+      return timestamp
+    }
+    
+    // Caso contrário, tenta converter de ISO string
+    const date = new Date(timestamp)
+    if (isNaN(date.getTime())) {
+      return 'Data inválida'
+    }
+    
+    return date.toLocaleDateString('pt-BR')
+  } catch (error) {
+    return 'Data inválida'
+  }
+}
+
 export default function PatientForumQuestionPage() {
   const params = useParams()
   const router = useRouter()
@@ -47,87 +85,48 @@ export default function PatientForumQuestionPage() {
 
   const [question, setQuestion] = useState<ForumQuestion | null>(null)
   const [loading, setLoading] = useState(true)
-  const [replyContent, setReplyContent] = useState('')
-  const [isSubmittingReply, setIsSubmittingReply] = useState(false)
   const [currentUser, setCurrentUser] = useState<any>(null)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [sortOrder, setSortOrder] = useState('recent')
-
-  // Função para filtrar e ordenar respostas
-  const applyFiltersAndSort = (
-    replies: any[],
-    searchTerm: string,
-    sortOrder: string
-  ) => {
-    if (!replies) return []
-
-    let filteredReplies = [...replies]
-
-    // Aplicar busca
-    if (searchTerm.trim()) {
-      const searchLower = searchTerm.toLowerCase()
-      filteredReplies = filteredReplies.filter(
-        reply =>
-          reply.content?.toLowerCase().includes(searchLower) ||
-          reply.author?.name?.toLowerCase().includes(searchLower)
-      )
-    }
-
-    // Aplicar ordenação
-    switch (sortOrder) {
-      case 'recent':
-        filteredReplies.sort(
-          (a, b) =>
-            new Date(b.timestamp || 0).getTime() -
-            new Date(a.timestamp || 0).getTime()
-        )
-        break
-      case 'likes':
-        filteredReplies.sort((a, b) => (b.likes || 0) - (a.likes || 0))
-        break
-      case 'best':
-        filteredReplies.sort((a, b) => {
-          if (a.isBestAnswer && !b.isBestAnswer) return -1
-          if (!a.isBestAnswer && b.isBestAnswer) return 1
-          return (b.likes || 0) - (a.likes || 0)
-        })
-        break
-      default:
-        break
-    }
-
-    return filteredReplies
-  }
-
-  // Memorizar respostas filtradas e ordenadas
-  const filteredAndSortedReplies = useMemo(
-    () => applyFiltersAndSort(question?.replies || [], searchTerm, sortOrder),
-    [question?.replies, searchTerm, sortOrder]
-  )
+  const [currentPatientProfile, setCurrentPatientProfile] = useState<any>(null)
 
   useEffect(() => {
-    const loadQuestion = async () => {
+    const loadData = async () => {
       try {
-        const questionData = await getForumQuestionById(questionId)
-        setQuestion(questionData)
-
         const user = await getCurrentUser()
         setCurrentUser(user)
+        
+        // Buscar o perfil do paciente atual
+        if (user) {
+          const supabaseClient = createSupabaseClient()
+          const { data: patientProfile } = await supabaseClient
+            .from('patient_profiles')
+            .select('*')
+            .eq('user_id', user.id)
+            .single()
+          
+          setCurrentPatientProfile(patientProfile)
+          console.log('Current user:', user)
+          console.log('Current patient profile:', patientProfile)
+        }
+
+        const questionData = await getForumQuestionById(questionId)
+        setQuestion(questionData)
+        console.log('Question data:', questionData)
+        console.log('Question author:', questionData?.author)
+        
+        if (user && questionData) {
+          console.log('User ID (auth):', user.id)
+          console.log('Question author ID (profile):', questionData.author?.id)
+          console.log('Patient profile ID:', currentPatientProfile?.id)
+          console.log('Can delete?', currentPatientProfile?.id === questionData.author?.id)
+        }
       } catch (error) {
-        // Error loading question - handled silently
-        toast({
-          title: 'Erro',
-          description: 'Não foi possível carregar a pergunta.',
-          variant: 'destructive',
-        })
+        console.error('Error loading data:', error)
       } finally {
         setLoading(false)
       }
     }
 
-    if (questionId) {
-      loadQuestion()
-    }
+    loadData()
   }, [questionId])
 
   const handleSubmitReply = async () => {
@@ -190,6 +189,47 @@ export default function PatientForumQuestionPage() {
       }
     } catch (error) {
       // Error liking item - handled silently
+    }
+  }
+
+  const handleDeleteQuestion = async () => {
+    if (!currentUser || !currentPatientProfile || currentPatientProfile.id !== question?.author?.id) {
+      toast({
+        title: 'Erro',
+        description: 'Você não tem permissão para deletar esta pergunta.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    try {
+      const supabaseClient = createSupabaseClient()
+      
+      // Delete the question (replies will be deleted by cascade)
+      const { error } = await supabaseClient
+        .from('forum_questions')
+        .delete()
+        .eq('id', questionId)
+        .eq('author_id', currentUser.id) // Extra security check
+
+      if (error) {
+        throw error
+      }
+
+      toast({
+        title: 'Pergunta deletada',
+        description: 'Sua pergunta foi removida com sucesso.',
+      })
+
+      // Redirect back to forum
+       router.push('/dashboard/paciente?activeTab=forum')
+    } catch (error) {
+      console.error('Error deleting question:', error)
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível deletar a pergunta. Tente novamente.',
+        variant: 'destructive',
+      })
     }
   }
 
@@ -257,7 +297,7 @@ export default function PatientForumQuestionPage() {
                       )}
                   </div>
                   <p className="text-sm text-gray-500">
-                    {new Date(question.timestamp).toLocaleDateString('pt-BR')}
+                    {formatQuestionDate(question.timestamp)}
                   </p>
                 </div>
               </div>
@@ -302,6 +342,41 @@ export default function PatientForumQuestionPage() {
                   {question.views || 0} Visualizações
                 </div>
               </div>
+              
+              {/* Delete button - only visible to question author */}
+              {currentPatientProfile && currentPatientProfile.id === question.author?.id && (
+                <div className="flex items-center">
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        Excluir
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Excluir pergunta</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Tem certeza que deseja excluir esta pergunta? Esta ação não pode ser desfeita e todas as respostas também serão removidas.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={handleDeleteQuestion}
+                          className="bg-red-600 hover:bg-red-700"
+                        >
+                          Excluir
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -365,9 +440,7 @@ export default function PatientForumQuestionPage() {
                           )}
                         </div>
                         <p className="text-sm text-gray-500">
-                          {new Date(reply.timestamp).toLocaleDateString(
-                            'pt-BR'
-                          )}
+                          {formatQuestionDate(reply.timestamp)}
                         </p>
                       </div>
                     </div>
