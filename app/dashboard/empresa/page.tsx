@@ -40,12 +40,12 @@ import {
   type CompanyOverviewStats,
 } from '@/lib/company-data-service'
 import { PermissionWrapper, usePermissions } from '@/components/ui/permission-wrapper'
+import PerfilTab from './_components/PerfilTab'
 
 export default function CompanyDashboard() {
   const [profile, setProfile] = useState<CompanyProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('overview')
-  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
   const [overviewData, setOverviewData] = useState<CompanyOverviewStats | null>(
     null
   )
@@ -547,179 +547,7 @@ export default function CompanyDashboard() {
 
         {/* Perfil */}
         {activeTab === 'perfil' && (
-          <div className="space-y-8">
-            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
-              <div>
-                <h1 className="text-3xl lg:text-4xl font-bold text-[#1E1D40] mb-2">
-                  Perfil da Empresa
-                </h1>
-                <p className="text-gray-600">
-                  Gerencie as informações da sua empresa
-                </p>
-              </div>
-              <Button
-                variant="outline"
-                className="hover-lift bg-white/80 backdrop-blur-sm border-gray-200"
-                onClick={() => setIsProfileModalOpen(true)}
-              >
-                <Settings className="h-4 w-4 mr-2" />
-                Editar Perfil
-              </Button>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              <Card className="border-0 shadow-lg backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-                      <Building className="h-4 w-4 text-white" />
-                    </div>
-                    <span>Informações da Empresa</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex flex-col items-center">
-                    <Avatar className="h-20 w-20 mb-4">
-                      <AvatarImage
-                        src={
-                          profile?.logo_url ||
-                          `/placeholder.svg?height=80&width=80&query=${profile?.company_name || '/placeholder.svg'} logo`
-                        }
-                      />
-                      <AvatarFallback className="bg-gray-200 text-gray-600 text-xl font-semibold">
-                        {profile?.company_name?.charAt(0).toUpperCase() || 'E'}
-                      </AvatarFallback>
-                    </Avatar>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">
-                      Nome da Empresa
-                    </label>
-                    <p className="text-[#1E1D40] font-semibold text-lg">
-                      {profile?.company_name || 'Não informado'}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">
-                      CNPJ
-                    </label>
-                    <p className="text-[#1E1D40] font-semibold">
-                      {profile?.cnpj || 'Não informado'}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">
-                      Setor
-                    </label>
-                    <p className="text-[#1E1D40] font-semibold">
-                      {profile?.industry || 'Não informado'}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">
-                      Tamanho da Empresa
-                    </label>
-                    <p className="text-[#1E1D40] font-semibold">
-                      {profile?.company_size || 'Não informado'}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">
-                      Telefone
-                    </label>
-                    <p className="text-[#1E1D40] font-semibold">
-                      {profile?.phone || 'Não informado'}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">
-                      Website
-                    </label>
-                    <p className="text-[#1E1D40] font-semibold text-sm mt-1">
-                      {profile?.website ? (
-                        <a
-                          href={profile.website}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:underline"
-                        >
-                          {profile.website}
-                        </a>
-                      ) : (
-                        'Não informado'
-                      )}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="border-0 shadow-lg backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center">
-                      <FileText className="h-4 w-4 text-white" />
-                    </div>
-                    <span>Descrição</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">
-                      Sobre a Empresa
-                    </label>
-                    <p className="text-[#1E1D40] font-semibold text-sm mt-1">
-                      {profile?.description || 'Nenhuma descrição informada'}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="border-0 shadow-lg backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
-                      <User className="h-4 w-4 text-white" />
-                    </div>
-                    <span>Responsável</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">
-                      Nome do Responsável
-                    </label>
-                    <p className="text-[#1E1D40] font-semibold">
-                      {profile?.responsible_name || 'Não informado'}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">
-                      Cargo
-                    </label>
-                    <p className="text-[#1E1D40] font-semibold">
-                      {profile?.responsible_position || 'Não informado'}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">
-                      CPF do Responsável
-                    </label>
-                    <p className="text-[#1E1D40] font-semibold">
-                      {profile?.responsible_cpf || 'Não informado'}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">
-                      Endereço
-                    </label>
-                    <p className="text-[#1E1D40] font-semibold">
-                      {profile?.address || 'Não informado'}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
+          <PerfilTab profile={profile} onProfileUpdate={loadProfile} />
         )}
 
         {/* Vagas */}
@@ -785,16 +613,7 @@ export default function CompanyDashboard() {
         )}
       </div>
 
-      {profile && (
-        <UserProfileModal
-          open={isProfileModalOpen}
-          onOpenChange={setIsProfileModalOpen}
-          userType="empresa"
-          initialData={profile}
-          onProfileUpdate={loadProfile}
-          userId={profile.user_id}
-        />
-      )}
+
     </DashboardSidebar>
   )
 }
