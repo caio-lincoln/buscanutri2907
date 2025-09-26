@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Navbar } from '@/components/navbar'
+import { Header } from '@/components/header'
 import { Footer } from '@/components/footer'
 import { Button } from '@/components/ui/button'
 import {
@@ -29,7 +29,7 @@ export const metadata: Metadata = {
 export default function ContatoPage() {
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
+      <Header />
 
       <main className="container mx-auto px-6 lg:px-8 py-12">
         {/* Header */}

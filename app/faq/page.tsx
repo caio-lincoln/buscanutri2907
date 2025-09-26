@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { Navbar } from '@/components/navbar'
+import { Header } from '@/components/header'
 import { Footer } from '@/components/footer'
 import {
   Card,
@@ -111,7 +111,7 @@ export default function FAQPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
+      <Header />
 
       <main className="container mx-auto px-6 lg:px-8 py-12">
         {/* Header */}
