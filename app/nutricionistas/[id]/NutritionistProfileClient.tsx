@@ -581,7 +581,6 @@ export default function NutritionistProfilePageClient({
                     router.push('/login')
                   }
                 } catch (error) {
-                  console.log("🚀 ~ error:", error)
 
                 }
               }}
@@ -1209,7 +1208,6 @@ export default function NutritionistProfilePageClient({
                             router.push('/login')
                           }
                         } catch (error) {
-                          console.log("🚀 ~ error:", error)
 
                         }
                       }}

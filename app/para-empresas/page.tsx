@@ -243,14 +243,12 @@ Aguardo retorno para mais informações sobre os planos corporativos!`
     const encodedMessage = encodeURIComponent(whatsappMessage)
     const whatsappUrl = `https://wa.me/5579998134938?text=${encodedMessage}`
     
-    console.log('Enviando proposta corporativa via WhatsApp:', whatsappUrl)
     
     // Tentar abrir em nova aba
     const newWindow = window.open(whatsappUrl, '_blank')
     
     // Se não conseguir abrir (popup blocker), redirecionar na mesma aba
     if (!newWindow || newWindow.closed || typeof newWindow.closed == 'undefined') {
-      console.log('Popup bloqueado, redirecionando na mesma aba')
       window.location.href = whatsappUrl
     }
   }

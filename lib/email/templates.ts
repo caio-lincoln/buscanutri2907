@@ -3,11 +3,11 @@ export type UserRole = 'NUTRITIONIST' | 'PATIENT' | 'COMPANY'
 export function subjectByRole(role: UserRole) {
   switch (role) {
     case 'NUTRITIONIST':
-      return 'Bem-vindo(a) ao NutriBusca — Comece a atender hoje!'
+      return 'Bem-vindo(a) ao BuscaNutri — Comece a atender hoje!'
     case 'PATIENT':
-      return 'Bem-vindo(a) ao NutriBusca — Sua jornada de saúde começa aqui'
+      return 'Bem-vindo(a) ao BuscaNutri — Sua jornada de saúde começa aqui'
     case 'COMPANY':
-      return 'Bem-vindo(a) ao NutriBusca — Conecte sua equipe à nutrição'
+      return 'Bem-vindo(a) ao BuscaNutri — Conecte sua equipe à nutrição'
   }
 }
 
@@ -21,7 +21,7 @@ export function htmlByRole(role: UserRole, { name }: { name?: string } = {}) {
     return `
 <div style="${baseStyle}">
 <h2>Olá${safeName} 👋</h2>
-<p>Que bom ter você no <strong>NutriBusca</strong>! Complete seu perfil profissional, conecte sua conta para pagamentos e publique sua agenda.</p>
+<p>Que bom ter você no <strong>BuscaNutri</strong>! Complete seu perfil profissional, conecte sua conta para pagamentos e publique sua agenda.</p>
 <ul>
 <li>✔️ Configure horários e modalidades de atendimento</li>
 <li>✔️ Conecte sua conta para receber (Stripe/PIX, conforme seu setup)</li>
@@ -65,10 +65,10 @@ export function textFallback(role: UserRole, { name }: { name?: string } = {}) {
   const safeName = name ? `, ${name}` : ''
   switch (role) {
     case 'NUTRITIONIST':
-      return `Olá${safeName}! Complete seu perfil, conecte pagamentos e publique sua agenda no NutriBusca.`
+      return `Olá${safeName}! Complete seu perfil, conecte pagamentos e publique sua agenda no BuscaNutri.`
     case 'PATIENT':
-      return `Olá${safeName}! Encontre nutricionistas e agende seu atendimento pelo NutriBusca.`
+      return `Olá${safeName}! Encontre nutricionistas e agende seu atendimento pelo BuscaNutri.`
     case 'COMPANY':
-      return `Olá${safeName}! Cadastre unidades e convide colaboradores para usar o NutriBusca.`
+      return `Olá${safeName}! Cadastre unidades e convide colaboradores para usar o BuscaNutri.`
   }
 }

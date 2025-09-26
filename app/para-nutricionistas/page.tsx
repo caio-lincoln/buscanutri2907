@@ -107,12 +107,10 @@ const stats = [
 
 export default function ParaNutricionistasPage() {
   const [ stats, setStats ] = useState<PlatformStats | null>(null)
-  console.log("🚀 ~ ParaNutricionistasPage ~ stats:", stats)
 
   const loadStats = useCallback(async () => {
     try {
       const platformStats = await getPlatformStats()
-      console.log("🚀 ~ ParaNutricionistasPage ~ platformStats:", platformStats)
       setStats(platformStats)
     } catch (error) {
       // Error loading stats - handled silently
