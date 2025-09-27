@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
-import { requireAdmin } from '@/lib/auth-utils'
+import { requireAdmin, getCurrentUser } from '@/lib/auth-utils'
+import { requireProductionAuth, logProductionOperation, ProductionAuthorizationError } from '@/lib/production-auth'
 import { z } from 'zod'
 
 const assignBadgeSchema = z.object({
@@ -17,10 +18,14 @@ const removeBadgeSchema = z.object({
 // POST - Atribuir badge a nutricionista
 export async function POST(request: NextRequest) {
   try {
-    await requireAdmin()
+    const user = await requireAdmin()
     const supabase = createAdminClient()
     
     const body = await request.json()
+    
+    // Verificar autorização de produção para operações críticas
+    requireProductionAuth(request, body, 'atribuição de badge')
+    
     const { badgeId, nutritionistId, adminUserId } = assignBadgeSchema.parse(body)
     
     // Verificar se o usuário é admin
@@ -73,10 +78,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Erro ao atribuir badge' }, { status: 500 })
     }
 
+    // Log da operação em produção
+    logProductionOperation('ASSIGN_BADGE', `${badgeId}-${nutritionistId}`, user.id)
+
     return NextResponse.json(data)
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.errors }, { status: 400 })
+    }
+    if (error instanceof ProductionAuthorizationError) {
+      return NextResponse.json({ error: error.message }, { status: 403 })
     }
     console.error('Error in POST /api/admin/badges/assign:', error)
     return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 })
@@ -86,10 +97,14 @@ export async function POST(request: NextRequest) {
 // DELETE - Remover badge de nutricionista
 export async function DELETE(request: NextRequest) {
   try {
-    await requireAdmin()
+    const user = await requireAdmin()
     const supabase = createAdminClient()
     
     const body = await request.json()
+    
+    // Verificar autorização de produção para operações críticas
+    requireProductionAuth(request, body, 'remoção de badge')
+    
     const { badgeId, nutritionistId } = removeBadgeSchema.parse(body)
     
     const { error } = await supabase
@@ -103,10 +118,16 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Erro ao remover badge' }, { status: 500 })
     }
 
+    // Log da operação em produção
+    logProductionOperation('REMOVE_BADGE', `${badgeId}-${nutritionistId}`, user.id)
+
     return NextResponse.json({ success: true })
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.errors }, { status: 400 })
+    }
+    if (error instanceof ProductionAuthorizationError) {
+      return NextResponse.json({ error: error.message }, { status: 403 })
     }
     console.error('Error in DELETE /api/admin/badges/assign:', error)
     return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 })

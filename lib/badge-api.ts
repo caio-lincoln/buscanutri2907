@@ -15,6 +15,22 @@ export type NutritionistBadge = {
   badge: Badge
 }
 
+// Função auxiliar para adicionar autorização de produção
+function addProductionAuth(headers: Record<string, string> = {}, body?: any) {
+  // Adicionar header de autorização de produção
+  const authHeaders = {
+    ...headers,
+    'x-production-auth': 'liberar_producao'
+  }
+  
+  // Se há body, adicionar campo de autorização também
+  if (body && typeof body === 'object') {
+    body.production_auth = 'liberar_producao'
+  }
+  
+  return { headers: authHeaders, body }
+}
+
 // Buscar todas as badges
 export async function getAllBadges(): Promise<Badge[]> {
   try {
@@ -36,22 +52,27 @@ export async function createBadge(
   icon_url: string
 ): Promise<Badge | null> {
   try {
+    const requestBody = { name, description, icon_url }
+    const { headers, body } = addProductionAuth(
+      { 'Content-Type': 'application/json' },
+      requestBody
+    )
+    
     const response = await fetch('/api/admin/badges', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ name, description, icon_url }),
+      headers,
+      body: JSON.stringify(body),
     })
     
     if (!response.ok) {
-      throw new Error('Erro ao criar badge')
+      const errorData = await response.json()
+      throw new Error(errorData.error || 'Erro ao criar badge')
     }
     
     return await response.json()
   } catch (error) {
     console.error('Error creating badge:', error)
-    return null
+    throw error
   }
 }
 
@@ -63,40 +84,49 @@ export async function updateBadge(
   icon_url: string
 ): Promise<Badge | null> {
   try {
+    const requestBody = { id, name, description, icon_url }
+    const { headers, body } = addProductionAuth(
+      { 'Content-Type': 'application/json' },
+      requestBody
+    )
+    
     const response = await fetch('/api/admin/badges', {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ id, name, description, icon_url }),
+      headers,
+      body: JSON.stringify(body),
     })
     
     if (!response.ok) {
-      throw new Error('Erro ao atualizar badge')
+      const errorData = await response.json()
+      throw new Error(errorData.error || 'Erro ao atualizar badge')
     }
     
     return await response.json()
   } catch (error) {
     console.error('Error updating badge:', error)
-    return null
+    throw error
   }
 }
 
 // Deletar badge
 export async function deleteBadge(id: string): Promise<boolean> {
   try {
+    const { headers } = addProductionAuth()
+    
     const response = await fetch(`/api/admin/badges?id=${id}`, {
       method: 'DELETE',
+      headers,
     })
     
     if (!response.ok) {
-      throw new Error('Erro ao deletar badge')
+      const errorData = await response.json()
+      throw new Error(errorData.error || 'Erro ao deletar badge')
     }
     
     return true
   } catch (error) {
     console.error('Error deleting badge:', error)
-    return false
+    throw error
   }
 }
 
@@ -107,12 +137,16 @@ export async function assignBadgeToNutritionist(
   adminUserId: string
 ): Promise<any> {
   try {
+    const requestBody = { badgeId, nutritionistId, adminUserId }
+    const { headers, body } = addProductionAuth(
+      { 'Content-Type': 'application/json' },
+      requestBody
+    )
+    
     const response = await fetch('/api/admin/badges/assign', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ badgeId, nutritionistId, adminUserId }),
+      headers,
+      body: JSON.stringify(body),
     })
     
     if (!response.ok) {
@@ -129,26 +163,31 @@ export async function assignBadgeToNutritionist(
 
 // Remover badge de nutricionista
 export async function removeBadgeFromNutritionist(
-  badgeId: string,
-  nutritionistId: string
+  nutritionistId: string,
+  badgeId: string
 ): Promise<boolean> {
   try {
+    const requestBody = { badgeId, nutritionistId }
+    const { headers, body } = addProductionAuth(
+      { 'Content-Type': 'application/json' },
+      requestBody
+    )
+    
     const response = await fetch('/api/admin/badges/assign', {
       method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ badgeId, nutritionistId }),
+      headers,
+      body: JSON.stringify(body),
     })
     
     if (!response.ok) {
-      throw new Error('Erro ao remover badge')
+      const errorData = await response.json()
+      throw new Error(errorData.error || 'Erro ao remover badge')
     }
     
     return true
   } catch (error) {
     console.error('Error removing badge:', error)
-    return false
+    throw error
   }
 }
 

@@ -27,6 +27,14 @@ class SessionTracker {
     if (typeof window === 'undefined') return
 
     try {
+      // Verificar se o usuário está autenticado antes de tentar acessar a tabela
+      const { data: { user }, error: authError } = await this.supabase.auth.getUser()
+      
+      if (authError || !user || user.id !== userId) {
+        console.log('Usuário não autenticado, pulando rastreamento de sessão')
+        return
+      }
+
       this.sessionStart = new Date()
       this.pageViews = 1
       this.lastActivity = new Date()
@@ -63,6 +71,15 @@ class SessionTracker {
     if (!this.sessionId || !this.sessionStart) return
 
     try {
+      // Verificar se o usuário ainda está autenticado
+      const { data: { user }, error: authError } = await this.supabase.auth.getUser()
+      
+      if (authError || !user) {
+        console.log('Usuário não autenticado, pulando finalização de sessão')
+        this.cleanup()
+        return
+      }
+
       const sessionEnd = new Date()
       const durationSeconds = Math.floor((sessionEnd.getTime() - this.sessionStart.getTime()) / 1000)
 
@@ -98,6 +115,14 @@ class SessionTracker {
     if (!this.sessionId) return
 
     try {
+      // Verificar se o usuário ainda está autenticado
+      const { data: { user }, error: authError } = await this.supabase.auth.getUser()
+      
+      if (authError || !user) {
+        console.log('Usuário não autenticado, pulando atualização de page views')
+        return
+      }
+
       await this.supabase
         .from('user_sessions')
         .update({ page_views: this.pageViews })

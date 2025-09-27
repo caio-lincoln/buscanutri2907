@@ -432,7 +432,7 @@ export default function BuscarTab() {
             <div
               className={
                 viewModeNutritionist === 'grid'
-                  ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6'
+                  ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 md:gap-6'
                   : 'space-y-4'
               }
             >
@@ -442,31 +442,44 @@ export default function BuscarTab() {
                 return (
                   <Card
                     key={nutritionist.id}
-                    className={`group hover-lift transition-all duration-300 border-0 shadow-lg hover:shadow-xl backdrop-blur-sm ${viewModeNutritionist === 'list' ? 'flex' : ''
-                      }`}
+                    className={`group hover-lift transition-all duration-300 border-0 shadow-lg hover:shadow-xl backdrop-blur-sm ${
+                      viewModeNutritionist === 'list' 
+                        ? 'flex' 
+                        : 'h-full flex flex-col'
+                    }`}
                   >
-                    <CardContent className="p-4 md:p-6">
-                      <div className={`flex items-start gap-3 md:gap-4 ${viewModeNutritionist === 'list' ? 'flex-row' : 'flex-col sm:flex-row'}`}>
-                        <Avatar className="h-12 w-12 md:h-16 md:w-16 ring-2 ring-gray-200 shadow-lg group-hover:scale-105 transition-transform duration-300 flex-shrink-0">
-                          <AvatarImage
-                            src={
-                              nutritionist?.profile_image_url ||
-                              `/placeholder.svg?height=48&width=48&query=${nutritionist?.full_name || 'nutritionist profile'}`
-                            }
-                            className="rounded-full object-cover"
-                          />
-                          <AvatarFallback className="bg-gradient-to-br from-blue-500 to-blue-600 text-white text-lg md:text-xl font-bold">
-                            {nutritionist.full_name?.charAt(0) || 'N'}
-                          </AvatarFallback>
-                        </Avatar>
+                    <CardContent className={`p-4 md:p-6 ${viewModeNutritionist === 'grid' ? 'flex flex-col h-full' : ''}`}>
+                      <div className={`flex items-start gap-3 md:gap-4 ${
+                        viewModeNutritionist === 'list' 
+                          ? 'flex-row' 
+                          : 'flex-col sm:flex-row'
+                      } ${viewModeNutritionist === 'grid' ? 'flex-1' : ''}`}>
+                        
+                        {/* Avatar Section */}
+                        <div className="flex-shrink-0">
+                          <Avatar className="h-14 w-14 md:h-16 md:w-16 lg:h-18 lg:w-18 ring-2 ring-gray-200 shadow-lg group-hover:scale-105 transition-transform duration-300">
+                            <AvatarImage
+                              src={
+                                nutritionist?.profile_image_url ||
+                                `/placeholder.svg?height=64&width=64&query=${nutritionist?.full_name || 'nutritionist profile'}`
+                              }
+                              className="rounded-full object-cover"
+                            />
+                            <AvatarFallback className="bg-gradient-to-br from-blue-500 to-blue-600 text-white text-lg md:text-xl font-bold">
+                              {nutritionist.full_name?.charAt(0) || 'N'}
+                            </AvatarFallback>
+                          </Avatar>
+                        </div>
 
-                        <div className="flex-1 space-y-2 md:space-y-3 min-w-0">
+                        {/* Content Section */}
+                        <div className="flex-1 space-y-3 min-w-0">
+                          {/* Header with name and verification */}
                           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
                             <div className="min-w-0 flex-1">
-                              <h3 className="font-bold text-[#1E1D40] text-base md:text-lg truncate">
+                              <h3 className="font-bold text-[#1E1D40] text-base md:text-lg lg:text-xl truncate">
                                 {nutritionist.full_name}
                               </h3>
-                              <p className="text-xs md:text-sm text-gray-600">
+                              <p className="text-xs md:text-sm text-gray-600 font-medium">
                                 CRN: {nutritionist.crn}
                               </p>
                             </div>
@@ -478,26 +491,28 @@ export default function BuscarTab() {
                             )}
                           </div>
 
+                          {/* Rating and Location */}
                           <div className="space-y-2">
                             <div className="flex items-center gap-2">
-                              <Star className="h-3 w-3 md:h-4 md:w-4 text-yellow-500 fill-current flex-shrink-0" />
-                              <span className="text-xs md:text-sm font-semibold">
+                              <Star className="h-4 w-4 text-yellow-500 fill-current flex-shrink-0" />
+                              <span className="text-sm font-semibold">
                                 {nutritionist.rating?.toFixed(1) || '5.0'}
                               </span>
-                              <span className="text-xs md:text-sm text-gray-600 truncate">
+                              <span className="text-sm text-gray-600 truncate">
                                 ({nutritionist.total_reviews || 0} avaliações)
                               </span>
                             </div>
 
                             {nutritionist.location && (
                               <div className="flex items-center gap-2">
-                                <MapPin className="h-3 w-3 md:h-4 md:w-4 text-gray-500 flex-shrink-0" />
-                                <span className="text-xs md:text-sm text-gray-600 truncate">
+                                <MapPin className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                                <span className="text-sm text-gray-600 truncate">
                                   {nutritionist.location}
                                 </span>
                               </div>
                             )}
 
+                            {/* Specialties */}
                             <div className="flex flex-wrap gap-1 md:gap-2">
                               {(typeof (
                                 getSpecialtiesText(nutritionist) ||
@@ -521,80 +536,82 @@ export default function BuscarTab() {
                                 ))}
                             </div>
 
+                            {/* Bio */}
                             {nutritionist.bio && (
-                              <p className="text-xs md:text-sm text-gray-600 line-clamp-2">
+                              <p className="text-sm text-gray-600 line-clamp-2 leading-relaxed">
                                 {nutritionist.bio}
                               </p>
                             )}
                           </div>
 
-                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pt-2">
+                          {/* Price and Online indicator */}
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pt-2 border-t border-gray-100">
                             <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                               {getMinPrice(
                                 nutritionist.nutritionist_services
                               ) !== null && (
-                                  <div className="flex items-center gap-1 text-xs md:text-sm">
-                                    <span className="text-gray-600">
-                                      A partir de
-                                    </span>
-                                    <span className="font-bold text-[#1E1D40] text-sm md:text-lg">
-                                      R${' '}
-                                      {getMinPrice(
-                                        nutritionist.nutritionist_services
-                                      )}
-                                    </span>
-                                  </div>
-                                )}
+                                <div className="flex items-center gap-1">
+                                  <span className="text-sm text-gray-600">
+                                    A partir de
+                                  </span>
+                                  <span className="font-bold text-[#1E1D40] text-lg">
+                                    R$ {getMinPrice(nutritionist.nutritionist_services)}
+                                  </span>
+                                </div>
+                              )}
                               {hasOnlineConsultation(
                                 nutritionist.nutritionist_services
                               ) && (
-                                  <div className="flex items-center gap-1 text-xs md:text-sm text-green-600">
-                                    <Video className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />
-                                    <span>Online</span>
-                                  </div>
-                                )}
+                                <div className="flex items-center gap-1 text-sm text-green-600 bg-green-50 px-2 py-1 rounded-full">
+                                  <Video className="h-4 w-4 flex-shrink-0" />
+                                  <span className="font-medium">Online</span>
+                                </div>
+                              )}
                             </div>
                           </div>
-
-                          <div className="flex gap-2 pt-2">
-                            <Link
-                              href={`/nutricionistas/${nutritionist.id}`}
-                              className="flex-1"
-                            >
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="w-full hover-lift bg-white/80 backdrop-blur-sm hover:bg-gray-50 text-xs md:text-sm"
-                              >
-                                <User className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
-                                Ver Perfil
-                              </Button>
-                            </Link>
-
-                            <Button
-                              size="sm"
-                              className="flex-1 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 shadow-lg hover:shadow-xl transition-all duration-300 text-xs md:text-sm"
-                              onClick={() =>
-                                handleScheduleConsultation(
-                                  nutritionist.id
-                                )
-                              }
-                            >
-                              <Calendar className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
-                              Agendar
-                            </Button>
-
-                            <Button
-                              size="sm"
-                              className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-lg hover:shadow-xl transition-all duration-300 text-xs md:text-sm"
-                              onClick={() => handleStartChat(nutritionist.id)}
-                              disabled={startingChatFor === nutritionist.id}
-                            >
-                              <MessageSquare className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
-                              {startingChatFor === nutritionist.id ? 'Abrindo...' : 'Chat'}
-                            </Button>
-                          </div>
                         </div>
+                      </div>
+
+                      {/* Action Buttons - Always at bottom for grid view */}
+                      <div className={`flex gap-2 pt-4 mt-auto ${
+                        viewModeNutritionist === 'grid' ? 'border-t border-gray-100' : ''
+                      }`}>
+                        <Link
+                          href={`/nutricionistas/${nutritionist.id}`}
+                          className="flex-1"
+                        >
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="w-full h-10 hover-lift bg-white/80 backdrop-blur-sm hover:bg-gray-50 text-sm font-medium border-gray-200 hover:border-gray-300 transition-all duration-200"
+                          >
+                            <User className="h-4 w-4 mr-2" />
+                            Ver Perfil
+                          </Button>
+                        </Link>
+
+                        <Button
+                          size="sm"
+                          className="flex-1 h-10 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 shadow-lg hover:shadow-xl transition-all duration-300 text-sm font-medium"
+                          onClick={() =>
+                            handleScheduleConsultation(
+                              nutritionist.id
+                            )
+                          }
+                        >
+                          <Calendar className="h-4 w-4 mr-2" />
+                          Agendar
+                        </Button>
+
+                        <Button
+                          size="sm"
+                          className="flex-1 h-10 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-lg hover:shadow-xl transition-all duration-300 text-sm font-medium"
+                          onClick={() => handleStartChat(nutritionist.id)}
+                          disabled={startingChatFor === nutritionist.id}
+                        >
+                          <MessageSquare className="h-4 w-4 mr-2" />
+                          {startingChatFor === nutritionist.id ? 'Abrindo...' : 'Chat'}
+                        </Button>
                       </div>
                     </CardContent>
                   </Card>
