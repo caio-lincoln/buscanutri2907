@@ -111,11 +111,14 @@ export default function BuscarTab() {
     'grid' | 'list'
   >('grid')
   const [ isMobile, setIsMobile ] = useState(false)
+  const [ isVeryLargeScreen, setIsVeryLargeScreen ] = useState(false)
 
-  // Check screen size and set mobile state
+  // Check screen size and set mobile/very large screen states
   useEffect(() => {
     const checkScreenSize = () => {
-      setIsMobile(window.innerWidth < 1024) // lg breakpoint
+      const width = window.innerWidth
+      setIsMobile(width < 1024) // lg breakpoint
+      setIsVeryLargeScreen(width >= 1536) // 2xl breakpoint
     }
     
     checkScreenSize()
@@ -379,8 +382,8 @@ export default function BuscarTab() {
                 {nutritionists.length !== 1 ? 's' : ''}
               </span>
 
-              {/* View mode toggle - hidden on mobile/tablet, auto-switches to list */}
-              <div className="hidden lg:flex items-center justify-center gap-2">
+              {/* View mode toggle - hidden on mobile/tablet and very large screens, auto-switches to list */}
+              <div className="hidden lg:flex xl:hidden items-center justify-center gap-2">
                 <Button
                   variant={
                     viewModeNutritionist === 'grid'
@@ -445,16 +448,16 @@ export default function BuscarTab() {
           {nutritionists.length > 0 ? (
             <div
               className={
-                // Force list view on mobile/tablet, allow grid on desktop
-                isMobile || viewModeNutritionist === 'list'
+                // Force list view on mobile/tablet and very large screens, allow grid on medium-large screens
+                isMobile || isVeryLargeScreen || viewModeNutritionist === 'list'
                   ? 'space-y-4'
-                  : 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 md:gap-6'
+                  : 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6'
               }
             >
               {nutritionists.map(nutritionist => {
                 const formatted = formatNutritionistData(nutritionist)
                 // Determine effective view mode based on screen size
-                const effectiveViewMode = isMobile ? 'list' : viewModeNutritionist
+                const effectiveViewMode = (isMobile || isVeryLargeScreen) ? 'list' : viewModeNutritionist
 
                 return (
                   <Card
