@@ -55,6 +55,8 @@ import Image from 'next/image'
 import { useMediaQuery } from '../hooks/use-media-query'
 import { useRouter } from 'next/navigation'
 import { useProfile } from '@/contexts/profile-context'
+import { useContext } from 'react'
+import { ProfileContext } from '@/contexts/profile-context'
 import { ClientOnly } from '@/components/client-only'
 
 export interface DashboardMenuItem {
@@ -192,7 +194,9 @@ function SidebarShell({
   onSignOut,
 }: DashboardSidebarProps) {
   const router = useRouter()
-  const { profileData } = useProfile()
+  // Usar useContext diretamente para verificar se está dentro de ProfileProvider
+  const profileContext = useContext(ProfileContext)
+  const profileData = profileContext?.profileData
   
   // Use profile data if available, otherwise fall back to props
   const displayName = profileData?.full_name || userName || ''
