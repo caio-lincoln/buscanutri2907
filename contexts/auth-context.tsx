@@ -16,6 +16,7 @@ import { useAuthSync } from '@/hooks/use-auth-sync'
 import type { User } from '@supabase/supabase-js'
 import type { UserProfile, NutritionistProfile, PatientProfile, CompanyProfile } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
+import { sessionTracker } from '@/lib/session-tracker'
 
 interface AuthContextType {
   user: User | null
@@ -167,11 +168,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(null)
         setUserProfile(null)
         resetSubProfiles()
+        // Finalizar sessão se usuário não está mais logado
+        await sessionTracker.endSession()
         return
       }
 
       setUser(sessionUser.data.user)
       setUserProfile(sessionUser.data.user as User)
+      
+      // Iniciar rastreamento de sessão para usuário logado
+      await sessionTracker.startSession(sessionUser.data.user.id)
+      
       const { data: row } = await supabase
       .from('users')
       .select('*')
@@ -204,6 +211,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const handleSignOut = useCallback(async () => {
     try {
+      // Finalizar sessão antes do logout
+      await sessionTracker.endSession()
+      
       if (typeof window !== 'undefined') {
         sessionStorage.removeItem('admin_session')
       }

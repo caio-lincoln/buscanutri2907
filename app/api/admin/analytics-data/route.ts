@@ -22,7 +22,24 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Acesso negado' }, { status: 403 })
     }
 
-    // Buscar dados de usuários
+    // Extrair parâmetros de data da query string
+    const { searchParams } = new URL(request.url)
+    const startDate = searchParams.get('startDate')
+    const endDate = searchParams.get('endDate')
+
+    // Definir datas padrão (últimos 30 dias) se não fornecidas
+    const now = new Date()
+    const defaultStartDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+    const defaultEndDate = now
+
+    const filterStartDate = startDate ? new Date(startDate) : defaultStartDate
+    const filterEndDate = endDate ? new Date(endDate) : defaultEndDate
+
+    // Ajustar endDate para incluir o dia completo
+    const adjustedEndDate = new Date(filterEndDate)
+    adjustedEndDate.setHours(23, 59, 59, 999)
+
+    // Buscar dados de usuários filtrados por data
     const { data: usersData } = await supabase
       .from('user_profiles')
       .select(`
@@ -32,8 +49,10 @@ export async function GET(request: NextRequest) {
         city,
         state
       `)
+      .gte('created_at', filterStartDate.toISOString())
+      .lte('created_at', adjustedEndDate.toISOString())
 
-    // Buscar dados de consultas
+    // Buscar dados de consultas filtradas por data
     const { data: consultationsData } = await supabase
       .from('consultations')
       .select(`
@@ -41,8 +60,10 @@ export async function GET(request: NextRequest) {
         created_at,
         status
       `)
+      .gte('created_at', filterStartDate.toISOString())
+      .lte('created_at', adjustedEndDate.toISOString())
 
-    // Buscar dados de pagamentos
+    // Buscar dados de pagamentos filtrados por data
     const { data: paymentsData } = await supabase
       .from('payments')
       .select(`
@@ -51,18 +72,51 @@ export async function GET(request: NextRequest) {
         amount_brl,
         status
       `)
+      .gte('created_at', filterStartDate.toISOString())
+      .lte('created_at', adjustedEndDate.toISOString())
 
-    // Buscar dados de assinaturas
+    // Buscar dados de assinaturas filtrados por data
     const { data: subscriptionsData } = await supabase
       .from('user_subscriptions')
       .select(`
         id,
         created_at,
         updated_at,
+        status,
+        stripe_subscription_id,
+        stripe_customer_id,
+        current_period_end,
+        cancel_at_period_end
+      `)
+      .gte('created_at', filterStartDate.toISOString())
+      .lte('created_at', adjustedEndDate.toISOString())
+
+    // Buscar assinaturas ativas no período (simplificado)
+    const { data: activeSubscriptionsInPeriod } = await supabase
+      .from('user_subscriptions')
+      .select(`
+        id,
+        created_at,
+        updated_at,
+        status,
+        stripe_subscription_id,
+        current_period_end
+      `)
+      .eq('status', 'active')
+
+    // Buscar assinaturas canceladas no período (simplificado)
+    const { data: canceledSubscriptionsInPeriod } = await supabase
+      .from('user_subscriptions')
+      .select(`
+        id,
+        updated_at,
         status
       `)
+      .in('status', ['canceled', 'incomplete_expired', 'unpaid'])
+      .gte('updated_at', filterStartDate.toISOString())
+      .lte('updated_at', adjustedEndDate.toISOString())
 
-    // Buscar dados de posts
+    // Buscar dados de posts filtrados por data
     const { data: postsData } = await supabase
       .from('posts')
       .select(`
@@ -71,23 +125,49 @@ export async function GET(request: NextRequest) {
         likes_count,
         comments_count
       `)
+      .gte('created_at', filterStartDate.toISOString())
+      .lte('created_at', adjustedEndDate.toISOString())
 
-    // Calcular métricas
-    const now = new Date()
-    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
-    const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000)
+    // Buscar dados totais para comparação (sem filtro de data)
+    const { data: allUsersData } = await supabase
+      .from('user_profiles')
+      .select('id, created_at, user_type')
 
-    // Métricas de usuários
-    const totalUsers = usersData?.length || 0
-    const newUsers30Days = usersData?.filter(user => 
-      new Date(user.created_at) >= thirtyDaysAgo
-    ).length || 0
+    const { data: allConsultationsData } = await supabase
+      .from('consultations')
+      .select('id, created_at, status')
+
+    const { data: allPaymentsData } = await supabase
+      .from('payments')
+      .select('id, created_at, amount_brl, status')
+
+    const { data: allSubscriptionsData } = await supabase
+      .from('user_subscriptions')
+      .select('id, created_at, status')
+
+    // Calcular período anterior para comparação
+    const periodDuration = adjustedEndDate.getTime() - filterStartDate.getTime()
+    const previousStartDate = new Date(filterStartDate.getTime() - periodDuration)
+    const previousEndDate = new Date(filterStartDate.getTime() - 1)
+
+    // Buscar dados do período anterior para comparação
+    const { data: previousUsersData } = await supabase
+      .from('user_profiles')
+      .select('id, created_at, user_type')
+      .gte('created_at', previousStartDate.toISOString())
+      .lte('created_at', previousEndDate.toISOString())
+
+    const { data: previousSubscriptionsData } = await supabase
+      .from('user_subscriptions')
+      .select('id, created_at, status')
+      .gte('created_at', previousStartDate.toISOString())
+      .lte('created_at', previousEndDate.toISOString())
+
+    // Calcular métricas baseadas nos dados filtrados
+    // Métricas de usuários no período selecionado
+    const newUsersInPeriod = usersData?.length || 0
+    const previousUsersCount = previousUsersData?.length || 0
     
-    const newUsersPrevious30Days = usersData?.filter(user => {
-      const createdAt = new Date(user.created_at)
-      return createdAt >= sixtyDaysAgo && createdAt < thirtyDaysAgo
-    }).length || 0
-
     const usersByType = {
       patients: usersData?.filter(user => user.user_type === 'patient').length || 0,
       nutritionists: usersData?.filter(user => user.user_type === 'nutritionist').length || 0,
@@ -95,57 +175,50 @@ export async function GET(request: NextRequest) {
       admins: usersData?.filter(user => user.user_type === 'admin').length || 0
     }
 
-    // Métricas de consultas
-    const totalConsultations = consultationsData?.length || 0
-    const consultations30Days = consultationsData?.filter(consultation => 
-      new Date(consultation.created_at) >= thirtyDaysAgo
-    ).length || 0
-    
-    const consultationsPrevious30Days = consultationsData?.filter(consultation => {
-      const createdAt = new Date(consultation.created_at)
-      return createdAt >= sixtyDaysAgo && createdAt < thirtyDaysAgo
-    }).length || 0
+    // Total de usuários (todos os tempos)
+    const totalUsers = allUsersData?.length || 0
 
-    // Métricas de pagamentos
-    const totalPayments = paymentsData?.length || 0
-    const payments30Days = paymentsData?.filter(payment => 
-      new Date(payment.created_at) >= thirtyDaysAgo
-    ).length || 0
+    // Métricas de assinaturas reais
+    const newSubscriptionsInPeriod = subscriptionsData?.length || 0
+    const activeSubscriptionsCount = activeSubscriptionsInPeriod?.length || 0
+    const canceledSubscriptionsCount = canceledSubscriptionsInPeriod?.length || 0
+    const previousSubscriptionsCount = previousSubscriptionsData?.length || 0
     
-    const totalRevenue = paymentsData?.reduce((sum, payment) => 
+    // Taxa de retenção de assinaturas (assinaturas ativas vs canceladas no período)
+    const subscriptionRetentionRate = activeSubscriptionsCount > 0 
+      ? ((activeSubscriptionsCount - canceledSubscriptionsCount) / activeSubscriptionsCount * 100)
+      : 0
+
+    // Receita estimada de assinaturas (assumindo valor médio de R$ 99,90/mês)
+    const avgSubscriptionValue = 99.90
+    const subscriptionRevenue = activeSubscriptionsCount * avgSubscriptionValue
+
+    // Métricas de consultas no período
+    const consultationsInPeriod = consultationsData?.length || 0
+    const totalConsultations = allConsultationsData?.length || 0
+
+    // Métricas de pagamentos no período
+    const paymentsInPeriod = paymentsData?.length || 0
+    const totalPayments = allPaymentsData?.length || 0
+    
+    const revenueInPeriod = paymentsData?.reduce((sum, payment) => 
       sum + (parseFloat(payment.amount_brl) || 0), 0
     ) || 0
     
-    const revenue30Days = paymentsData?.filter(payment => 
-      new Date(payment.created_at) >= thirtyDaysAgo
-    ).reduce((sum, payment) => sum + (parseFloat(payment.amount_brl) || 0), 0) || 0
-    
-    const revenuePrevious30Days = paymentsData?.filter(payment => {
-      const createdAt = new Date(payment.created_at)
-      return createdAt >= sixtyDaysAgo && createdAt < thirtyDaysAgo
-    }).reduce((sum, payment) => sum + (parseFloat(payment.amount_brl) || 0), 0) || 0
+    const totalRevenue = allPaymentsData?.reduce((sum, payment) => 
+      sum + (parseFloat(payment.amount_brl) || 0), 0
+    ) || 0
 
-    // Métricas de assinaturas
-    const totalSubscriptions = subscriptionsData?.length || 0
-    const activeSubscriptions = subscriptionsData?.filter(sub => 
+    // Métricas de assinaturas no período
+    const subscriptionsInPeriod = subscriptionsData?.length || 0
+    
+    const totalSubscriptions = allSubscriptionsData?.length || 0
+    const activeSubscriptions = allSubscriptionsData?.filter(sub => 
       sub.status === 'active'
     ).length || 0
-    
-    const subscriptions30Days = subscriptionsData?.filter(sub => 
-      new Date(sub.created_at) >= thirtyDaysAgo
-    ).length || 0
-    
-    const subscriptionsPrevious30Days = subscriptionsData?.filter(sub => {
-      const createdAt = new Date(sub.created_at)
-      return createdAt >= sixtyDaysAgo && createdAt < thirtyDaysAgo
-    }).length || 0
 
-    // Métricas de posts
-    const totalPosts = postsData?.length || 0
-    const posts30Days = postsData?.filter(post => 
-      new Date(post.created_at) >= thirtyDaysAgo
-    ).length || 0
-    
+    // Métricas de posts no período
+    const postsInPeriod = postsData?.length || 0
     const totalLikes = postsData?.reduce((sum, post) => 
       sum + (post.likes_count || 0), 0
     ) || 0
@@ -153,16 +226,6 @@ export async function GET(request: NextRequest) {
     const totalComments = postsData?.reduce((sum, post) => 
       sum + (post.comments_count || 0), 0
     ) || 0
-
-    // Calcular taxa de conversão (visitantes para cadastros)
-    // Como não temos dados de visitantes, vamos usar uma estimativa baseada nos cadastros
-    const estimatedVisitors = newUsers30Days * 40 // Estimativa: 1 cadastro para cada 40 visitantes
-    const estimatedVisitorsPrevious = newUsersPrevious30Days * 40
-    const conversionRate = estimatedVisitors > 0 ? (newUsers30Days / estimatedVisitors * 100) : 0
-
-    // Calcular tempo médio no site (estimativa baseada em engajamento)
-    const avgEngagement = totalLikes + totalComments
-    const avgTimeOnSite = Math.max(180, Math.min(600, avgEngagement * 2)) // Entre 3-10 minutos
 
     // Função para calcular porcentagem de mudança
     const calculatePercentageChange = (current: number, previous: number): string => {
@@ -173,7 +236,51 @@ export async function GET(request: NextRequest) {
       return `${change >= 0 ? '+' : ''}${change.toFixed(1)}%`
     }
 
-    // Dados por localização (top 10 estados)
+    // Calcular mudanças percentuais
+    const newUsersChange = calculatePercentageChange(newUsersInPeriod, previousUsersCount)
+    const subscriptionsChange = calculatePercentageChange(newSubscriptionsInPeriod, previousSubscriptionsCount)
+
+    // Calcular taxa de conversão (visitantes para cadastros)
+    // Como não temos dados de visitantes, vamos usar uma estimativa baseada nos cadastros
+    const estimatedVisitors = newUsersInPeriod * 40 // Estimativa: 1 cadastro para cada 40 visitantes
+    const conversionRate = estimatedVisitors > 0 ? (newUsersInPeriod / estimatedVisitors * 100) : 0
+
+    // Calcular tempo médio no site baseado em sessões reais para o período filtrado
+    const { data: sessionsData } = await supabase
+      .from('user_sessions')
+      .select('duration_seconds')
+      .not('duration_seconds', 'is', null)
+      .gte('created_at', filterStartDate.toISOString())
+      .lte('created_at', adjustedEndDate.toISOString())
+
+    let avgTimeOnSite = 300 // 5 minutos como fallback
+    let avgTimeOnSiteChange = '0.0%'
+
+    if (sessionsData && sessionsData.length > 0) {
+      // Calcular média do período selecionado
+      const totalDuration = sessionsData.reduce((sum, session) => 
+        sum + (session.duration_seconds || 0), 0
+      )
+      avgTimeOnSite = Math.round(totalDuration / sessionsData.length)
+
+      // Calcular média do período anterior para comparação
+      const { data: previousSessionsData } = await supabase
+        .from('user_sessions')
+        .select('duration_seconds')
+        .not('duration_seconds', 'is', null)
+        .gte('created_at', previousStartDate.toISOString())
+        .lte('created_at', previousEndDate.toISOString())
+
+      if (previousSessionsData && previousSessionsData.length > 0) {
+        const previousTotalDuration = previousSessionsData.reduce((sum, session) => 
+          sum + (session.duration_seconds || 0), 0
+        )
+        const previousAvgTime = Math.round(previousTotalDuration / previousSessionsData.length)
+        avgTimeOnSiteChange = calculatePercentageChange(avgTimeOnSite, previousAvgTime)
+      }
+    }
+
+    // Dados por localização (top 10 estados) - usando dados filtrados
     const locationData = usersData?.reduce((acc: any, user) => {
       if (user.state) {
         acc[user.state] = (acc[user.state] || 0) + 1
@@ -186,10 +293,12 @@ export async function GET(request: NextRequest) {
       .slice(0, 10)
       .map(([state, count]) => ({ state, count }))
 
-    // Dados de tráfego por dia (últimos 30 dias)
+    // Dados de tráfego por dia para o período selecionado
     const trafficData = []
-    for (let i = 29; i >= 0; i--) {
-      const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000)
+    const daysDiff = Math.ceil((adjustedEndDate.getTime() - filterStartDate.getTime()) / (1000 * 60 * 60 * 24))
+    
+    for (let i = 0; i < daysDiff; i++) {
+      const date = new Date(filterStartDate.getTime() + i * 24 * 60 * 60 * 1000)
       const dateStr = date.toISOString().split('T')[0]
       
       const dayUsers = usersData?.filter(user => 
@@ -206,37 +315,48 @@ export async function GET(request: NextRequest) {
       })
     }
 
+    // Calcular estimativa de visitantes para o período anterior
+    const estimatedVisitorsPrevious = previousUsersCount * 40
+    const previousConversionRate = estimatedVisitorsPrevious > 0 ? (previousUsersCount / estimatedVisitorsPrevious * 100) : 0
+
     const analyticsData = {
       metrics: {
         siteVisits: estimatedVisitors,
         siteVisitsChange: calculatePercentageChange(estimatedVisitors, estimatedVisitorsPrevious),
-        newRegistrations: newUsers30Days,
-        newRegistrationsChange: calculatePercentageChange(newUsers30Days, newUsersPrevious30Days),
+        newRegistrations: newUsersInPeriod,
+        newRegistrationsChange: newUsersChange,
         conversionRate: conversionRate.toFixed(1),
-        conversionRateChange: calculatePercentageChange(conversionRate, newUsersPrevious30Days > 0 ? (newUsersPrevious30Days / estimatedVisitorsPrevious * 100) : 0),
+        conversionRateChange: calculatePercentageChange(conversionRate, previousConversionRate),
         avgTimeOnSite: Math.floor(avgTimeOnSite / 60) + ':' + String(avgTimeOnSite % 60).padStart(2, '0'),
-        avgTimeOnSiteChange: '+2.3%' // Estimativa baseada em engajamento
+        avgTimeOnSiteChange: avgTimeOnSiteChange
       },
       usersByType,
       totalUsers,
       totalConsultations,
-      consultations30Days,
-      consultationsChange: calculatePercentageChange(consultations30Days, consultationsPrevious30Days),
+      consultationsInPeriod,
+      consultationsChange: '0.0%', // Pode ser implementado se necessário
       totalPayments,
-      payments30Days,
+      paymentsInPeriod,
       totalRevenue,
-      revenue30Days,
-      revenueChange: calculatePercentageChange(revenue30Days, revenuePrevious30Days),
-      totalSubscriptions,
-      activeSubscriptions,
-      subscriptions30Days,
-      subscriptionsChange: calculatePercentageChange(subscriptions30Days, subscriptionsPrevious30Days),
-      totalPosts,
-      posts30Days,
+      revenueInPeriod,
+      revenueChange: '0.0%', // Pode ser implementado se necessário
+      totalSubscriptions: allSubscriptionsData?.length || 0,
+      activeSubscriptions: activeSubscriptionsCount,
+      subscriptionsInPeriod: newSubscriptionsInPeriod,
+      subscriptionsChange,
+      subscriptionRetentionRate: subscriptionRetentionRate.toFixed(1) + '%',
+      subscriptionRevenue: subscriptionRevenue.toFixed(2),
+      postsInPeriod,
       totalLikes,
       totalComments,
       topLocations,
-      trafficData
+      trafficData,
+      // Informações do período para referência
+      periodInfo: {
+        startDate: filterStartDate.toISOString().split('T')[0],
+        endDate: filterEndDate.toISOString().split('T')[0],
+        dayCount: daysDiff
+      }
     }
 
     return NextResponse.json(analyticsData)

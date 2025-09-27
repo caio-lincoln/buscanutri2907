@@ -23,9 +23,11 @@ import {
   BarChart3,
   MapPin,
   Activity,
+  Filter,
 } from 'lucide-react'
 import type { DateRange } from 'react-day-picker'
-import { format, subDays } from 'date-fns'
+import { format, subDays, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
 import { Calendar } from '@/components/ui/calendar'
 import {
   Popover,
@@ -81,6 +83,8 @@ interface MetricCardProps {
   icon: React.ReactNode
 }
 
+type DateFilter = 'today' | 'week' | 'month' | 'custom'
+
 const MetricCard = ({
   title,
   value,
@@ -107,23 +111,58 @@ const MetricCard = ({
 )
 
 export default function AnalyticsTab() {
-  const [date, setDate] = useState<DateRange | undefined>({
-    from: subDays(new Date(), 30),
-    to: new Date(),
+  const [dateFilter, setDateFilter] = useState<DateFilter>('month')
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
+    from: startOfMonth(new Date()),
+    to: endOfMonth(new Date()),
   })
-  
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date())
   
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  // Função para definir o range de datas baseado no filtro selecionado
+  const setDateFilterRange = (filter: DateFilter) => {
+    const now = new Date()
+    let from: Date
+    let to: Date
+
+    switch (filter) {
+      case 'today':
+        from = startOfDay(now)
+        to = endOfDay(now)
+        break
+      case 'week':
+        from = startOfWeek(now, { weekStartsOn: 1 }) // Segunda-feira
+        to = endOfWeek(now, { weekStartsOn: 1 }) // Domingo
+        break
+      case 'month':
+        from = startOfMonth(now)
+        to = endOfMonth(now)
+        break
+      default:
+        return // Para 'custom', não altera o range
+    }
+
+    setDateRange({ from, to })
+    setDateFilter(filter)
+  }
 
   const fetchAnalyticsData = async () => {
     try {
       setLoading(true)
       setError(null)
       
-      const response = await fetch('/api/admin/analytics-data')
+      // Construir parâmetros de query com as datas
+      const params = new URLSearchParams()
+      if (dateRange?.from) {
+        params.append('startDate', dateRange.from.toISOString())
+      }
+      if (dateRange?.to) {
+        params.append('endDate', dateRange.to.toISOString())
+      }
+      
+      const response = await fetch(`/api/admin/analytics-data?${params.toString()}`)
       if (!response.ok) {
         throw new Error('Falha ao carregar dados de analytics')
       }
@@ -137,8 +176,16 @@ export default function AnalyticsTab() {
     }
   }
 
+  // Recarregar dados quando o range de datas mudar
   useEffect(() => {
-    fetchAnalyticsData()
+    if (dateRange?.from && dateRange?.to) {
+      fetchAnalyticsData()
+    }
+  }, [dateRange])
+
+  // Carregar dados iniciais
+  useEffect(() => {
+    setDateFilterRange('month') // Definir filtro padrão
   }, [])
 
   const formatNumber = (num: number) => {
@@ -150,6 +197,16 @@ export default function AnalyticsTab() {
       style: 'currency',
       currency: 'BRL'
     }).format(value)
+  }
+
+  const formatDateRange = () => {
+    if (!dateRange?.from || !dateRange?.to) return 'Selecione um período'
+    
+    if (dateFilter === 'today') return 'Hoje'
+    if (dateFilter === 'week') return 'Esta semana'
+    if (dateFilter === 'month') return 'Este mês'
+    
+    return `${format(dateRange.from, 'dd/MM/yyyy', { locale: ptBR })} - ${format(dateRange.to, 'dd/MM/yyyy', { locale: ptBR })}`
   }
 
   if (loading) {
@@ -200,15 +257,71 @@ export default function AnalyticsTab() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold tracking-tight">Analytics da Plataforma</h2>
-        <div className="flex items-center gap-4">
-          <DecolarCalendar
-            selected={selectedDate}
-            onSelect={setSelectedDate}
-            placeholder="Selecione uma data"
-            className="w-[280px]"
-          />
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">Analytics da Plataforma</h2>
+          <p className="text-gray-600 mt-1">Período: {formatDateRange()}</p>
+        </div>
+        
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          {/* Filtros de período pré-definidos */}
+          <div className="flex gap-2">
+            <Button
+              variant={dateFilter === 'today' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setDateFilterRange('today')}
+            >
+              Hoje
+            </Button>
+            <Button
+              variant={dateFilter === 'week' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setDateFilterRange('week')}
+            >
+              Semana
+            </Button>
+            <Button
+              variant={dateFilter === 'month' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setDateFilterRange('month')}
+            >
+              Mês
+            </Button>
+          </div>
+
+          {/* Seletor de data personalizado */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant={dateFilter === 'custom' ? 'default' : 'outline'}
+                size="sm"
+                className="w-[280px] justify-start text-left font-normal"
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {dateFilter === 'custom' && dateRange?.from && dateRange?.to
+                  ? `${format(dateRange.from, 'dd/MM/yyyy')} - ${format(dateRange.to, 'dd/MM/yyyy')}`
+                  : 'Período personalizado'
+                }
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="end">
+              <Calendar
+                initialFocus
+                mode="range"
+                defaultMonth={dateRange?.from}
+                selected={dateRange}
+                onSelect={(range) => {
+                  if (range?.from && range?.to) {
+                    setDateRange(range)
+                    setDateFilter('custom')
+                  }
+                }}
+                numberOfMonths={2}
+                locale={ptBR}
+              />
+            </PopoverContent>
+          </Popover>
+
           <Button variant="outline" size="sm">
             <Download className="mr-2 h-4 w-4" />
             Exportar Dados
