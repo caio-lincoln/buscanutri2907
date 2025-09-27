@@ -110,6 +110,19 @@ export default function BuscarTab() {
   const [ viewModeNutritionist, setViewModeNutritionist ] = useState<
     'grid' | 'list'
   >('grid')
+  const [ isMobile, setIsMobile ] = useState(false)
+
+  // Check screen size and set mobile state
+  useEffect(() => {
+    const checkScreenSize = () => {
+      setIsMobile(window.innerWidth < 1024) // lg breakpoint
+    }
+    
+    checkScreenSize()
+    window.addEventListener('resize', checkScreenSize)
+    
+    return () => window.removeEventListener('resize', checkScreenSize)
+  }, [])
   const { patientProfile } = useAuth()
 
   const [ , setLoading ] = useState(true)
@@ -366,7 +379,8 @@ export default function BuscarTab() {
                 {nutritionists.length !== 1 ? 's' : ''}
               </span>
 
-              <div className="flex items-center justify-center gap-2">
+              {/* View mode toggle - hidden on mobile/tablet, auto-switches to list */}
+              <div className="hidden lg:flex items-center justify-center gap-2">
                 <Button
                   variant={
                     viewModeNutritionist === 'grid'
@@ -431,29 +445,32 @@ export default function BuscarTab() {
           {nutritionists.length > 0 ? (
             <div
               className={
-                viewModeNutritionist === 'grid'
-                  ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 md:gap-6'
-                  : 'space-y-4'
+                // Force list view on mobile/tablet, allow grid on desktop
+                isMobile || viewModeNutritionist === 'list'
+                  ? 'space-y-4'
+                  : 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 md:gap-6'
               }
             >
               {nutritionists.map(nutritionist => {
                 const formatted = formatNutritionistData(nutritionist)
+                // Determine effective view mode based on screen size
+                const effectiveViewMode = isMobile ? 'list' : viewModeNutritionist
 
                 return (
                   <Card
                     key={nutritionist.id}
                     className={`group hover-lift transition-all duration-300 border-0 shadow-lg hover:shadow-xl backdrop-blur-sm ${
-                      viewModeNutritionist === 'list' 
+                      effectiveViewMode === 'list' 
                         ? 'flex' 
                         : 'h-full flex flex-col'
                     }`}
                   >
-                    <CardContent className={`p-4 md:p-6 ${viewModeNutritionist === 'grid' ? 'flex flex-col h-full' : ''}`}>
+                    <CardContent className={`p-4 md:p-6 ${effectiveViewMode === 'grid' ? 'flex flex-col h-full' : ''}`}>
                       <div className={`flex items-start gap-3 md:gap-4 ${
-                        viewModeNutritionist === 'list' 
+                        effectiveViewMode === 'list' 
                           ? 'flex-row' 
                           : 'flex-col sm:flex-row'
-                      } ${viewModeNutritionist === 'grid' ? 'flex-1' : ''}`}>
+                      } ${effectiveViewMode === 'grid' ? 'flex-1' : ''}`}>
                         
                         {/* Avatar Section */}
                         <div className="flex-shrink-0">
@@ -574,7 +591,7 @@ export default function BuscarTab() {
 
                       {/* Action Buttons - Always at bottom for grid view */}
                       <div className={`flex gap-2 pt-4 mt-auto ${
-                        viewModeNutritionist === 'grid' ? 'border-t border-gray-100' : ''
+                        effectiveViewMode === 'grid' ? 'border-t border-gray-100' : ''
                       }`}>
                         <Link
                           href={`/nutricionistas/${nutritionist.id}`}
