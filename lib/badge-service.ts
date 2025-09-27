@@ -4,15 +4,15 @@ import type { Database } from './supabase'
 
 // Cliente administrativo para operações que precisam contornar RLS
 const createAdminClient = () => {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY
-  
-  console.log('Creating admin client with:', {
-    url: supabaseUrl ? 'URL found' : 'URL missing',
-    key: supabaseKey ? 'Key found' : 'Key missing'
-  })
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY
   
   if (!supabaseUrl || !supabaseKey) {
+    console.error('Missing Supabase configuration:', {
+      url: !!supabaseUrl,
+      key: !!supabaseKey,
+      env: process.env.NODE_ENV
+    })
     throw new Error(`Missing Supabase configuration: URL=${!!supabaseUrl}, Key=${!!supabaseKey}`)
   }
   
@@ -31,16 +31,23 @@ export async function createBadge(
   description: string,
   icon_url: string
 ): Promise<Badge | null> {
-  const { data, error } = await supabase
-    .from('badges')
-    .insert({ name, description, icon_url })
-    .select()
-    .single()
-  if (error) {
-    // Silent error handling: Error creating badge
+  try {
+    const adminClient = createAdminClient()
+    const { data, error } = await adminClient
+      .from('badges')
+      .insert({ name, description, icon_url })
+      .select()
+      .single()
+    
+    if (error) {
+      console.error('Error creating badge:', error)
+      return null
+    }
+    return data
+  } catch (error) {
+    console.error('Error in createBadge:', error)
     return null
   }
-  return data
 }
 
 export async function getAllBadges(): Promise<Badge[]> {
@@ -61,26 +68,40 @@ export async function updateBadge(
   description: string,
   icon_url: string
 ): Promise<Badge | null> {
-  const { data, error } = await supabase
-    .from('badges')
-    .update({ name, description, icon_url })
-    .eq('id', id)
-    .select()
-    .single()
-  if (error) {
-    // Silent error handling: Error updating badge
+  try {
+    const adminClient = createAdminClient()
+    const { data, error } = await adminClient
+      .from('badges')
+      .update({ name, description, icon_url })
+      .eq('id', id)
+      .select()
+      .single()
+    
+    if (error) {
+      console.error('Error updating badge:', error)
+      return null
+    }
+    return data
+  } catch (error) {
+    console.error('Error in updateBadge:', error)
     return null
   }
-  return data
 }
 
 export async function deleteBadge(id: string): Promise<boolean> {
-  const { error } = await supabase.from('badges').delete().eq('id', id)
-  if (error) {
-    // Silent error handling: Error deleting badge
+  try {
+    const adminClient = createAdminClient()
+    const { error } = await adminClient.from('badges').delete().eq('id', id)
+    
+    if (error) {
+      console.error('Error deleting badge:', error)
+      return false
+    }
+    return true
+  } catch (error) {
+    console.error('Error in deleteBadge:', error)
     return false
   }
-  return true
 }
 
 // Funções para atribuir/remover insígnias de nutricionistas (admin)
@@ -165,19 +186,25 @@ export async function removeBadgeFromNutritionist(
   nutritionistId: string,
   badgeId: string
 ): Promise<boolean> {
-  // Usar cliente administrativo para operações de remoção
-  const adminClient = createAdminClient()
-  
-  const { error } = await adminClient
-    .from('nutritionist_badges')
-    .delete()
-    .eq('nutritionist_id', nutritionistId)
-    .eq('badge_id', badgeId)
-  if (error) {
-    // Silent error handling: Error removing badge from nutritionist
+  try {
+    // Usar cliente administrativo para operações de remoção
+    const adminClient = createAdminClient()
+    
+    const { error } = await adminClient
+      .from('nutritionist_badges')
+      .delete()
+      .eq('nutritionist_id', nutritionistId)
+      .eq('badge_id', badgeId)
+    
+    if (error) {
+      console.error('Error removing badge from nutritionist:', error)
+      return false
+    }
+    return true
+  } catch (error) {
+    console.error('Error in removeBadgeFromNutritionist:', error)
     return false
   }
-  return true
 }
 
 export async function getNutritionistBadges(

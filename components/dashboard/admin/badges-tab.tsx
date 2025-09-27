@@ -33,7 +33,7 @@ import {
   assignBadgeToNutritionist,
   removeBadgeFromNutritionist,
   getNutritionistBadges,
-} from '@/lib/badge-service'
+} from '@/lib/badge-api'
 import { getAllNutritionists } from '@/lib/nutritionist-service'
 import { getCurrentUser } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
