@@ -194,13 +194,35 @@ function SidebarShell({
   onSignOut,
 }: DashboardSidebarProps) {
   const router = useRouter()
-  // Usar useContext diretamente para verificar se está dentro de ProfileProvider
-  const profileContext = useContext(ProfileContext)
-  const profileData = profileContext?.profileData
   
-  // Use profile data if available, otherwise fall back to props
-  const displayName = profileData?.full_name || userName || ''
-  const displayAvatar = profileData?.avatar_url || userAvatar || '/placeholder.svg'
+  // Componente interno que usa o ProfileContext de forma segura
+  function ProfileAwareContent() {
+    const profileContext = useContext(ProfileContext)
+    const profileData = profileContext?.profileData
+    
+    // Use profile data if available, otherwise fall back to props
+    const displayName = profileData?.full_name || userName || ''
+    const displayAvatar = profileData?.avatar_url || userAvatar || '/placeholder.svg'
+    
+    return { displayName, displayAvatar }
+  }
+  
+  // Get profile data safely
+  const { displayName, displayAvatar } = (() => {
+    try {
+      const profileContext = useContext(ProfileContext)
+      const profileData = profileContext?.profileData
+      return {
+        displayName: profileData?.full_name || userName || '',
+        displayAvatar: profileData?.avatar_url || userAvatar || '/placeholder.svg'
+      }
+    } catch {
+      return {
+        displayName: userName || '',
+        displayAvatar: userAvatar || '/placeholder.svg'
+      }
+    }
+  })()
    
   const config = userTypeConfig[userType] || userTypeConfig.paciente
   const { setOpen, setOpenMobile, openMobile } = useSidebar()
@@ -333,9 +355,10 @@ function SidebarShell({
               <div className="flex items-center gap-3">
                 <ClientOnly fallback={
                   <Avatar className="h-10 w-10 ring-2 ring-gray-200 shadow-md">
+                    <AvatarImage src={userAvatar || '/placeholder.svg'} />
                     <AvatarFallback className={config.iconBg}>
                       <span className="text-white font-semibold text-sm">
-                        {userName?.charAt(0) || 'U'}
+                        {(userName || 'U').charAt(0)}
                       </span>
                     </AvatarFallback>
                   </Avatar>
