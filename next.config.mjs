@@ -116,12 +116,11 @@ const nextConfig = {
     ]
   },
   experimental: {
-    missingSuspenseWithCSRBailout: false,
     staleTimes: {
       dynamic: 30,
       static: 180,
     },
-    // Otimizações para produção
+    // Remover missingSuspenseWithCSRBailout pois não é uma opção válida
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
   },
   // Configuração para evitar problemas de build no Vercel

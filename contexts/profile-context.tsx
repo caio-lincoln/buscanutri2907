@@ -38,7 +38,7 @@ export function ProfileProvider({ children, initialUser }: ProfileProviderProps)
   }
 
   const refreshProfile = async () => {
-    if (!initialUser?.id) return
+    if (!initialUser?.id || typeof window === 'undefined') return
     
     setLoading(true)
     try {
@@ -60,8 +60,10 @@ export function ProfileProvider({ children, initialUser }: ProfileProviderProps)
     }
   }
 
-  // Listen for auth changes
+  // Listen for auth changes - only on client side
   useEffect(() => {
+    if (typeof window === 'undefined') return
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (event === 'USER_UPDATED' && session?.user) {

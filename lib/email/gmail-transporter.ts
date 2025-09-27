@@ -9,11 +9,19 @@ const {
   GOOGLE_REFRESH_TOKEN,
 } = process.env
 
-if (!GMAIL_SENDER_EMAIL || !GMAIL_SENDER_NAME || !GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
-  throw new Error('Env de Gmail OAuth2 ausentes. Verifique .env.local')
+// Only throw error in production or when actually using the Gmail functionality
+if (typeof window === 'undefined' && process.env.NODE_ENV === 'production') {
+  if (!GMAIL_SENDER_EMAIL || !GMAIL_SENDER_NAME || !GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
+    console.warn('Gmail OAuth2 environment variables missing. Gmail functionality will be disabled.')
+  }
 }
 
 export async function getTransporter() {
+  // Check if Gmail is configured
+  if (!GMAIL_SENDER_EMAIL || !GMAIL_SENDER_NAME || !GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
+    throw new Error('Gmail OAuth2 not configured')
+  }
+
   // Tenta obter o refresh token do banco de dados primeiro
   const gmailConfig = await getCurrentGmailConfig()
   let refreshToken = gmailConfig?.refresh_token

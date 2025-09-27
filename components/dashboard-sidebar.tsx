@@ -55,6 +55,7 @@ import Image from 'next/image'
 import { useMediaQuery } from '../hooks/use-media-query'
 import { useRouter } from 'next/navigation'
 import { useProfile } from '@/contexts/profile-context'
+import { ClientOnly } from '@/components/client-only'
 
 export interface DashboardMenuItem {
   id: string
@@ -194,10 +195,10 @@ function SidebarShell({
   const { profileData } = useProfile()
   
   // Use profile data if available, otherwise fall back to props
-   const displayName = profileData?.full_name || userName || ''
-   const displayAvatar = profileData?.avatar_url || userAvatar || '/placeholder.svg'
+  const displayName = profileData?.full_name || userName || ''
+  const displayAvatar = profileData?.avatar_url || userAvatar || '/placeholder.svg'
    
-   const config = userTypeConfig[userType] || userTypeConfig.paciente
+  const config = userTypeConfig[userType] || userTypeConfig.paciente
   const { setOpen, setOpenMobile, openMobile } = useSidebar()
   const isMobile = useMediaQuery('(max-width: 800px)')
 
@@ -326,18 +327,34 @@ function SidebarShell({
               className="w-full justify-between px-3 py-3 h-auto hover:bg-gray-100 rounded-xl transition-all duration-300 hover-lift shadow-sm hover:shadow-md"
             >
               <div className="flex items-center gap-3">
-                <Avatar className="h-10 w-10 ring-2 ring-gray-200 shadow-md">
-                  <AvatarImage src={displayAvatar} />
-                  <AvatarFallback className={config.iconBg}>
-                    <span className="text-white font-semibold text-sm">
-                      {displayName.charAt(0)}
-                    </span>
-                  </AvatarFallback>
-                </Avatar>
+                <ClientOnly fallback={
+                  <Avatar className="h-10 w-10 ring-2 ring-gray-200 shadow-md">
+                    <AvatarFallback className={config.iconBg}>
+                      <span className="text-white font-semibold text-sm">
+                        {userName?.charAt(0) || 'U'}
+                      </span>
+                    </AvatarFallback>
+                  </Avatar>
+                }>
+                  <Avatar className="h-10 w-10 ring-2 ring-gray-200 shadow-md">
+                    <AvatarImage src={displayAvatar} />
+                    <AvatarFallback className={config.iconBg}>
+                      <span className="text-white font-semibold text-sm">
+                        {displayName.charAt(0)}
+                      </span>
+                    </AvatarFallback>
+                  </Avatar>
+                </ClientOnly>
                 <div className="flex flex-col items-start">
-                  <span className="text-sm font-semibold text-[#1E1D40] truncate max-w-[120px]">
-                    {displayName}
-                  </span>
+                  <ClientOnly fallback={
+                    <span className="text-sm font-semibold text-[#1E1D40] truncate max-w-[120px]">
+                      {userName || 'Usuário'}
+                    </span>
+                  }>
+                    <span className="text-sm font-semibold text-[#1E1D40] truncate max-w-[120px]">
+                      {displayName}
+                    </span>
+                  </ClientOnly>
                   <span
                     className={cn(
                       'text-xs font-medium capitalize',
