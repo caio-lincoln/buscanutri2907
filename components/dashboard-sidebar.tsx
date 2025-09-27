@@ -228,22 +228,20 @@ function SidebarShell({
   const { setOpen, setOpenMobile, openMobile } = useSidebar()
   const isMobile = useMediaQuery('(max-width: 800px)')
 
-
-
   const myProfileUrl = useMemo(() => {
     switch (userType) {
       case 'nutricionista':
-        return `/dashboard/nutricionistas/${nutritionistProfile?.id}`
+        return `/dashboard/nutricionistas/perfil`
       case 'paciente':
-        return `/dashboard/nutricionistas/${patientProfile?.id}`
+        return `/dashboard/paciente/perfil`
       case 'empresa':
-        return `/dashboard/nutricionistas/${companyProfile?.id}`
+        return `/dashboard/empresa/perfil`
       case 'admin':
         return `/dashboard/admin?activeTab=perfil`
     }
 
     return ''
-  }, [])
+  }, [userType])
 
   return (
     <Sidebar className={cn('border-r-0 shadow-xl bg-white')}>
