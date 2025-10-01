@@ -50,7 +50,7 @@ export function ConnectStripeCard({
         body: JSON.stringify({ nutritionistUserId }),
       })
       const json = await res.json()
-      if (json?.url) window.open(json.url, '_blank')
+      if (json?.url) window.location.href = json.url
     } catch (e) {
       console.log("🚀 ~ getLoginLink ~ e:", e)
       // silent
