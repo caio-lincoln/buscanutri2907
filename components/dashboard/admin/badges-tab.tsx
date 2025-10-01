@@ -22,7 +22,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Plus, Edit, Trash, Award, User, XCircle } from 'lucide-react'
+import { Plus, Edit, Trash, Award, User, XCircle, Upload, X } from 'lucide-react'
 import Image from 'next/image'
 import { toast } from '@/components/ui/use-toast'
 import {
@@ -33,11 +33,17 @@ import {
   assignBadgeToNutritionist,
   removeBadgeFromNutritionist,
   getNutritionistBadges,
-} from '@/lib/badge-service'
+} from '@/lib/badge-api'
 import { getAllNutritionists } from '@/lib/nutritionist-service'
 import { getCurrentUser } from '@/lib/auth'
+import { supabase } from '@/lib/supabase'
+import type { User } from '@supabase/supabase-js'
 
-export function BadgesTab() {
+type Props = {
+  initialUser: Pick<User, 'id' | 'email' | 'user_metadata' | 'app_metadata'>
+}
+
+export function BadgesTab({ initialUser }: Props) {
   const [badges, setBadges] = useState([])
   const [nutritionists, setNutritionists] = useState([])
   const [selectedNutritionist, setSelectedNutritionist] = useState(null)
@@ -47,6 +53,9 @@ export function BadgesTab() {
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false)
   const [currentBadge, setCurrentBadge] = useState(null)
   const [adminUserId, setAdminUserId] = useState(null)
+  const [iconFile, setIconFile] = useState(null)
+  const [iconPreview, setIconPreview] = useState(null)
+  const [uploading, setUploading] = useState(false)
 
   useEffect(() => {
     fetchData()
@@ -54,9 +63,35 @@ export function BadgesTab() {
   }, [])
 
   const fetchAdminUser = async () => {
-    const user = await getCurrentUser()
-    if (user) {
-      setAdminUserId(user.id)
+    try {
+      console.log('Initial user from props:', initialUser) // Debug log
+      
+      if (initialUser) {
+        // Verificar se o usuário é realmente admin através dos metadados
+        const userType = initialUser.user_metadata?.user_type || initialUser.app_metadata?.user_type
+        console.log('User type from metadata:', userType) // Debug log
+        
+        if (userType === 'admin') {
+          setAdminUserId(initialUser.id)
+          console.log('Admin user ID set from props:', initialUser.id) // Debug log
+        } else {
+          console.warn('User is not admin:', userType)
+          toast({
+            title: 'Acesso Negado',
+            description: 'Você precisa ser um administrador para gerenciar insígnias.',
+            variant: 'destructive',
+          })
+        }
+      } else {
+        console.warn('No initial user provided')
+        toast({
+          title: 'Não Autenticado',
+          description: 'Faça login como administrador para continuar.',
+          variant: 'destructive',
+        })
+      }
+    } catch (error) {
+      console.error('Error setting admin user:', error)
     }
   }
 
@@ -69,57 +104,163 @@ export function BadgesTab() {
     setLoading(false)
   }
 
-  const handleCreateOrUpdateBadge = async e => {
-    e.preventDefault()
-    if (!currentBadge?.name || !currentBadge?.icon_url) {
+  const uploadIcon = async (file) => {
+    if (!file) return null
+    
+    setUploading(true)
+    
+    try {
+      // Gerar nome único para o arquivo
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`
+      
+      // Upload para o bucket 'badges'
+      const { data, error } = await supabase.storage
+        .from('badges')
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false
+        })
+      
+      if (error) {
+        console.error('Erro no upload:', error)
+        toast({
+          title: 'Erro no upload',
+          description: 'Não foi possível fazer upload do ícone.',
+          variant: 'destructive',
+        })
+        return null
+      }
+      
+      // Obter URL pública do arquivo
+      const { data: { publicUrl } } = supabase.storage
+        .from('badges')
+        .getPublicUrl(fileName)
+      
+      return publicUrl
+    } catch (error) {
+      console.error('Erro no upload:', error)
       toast({
-        title: 'Erro',
-        description: 'Nome e URL do ícone são obrigatórios.',
+        title: 'Erro no upload',
+        description: 'Não foi possível fazer upload do ícone.',
+        variant: 'destructive',
+      })
+      return null
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    
+    // Validar tipo de arquivo
+    const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/svg+xml', 'image/webp']
+    if (!allowedTypes.includes(file.type)) {
+      toast({
+        title: 'Tipo de arquivo inválido',
+        description: 'Por favor, selecione um arquivo PNG, JPG, SVG ou WebP.',
         variant: 'destructive',
       })
       return
     }
-
-    let success = false
-    if (currentBadge.id) {
-      // Update
-      const updated = await updateBadge(
-        currentBadge.id,
-        currentBadge.name,
-        currentBadge.description || '',
-        currentBadge.icon_url
-      )
-      success = !!updated
-      if (success)
-        toast({
-          title: 'Insígnia atualizada',
-          description: 'A insígnia foi salva com sucesso.',
-        })
-    } else {
-      // Create
-      const created = await createBadge(
-        currentBadge.name,
-        currentBadge.description || '',
-        currentBadge.icon_url
-      )
-      success = !!created
-      if (success)
-        toast({
-          title: 'Insígnia criada',
-          description: 'Nova insígnia adicionada com sucesso!',
-        })
-    }
-
-    if (success) {
-      fetchData()
-      setIsBadgeModalOpen(false)
-      setCurrentBadge(null)
-    } else {
+    
+    // Validar tamanho do arquivo (2MB)
+    if (file.size > 2 * 1024 * 1024) {
       toast({
-        title: 'Erro',
-        description: 'Não foi possível salvar a insígnia.',
+        title: 'Arquivo muito grande',
+        description: 'O arquivo deve ter no máximo 2MB.',
         variant: 'destructive',
       })
+      return
+    }
+    
+    setIconFile(file)
+    
+    // Criar preview
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      setIconPreview(e.target?.result)
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const clearIcon = () => {
+    setIconFile(null)
+    setIconPreview(null)
+    // Limpar o input de arquivo
+    const fileInput = document.getElementById('badgeIcon')
+    if (fileInput) {
+      fileInput.value = ''
+    }
+  }
+
+  const handleCreateOrUpdateBadge = async e => {
+    e.preventDefault()
+    
+    let iconUrl = currentBadge?.icon_url || ''
+    
+    // Se há um novo arquivo para upload
+    if (iconFile) {
+      const uploadedUrl = await uploadIcon(iconFile)
+      if (uploadedUrl) {
+        iconUrl = uploadedUrl
+      } else {
+        // Se o upload falhou, não continuar
+        return
+      }
+    }
+
+    if (currentBadge?.id) {
+      // Atualizar insígnia existente
+      const updatedBadge = await updateBadge(
+        currentBadge.id,
+        currentBadge.name,
+        currentBadge.description,
+        iconUrl
+      )
+      if (updatedBadge) {
+        fetchData()
+        setIsBadgeModalOpen(false)
+        setCurrentBadge(null)
+        setIconFile(null)
+        setIconPreview(null)
+        toast({
+          title: 'Insígnia atualizada',
+          description: 'A insígnia foi atualizada com sucesso.',
+        })
+      } else {
+        toast({
+          title: 'Erro',
+          description: 'Não foi possível atualizar a insígnia.',
+          variant: 'destructive',
+        })
+      }
+    } else {
+      // Criar nova insígnia
+      const newBadge = await createBadge(
+        currentBadge.name,
+        currentBadge.description,
+        iconUrl
+      )
+      if (newBadge) {
+        fetchData()
+        setIsBadgeModalOpen(false)
+        setCurrentBadge(null)
+        setIconFile(null)
+        setIconPreview(null)
+        toast({
+          title: 'Insígnia criada',
+          description: 'A nova insígnia foi criada com sucesso.',
+        })
+      } else {
+        toast({
+          title: 'Erro',
+          description: 'Não foi possível criar a insígnia.',
+          variant: 'destructive',
+        })
+      }
     }
   }
 
@@ -157,21 +298,31 @@ export function BadgesTab() {
       return
     }
 
-    const success = await assignBadgeToNutritionist(
-      selectedNutritionist.id,
-      badgeId,
-      adminUserId
-    )
-    if (success) {
+    try {
+      console.log('Attempting to assign badge:', {
+        badgeId,
+        nutritionistId: selectedNutritionist.id,
+        adminUserId
+      })
+
+      const result = await assignBadgeToNutritionist(
+        badgeId,
+        selectedNutritionist.id,
+        adminUserId
+      )
+
+      console.log('Assignment result:', result)
+
       fetchNutritionistBadges(selectedNutritionist.id)
       toast({
         title: 'Insígnia atribuída',
         description: 'Insígnia adicionada ao nutricionista.',
       })
-    } else {
+    } catch (error) {
+      console.error('Error assigning badge:', error)
       toast({
         title: 'Erro',
-        description: 'Não foi possível atribuir a insígnia.',
+        description: error.message || 'Não foi possível atribuir a insígnia.',
         variant: 'destructive',
       })
     }
@@ -294,22 +445,64 @@ export function BadgesTab() {
                 />
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="badgeIconUrl" className="text-right">
-                  URL do Ícone
+                <Label htmlFor="badgeIcon" className="text-right">
+                  Ícone
                 </Label>
-                <Input
-                  id="badgeIconUrl"
-                  value={currentBadge?.icon_url || ''}
-                  onChange={e =>
-                    setCurrentBadge({
-                      ...currentBadge,
-                      icon_url: e.target.value,
-                    })
-                  }
-                  className="col-span-3"
-                  placeholder="/placeholder.svg?height=32&width=32"
-                  required
-                />
+                <div className="col-span-3 space-y-3">
+                  {/* Preview do ícone atual ou novo */}
+                  {(iconPreview || currentBadge?.icon_url) && (
+                    <div className="flex items-center gap-3 p-3 border rounded-lg bg-gray-50">
+                      <Image
+                        src={iconPreview || currentBadge?.icon_url || '/placeholder.svg'}
+                        alt="Preview do ícone"
+                        width={40}
+                        height={40}
+                        className="rounded-lg object-cover"
+                      />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">
+                          {iconFile ? iconFile.name : 'Ícone atual'}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {iconFile ? `${(iconFile.size / 1024).toFixed(1)} KB` : 'Arquivo existente'}
+                        </p>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={clearIcon}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
+                  
+                  {/* Input de arquivo */}
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id="badgeIcon"
+                      type="file"
+                      accept="image/png,image/jpeg,image/jpg,image/svg+xml,image/webp"
+                      onChange={handleFileChange}
+                      className="hidden"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => document.getElementById('badgeIcon')?.click()}
+                      disabled={uploading}
+                      className="flex-1"
+                    >
+                      <Upload className="h-4 w-4 mr-2" />
+                      {iconFile ? 'Trocar Ícone' : 'Selecionar Ícone'}
+                    </Button>
+                  </div>
+                  
+                  <p className="text-xs text-gray-500">
+                    Formatos aceitos: PNG, JPG, SVG, WebP (máx. 2MB)
+                  </p>
+                </div>
               </div>
               <DialogFooter>
                 <Button type="submit">Salvar</Button>

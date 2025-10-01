@@ -54,7 +54,10 @@ import {
 import Image from 'next/image'
 import { useMediaQuery } from '../hooks/use-media-query'
 import { useRouter } from 'next/navigation'
-import { useAuth } from '../contexts/auth-context'
+import { useProfile } from '@/contexts/profile-context'
+import { useContext } from 'react'
+import { ProfileContext } from '@/contexts/profile-context'
+import { ClientOnly } from '@/components/client-only'
 
 export interface DashboardMenuItem {
   id: string
@@ -190,25 +193,55 @@ function SidebarShell({
   onItemClick,
   onSignOut,
 }: DashboardSidebarProps) {
-  const config = userTypeConfig[ userType ] || userTypeConfig.paciente
+  const router = useRouter()
+  
+  // Componente interno que usa o ProfileContext de forma segura
+  function ProfileAwareContent() {
+    const profileContext = useContext(ProfileContext)
+    const profileData = profileContext?.profileData
+    
+    // Use profile data if available, otherwise fall back to props
+    const displayName = profileData?.full_name || userName || ''
+    const displayAvatar = profileData?.avatar_url || userAvatar || '/placeholder.svg'
+    
+    return { displayName, displayAvatar }
+  }
+  
+  // Get profile data safely
+  const { displayName, displayAvatar } = (() => {
+    try {
+      const profileContext = useContext(ProfileContext)
+      const profileData = profileContext?.profileData
+      return {
+        displayName: profileData?.full_name || userName || '',
+        displayAvatar: profileData?.avatar_url || userAvatar || '/placeholder.svg'
+      }
+    } catch {
+      return {
+        displayName: userName || '',
+        displayAvatar: userAvatar || '/placeholder.svg'
+      }
+    }
+  })()
+   
+  const config = userTypeConfig[userType] || userTypeConfig.paciente
   const { setOpen, setOpenMobile, openMobile } = useSidebar()
   const isMobile = useMediaQuery('(max-width: 800px)')
-
-  const router = useRouter()
-  const { nutritionistProfile, patientProfile, companyProfile } = useAuth()
 
   const myProfileUrl = useMemo(() => {
     switch (userType) {
       case 'nutricionista':
-        return `/dashboard/nutricionistas/${nutritionistProfile?.id}`
+        return `/dashboard/nutricionistas/perfil`
       case 'paciente':
-        return `/dashboard/nutricionistas/${patientProfile?.id}`
+        return `/dashboard/paciente/perfil`
       case 'empresa':
-        return `/dashboard/nutricionistas/${companyProfile?.id}`
+        return `/dashboard/empresa/perfil`
+      case 'admin':
+        return `/dashboard/admin?activeTab=perfil`
     }
 
     return ''
-  }, [])
+  }, [userType])
 
   return (
     <Sidebar className={cn('border-r-0 shadow-xl bg-white')}>
@@ -318,18 +351,35 @@ function SidebarShell({
               className="w-full justify-between px-3 py-3 h-auto hover:bg-gray-100 rounded-xl transition-all duration-300 hover-lift shadow-sm hover:shadow-md"
             >
               <div className="flex items-center gap-3">
-                <Avatar className="h-10 w-10 ring-2 ring-gray-200 shadow-md">
-                  <AvatarImage src={userAvatar || '/placeholder.svg'} />
-                  <AvatarFallback className={config.iconBg}>
-                    <span className="text-white font-semibold text-sm">
-                      {userName.charAt(0)}
-                    </span>
-                  </AvatarFallback>
-                </Avatar>
+                <ClientOnly fallback={
+                  <Avatar className="h-10 w-10 ring-2 ring-gray-200 shadow-md">
+                    <AvatarImage src={userAvatar || '/placeholder.svg'} />
+                    <AvatarFallback className={config.iconBg}>
+                      <span className="text-white font-semibold text-sm">
+                        {(userName || 'U').charAt(0)}
+                      </span>
+                    </AvatarFallback>
+                  </Avatar>
+                }>
+                  <Avatar className="h-10 w-10 ring-2 ring-gray-200 shadow-md">
+                    <AvatarImage src={displayAvatar} />
+                    <AvatarFallback className={config.iconBg}>
+                      <span className="text-white font-semibold text-sm">
+                        {displayName.charAt(0)}
+                      </span>
+                    </AvatarFallback>
+                  </Avatar>
+                </ClientOnly>
                 <div className="flex flex-col items-start">
-                  <span className="text-sm font-semibold text-[#1E1D40] truncate max-w-[120px]">
-                    {userName}
-                  </span>
+                  <ClientOnly fallback={
+                    <span className="text-sm font-semibold text-[#1E1D40] truncate max-w-[120px]">
+                      {userName || 'Usuário'}
+                    </span>
+                  }>
+                    <span className="text-sm font-semibold text-[#1E1D40] truncate max-w-[120px]">
+                      {displayName}
+                    </span>
+                  </ClientOnly>
                   <span
                     className={cn(
                       'text-xs font-medium capitalize',
@@ -520,28 +570,10 @@ export const getMenuItems = (
         { id: 'overview', label: 'Visão Geral', icon: Home },
         { id: 'usuarios', label: 'Usuários', icon: Users },
         { id: 'vagas', label: 'Vagas', icon: Briefcase },
-        {
-          id: 'relatorios',
-          label: 'Relatórios',
-          icon: FileText,
-          badge: pendingReports > 0 ? { count: pendingReports, variant: 'destructive' } : undefined,
-        },
         { id: 'financeiro', label: 'Financeiro', icon: DollarSign },
         { id: 'analytics', label: 'Analytics', icon: TrendingUp },
-        {
-          id: 'moderacao',
-          label: 'Moderação',
-          icon: Shield,
-          badge: pendingModerations > 0 ? { count: pendingModerations, variant: 'outline' } : undefined,
-        },
-        { id: 'sistema', label: 'Sistema', icon: Cog },
         { id: 'configuracoes', label: 'Configurações', icon: Settings },
-        {
-          id: 'notificacoes',
-          label: 'Notificações',
-          icon: Bell,
-          badge: unreadNotifications > 0 ? { count: unreadNotifications, variant: 'destructive' } : undefined,
-        },
+        { id: 'perfil', label: 'Perfil', icon: User },
       ]
       return items
     }

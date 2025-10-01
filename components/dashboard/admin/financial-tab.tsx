@@ -1,18 +1,18 @@
 'use client'
 
-import { useState } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import React, { useState, useEffect } from 'react'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Badge } from '@/components/ui/badge'
 import {
   Table,
-  TableHeader,
-  TableRow,
-  TableHead,
   TableBody,
   TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@/components/ui/table'
-import { Badge } from '@/components/ui/badge'
 import {
   Select,
   SelectContent,
@@ -29,12 +29,15 @@ import {
   PaginationNext,
 } from '@/components/ui/pagination'
 import {
-  DollarSign,
-  CreditCard,
-  Receipt,
   Search,
-  Filter,
   Download,
+  Filter,
+  TrendingUp,
+  DollarSign,
+  Users,
+  CreditCard,
+  Loader2,
+  Receipt,
 } from 'lucide-react'
 
 interface TransactionData {
@@ -45,6 +48,16 @@ interface TransactionData {
   status: 'concluído' | 'pendente' | 'falhou'
   date: string
   user: string
+  stripe_session_id?: string
+  stripe_payment_intent_id?: string
+  stripe_customer_id?: string
+}
+
+interface FinancialStats {
+  totalRevenue: number
+  activeSubscriptions: number
+  monthlyRevenue: number
+  totalTransactions: number
 }
 
 const mockTransactions: TransactionData[] = [
@@ -110,32 +123,64 @@ const transactionStatusColors = {
   falhou: 'bg-red-100 text-red-700',
 }
 
-export function FinancialTab() {
+export default function FinancialTab() {
   const [searchTerm, setSearchTerm] = useState('')
-  const [filterType, setFilterType] = useState<TransactionData['type'] | 'all'>(
-    'all'
-  )
-  const [filterStatus, setFilterStatus] = useState<
-    TransactionData['status'] | 'all'
-  >('all')
+  const [statusFilter, setStatusFilter] = useState('todos')
+  const [typeFilter, setTypeFilter] = useState('todos')
   const [currentPage, setCurrentPage] = useState(1)
-  const transactionsPerPage = 10
+  const [transactions, setTransactions] = useState<TransactionData[]>([])
+  const [stats, setStats] = useState<FinancialStats>({
+    totalRevenue: 0,
+    activeSubscriptions: 0,
+    monthlyRevenue: 0,
+    totalTransactions: 0
+  })
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  const filteredTransactions = mockTransactions.filter(txn => {
+  const itemsPerPage = 10
+
+  // Fetch financial data from API
+  useEffect(() => {
+    const fetchFinancialData = async () => {
+      try {
+        setLoading(true)
+        const response = await fetch('/api/admin/financial-data')
+        
+        if (!response.ok) {
+          throw new Error('Erro ao carregar dados financeiros')
+        }
+
+        const data = await response.json()
+        setTransactions(data.transactions)
+        setStats(data.stats)
+        setError(null)
+      } catch (err) {
+        console.error('Erro ao buscar dados financeiros:', err)
+        setError(err instanceof Error ? err.message : 'Erro desconhecido')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchFinancialData()
+  }, [])
+
+  const filteredTransactions = transactions.filter(txn => {
     const matchesSearch =
       txn.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
       txn.user.toLowerCase().includes(searchTerm.toLowerCase()) ||
       txn.id.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesType = filterType === 'all' || txn.type === filterType
-    const matchesStatus = filterStatus === 'all' || txn.status === filterStatus
+    const matchesType = typeFilter === 'todos' || txn.type === typeFilter
+    const matchesStatus = statusFilter === 'todos' || txn.status === statusFilter
     return matchesSearch && matchesType && matchesStatus
   })
 
   const totalPages = Math.ceil(
-    filteredTransactions.length / transactionsPerPage
+    filteredTransactions.length / itemsPerPage
   )
-  const indexOfLastTransaction = currentPage * transactionsPerPage
-  const indexOfFirstTransaction = indexOfLastTransaction - transactionsPerPage
+  const indexOfLastTransaction = currentPage * itemsPerPage
+  const indexOfFirstTransaction = indexOfLastTransaction - itemsPerPage
   const currentTransactions = filteredTransactions.slice(
     indexOfFirstTransaction,
     indexOfLastTransaction
@@ -145,17 +190,72 @@ export function FinancialTab() {
     setCurrentPage(pageNumber)
   }
 
-  const totalRevenue = mockTransactions
-    .filter(t => t.status === 'concluído' && t.amount > 0)
-    .reduce((sum, t) => sum + t.amount, 0)
-    .toFixed(2)
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(amount)
+  }
 
-  const pendingRevenue = mockTransactions
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('pt-BR')
+  }
+
+  const getStatusBadge = (status: TransactionData['status']) => {
+    const statusConfig = {
+      'concluído': { variant: 'default' as const, label: 'Concluído' },
+      'pendente': { variant: 'secondary' as const, label: 'Pendente' },
+      'falhou': { variant: 'destructive' as const, label: 'Falhou' }
+    }
+    
+    const config = statusConfig[status]
+    return <Badge variant={config.variant}>{config.label}</Badge>
+  }
+
+  const getTypeBadge = (type: TransactionData['type']) => {
+    const typeConfig = {
+      'assinatura': { variant: 'outline' as const, label: 'Assinatura' },
+      'pagamento': { variant: 'default' as const, label: 'Pagamento' },
+      'reembolso': { variant: 'secondary' as const, label: 'Reembolso' }
+    }
+    
+    const config = typeConfig[type]
+    return <Badge variant={config.variant}>{config.label}</Badge>
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <span className="ml-2">Carregando dados financeiros...</span>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <p className="text-red-500 mb-2">Erro ao carregar dados financeiros</p>
+          <p className="text-sm text-gray-500">{error}</p>
+          <Button 
+            onClick={() => window.location.reload()} 
+            className="mt-4"
+          >
+            Tentar novamente
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  const totalRevenue = stats.totalRevenue.toFixed(2)
+  const pendingRevenue = transactions
     .filter(t => t.status === 'pendente' && t.amount > 0)
     .reduce((sum, t) => sum + t.amount, 0)
     .toFixed(2)
 
-  const totalTransactions = mockTransactions.length
+  const totalTransactionsCount = stats.totalTransactions
 
   return (
     <div className="space-y-6">
@@ -172,7 +272,7 @@ export function FinancialTab() {
                 Receita Total (Concluída)
               </p>
               <h3 className="text-2xl font-bold text-[#1E1D40]">
-                R$ {totalRevenue}
+                {formatCurrency(stats.totalRevenue)}
               </h3>
               <p className="text-xs text-gray-500">Desde o início</p>
             </div>
@@ -188,7 +288,7 @@ export function FinancialTab() {
                 Receita Pendente
               </p>
               <h3 className="text-2xl font-bold text-[#1E1D40]">
-                R$ {pendingRevenue}
+                {formatCurrency(parseFloat(pendingRevenue))}
               </h3>
               <p className="text-xs text-gray-500">Aguardando confirmação</p>
             </div>
@@ -204,7 +304,7 @@ export function FinancialTab() {
                 Total de Transações
               </p>
               <h3 className="text-2xl font-bold text-[#1E1D40]">
-                {totalTransactions}
+                {totalTransactionsCount}
               </h3>
               <p className="text-xs text-gray-500">Todas as transações</p>
             </div>
@@ -228,9 +328,9 @@ export function FinancialTab() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             </div>
             <Select
-              value={filterType}
+              value={typeFilter}
               onValueChange={value =>
-                setFilterType(value as TransactionData['type'] | 'all')
+                setTypeFilter(value as TransactionData['type'] | 'todos')
               }
             >
               <SelectTrigger className="w-full sm:w-[180px] rounded-lg border border-gray-200 focus:ring-emerald-500 focus:border-emerald-500">
@@ -238,16 +338,16 @@ export function FinancialTab() {
                 <SelectValue placeholder="Filtrar por Tipo" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todos os Tipos</SelectItem>
+                <SelectItem value="todos">Todos os Tipos</SelectItem>
                 <SelectItem value="assinatura">Assinatura</SelectItem>
                 <SelectItem value="pagamento">Pagamento</SelectItem>
                 <SelectItem value="reembolso">Reembolso</SelectItem>
               </SelectContent>
             </Select>
             <Select
-              value={filterStatus}
+              value={statusFilter}
               onValueChange={value =>
-                setFilterStatus(value as TransactionData['status'] | 'all')
+                setStatusFilter(value as TransactionData['status'] | 'todos')
               }
             >
               <SelectTrigger className="w-full sm:w-[180px] rounded-lg border border-gray-200 focus:ring-emerald-500 focus:border-emerald-500">
@@ -255,7 +355,7 @@ export function FinancialTab() {
                 <SelectValue placeholder="Filtrar por Status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todos os Status</SelectItem>
+                <SelectItem value="todos">Todos os Status</SelectItem>
                 <SelectItem value="concluído">Concluído</SelectItem>
                 <SelectItem value="pendente">Pendente</SelectItem>
                 <SelectItem value="falhou">Falhou</SelectItem>
@@ -296,20 +396,16 @@ export function FinancialTab() {
                       <TableCell className="font-medium text-gray-700">
                         {txn.id}
                       </TableCell>
-                      <TableCell className="capitalize">{txn.type}</TableCell>
+                      <TableCell>{getTypeBadge(txn.type)}</TableCell>
                       <TableCell>{txn.description}</TableCell>
                       <TableCell className="font-semibold">
-                        R$ {txn.amount.toFixed(2).replace('.', ',')}
+                        {formatCurrency(txn.amount)}
                       </TableCell>
                       <TableCell>
-                        <Badge
-                          className={`capitalize ${transactionStatusColors[txn.status]}`}
-                        >
-                          {txn.status}
-                        </Badge>
+                        {getStatusBadge(txn.status)}
                       </TableCell>
                       <TableCell className="text-gray-500 text-sm">
-                        {txn.date}
+                        {formatDate(txn.date)}
                       </TableCell>
                       <TableCell>{txn.user}</TableCell>
                     </TableRow>
@@ -318,7 +414,7 @@ export function FinancialTab() {
               </TableBody>
             </Table>
           </div>
-          {filteredTransactions.length > transactionsPerPage && (
+          {filteredTransactions.length > itemsPerPage && (
             <Pagination className="mt-6">
               <PaginationContent>
                 <PaginationItem>

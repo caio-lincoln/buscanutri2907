@@ -110,6 +110,22 @@ export default function BuscarTab() {
   const [ viewModeNutritionist, setViewModeNutritionist ] = useState<
     'grid' | 'list'
   >('grid')
+  const [ isMobile, setIsMobile ] = useState(false)
+  const [ isVeryLargeScreen, setIsVeryLargeScreen ] = useState(false)
+
+  // Check screen size and set mobile/very large screen states
+  useEffect(() => {
+    const checkScreenSize = () => {
+      const width = window.innerWidth
+      setIsMobile(width < 1024) // lg breakpoint
+      setIsVeryLargeScreen(width >= 1536) // 2xl breakpoint
+    }
+    
+    checkScreenSize()
+    window.addEventListener('resize', checkScreenSize)
+    
+    return () => window.removeEventListener('resize', checkScreenSize)
+  }, [])
   const { patientProfile } = useAuth()
 
   const [ , setLoading ] = useState(true)
@@ -230,19 +246,20 @@ export default function BuscarTab() {
   // }
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+    <div className="space-y-6 md:space-y-8">
+      <div className="flex flex-col space-y-4 lg:flex-row lg:items-center lg:justify-between lg:space-y-0 gap-4">
         <div>
-          <h1 className="text-3xl lg:text-4xl font-bold text-[#1E1D40] mb-2">
+          <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-[#1E1D40] mb-2">
             Encontrar Nutricionista
           </h1>
-          <p className="text-gray-600">
+          <p className="text-sm md:text-base text-gray-600">
             Descubra profissionais qualificados próximos a você
           </p>
         </div>
         <Button
           variant="outline"
-          className="hover-lift bg-white/80 backdrop-blur-sm border-gray-200"
+          size="sm"
+          className="hover-lift bg-white/80 backdrop-blur-sm border-gray-200 w-full lg:w-auto"
           onClick={() => {
             setSearchNutritionistTerm('')
             setSelectedNutritionistSpecialty('Todas')
@@ -260,15 +277,15 @@ export default function BuscarTab() {
 
       {/* Search and Filters */}
       <Card className="border-0 shadow-lg backdrop-blur-sm">
-        <CardContent className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="relative">
+        <CardContent className="p-4 md:p-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+            <div className="relative sm:col-span-2 lg:col-span-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
-                placeholder="Buscar por nome ou especialidade..."
+                placeholder="Buscar por nome..."
                 value={searchNutritionistTerm}
                 onChange={e => setSearchNutritionistTerm(e.target.value)}
-                className="pl-10 h-12 border-0 bg-gray-50/50 focus:bg-white transition-colors"
+                className="pl-10 h-11 md:h-12 border-0 bg-gray-50/50 focus:bg-white transition-colors text-sm md:text-base"
               />
             </div>
 
@@ -276,7 +293,7 @@ export default function BuscarTab() {
               value={selectedNutritionistSpecialty}
               onValueChange={setSelectedNutritionistSpecialty}
             >
-              <SelectTrigger className="h-12 border-0 bg-gray-50/50 focus:bg-white">
+              <SelectTrigger className="h-11 md:h-12 border-0 bg-gray-50/50 focus:bg-white text-sm md:text-base">
                 <SelectValue placeholder="Especialidade" />
               </SelectTrigger>
               <SelectContent>
@@ -295,7 +312,7 @@ export default function BuscarTab() {
               value={selectedNutritionistState}
               onValueChange={setSelectedNutritionistState}
             >
-              <SelectTrigger className="h-12 border-0 bg-gray-50/50 focus:bg-white">
+              <SelectTrigger className="h-11 md:h-12 border-0 bg-gray-50/50 focus:bg-white text-sm md:text-base">
                 <SelectValue placeholder="Estado" />
               </SelectTrigger>
               <SelectContent>
@@ -314,7 +331,7 @@ export default function BuscarTab() {
                 if (range) setSelectedNutritionistPriceRange(range)
               }}
             >
-              <SelectTrigger className="h-12 border-0 bg-gray-50/50 focus:bg-white">
+              <SelectTrigger className="h-11 md:h-12 border-0 bg-gray-50/50 focus:bg-white text-sm md:text-base">
                 <SelectValue placeholder="Faixa de Preço" />
               </SelectTrigger>
               <SelectContent>
@@ -328,8 +345,8 @@ export default function BuscarTab() {
           </div>
 
           {/* Filtros adicionais */}
-          <div className="flex flex-wrap items-center justify-between mt-6 pt-6 border-t">
-            <div className="flex items-center space-x-4">
+          <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0 mt-4 md:mt-6 pt-4 md:pt-6 border-t">
+            <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-4">
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="online-only-nutritionist"
@@ -338,7 +355,7 @@ export default function BuscarTab() {
                 />
                 <label
                   htmlFor="online-only-nutritionist"
-                  className="text-sm font-medium"
+                  className="text-xs md:text-sm font-medium"
                 >
                   Apenas consultas online
                 </label>
@@ -351,21 +368,22 @@ export default function BuscarTab() {
                 />
                 <label
                   htmlFor="verified-only-nutritionist"
-                  className="text-sm font-medium"
+                  className="text-xs md:text-sm font-medium"
                 >
                   Apenas profissionais verificados
                 </label>
               </div>
             </div>
 
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-[#1E1D40]/70">
+            <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 gap-4">
+              <span className="text-xs md:text-sm text-[#1E1D40]/70 text-center sm:text-left">
                 {nutritionists.length} profissional
                 {nutritionists.length !== 1 ? 's' : ''} encontrado
                 {nutritionists.length !== 1 ? 's' : ''}
               </span>
 
-              <div className="flex items-center gap-2">
+              {/* View mode toggle - hidden on mobile/tablet and very large screens, auto-switches to list */}
+              <div className="hidden lg:flex xl:hidden items-center justify-center gap-2">
                 <Button
                   variant={
                     viewModeNutritionist === 'grid'
@@ -430,75 +448,92 @@ export default function BuscarTab() {
           {nutritionists.length > 0 ? (
             <div
               className={
-                viewModeNutritionist === 'grid'
-                  ? 'grid grid-cols-1 lg:grid-cols-2 gap-6'
-                  : 'space-y-4'
+                // Force list view on mobile/tablet and very large screens, allow grid on medium-large screens
+                isMobile || isVeryLargeScreen || viewModeNutritionist === 'list'
+                  ? 'space-y-4'
+                  : 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6'
               }
             >
               {nutritionists.map(nutritionist => {
                 const formatted = formatNutritionistData(nutritionist)
+                // Determine effective view mode based on screen size
+                const effectiveViewMode = (isMobile || isVeryLargeScreen) ? 'list' : viewModeNutritionist
 
                 return (
                   <Card
                     key={nutritionist.id}
-                    className={`group hover-lift transition-all duration-300 border-0 shadow-lg hover:shadow-xl backdrop-blur-sm ${viewModeNutritionist === 'list' ? 'flex' : ''
-                      }`}
+                    className={`group hover-lift transition-all duration-300 border-0 shadow-lg hover:shadow-xl backdrop-blur-sm ${
+                      effectiveViewMode === 'list' 
+                        ? 'flex' 
+                        : 'h-full flex flex-col'
+                    }`}
                   >
-                    <CardContent className="p-6">
-                      <div className="flex items-start gap-4">
-                        <Avatar className="h-16 w-16 ring-2 ring-gray-200 shadow-lg group-hover:scale-105 transition-transform duration-300">
-                          <AvatarImage
-                            src={
-                              nutritionist?.profile_image_url ||
-                              `/placeholder.svg?height=48&width=48&query=${nutritionist?.full_name || 'nutritionist profile'}`
-                            }
-                            className="rounded-full object-cover"
-                          />
-                          <AvatarFallback className="bg-gradient-to-br from-blue-500 to-blue-600 text-white text-xl font-bold">
-                            {nutritionist.full_name?.charAt(0) || 'N'}
-                          </AvatarFallback>
-                        </Avatar>
+                    <CardContent className={`p-4 md:p-6 ${effectiveViewMode === 'grid' ? 'flex flex-col h-full' : ''}`}>
+                      <div className={`flex items-start gap-3 md:gap-4 ${
+                        effectiveViewMode === 'list' 
+                          ? 'flex-row' 
+                          : 'flex-col sm:flex-row'
+                      } ${effectiveViewMode === 'grid' ? 'flex-1' : ''}`}>
+                        
+                        {/* Avatar Section */}
+                        <div className="flex-shrink-0">
+                          <Avatar className="h-14 w-14 md:h-16 md:w-16 lg:h-18 lg:w-18 ring-2 ring-gray-200 shadow-lg group-hover:scale-105 transition-transform duration-300">
+                            <AvatarImage
+                              src={
+                                nutritionist?.profile_image_url ||
+                                `/placeholder.svg?height=64&width=64&query=${nutritionist?.full_name || 'nutritionist profile'}`
+                              }
+                              className="rounded-full object-cover"
+                            />
+                            <AvatarFallback className="bg-gradient-to-br from-blue-500 to-blue-600 text-white text-lg md:text-xl font-bold">
+                              {nutritionist.full_name?.charAt(0) || 'N'}
+                            </AvatarFallback>
+                          </Avatar>
+                        </div>
 
-                        <div className="flex-1 space-y-3">
-                          <div className="flex items-start justify-between ">
-                            <div>
-                              <h3 className="font-bold text-[#1E1D40] text-lg">
+                        {/* Content Section */}
+                        <div className="flex-1 space-y-3 min-w-0">
+                          {/* Header with name and verification */}
+                          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                            <div className="min-w-0 flex-1">
+                              <h3 className="font-bold text-[#1E1D40] text-base md:text-lg lg:text-xl truncate">
                                 {nutritionist.full_name}
                               </h3>
-                              <p className="text-sm text-gray-600">
+                              <p className="text-xs md:text-sm text-gray-600 font-medium">
                                 CRN: {nutritionist.crn}
                               </p>
                             </div>
                             {nutritionist.is_verified && (
-                              <Badge className="bg-gradient-to-r from-blue-500 to-blue-600 text-white border-0 shadow-sm">
+                              <Badge className="bg-gradient-to-r from-blue-500 to-blue-600 text-white border-0 shadow-sm text-xs flex-shrink-0">
                                 <Shield className="h-3 w-3 mr-1" />
                                 Verificado
                               </Badge>
                             )}
                           </div>
 
+                          {/* Rating and Location */}
                           <div className="space-y-2">
                             <div className="flex items-center gap-2">
-                              <Star className="h-4 w-4 text-yellow-500 fill-current" />
+                              <Star className="h-4 w-4 text-yellow-500 fill-current flex-shrink-0" />
                               <span className="text-sm font-semibold">
                                 {nutritionist.rating?.toFixed(1) || '5.0'}
                               </span>
-                              <span className="text-sm text-gray-600">
-                                ({nutritionist.total_reviews || 0}{' '}
-                                avaliações)
+                              <span className="text-sm text-gray-600 truncate">
+                                ({nutritionist.total_reviews || 0} avaliações)
                               </span>
                             </div>
 
                             {nutritionist.location && (
                               <div className="flex items-center gap-2">
-                                <MapPin className="h-4 w-4 text-gray-500" />
-                                <span className="text-sm text-gray-600">
+                                <MapPin className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                                <span className="text-sm text-gray-600 truncate">
                                   {nutritionist.location}
                                 </span>
                               </div>
                             )}
 
-                            <div className="flex flex-wrap gap-2">
+                            {/* Specialties */}
+                            <div className="flex flex-wrap gap-1 md:gap-2">
                               {(typeof (
                                 getSpecialtiesText(nutritionist) ||
                                 'Nutrição Geral'
@@ -514,107 +549,89 @@ export default function BuscarTab() {
                                   <Badge
                                     key={index}
                                     variant="outline"
-                                    className="text-xs bg-blue-50 text-blue-700 border-blue-200"
+                                    className="text-xs bg-blue-50 text-blue-700 border-blue-200 px-2 py-1"
                                   >
                                     {specialty}
                                   </Badge>
                                 ))}
                             </div>
 
+                            {/* Bio */}
                             {nutritionist.bio && (
-                              <p className="text-sm text-gray-600 line-clamp-2">
+                              <p className="text-sm text-gray-600 line-clamp-2 leading-relaxed">
                                 {nutritionist.bio}
                               </p>
                             )}
                           </div>
 
-                          <div className="flex items-center justify-between pt-2">
-                            <div className="flex items-center gap-4">
+                          {/* Price and Online indicator */}
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pt-2 border-t border-gray-100">
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                               {getMinPrice(
                                 nutritionist.nutritionist_services
                               ) !== null && (
-                                  <div className="flex items-center gap-1 text-sm">
-                                    <span className="text-gray-600">
-                                      A partir de
-                                    </span>
-                                    <span className="font-bold text-[#1E1D40] text-lg">
-                                      R${' '}
-                                      {getMinPrice(
-                                        nutritionist.nutritionist_services
-                                      )}
-                                    </span>
-                                  </div>
-                                )}
+                                <div className="flex items-center gap-1">
+                                  <span className="text-sm text-gray-600">
+                                    A partir de
+                                  </span>
+                                  <span className="font-bold text-[#1E1D40] text-lg">
+                                    R$ {getMinPrice(nutritionist.nutritionist_services)}
+                                  </span>
+                                </div>
+                              )}
                               {hasOnlineConsultation(
                                 nutritionist.nutritionist_services
                               ) && (
-                                  <div className="flex items-center gap-1 text-sm text-green-600">
-                                    <Video className="h-4 w-4" />
-                                    <span>Online</span>
-                                  </div>
-                                )}
+                                <div className="flex items-center gap-1 text-sm text-green-600 bg-green-50 px-2 py-1 rounded-full">
+                                  <Video className="h-4 w-4 flex-shrink-0" />
+                                  <span className="font-medium">Online</span>
+                                </div>
+                              )}
                             </div>
                           </div>
-
-                          <div className="flex gap-2 pt-2">
-                            <Link
-                              href={`/nutricionistas/${nutritionist.id}`}
-                            >
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="flex-1 hover-lift bg-white/80 backdrop-blur-sm hover:bg-gray-50"
-                              >
-                                <User className="h-4 w-4 mr-2" />
-                                Ver Perfil
-                              </Button>
-                            </Link>
-
-                            <Button
-                              size="sm"
-                              className="flex-1 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 shadow-lg hover:shadow-xl transition-all duration-300"
-                              onClick={() =>
-                                handleScheduleConsultation(
-                                  nutritionist.id
-                                )
-                              }
-                            >
-                              <Calendar className="h-4 w-4 mr-2" />
-                              Agendar
-                            </Button>
-                            {/* <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className={`hover-lift bg-white/80 backdrop-blur-sm transition-all duration-300 ${favoritedNutritionists.has(
-                                      nutritionist.id
-                                    )
-                                      ? 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100'
-                                      : 'hover:bg-red-50 hover:text-red-600 hover:border-red-200'
-                                      }`}
-                                    onClick={() =>
-                                      handleToggleFavorite(nutritionist.id)
-                                    }
-                                  >
-                                    <Heart
-                                      className={`h-4 w-4 ${favoritedNutritionists.has(
-                                        nutritionist.id
-                                      )
-                                        ? 'fill-current'
-                                        : ''
-                                        }`}
-                                    />
-                                  </Button> */}
-                            <Button
-                              size="sm"
-                              className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-lg hover:shadow-xl transition-all duration-300"
-                              onClick={() => handleStartChat(nutritionist.id)}
-                              disabled={startingChatFor === nutritionist.id}
-                            >
-                              <MessageSquare className="h-4 w-4 mr-2" />
-                              {startingChatFor === nutritionist.id ? 'Abrindo...' : 'Iniciar chat'}
-                            </Button>
-                          </div>
                         </div>
+                      </div>
+
+                      {/* Action Buttons - Always at bottom for grid view */}
+                      <div className={`flex gap-2 pt-4 mt-auto ${
+                        effectiveViewMode === 'grid' ? 'border-t border-gray-100' : ''
+                      }`}>
+                        <Link
+                          href={`/nutricionistas/${nutritionist.id}`}
+                          className="flex-1"
+                        >
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="w-full h-10 hover-lift bg-white/80 backdrop-blur-sm hover:bg-gray-50 text-sm font-medium border-gray-200 hover:border-gray-300 transition-all duration-200"
+                          >
+                            <User className="h-4 w-4 mr-2" />
+                            Ver Perfil
+                          </Button>
+                        </Link>
+
+                        <Button
+                          size="sm"
+                          className="flex-1 h-10 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 shadow-lg hover:shadow-xl transition-all duration-300 text-sm font-medium"
+                          onClick={() =>
+                            handleScheduleConsultation(
+                              nutritionist.id
+                            )
+                          }
+                        >
+                          <Calendar className="h-4 w-4 mr-2" />
+                          Agendar
+                        </Button>
+
+                        <Button
+                          size="sm"
+                          className="flex-1 h-10 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-lg hover:shadow-xl transition-all duration-300 text-sm font-medium"
+                          onClick={() => handleStartChat(nutritionist.id)}
+                          disabled={startingChatFor === nutritionist.id}
+                        >
+                          <MessageSquare className="h-4 w-4 mr-2" />
+                          {startingChatFor === nutritionist.id ? 'Abrindo...' : 'Chat'}
+                        </Button>
                       </div>
                     </CardContent>
                   </Card>

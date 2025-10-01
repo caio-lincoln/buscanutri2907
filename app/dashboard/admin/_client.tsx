@@ -19,6 +19,7 @@ import {
   CheckCircle,
   Clock,
   Award,
+  User,
 } from 'lucide-react'
 import { DashboardSidebar, getMenuItems } from '@/components/dashboard-sidebar'
 import { useAuth } from '@/contexts/auth-context'
@@ -30,17 +31,18 @@ import { useDashboardStats } from '@/hooks/use-dashboard-stats'
 import { UsersTab } from '@/components/dashboard/admin/users-tab'
 import { JobsTab } from '@/components/dashboard/admin/jobs-tab'
 import { ReportsTab } from '@/components/dashboard/admin/reports-tab'
-import { FinancialTab } from '@/components/dashboard/admin/financial-tab'
-import { AnalyticsTab } from '@/components/dashboard/admin/analytics-tab'
-import { ModerationTab } from '@/components/dashboard/admin/moderation-tab'
+import FinancialTab from '@/components/dashboard/admin/financial-tab'
+import AnalyticsTab from '@/components/dashboard/admin/analytics-tab'
 import { SystemTab } from '@/components/dashboard/admin/system-tab'
 import { SettingsTab } from '@/components/dashboard/admin/settings-tab'
 import { BadgesTab } from '@/components/dashboard/admin/badges-tab' // Importar a nova aba de insígnias
+import { ProfileTab } from '@/components/dashboard/admin/profile-tab'
 import { getAllUsers } from '../../../lib/admin-data-service'
-import { User } from '@supabase/supabase-js'
+import { User as SupabaseUser } from '@supabase/supabase-js'
+import { ProfileProvider } from '@/contexts/profile-context'
 
 type Props = {
-  initialUser: Pick<User, 'id' | 'email' | 'user_metadata' | 'app_metadata'>
+  initialUser: Pick<SupabaseUser, 'id' | 'email' | 'user_metadata' | 'app_metadata'>
 }
 
 const TABS = [
@@ -50,11 +52,9 @@ const TABS = [
   'relatorios',
   'financeiro',
   'analytics',
-  'moderacao',
-  'sistema',
   'configuracoes',
   'insignias',
-  'notificacoes',
+  'perfil',
 ] as const
 
 export type Tab = typeof TABS[ number ];
@@ -141,14 +141,15 @@ export default function AdminDashboard({ initialUser }: Props) {
   // }
 
   return (
-    <DashboardSidebar
-      userType="admin"
-      userName="Administrador"
-      menuItems={menuItems}
-      activeItem={activeTab}
-      onItemClick={setTab}
-      onSignOut={handleSignOut}
-    >
+    <ProfileProvider initialUser={initialUser}>
+      <DashboardSidebar
+        userType="admin"
+        userName="Administrador"
+        menuItems={menuItems}
+        activeItem={activeTab}
+        onItemClick={setTab}
+        onSignOut={handleSignOut}
+      >
       <div className="space-y-8">
         {/* Renderiza o conteúdo da aba ativa */}
         {activeTab === 'overview' && (
@@ -505,12 +506,12 @@ export default function AdminDashboard({ initialUser }: Props) {
         {activeTab === 'relatorios' && <ReportsTab />}
         {activeTab === 'financeiro' && <FinancialTab />}
         {activeTab === 'analytics' && <AnalyticsTab />}
-        {activeTab === 'moderacao' && <ModerationTab />}
-        {activeTab === 'sistema' && <SystemTab />}
-        {activeTab === 'insignias' && <BadgesTab />}{' '}
+        {activeTab === 'insignias' && <BadgesTab initialUser={initialUser} />}{' '}
         {/* Renderiza a nova aba de insígnias */}
         {activeTab === 'configuracoes' && <SettingsTab />}
+        {activeTab === 'perfil' && <ProfileTab initialUser={initialUser} />}
       </div>
     </DashboardSidebar>
+    </ProfileProvider>
   )
 }
