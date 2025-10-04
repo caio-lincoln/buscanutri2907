@@ -38,7 +38,7 @@ import { openConversationWithNutritionist } from '../../../../lib/chat-forum-ser
 import { toast } from 'sonner'
 import { addFavoriteNutritionist, FavoriteNutritionist, getPatientFavoriteNutritionists, removeFavoriteNutritionist } from '../../../../lib/consultation-service'
 import { useAuth } from '../../../../contexts/auth-context'
-import { BRState, getStates } from '../../../../lib/geo'
+import { BRState, BRCity, getStates, getCitiesByUF } from '../../../../lib/geo'
 
 const getSpecialtiesText = (nutritionist: NutritionistProfile) => {
   return (
@@ -98,6 +98,10 @@ export default function BuscarTab() {
     useState('Todas')
   const [ selectedNutritionistState, setSelectedNutritionistState ] =
     useState('Todas')
+  const [ selectedNutritionistCity, setSelectedNutritionistCity ] =
+    useState('Todas')
+  const [ selectedNutritionistRegion, setSelectedNutritionistRegion ] =
+    useState('Todas')
   const [ selectedNutritionistPriceRange, setSelectedNutritionistPriceRange ] =
     useState(priceRanges[ 0 ])
   const [ onlineOnlyNutritionist, setOnlineOnlyNutritionist ] = useState(false)
@@ -153,6 +157,8 @@ export default function BuscarTab() {
     searchTerm: debouncedSearch,
     specialty: selectedNutritionistSpecialty === 'Todas' ? undefined : selectedNutritionistSpecialty,
     state: selectedNutritionistState === 'Todas' ? undefined : selectedNutritionistState,
+    city: selectedNutritionistCity === 'Todas' ? undefined : selectedNutritionistCity,
+    region: selectedNutritionistRegion === 'Todas' ? undefined : selectedNutritionistRegion,
     priceRange: selectedNutritionistPriceRange && selectedNutritionistPriceRange.label === 'Todos'
       ? undefined
       : { min: selectedNutritionistPriceRange?.min as number, max: selectedNutritionistPriceRange?.max as number },
@@ -162,6 +168,7 @@ export default function BuscarTab() {
   })
 
   const [ statesOptions, setStatesOptions ] = useState<BRState[]>([])
+  const [ citiesOptions, setCitiesOptions ] = useState<BRCity[]>([])
 
   useEffect(() => {
     (async () => {
@@ -169,6 +176,22 @@ export default function BuscarTab() {
       setStatesOptions([ { ibge_id: Number.POSITIVE_INFINITY, name: 'Todas', uf: 'Todas', region: '' }, ...geoStates ])
     })()
   }, [])
+
+  useEffect(() => {
+    (async () => {
+      if (!selectedNutritionistState || selectedNutritionistState === 'Todas') {
+        setCitiesOptions([])
+        setSelectedNutritionistCity('Todas')
+        return
+      }
+      try {
+        const cities = await getCitiesByUF(selectedNutritionistState)
+        setCitiesOptions([ { ibge_id: Number.POSITIVE_INFINITY, name: 'Todas' }, ...cities ])
+      } catch (e) {
+        setCitiesOptions([ { ibge_id: Number.POSITIVE_INFINITY, name: 'Todas' } ])
+      }
+    })()
+  }, [ selectedNutritionistState ])
 
   useEffect(() => {
     const loadSpecialties = async () => {
@@ -264,6 +287,8 @@ export default function BuscarTab() {
             setSearchNutritionistTerm('')
             setSelectedNutritionistSpecialty('Todas')
             setSelectedNutritionistState('Todas')
+            setSelectedNutritionistCity('Todas')
+            setSelectedNutritionistRegion('Todas')
             setSelectedNutritionistPriceRange(priceRanges[ 0 ])
             setOnlineOnlyNutritionist(false)
             setShowVerifiedOnlyNutritionist(false)
@@ -278,7 +303,7 @@ export default function BuscarTab() {
       {/* Search and Filters */}
       <Card className="border-0 shadow-lg backdrop-blur-sm">
         <CardContent className="p-4 md:p-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 md:gap-4">
             <div className="relative sm:col-span-2 lg:col-span-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
@@ -310,7 +335,10 @@ export default function BuscarTab() {
 
             <Select
               value={selectedNutritionistState}
-              onValueChange={setSelectedNutritionistState}
+              onValueChange={(val) => {
+                setSelectedNutritionistRegion('Todas')
+                setSelectedNutritionistState(val)
+              }}
             >
               <SelectTrigger className="h-11 md:h-12 border-0 bg-gray-50/50 focus:bg-white text-sm md:text-base">
                 <SelectValue placeholder="Estado" />
@@ -321,6 +349,40 @@ export default function BuscarTab() {
                     {state.uf}
                   </SelectItem>
                 ))}
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={selectedNutritionistCity}
+              onValueChange={setSelectedNutritionistCity}
+            >
+              <SelectTrigger className="h-11 md:h-12 border-0 bg-gray-50/50 focus:bg-white text-sm md:text-base">
+                <SelectValue placeholder="Cidade" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={"Todas"}>Todas</SelectItem>
+                {citiesOptions.map(city => (
+                  <SelectItem key={city.ibge_id} value={city.name}>
+                    {city.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={selectedNutritionistRegion}
+              onValueChange={setSelectedNutritionistRegion}
+            >
+              <SelectTrigger className="h-11 md:h-12 border-0 bg-gray-50/50 focus:bg-white text-sm md:text-base">
+                <SelectValue placeholder="Região" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={"Todas"}>Todas</SelectItem>
+                <SelectItem value={"Norte"}>Norte</SelectItem>
+                <SelectItem value={"Nordeste"}>Nordeste</SelectItem>
+                <SelectItem value={"Centro-Oeste"}>Centro-Oeste</SelectItem>
+                <SelectItem value={"Sudeste"}>Sudeste</SelectItem>
+                <SelectItem value={"Sul"}>Sul</SelectItem>
               </SelectContent>
             </Select>
 

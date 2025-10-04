@@ -38,6 +38,8 @@ import {
 import type { NutritionistProfile, Specialty } from '@/lib/supabase' // Importa a interface real
 import { useAuth } from '../../contexts/auth-context'
 import { normalizeText } from '../../lib/utils/normalize'
+import type { BRCity } from '@/lib/geo'
+import { getCitiesByUF } from '@/lib/geo'
 
 const states = [
   'Todas',
@@ -100,6 +102,14 @@ const UF_ALIASES: Record<string, string[]> = {
   TO: [ 'TO', 'TOCANTINS' ],
 };
 
+const REGION_STATES: Record<string, string[]> = {
+  'Norte': [ 'AC', 'AP', 'AM', 'PA', 'RO', 'RR', 'TO' ],
+  'Nordeste': [ 'AL', 'BA', 'CE', 'MA', 'PB', 'PE', 'PI', 'RN', 'SE' ],
+  'Centro-Oeste': [ 'DF', 'GO', 'MT', 'MS' ],
+  'Sudeste': [ 'ES', 'MG', 'RJ', 'SP' ],
+  'Sul': [ 'PR', 'RS', 'SC' ],
+}
+
 const normalize = (s: string) =>
   (s || '')
     .normalize('NFD')
@@ -135,6 +145,8 @@ export default function NutricionistasPage() {
   const [ searchTerm, setSearchTerm ] = useState('')
   const [ selectedSpecialty, setSelectedSpecialty ] = useState('Todas')
   const [ selectedState, setSelectedState ] = useState('Todas')
+  const [ selectedCity, setSelectedCity ] = useState('Todas')
+  const [ selectedRegion, setSelectedRegion ] = useState('Todas')
   const [ selectedPriceRange, setSelectedPriceRange ] = useState(priceRanges[ 0 ])
   const [ onlineOnly, setOnlineOnly ] = useState(false)
   const [ aceitaCupons, setAceitaCupons ] = useState(false)
@@ -143,6 +155,7 @@ export default function NutricionistasPage() {
   const [ mobileMenuOpen, setMobileMenuOpen ] = useState(false)
   const { user, signOut } = useAuth()
   const [ specialties, setSpecialties ] = useState<Specialty[]>([])
+  const [ citiesOptions, setCitiesOptions ] = useState<BRCity[]>([])
 
   // Carregar nutricionistas do banco de dados
   useEffect(() => {
@@ -182,6 +195,23 @@ export default function NutricionistasPage() {
 
     loadSpecialties()
   }, [])
+
+  // Carregar cidades ao selecionar UF
+  useEffect(() => {
+    (async () => {
+      try {
+        if (selectedState && selectedState !== 'Todas') {
+          const cities = await getCitiesByUF(selectedState)
+          setCitiesOptions([ { ibge_id: Number.POSITIVE_INFINITY, name: 'Todas' }, ...cities ])
+        } else {
+          setCitiesOptions([ { ibge_id: Number.POSITIVE_INFINITY, name: 'Todas' } ])
+          setSelectedCity('Todas')
+        }
+      } catch (e) {
+        // Silent error handling for city loading
+      }
+    })()
+  }, [ selectedState ])
 
   // Gerenciar overflow do body quando o menu mobile está aberto
   useEffect(() => {
@@ -261,6 +291,25 @@ export default function NutricionistasPage() {
         selectedState === 'Todas' ||
         (nutritionist.address && addressMatchesState(nutritionist.address, selectedState))
 
+      const addressMatchesCity = (address: string | null | undefined, city: string): boolean => {
+        if (!address || !city || city === 'Todas') return true
+        const nAddr = normalize(address)
+        const nCity = normalize(city)
+        const re = new RegExp(`(?:^|[^A-Z])${esc(nCity)}(?:$|[^A-Z])`)
+        return re.test(nAddr)
+      }
+
+      const matchesCity =
+        selectedCity === 'Todas' ||
+        addressMatchesCity(nutritionist.address, selectedCity)
+
+      const matchesRegion = (() => {
+        if (!selectedRegion || selectedRegion === 'Todas') return true
+        const ufs = REGION_STATES[selectedRegion] || []
+        if (!nutritionist.address) return false
+        return ufs.some(uf => addressMatchesState(nutritionist.address, uf))
+      })()
+
       const matchesPrice =
         selectedPriceRange.label === 'Todos' ||
         nutritionist.consultation_price === undefined ||
@@ -277,6 +326,8 @@ export default function NutricionistasPage() {
         matchesSearch &&
         matchesSpecialty &&
         matchesState &&
+        matchesCity &&
+        matchesRegion &&
         matchesPrice &&
         matchesOnline &&
         matchesCupons
@@ -307,6 +358,8 @@ export default function NutricionistasPage() {
     searchTerm,
     selectedSpecialty,
     selectedState,
+    selectedCity,
+    selectedRegion,
     selectedPriceRange,
     onlineOnly,
     aceitaCupons,
@@ -733,19 +786,33 @@ export default function NutricionistasPage() {
                   </SelectContent>
                 </Select>
 
-                 {/* Cidade
-                 <Select value={selectedState} onValueChange={setSelectedState}>
+                {/* Cidade */}
+                <Select value={selectedCity} onValueChange={setSelectedCity}>
                   <SelectTrigger className="h-12">
                     <SelectValue placeholder="Cidade" />
                   </SelectTrigger>
                   <SelectContent>
-                    {states.map(state => (
-                      <SelectItem key={state} value={state}>
-                        {state}
+                    {citiesOptions.map(city => (
+                      <SelectItem key={city.ibge_id} value={city.name}>
+                        {city.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
-                </Select> */}
+                </Select>
+
+                {/* Região */}
+                <Select value={selectedRegion} onValueChange={setSelectedRegion}>
+                  <SelectTrigger className="h-12">
+                    <SelectValue placeholder="Região" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {['Todas', 'Norte', 'Nordeste', 'Centro-Oeste', 'Sudeste', 'Sul'].map(region => (
+                      <SelectItem key={region} value={region}>
+                        {region}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
 
                 {/* Preço */}
                 <Select

@@ -1,0 +1,71 @@
+tipo_usuario,nome,telefone,email,created_at
+nutricionista,Caio Lincoln do Carmo Santos,7998105432,nutricionista@buscanutri.com,2025-06-10 16:34:01.492952+00
+nutricionista,Iris Patricia Carregosa da Silva,79999158274,irispatricianutri@gmail.com,2025-07-03 17:56:40.641354+00
+nutricionista,Maria Hortência Borges Soares,89994022539,hortenciasoares9@gmail.com,2025-07-03 21:49:23.531553+00
+nutricionista,Fernanda Almeida de Sousa,86988259726,fesousa6767@gmail.com,2025-07-05 15:51:11.75879+00
+nutricionista,Márcio Luis Gonçalves Olivera,71992148032,marcioluis041@yahoo.com.br,2025-07-27 14:30:20.549316+00
+nutricionista,Danielle Verissimo,11968274047,nutrindosuamaternidade@gmail.com,2025-07-29 15:16:45.555739+00
+nutricionista,Heloisa Lima Bitencourt,75998061284,heloisabnutri@gmail.com,2025-07-31 22:42:21.655185+00
+nutricionista,Danielle Sena,79998106761,nutrisenads@gmail.com,2025-08-01 17:15:11.754166+00
+nutricionista,Letícia Januzzi,32988722145,leticiajanuzzib@gmail.com,2025-08-04 01:48:13.371247+00
+nutricionista,Josefa Juliana de Oliveira,79981368890,nut.juoliveira@gmail.com,2025-08-04 12:42:37.334657+00
+nutricionista,Bruna Santana Cruz,79999014556,nutri.brunadm1@gmail.com,2025-08-05 00:23:48.304428+00
+nutricionista,YSLLAINE OLIVEIRA DA SILVA,75998009762,ysllaine.15@gmail.com,2025-08-05 19:27:58.649+00
+nutricionista,Roberto de Deus Silva,11978644186,roberttonutri@gmail.com,2025-08-06 14:21:30.943775+00
+nutricionista,Marilda Pereira de Souza Moraes,48999369906,marilda.psmoraess@gmail.com,2025-08-08 01:48:40.865872+00
+nutricionista,Guilherme Cerqueira de Almeida,75981866579,guilhermeeualmeida@gmail.com,2025-08-20 16:10:06.767031+00
+nutricionista,Louise Rocha Campos,74998083280,nutricionista-louise@outlook.com,2025-08-22 18:26:20.60307+00
+nutricionista,Perykles Jordan Costa da Silva,83991290997,peryklesjordan@gmail.com,2025-08-26 00:34:00.557494+00
+nutricionista,Naisce Aline de Matos Gentille,18996786718,naiscegentille@hotmail.com,2025-08-26 22:44:44.200287+00
+nutricionista,Millene Maciel Santos ,79999156294,macielmillene@gmail.com,2025-08-28 11:18:10.452867+00
+nutricionista,Kauan dos Santos Melo,79996004031,kauanmelonutri@gmail.com,2025-08-28 13:36:56.27108+00
+nutricionista,Millena Angel Silva Rodrigues,79996036114,angelednutri@gmail.com,2025-08-28 16:23:26.716578+00
+nutricionista,Larissa Santos Cardoso Alves,14996007901,nutricionistalaricardoso@gmail.com,2025-09-02 22:54:54.985444+00
+nutricionista,Aryanne Nascimento Martins,32998060801,aryanneemartins3003@gmail.com,2025-09-12 00:38:50.912248+00
+nutricionista,Brenno Pavanello,+55 (14) 99173-5272,contato.brennopavanello@yahoo.com,2025-09-12 03:21:04.471029+00
+nutricionista,brenno,14991735276,contato.brennopavanello@gmail.com,2025-09-12 14:32:26.344705+00
+nutricionista,DANIELLE VIEIRA RIBEIRO FERNANDES,22999904633,danny.vieira20@hotmail.com,2025-09-16 22:13:42.574896+00
+nutricionista,Camila Portes Braga,21 975374295 ,portesbraga@hotmail.com,2025-09-19 20:37:12.393987+00
+nutricionista,Maria Glória Trevisan Santos,11988276712,mgloriatrevisan@gmail.com,2025-09-19 23:54:38.817306+00
+nutricionista,Carolina Lima,11998540649,carolinalimasouza@yahoo.com.br,2025-09-20 14:00:12.88465+00
+nutricionista,Mateus Gomes da Luz,42991074049,atendimento@mateusgomes.com.br,2025-09-22 09:58:11.739174+00
+nutricionista,Carolina Melo,75998075746,carolnutrihospitalar@gmail.com,2025-09-25 05:25:19.144423+00
+nutricionista,João Pedro Lippolis Barcellos Ferreira,53981095469,joaop.lbf@gmail.com,2025-09-25 20:57:23.117854+00
+paciente,Paciente Teste,(79) 98105-4320,paciente.teste@email.com,2025-06-02 07:23:43.285982+00
+paciente,CAIO LINCOLN DO CARMO SANTOS,79999756450,caiolncoln@hotmail.com,2025-06-10 15:45:43.736995+00
+paciente,Ebert Ryan,79981054320,paciente@buscanutri.com,2025-06-10 17:00:14.252818+00
+paciente,EBERT RYAN,79 98129.2689,nutricionista@buscanutri.com,2025-06-26 17:55:19.555069+00
+paciente,Joao Miguel P Carmo,79999756452,teste@carmo.com,2025-07-03 08:03:30.39124+00
+paciente,Charlesson Maxwell Porto dos Santos,79988658666,charlessonm@gmail.com,2025-07-17 22:19:30.610651+00
+paciente,LAZARO SANTOS RODRIGUES,79981118016,lazaro.aju@gmail.com,2025-07-22 16:48:37.492633+00
+paciente,Gil Guilherme Duarte de Carvalho,38992372027,gilguilhermecarvalho@outlook.com,2025-07-28 12:47:52.786187+00
+paciente,henrique,79988073346,riquemnm@gmail.com,2025-08-01 21:04:23.429456+00
+paciente,Usuário Teste,(11) 99999-9999,teste@teste.com,2025-08-05 00:35:51.618033+00
+paciente,Vinicius Moimaz Martins,11954190835,vinicius.moimaz@gmail.com,2025-08-05 14:25:27.595714+00
+paciente,Iris Patricia Carregosa da Silva,79999158274,irispatriciacarregosa@gmail.com,2025-08-06 14:15:33.352021+00
+paciente,Rodrigo Werner Fernandes Ferreira,(55) 79998-3494,rodwernernutri@gmail.com,2025-08-06 18:20:28.770586+00
+paciente,sarah de oliveira brandão,13981826800,sarah_brandao@hotmail.com,2025-08-11 22:37:46.072465+00
+paciente,Dimas de Jesus Nascimento ,79999098977,dimasfotos08@gmail.com,2025-08-19 11:30:06.020955+00
+paciente,Viviane Pereira de Oliveira,27996460398,anutriviviane@gmail.com,2025-08-21 18:44:33.243137+00
+paciente,Maria Micaele da Silva Rodrigues,88992786778,nutrimicaelerodrigues@gmail.com,2025-08-21 18:57:41.006129+00
+paciente,Mariana Galvão Nascimento,79991577217,galvaomariana74@gmail.com,2025-08-21 21:29:43.234006+00
+paciente,Nathany Cunha de Jesus,79999306445,nathany_cunha@hotmail.com,2025-08-21 21:33:02.074342+00
+paciente,REBECA MENESES CHAGAS,79998668612,positiv.ar.11@gmail.com,2025-08-21 21:42:42.890245+00
+paciente,Marcia Luciana Carregosa Santana,79999562428,mlscarregosa@gmail.com,2025-08-21 23:09:47.28082+00
+paciente,Victor Oliveira Passos Coelho,79998095431,victorpassoscoelho@gmail.com,2025-08-21 23:20:53.331824+00
+paciente,CLARA MILENA SANTOS DE JESUS,79998425426,claramilena.tec@gmail.com,2025-08-21 23:21:34.030742+00
+paciente,Cristian Corrêa Lessa,79998842657,cristianlessac@gmail.com,2025-08-21 23:36:29.468851+00
+paciente,Maria Luiza Cunha Santos,79998911244,malucunhasantos@hotmail.com,2025-08-21 23:44:53.030261+00
+paciente,Igor da Silva Santos,79988343767,igorsantos.96@hotmail.com,2025-08-22 01:57:49.453147+00
+paciente,Manoel Felipe da Paz Almeida,67981648020,mfpa@rocketmail.com,2025-08-22 13:42:39.462039+00
+paciente,Vicente Henrique dos Santos Júnior,79996307700,vicentehnrq@gmail.com,2025-08-23 20:56:05.296937+00
+paciente,ALESSANDRA LUIZA BERTOLINO,31992042671,luizanutricao@hotmail.com,2025-08-25 19:20:54.132489+00
+paciente,Pedro Henrique de Góis Ferreira Medeiros,84987121596,pedrogois28@gmail.com,2025-08-27 04:44:18.370181+00
+paciente,Fábio Ricardo,86994373802,agenciadamkt@gmail.com,2025-08-27 15:43:02.603701+00
+paciente,Eduarda Santos Carregosa,79998495682,eduardacarregosa2000@gmail.com,2025-09-01 20:13:20.02192+00
+paciente,Patrick de Deus,21975109175,patrickdev3@gmail.com,2025-09-10 17:20:10.147351+00
+paciente,123,123,oscriar@asd123,2025-09-11 01:32:18.726757+00
+paciente,Aryanne Nascimento Martins,32998060801,annemartins3003@gmail.com,2025-09-12 00:18:48.695035+00
+paciente,DANIELLE VIEIRA RIBEIRO FERNANDES,22999904633,danivieiranutrindo@gmail.com,2025-09-16 22:03:34.811402+00
+paciente,Dany,11968274047,danielle.gcv@gmail.com,2025-09-16 23:28:55.095974+00
+paciente,Fredeane Carvalho,83986543822,fredeanef@gmail.com,2025-09-18 10:15:48.754827+00
