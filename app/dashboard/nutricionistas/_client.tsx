@@ -18,6 +18,7 @@ import { AppointmentsTab } from '@/components/dashboard/nutricionistas/appointme
 import SubscriptionCard from '../../../components/SubscriptionCard'
 import NutricionistaTeleconsultasTab from '../../../components/dashboard/nutricionistas/nutritionist-teleconsultation-tab'
 import OverviewTab from '../../../components/dashboard/nutricionistas/overview-tab'
+import NutritionistPresenciaisTab from '../../../components/dashboard/nutricionistas/nutritionist-presenciais-tab'
 import { Bot } from 'lucide-react'
 import { useSubscriptionContext } from '../../../contexts/subscription-context'
 import NutritionistRecentChatsList from './_components/NutriotinistRecentChatsList'
@@ -36,6 +37,7 @@ const TABS = [
   'notificacoes',
   'assinatura',
   'teleconsultas',
+  'presenciais',
 ] as const;
 
 export type Tab = typeof TABS[ number ];
@@ -210,6 +212,12 @@ export default function NutritionistDashboard() {
         {activeTab === 'teleconsultas' && (
           <div className="space-y-8">
             <NutricionistaTeleconsultasTab />
+          </div>
+        )}
+
+        {activeTab === 'presenciais' && nutritionistProfile?.id && (
+          <div className="space-y-8">
+            <NutritionistPresenciaisTab nutritionistId={nutritionistProfile.id} />
           </div>
         )}
       </div>

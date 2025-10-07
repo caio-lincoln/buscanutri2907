@@ -81,6 +81,7 @@ export default function AgendarPage() {
   const [ profile, setProfile ] = useState<PatientProfile | null>(null)
   const [ booking, setBooking ] = useState(false)
   const [ step, setStep ] = useState<'search' | 'schedule'>('search')
+  const [ consultationType, setConsultationType ] = useState<'online' | 'presential'>('online')
 
   useEffect(() => {
     if (nutritionistId && nutritionists.length > 0) {
@@ -234,6 +235,16 @@ export default function AgendarPage() {
     }
   }
 
+  const handlePresentialConfirm = () => {
+    if (!selectedSlot || !selectedNutritionist) {
+      toast.error('Selecione um horário para continuar')
+      return
+    }
+    const dateStr = selectedSlot.date
+    const timeStr = selectedSlot.time
+    router.push(`/dashboard/paciente/confirmar-presencial/${selectedNutritionist.user_id}?date=${encodeURIComponent(dateStr)}&time=${encodeURIComponent(timeStr)}`)
+  }
+
   // const handleBooking = async () => {
   //   if (!selectedSlot || !profile || !selectedNutritionist) {
   //     toast.error('Selecione um horário para continuar')
@@ -310,12 +321,14 @@ export default function AgendarPage() {
         </Button>
         <div>
           <h1 className="text-3xl font-bold text-gray-900">
-            {step === 'search' ? 'Buscar Nutricionista' : 'Agendar Teleconsulta'}
+            {step === 'search' ? 'Buscar Nutricionista' : consultationType === 'online' ? 'Agendar Teleconsulta' : 'Agendar Consulta Presencial'}
           </h1>
           <p className="text-gray-600">
             {step === 'search'
-              ? 'Encontre o nutricionista ideal para sua teleconsulta'
-              : 'Escolha o melhor horário para sua consulta online'
+              ? 'Encontre o nutricionista ideal para sua consulta'
+              : consultationType === 'online'
+                ? 'Escolha o melhor horário para sua consulta online'
+                : 'Escolha o melhor horário para sua consulta presencial'
             }
           </p>
         </div>
@@ -517,10 +530,32 @@ export default function AgendarPage() {
           <div className="lg:col-span-1">
             <Card className="sticky top-4">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Video className="h-5 w-5 text-green-600" />
-                  Teleconsulta
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    {consultationType === 'online' ? (
+                      <Video className="h-5 w-5 text-green-600" />
+                    ) : (
+                      <MapPin className="h-5 w-5 text-green-600" />
+                    )}
+                    {consultationType === 'online' ? 'Teleconsulta' : 'Consulta Presencial'}
+                  </CardTitle>
+                  <div className="flex gap-2">
+                    <Button
+                      variant={consultationType === 'online' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setConsultationType('online')}
+                    >
+                      Teleconsulta
+                    </Button>
+                    <Button
+                      variant={consultationType === 'presential' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setConsultationType('presential')}
+                    >
+                      Presencial
+                    </Button>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent className="space-y-6">
                 {selectedNutritionist && (
@@ -604,13 +639,22 @@ export default function AgendarPage() {
                             </span>
                           </div>
                         </div>
-                        <Button
-                          onClick={handleBooking}
-                          disabled={booking}
-                          className="w-full mt-4"
-                        >
-                          {booking ? 'Agendando...' : 'Confirmar Agendamento'}
-                        </Button>
+                        {consultationType === 'online' ? (
+                          <Button
+                            onClick={handleBooking}
+                            disabled={booking}
+                            className="w-full mt-4"
+                          >
+                            {booking ? 'Agendando...' : 'Confirmar Teleconsulta'}
+                          </Button>
+                        ) : (
+                          <Button
+                            onClick={handlePresentialConfirm}
+                            className="w-full mt-4"
+                          >
+                            Confirmar Consulta Presencial
+                          </Button>
+                        )}
                       </div>
                     )}
                   </>

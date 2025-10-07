@@ -11,6 +11,7 @@ import RecentChatsList from '@/components/recent-chats-list'
 import { PatientForumTab } from '@/components/patient-forum-tab'
 
 import TeleconsultasPage from './teleconsultas/page'
+import PresenciaisPage from './presenciais/page'
 import OverviewTab from './_components/OverviewTab'
 import BuscarTab from './_components/BuscarTab'
 import IrisTab from './_components/IrisTab'
@@ -21,6 +22,7 @@ import { createSupabaseClient } from '../../../lib/supabase'
 const TABS = [
   'overview',
   'teleconsultas',
+  'presenciais',
   'buscar',
   'chat',
   'cursos',
@@ -178,6 +180,20 @@ export default function PatientDashboard() {
           <PerfilTab anamneseData={anamneseData} />
         )}
 
+        {/* Teleconsultas */}
+        {activeTab === 'teleconsultas' && (
+          <div className="space-y-8">
+            <TeleconsultasPage />
+          </div>
+        )}
+
+        {/* Presenciais */}
+        {activeTab === 'presenciais' && (
+          <div className="space-y-8">
+            <PresenciaisPage />
+          </div>
+        )}
+
         {/* Conteúdo padrão para outras abas */}
         {![
           'overview',
@@ -187,9 +203,11 @@ export default function PatientDashboard() {
           'perfil',
           'chat',
           'duvidas',
+          'teleconsultas',
+          'presenciais',
         ].includes(activeTab) && (
             <div className="space-y-8">
-              <TeleconsultasPage />
+              {/* Aba desconhecida: nada a renderizar */}
             </div>
           )}
       </div>

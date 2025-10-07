@@ -50,6 +50,7 @@ import {
   Home,
   Bot,
   CreditCard,
+  MapPin,
 } from 'lucide-react'
 import Image from 'next/image'
 import { useMediaQuery } from '../hooks/use-media-query'
@@ -493,6 +494,7 @@ export const getMenuItems = (
           href: '/dashboard/paciente/teleconsultas',
           badge: upcomingAppointments > 0 ? { count: upcomingAppointments, variant: 'default' } : undefined,
         },
+        { id: 'presenciais', label: 'Presenciais', icon: MapPin, href: '/dashboard/paciente/presenciais' },
         { id: 'buscar', label: 'Buscar', icon: Search },
         { id: 'chat', label: 'Chat', icon: MessageSquare },
         { id: 'duvidas', label: 'Fórum', icon: HelpCircle },
@@ -517,6 +519,7 @@ export const getMenuItems = (
           icon: Video,
           href: '/dashboard/nutricionistas/teleconsultas',
         },
+        { id: 'presenciais', label: 'Presenciais', icon: MapPin },
         { id: 'chat', label: 'Chat', icon: MessageSquare },
         { id: 'blog', label: 'Blog', icon: BookOpen },
         { id: 'forum', label: 'Fórum', icon: MessageSquare },
