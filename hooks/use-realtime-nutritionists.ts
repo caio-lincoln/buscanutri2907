@@ -24,6 +24,8 @@ export interface UseRealtimeNutritionistsProps {
   searchTerm?: string | undefined
   specialty?: string | undefined
   state?: string | undefined
+  city?: string | undefined
+  region?: 'Norte' | 'Nordeste' | 'Centro-Oeste' | 'Sudeste' | 'Sul' | undefined
   priceRange?: { min: number; max: number } | undefined
   onlineOnly?: boolean | undefined
   verifiedOnly?: boolean | undefined
@@ -49,6 +51,15 @@ export function useRealtimeNutritionists(filters: UseRealtimeNutritionistsProps 
       setLoading(true)
       setError(null)
 
+      // Mapa de estados por região (UFs)
+      const REGION_STATES: Record<string, string[]> = {
+        'Norte': [ 'AC', 'AP', 'AM', 'PA', 'RO', 'RR', 'TO' ],
+        'Nordeste': [ 'AL', 'BA', 'CE', 'MA', 'PB', 'PE', 'PI', 'RN', 'SE' ],
+        'Centro-Oeste': [ 'GO', 'MT', 'MS', 'DF' ],
+        'Sudeste': [ 'ES', 'MG', 'RJ', 'SP' ],
+        'Sul': [ 'PR', 'RS', 'SC' ],
+      }
+
       // specialty: inner join só quando filtra
       const specJoin =
         filters.specialty && filters.specialty !== 'Todas'
@@ -61,9 +72,11 @@ export function useRealtimeNutritionists(filters: UseRealtimeNutritionistsProps 
              specialties:specialties ( id, name )
            )`
 
-      // addresses: inner join só quando filtra UF
+      // addresses: inner join quando filtra por UF, cidade ou região
       const addrJoin =
-        filters.state && filters.state !== 'Todas'
+        (filters.state && filters.state !== 'Todas') ||
+        (filters.city && filters.city !== 'Todas') ||
+        (filters.region && filters.region !== 'Todas')
           ? `,nutritionist_addresses!inner(*)`
           : `,nutritionist_addresses(*)`
 
@@ -101,6 +114,19 @@ export function useRealtimeNutritionists(filters: UseRealtimeNutritionistsProps 
         query = query.eq('nutritionist_addresses.state', filters.state)
         // se preferir por nome completo do estado (quando sua UI envia o nome):
         // query = query.ilike('nutritionist_addresses.state', `%${filters.state}%`)
+      }
+
+      // filtro por cidade
+      if (filters.city && filters.city !== 'Todas') {
+        query = query.eq('nutritionist_addresses.city', filters.city)
+      }
+
+      // filtro por região (aplica IN nos estados da região)
+      if (filters.region && filters.region !== 'Todas') {
+        const ufs = REGION_STATES[ filters.region ] || []
+        if (ufs.length > 0) {
+          query = query.in('nutritionist_addresses.state', ufs)
+        }
       }
 
       if (filters.verifiedOnly) {

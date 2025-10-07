@@ -8,6 +8,7 @@ import { SessionTrackerProvider } from '@/components/session-tracker-provider'
 import { Suspense } from 'react'
 import Script from 'next/script'
 import MetaPixelRouteChange from './MetaPixelRouteChange'
+import { FloatingWhatsApp } from '@/components/FloatingWhatsApp'
 
 const inter = Inter({ subsets: [ 'latin' ] })
 
@@ -64,6 +65,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               {children}
               <Toaster />
               <Sonner />
+              <FloatingWhatsApp />
             </Suspense>
           </SessionTrackerProvider>
         </AuthProvider>

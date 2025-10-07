@@ -16,8 +16,6 @@ const ALLOWED_FILES = [
   'lib/storage/migrations.ts',
   'lib/storage/storage-service.ts',
   'components/client-only.tsx', // Contém fallback
-  'app/test-notifications/page.tsx', // Contém fallback
-  '__tests__/**/*.test.ts', // Testes podem usar localStorage
   'scripts/check-no-localstorage.js', // Este próprio script
   'VERCEL_DEPLOY_FIXES.md', // Documentação
   'MUDANCAS_AUTENTICACAO.md', // Documentação
@@ -153,11 +151,7 @@ function checkPackageJson() {
     const packagePath = path.join(PROJECT_ROOT, 'package.json')
     const packageJson = JSON.parse(fs.readFileSync(packagePath, 'utf8'))
     
-    // Verificar se há script de teste
-    if (!packageJson.scripts?.test) {
-      log('⚠️  Recomendação: Adicione um script de teste ao package.json', 'yellow')
-      log('   "test": "jest"', 'yellow')
-    }
+    // Ambiente de produção: não recomendar scripts de teste
     
     // Verificar se há script de lint
     if (!packageJson.scripts?.lint) {

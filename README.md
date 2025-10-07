@@ -99,12 +99,6 @@ await storage.set('user_data', {
 
 ### Desenvolvimento
 
-#### Executar Testes
-
-```bash
-npm test
-```
-
 #### Verificar Ausência de localStorage
 
 ```bash
@@ -138,15 +132,10 @@ lib/storage/
     └── memory-adapter.ts
 ```
 
-### Arquivos de Teste
+### Observações de Qualidade
 
-```
-__tests__/storage/
-├── adapters.test.ts         # Testes dos adapters
-├── migrations.test.ts       # Testes de migração
-├── validation.test.ts       # Testes de validação
-└── storage-service.test.ts  # Testes do serviço principal
-```
+- O projeto utiliza `ESLint`, `Prettier` e `TypeScript strict` para garantir qualidade.
+- Hooks de `husky` e `lint-staged` podem estar configurados para verificar código antes de commits.
 
 ## Contribuição
 
