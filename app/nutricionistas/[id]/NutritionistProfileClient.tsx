@@ -119,6 +119,7 @@ interface NutritionistProfileClientProps {
 export default function NutritionistProfilePageClient({
   nutritionist,
 }: NutritionistProfileClientProps) {
+  console.log("🚀 ~ NutritionistProfilePageClient ~ nutritionist:", nutritionist)
   const [ mobileMenuOpen, setMobileMenuOpen ] = useState(false)
   const { viewStats, recordView } = useRealtimeProfileViews(nutritionist.id, {
     totalViews: nutritionist.totalViews || 0,
@@ -143,7 +144,7 @@ export default function NutritionistProfilePageClient({
   const formattedRating = nutritionist.rating?.toFixed(1) || '0.0'
   const formattedReviews = nutritionist.total_reviews || 0
   const formattedExperience = nutritionist.experience_years || 0
-  const formattedPatients = 0 
+  const formattedPatients = 0
   const formattedPrice = nutritionist.consultation_price || 0
   // Gerar variantes de imagem otimizadas
   const avatarVariants = generateImageVariants(
@@ -562,7 +563,7 @@ export default function NutritionistProfilePageClient({
 
           {/* Quick Actions */}
           <div className="flex flex-wrap gap-4 mb-8">
-            <Link href={`/dashboard/paciente/agendar?nutritionistId=${nutritionist.id}`}>
+            {nutritionist.service_consultation_price && <Link href={`/dashboard/paciente/agendar?nutritionistId=${nutritionist.id}`}>
               <Button
                 size="lg"
                 className="bg-[#4AB0D9] hover:bg-[#4AB0D9]/90 text-white"
@@ -570,7 +571,7 @@ export default function NutritionistProfilePageClient({
                 <Calendar className="h-5 w-5 mr-2" />
                 Agendar Consulta
               </Button>
-            </Link>
+            </Link>}
             <Button
               onClick={async () => {
                 try {
@@ -1190,14 +1191,14 @@ export default function NutritionistProfilePageClient({
                     Agende sua consulta e inicie sua jornada rumo ao bem-estar
                   </p>
                   <div className="space-y-3">
-                    <Link
+                    {nutritionist?.service_consultation_price && <Link
                       href={`/dashboard/paciente/agendar?nutritionistId=${nutritionist.id}`}
                     >
                       <Button className="w-full bg-[#4AB0D9] hover:bg-[#4AB0D9]/90 text-white text-lg py-3">
                         <Calendar className="h-5 w-5 mr-2" />
                         Agendar Consulta
                       </Button>
-                    </Link>
+                    </Link>}
                     <Button
                       onClick={async () => {
                         try {

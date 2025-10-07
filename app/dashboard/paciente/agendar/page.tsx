@@ -93,7 +93,7 @@ export default function AgendarPage() {
   }, [ searchParams, nutritionists ])
 
   useEffect(() => {
-    if (!authLoading && !user) {
+    if ((!authLoading && !user) || (!patientProfile)) {
       router.push('/login')
       return
     }
