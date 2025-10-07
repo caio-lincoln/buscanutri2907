@@ -119,7 +119,6 @@ interface NutritionistProfileClientProps {
 export default function NutritionistProfilePageClient({
   nutritionist,
 }: NutritionistProfileClientProps) {
-  console.log("🚀 ~ NutritionistProfilePageClient ~ nutritionist:", nutritionist)
   const [ mobileMenuOpen, setMobileMenuOpen ] = useState(false)
   const { viewStats, recordView } = useRealtimeProfileViews(nutritionist.id, {
     totalViews: nutritionist.totalViews || 0,
@@ -563,7 +562,7 @@ export default function NutritionistProfilePageClient({
 
           {/* Quick Actions */}
           <div className="flex flex-wrap gap-4 mb-8">
-            {nutritionist.service_consultation_price && <Link href={`/dashboard/paciente/agendar?nutritionistId=${nutritionist.id}`}>
+            {nutritionist.consultation_price && <Link href={`/dashboard/paciente/agendar?nutritionistId=${nutritionist.id}`}>
               <Button
                 size="lg"
                 className="bg-[#4AB0D9] hover:bg-[#4AB0D9]/90 text-white"
@@ -1191,7 +1190,7 @@ export default function NutritionistProfilePageClient({
                     Agende sua consulta e inicie sua jornada rumo ao bem-estar
                   </p>
                   <div className="space-y-3">
-                    {nutritionist?.service_consultation_price && <Link
+                    {nutritionist?.consultation_price && <Link
                       href={`/dashboard/paciente/agendar?nutritionistId=${nutritionist.id}`}
                     >
                       <Button className="w-full bg-[#4AB0D9] hover:bg-[#4AB0D9]/90 text-white text-lg py-3">

@@ -85,6 +85,13 @@ export default function AgendarPage() {
   useEffect(() => {
     if (nutritionistId && nutritionists.length > 0) {
       const currentNutritionist = nutritionists.find(nutritionist => nutritionist.id === nutritionistId)
+
+      if (!currentNutritionist?.consultation_price || currentNutritionist.consultation_price <= 0) {
+        toast.error('Nutricionista não está disponível para agendamento.')
+        router.push('/nutricionistas')
+        return
+      }
+
       // Buscar dados do nutricionista específico
       if (currentNutritionist) {
         handleSelectNutritionist(currentNutritionist)
@@ -93,7 +100,7 @@ export default function AgendarPage() {
   }, [ searchParams, nutritionists ])
 
   useEffect(() => {
-    if ((!authLoading && !user) || (!patientProfile)) {
+    if ((!authLoading && !user)) {
       router.push('/login')
       return
     }
@@ -104,7 +111,7 @@ export default function AgendarPage() {
         loadNutritionists()
       }
     }
-  }, [ user, authLoading, step, searchTerm, selectedSpecialty, selectedState, selectedPriceRange, onlineOnly, sortBy ])
+  }, [ user, authLoading, step, searchTerm, selectedSpecialty, selectedState, selectedPriceRange, onlineOnly, sortBy, patientProfile ])
 
   const loadProfile = async () => {
     try {

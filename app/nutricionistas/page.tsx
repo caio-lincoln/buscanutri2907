@@ -786,13 +786,8 @@ export default function NutricionistasPage() {
                   </SelectContent>
                 </Select>
 
-<<<<<<< HEAD
                 {/* Cidade
                  <Select value={selectedState} onValueChange={setSelectedState}>
-=======
-                {/* Cidade */}
-                <Select value={selectedCity} onValueChange={setSelectedCity}>
->>>>>>> 34fb207b14e4b38d628d67b9c424487527b8fffa
                   <SelectTrigger className="h-12">
                     <SelectValue placeholder="Cidade" />
                   </SelectTrigger>
