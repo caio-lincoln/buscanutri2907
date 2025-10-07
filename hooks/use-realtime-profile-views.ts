@@ -79,7 +79,6 @@ export function useRealtimeProfileViews(
           filter: `id=eq.${nutritionistId}`,
         },
         payload => {
-          console.log("🚀 ~ useRealtimeProfileViews ~ payload:", payload)
           // Atualizar estatísticas quando uma nova visualização é inserida
           handleNewView()
         }

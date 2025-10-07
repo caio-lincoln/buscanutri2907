@@ -771,7 +771,7 @@ export default function NutricionistasPage() {
                     ))}
                   </SelectContent>
                 </Select>
-                
+
                 {/* Estado */}
                 <Select value={selectedState} onValueChange={setSelectedState}>
                   <SelectTrigger className="h-12">
@@ -786,8 +786,8 @@ export default function NutricionistasPage() {
                   </SelectContent>
                 </Select>
 
-                {/* Cidade */}
-                <Select value={selectedCity} onValueChange={setSelectedCity}>
+                {/* Cidade
+                 <Select value={selectedState} onValueChange={setSelectedState}>
                   <SelectTrigger className="h-12">
                     <SelectValue placeholder="Cidade" />
                   </SelectTrigger>
@@ -1101,13 +1101,13 @@ export default function NutricionistasPage() {
                                 </Button>
                               </Link>
 
-                              <Link
+                             {formatted.price > 0 && <Link
                                 href={`/dashboard/paciente/agendar?nutritionistId=${nutritionist.id}`}
                               >
                                 <Button className="flex-1 bg-[#4AB0D9] hover:bg-[#4AB0D9]/90 text-white">
                                   Agendar
                                 </Button>
-                              </Link>
+                              </Link>}
                             </div>
                           </div>
                         </div>
