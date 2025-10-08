@@ -3,30 +3,22 @@
 import type React from 'react'
 
 import { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
   Users,
   Eye,
   TrendingUp,
-  TrendingDown,
   BarChart,
-  LineChart,
-  PieChart,
-  Globe,
-  Clock,
   Download,
   CalendarIcon,
   UserPlus,
-  Target,
   BarChart3,
-  MapPin,
   Activity,
-  Filter,
 } from 'lucide-react'
 import type { DateRange } from 'react-day-picker'
-import { format, subDays, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns'
+import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { Calendar } from '@/components/ui/calendar'
 import {
@@ -34,8 +26,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
-import { cn } from '@/lib/utils'
-import { DecolarCalendar } from '@/components/ui/decolar-calendar'
+// Removed unused helpers after UI simplification
 
 interface AnalyticsData {
   metrics: {
@@ -43,10 +34,6 @@ interface AnalyticsData {
     siteVisitsChange: string
     newRegistrations: number
     newRegistrationsChange: string
-    conversionRate: string
-    conversionRateChange: string
-    avgTimeOnSite: string
-    avgTimeOnSiteChange: string
   }
   usersByType: {
     patients: number
@@ -58,20 +45,11 @@ interface AnalyticsData {
   totalConsultations: number
   consultations30Days: number
   consultationsChange: string
-  totalPayments: number
-  payments30Days: number
-  totalRevenue: number
-  revenue30Days: number
-  revenueChange: string
   totalSubscriptions: number
-  activeSubscriptions: number
-  subscriptions30Days: number
-  subscriptionsChange: string
   totalPosts: number
   posts30Days: number
   totalLikes: number
   totalComments: number
-  topLocations: Array<{ state: string; count: number }>
   trafficData: Array<{ date: string; visitors: number; newUsers: number }>
 }
 
@@ -192,12 +170,7 @@ export default function AnalyticsTab() {
     return new Intl.NumberFormat('pt-BR').format(num)
   }
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value)
-  }
+  // Removed currency formatter since financial data was dropped
 
   const formatDateRange = () => {
     if (!dateRange?.from || !dateRange?.to) return 'Selecione um período'
@@ -345,20 +318,6 @@ export default function AnalyticsTab() {
           changeType={analyticsData.metrics.newRegistrationsChange.startsWith('+') ? 'positive' : 'negative'}
           icon={<UserPlus className="h-4 w-4 text-muted-foreground" />}
         />
-        <MetricCard
-          title="Taxa de Conversão"
-          value={`${analyticsData.metrics.conversionRate}%`}
-          change={analyticsData.metrics.conversionRateChange}
-          changeType={analyticsData.metrics.conversionRateChange.startsWith('+') ? 'positive' : 'negative'}
-          icon={<Target className="h-4 w-4 text-muted-foreground" />}
-        />
-        <MetricCard
-          title="Tempo Médio no Site"
-          value={analyticsData.metrics.avgTimeOnSite}
-          change={analyticsData.metrics.avgTimeOnSiteChange}
-          changeType={analyticsData.metrics.avgTimeOnSiteChange.startsWith('+') ? 'positive' : 'negative'}
-          icon={<Clock className="h-4 w-4 text-muted-foreground" />}
-        />
       </div>
 
       {/* Cadastros por Tipo de Usuário */}
@@ -432,66 +391,6 @@ export default function AnalyticsTab() {
       </Card>
 
       {/* Dados Financeiros */}
-      <Card className="border-0 shadow-md bg-white/80 backdrop-blur-sm">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-base font-medium">Dados Financeiros</CardTitle>
-          <Button variant="outline" size="sm">
-            <Download className="mr-2 h-4 w-4" />
-            Relatório Financeiro
-          </Button>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="text-center p-4 bg-green-50 rounded-lg">
-              <TrendingUp className="h-8 w-8 text-green-600 mx-auto mb-2" />
-              <p className="text-2xl font-bold text-green-600">{formatCurrency(analyticsData.totalRevenue)}</p>
-              <p className="text-sm text-gray-600">Receita Total</p>
-            </div>
-            <div className="text-center p-4 bg-blue-50 rounded-lg">
-              <BarChart className="h-8 w-8 text-blue-600 mx-auto mb-2" />
-              <p className="text-2xl font-bold text-blue-600">{formatCurrency(analyticsData.revenue30Days)}</p>
-              <p className="text-sm text-gray-600">Receita (30 dias)</p>
-            </div>
-            <div className="text-center p-4 bg-purple-50 rounded-lg">
-              <PieChart className="h-8 w-8 text-purple-600 mx-auto mb-2" />
-              <p className="text-2xl font-bold text-purple-600">{formatNumber(analyticsData.totalPayments)}</p>
-              <p className="text-sm text-gray-600">Total de Pagamentos</p>
-            </div>
-            <div className="text-center p-4 bg-orange-50 rounded-lg">
-              <Users className="h-8 w-8 text-orange-600 mx-auto mb-2" />
-              <p className="text-2xl font-bold text-orange-600">{formatNumber(analyticsData.activeSubscriptions)}</p>
-              <p className="text-sm text-gray-600">Assinaturas Ativas</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Usuários por Localização */}
-      <Card className="border-0 shadow-md bg-white/80 backdrop-blur-sm">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-base font-medium">Usuários por Localização</CardTitle>
-          <Button variant="outline" size="sm">
-            <Download className="mr-2 h-4 w-4" />
-            Dados de Localização
-          </Button>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {analyticsData.topLocations.slice(0, 5).map((location, index) => (
-              <div key={location.state} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <MapPin className="h-4 w-4 text-gray-600" />
-                  <span className="font-medium">{location.state}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-600">{formatNumber(location.count)} usuários</span>
-                  <Badge variant="secondary">#{index + 1}</Badge>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Engajamento de Conteúdo */}
       <Card className="border-0 shadow-md bg-white/80 backdrop-blur-sm">
@@ -522,14 +421,6 @@ export default function AnalyticsTab() {
             </div>
           </div>
           <div className="mt-4 flex gap-2">
-            <Button variant="outline" size="sm">
-              <Download className="mr-2 h-4 w-4" />
-              Dados Financeiros
-            </Button>
-            <Button variant="outline" size="sm">
-              <Download className="mr-2 h-4 w-4" />
-              Dados de Engajamento
-            </Button>
           </div>
         </CardContent>
       </Card>

@@ -168,11 +168,12 @@ export async function GET(request: NextRequest) {
     const newUsersInPeriod = usersData?.length || 0
     const previousUsersCount = previousUsersData?.length || 0
     
+    // Cadastros por Tipo de Usuário (totais reais no Supabase)
     const usersByType = {
-      patients: usersData?.filter(user => user.user_type === 'patient').length || 0,
-      nutritionists: usersData?.filter(user => user.user_type === 'nutritionist').length || 0,
-      companies: usersData?.filter(user => user.user_type === 'company').length || 0,
-      admins: usersData?.filter(user => user.user_type === 'admin').length || 0
+      patients: allUsersData?.filter(user => user.user_type === 'paciente').length || 0,
+      nutritionists: allUsersData?.filter(user => user.user_type === 'nutricionista').length || 0,
+      companies: allUsersData?.filter(user => user.user_type === 'empresa').length || 0,
+      admins: allUsersData?.filter(user => user.user_type === 'admin').length || 0
     }
 
     // Total de usuários (todos os tempos)
