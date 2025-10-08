@@ -56,7 +56,7 @@ export default function TeleconsultasPage() {
 
   const [profile, setProfile] = useState<PatientProfile | null>(null)
   const [sessions, setSessions] = useState<TeleconsultaSession[]>([])
-  const [isFetching, setIsFetching] = useState(false)         // estado “real” de busca
+  const [isFetching, setIsFetching] = useState(false)         // estado "real" de busca
   const [loadingVisible, setLoadingVisible] = useState(false) // loading com debounce visual
   const [isExpanded, setIsExpanded] = useState(false)
 
@@ -78,7 +78,7 @@ export default function TeleconsultasPage() {
     priceMax: filters.priceMax,
   }), [filters])
 
-  // debounce de 500ms para evitar “chatter” no servidor
+  // debounce de 500ms para evitar "chatter" no servidor
   const debouncedServerFilters = useDebouncedValue(serverFilters, 500)
 
   // debounce visual do spinner (evita piscar em buscas muito rápidas)

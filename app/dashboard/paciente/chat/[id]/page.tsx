@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useMemo } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -33,7 +33,8 @@ import Link from 'next/link'
 import { DashboardSidebar, getMenuItems } from '@/components/dashboard-sidebar'
 import { useDashboardStats } from '@/hooks/use-dashboard-stats'
 
-export default function PatientChatPage() {
+import React from 'react'
+export default function PatientChatPage(props: { params: Promise<{ id: string }> }) {
   const { user, loading: authLoading, signOut, patientProfile: userProfile } = useAuth()
   // const [userProfile, setUserProfile] = useState<any>(null)
   const [ conversation, setConversation ] = useState<ChatConversation | null>(
@@ -46,8 +47,7 @@ export default function PatientChatPage() {
   const scrollAreaRef = useRef<HTMLDivElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
-  const params = useParams()
-  const conversationId = params.id as string
+  const { id: conversationId } = React.use(props.params)
   const supabase = useMemo(() => createSupabaseClient(), [])
 
   const seenIdsRef = useRef<Set<string>>(new Set())

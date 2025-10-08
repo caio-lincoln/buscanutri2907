@@ -16,8 +16,8 @@ interface PresencialAppointment {
   duration_minutes?: number
   status: 'scheduled' | 'confirmed' | 'completed' | 'cancelled' | 'no_show'
   type: 'consultation' | 'follow_up' | 'emergency'
-  patient_notes?: string | null
-  consultation_fee?: number | null
+  notes?: string | null
+  price?: number | null
   nutritionist_id?: string
   patient_id?: string
   patient?: {
@@ -70,8 +70,8 @@ export default function NutritionistPresenciaisTab({ nutritionistId }: Nutrition
         duration_minutes: row.duration_minutes,
         status: row.status,
         type: row.type,
-        patient_notes: row.patient_notes,
-        consultation_fee: row.consultation_fee,
+        notes: row.patient_notes,
+        price: row.consultation_fee,
         nutritionist_id: row.nutritionist_id,
         patient_id: row.patient_id,
         patient: row.patient,
@@ -201,9 +201,9 @@ export default function NutritionistPresenciaisTab({ nutritionistId }: Nutrition
                           <div className="text-sm text-gray-700">
                             {appt.type === 'consultation' ? 'Consulta' : appt.type === 'follow_up' ? 'Retorno' : 'Emergência'}
                           </div>
-                          {typeof appt.consultation_fee === 'number' && (
+                          {typeof appt.price === 'number' && (
                             <div className="mt-1 font-semibold text-[#1E1D40]">
-                              R$ {appt.consultation_fee.toFixed(2)}
+                              R$ {appt.price.toFixed(2)}
                             </div>
                           )}
                         </div>

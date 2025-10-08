@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useRouter, useParams } from 'next/navigation'
+import { useState, useEffect, use } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -26,10 +26,9 @@ import { toast } from "sonner"
 import { BlogPostsService, UpdateBlogPostData } from '@/lib/blog-posts-service'
 import { BlogPost } from '@/lib/supabase'
 
-export default function EditarPostPage() {
+export default function EditarPostPage({ params }: { params: Promise<{ id: string }> | { id: string } }) {
   const router = useRouter()
-  const params = useParams()
-  const postId = params.id as string
+  const { id: postId } = use(params as any) as { id: string }
   
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)

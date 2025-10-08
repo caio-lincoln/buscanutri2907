@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useParams } from 'next/navigation'
+import React from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
@@ -24,9 +24,8 @@ import { getForumQuestionById, type ForumQuestion } from '@/lib/forum-data'
 import { formatDistanceToNow } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
-export default function DuvidaPacienteDetalhePage() {
-  const params = useParams()
-  const questionId = params.id as string
+export default function DuvidaPacienteDetalhePage(props: { params: Promise<{ id: string }> }) {
+  const { id: questionId } = React.use(props.params)
   const [question, setQuestion] = useState<ForumQuestion | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)

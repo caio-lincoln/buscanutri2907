@@ -22,9 +22,20 @@ interface PresencialAppointment {
   status: AppointmentStatus
   type: 'consultation' | 'follow_up' | 'emergency'
   patient_notes?: string | null
-  consultation_fee?: number | null
+  price?: number | null
   nutritionist_id: string
   patient_id: string
+  address_main?: {
+    is_main?: boolean
+    status?: string
+    type?: string
+    street?: string | null
+    number?: string | null
+    neighborhood?: string | null
+    city?: string | null
+    state?: string | null
+    zip_code?: string | null
+  } | null
   nutritionist: {
     id: string
     full_name: string
@@ -90,25 +101,116 @@ export default function PresenciaisPage() {
       setIsFetching(true)
 
       let q = supabase
-        .from('appointments')
+        .from('in_person_consultations')
         .select(`
-          id, appointment_date, duration_minutes, status, type, patient_notes, consultation_fee, nutritionist_id, patient_id,
-          nutritionist:nutritionist_profiles ( id, full_name, profile_image_url, address ),
-          patient:patient_profiles ( id, full_name, profile_image_url )
+          id, scheduled_at, duration_minutes, status, type, patient_notes, nutritionist_id, patient_id,
+          nutritionist:nutritionist_profiles!in_person_consultations_nutritionist_id_fkey (
+            id, user_id, full_name, profile_image_url, address
+          ),
+          patient:patient_profiles!in_person_consultations_patient_id_fkey ( id, full_name, profile_image_url )
         `)
         .eq('patient_id', patientProfile.id)
-        .eq('is_online', false)
-        .order('appointment_date', { ascending: false })
+        .order('scheduled_at', { ascending: false })
 
       const { status, dateFrom, dateTo } = filters
       if (status && status !== 'all') q = q.eq('status', status)
-      if (dateFrom) q = q.gte('appointment_date', startOfDay(dateFrom).toISOString())
-      if (dateTo) q = q.lte('appointment_date', endOfDay(dateTo).toISOString())
+      if (dateFrom) q = q.gte('scheduled_at', startOfDay(dateFrom).toISOString())
+      if (dateTo) q = q.lte('scheduled_at', endOfDay(dateTo).toISOString())
 
       const { data, error } = await q
       if (error) throw error
+      console.debug('[Presenciais] patientProfile.id:', patientProfile.id, 'rows:', Array.isArray(data) ? data.length : 0)
 
-      setAppointments((data as PresencialAppointment[]) ?? [])
+      // Mapear consultas sem endereço principal, será preenchido depois
+      let mapped = ((data as any[]) || []).map((row: any) => ({
+        id: row.id,
+        appointment_date: row.scheduled_at,
+        duration_minutes: row.duration_minutes,
+        status: row.status,
+        type: row.type,
+        patient_notes: row.patient_notes,
+        price: null,
+        nutritionist_id: row.nutritionist_id,
+        patient_id: row.patient_id,
+        address_main: null,
+        nutritionist: row.nutritionist,
+        patient: row.patient,
+      }))
+
+      // Atualiza imediatamente com as consultas, mesmo sem endereço
+      setAppointments(mapped)
+
+      // Fallback: carregar perfis de nutricionistas em lote se vierem nulos
+      try {
+        const missingNutriIds = Array.from(new Set(
+          mapped
+            .filter((a: any) => !a.nutritionist)
+            .map((a: any) => a.nutritionist_id)
+            .filter((id: any) => Boolean(id))
+        ))
+
+        if (missingNutriIds.length > 0) {
+          const { data: nutriProfiles, error: nutriErr } = await supabase
+            .from('nutritionist_profiles')
+            .select('id, full_name, profile_image_url, address')
+            .in('id', missingNutriIds as string[])
+
+          if (nutriErr) throw nutriErr
+
+          const nutriById: Record<string, any> = {}
+          ;(nutriProfiles || []).forEach((p: any) => { if (p?.id) nutriById[p.id] = p })
+
+          setAppointments(prev => prev.map(a => (
+            a.nutritionist ? a : { ...a, nutritionist: nutriById[a.nutritionist_id] || a.nutritionist }
+          )))
+        }
+      } catch (nutriFallbackErr) {
+        console.warn('Falha ao carregar perfis de nutricionistas (fallback):', nutriFallbackErr)
+      }
+
+      // Buscar endereços principais dos nutricionistas em lote (opcional)
+      try {
+        const nutritionistIds = Array.from(
+          new Set(
+            mapped
+              .map((a: any) => a.nutritionist_id)
+              .filter((id: any) => Boolean(id))
+          )
+        )
+
+        if (nutritionistIds.length > 0) {
+          const { data: addresses, error: addrError } = await supabase
+            .from('nutritionist_addresses')
+            .select(
+              'nutritionist_id, is_main, status, type, street, number, neighborhood, city, state, zip_code'
+            )
+            .in('nutritionist_id', nutritionistIds as string[])
+            .eq('is_main', true)
+            .eq('status', 'active')
+            .eq('type', 'in_person')
+
+          if (addrError) throw addrError
+
+          const byNutritionist: Record<string, any> = {}
+          ;(addresses || []).forEach((addr: any) => {
+            const key = addr?.nutritionist_id
+            if (key && !byNutritionist[key]) {
+              byNutritionist[key] = addr
+            }
+          })
+
+          // Enriquecimento opcional dos endereços
+          setAppointments(prev =>
+            prev.map((a: any) => ({
+              ...a,
+              address_main: byNutritionist[a.nutritionist_id] || a.address_main || null,
+            }))
+          )
+        }
+      } catch (addrErr) {
+        // Não bloquear exibição das consultas por erro de endereço (RLS etc)
+        console.warn('Falha ao carregar endereços principais:', addrErr)
+      }
     } catch (err) {
       console.error('Erro ao carregar consultas presenciais:', err)
       toast.error('Erro ao carregar consultas presenciais')
@@ -118,21 +220,26 @@ export default function PresenciaisPage() {
   }, [supabase, patientProfile?.id, filters])
 
   const textFiltered = appointments.filter(a =>
-    a.nutritionist?.full_name?.toLowerCase().includes((filters.search || '').toLowerCase())
+    ((a.nutritionist?.full_name || '').toLowerCase()).includes((filters.search || '').toLowerCase())
   )
 
-  const upcomingAppointments = textFiltered.filter(a =>
-    (a.status === 'scheduled' || a.status === 'confirmed') && parseISO(a.appointment_date) > new Date()
-  )
-
-  const pastAppointments = textFiltered.filter(a =>
-    a.status === 'completed' || a.status === 'cancelled' || a.status === 'no_show' ||
-    ((a.status === 'scheduled' || a.status === 'confirmed') && parseISO(a.appointment_date) <= new Date())
-  )
+  // Todas as consultas presenciais devem aparecer no Histórico
+  const pastAppointments = textFiltered
 
   const formatDateTime = (iso: string) => {
     const d = parseISO(iso)
     return format(d, "dd 'de' MMMM 'de' yyyy 'às' HH:mm", { locale: ptBR })
+  }
+
+  const formatAddress = (addr?: PresencialAppointment['address_main']) => {
+    if (!addr) return ''
+    const parts = [
+      addr.street && addr.number ? `${addr.street}, ${addr.number}` : addr.street || '',
+      addr.neighborhood || '',
+      addr.city && addr.state ? `${addr.city}/${addr.state}` : addr.city || addr.state || '',
+      addr.zip_code ? `CEP ${addr.zip_code}` : ''
+    ].filter(Boolean)
+    return parts.join(' - ')
   }
 
   if (loadingVisible) {
@@ -168,52 +275,7 @@ export default function PresenciaisPage() {
         className="mb-6"
       />
 
-      {/* Próximas Consultas */}
-      {upcomingAppointments.length > 0 && (
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-green-600" />
-            Próximas Consultas
-          </h2>
-          <div className="grid gap-4">
-            {upcomingAppointments.map(a => (
-              <Card key={a.id} className="border border-gray-200 shadow-sm">
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className={`text-xs px-2 py-1 rounded-full border ${STATUS_CONFIG[a.status].color}`}>
-                          {STATUS_CONFIG[a.status].label}
-                        </span>
-                      </div>
-                      <h3 className="text-lg font-semibold mt-2">{a.nutritionist?.full_name || 'Nutricionista'}</h3>
-                      <div className="mt-2 text-sm text-gray-600 flex items-center gap-2">
-                        <MapPin className="h-4 w-4" />
-                        <span>{a.nutritionist?.address || 'Endereço não informado'}</span>
-                      </div>
-                      <div className="mt-2 text-sm text-gray-600 flex items-center gap-2">
-                        <Calendar className="h-4 w-4" />
-                        <span>{formatDateTime(a.appointment_date)}</span>
-                        <Clock className="h-4 w-4 ml-3" />
-                        <span>{a.duration_minutes} min</span>
-                      </div>
-                    </div>
-                    <div className="flex flex-col items-end gap-2">
-                      <span className="text-xs text-gray-500">Tipo: {a.type === 'follow_up' ? 'Retorno' : a.type === 'emergency' ? 'Emergência' : 'Consulta'}</span>
-                      {a.consultation_fee && (
-                        <span className="text-sm font-medium">R$ {Number(a.consultation_fee).toFixed(2)}</span>
-                      )}
-                      <div className="flex gap-2 mt-2">
-                        <Button variant="outline" size="sm">Ver detalhes</Button>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Removida a seção de Próximas Consultas: todas listadas abaixo em Histórico */}
 
       {/* Histórico */}
       <div>
@@ -243,7 +305,7 @@ export default function PresenciaisPage() {
                       <h3 className="text-lg font-semibold mt-2">{a.nutritionist?.full_name || 'Nutricionista'}</h3>
                       <div className="mt-2 text-sm text-gray-600 flex items-center gap-2">
                         <MapPin className="h-4 w-4" />
-                        <span>{a.nutritionist?.address || 'Endereço não informado'}</span>
+                        <span>{formatAddress(a.address_main) || a.nutritionist?.address || 'Endereço não informado'}</span>
                       </div>
                       <div className="mt-2 text-sm text-gray-600 flex items-center gap-2">
                         <Calendar className="h-4 w-4" />
@@ -251,14 +313,21 @@ export default function PresenciaisPage() {
                         <Clock className="h-4 w-4 ml-3" />
                         <span>{a.duration_minutes} min</span>
                       </div>
+                      {a.patient_notes && (
+                        <div className="mt-3 text-sm text-gray-700">
+                          Observações: {a.patient_notes}
+                        </div>
+                      )}
                     </div>
                     <div className="flex flex-col items-end gap-2">
                       <span className="text-xs text-gray-500">Tipo: {a.type === 'follow_up' ? 'Retorno' : a.type === 'emergency' ? 'Emergência' : 'Consulta'}</span>
-                      {a.consultation_fee && (
-                        <span className="text-sm font-medium">R$ {Number(a.consultation_fee).toFixed(2)}</span>
+                      {a.price && (
+                        <span className="text-sm font-medium">R$ {Number(a.price).toFixed(2)}</span>
                       )}
                       <div className="flex gap-2 mt-2">
-                        <Button variant="outline" size="sm">Ver detalhes</Button>
+                        <Link href={`/dashboard/paciente/presenciais/${a.id}`}>
+                          <Button variant="outline" size="sm">Ver detalhes</Button>
+                        </Link>
                       </div>
                     </div>
                   </div>

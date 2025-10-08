@@ -260,6 +260,7 @@ export function UserProfileModal({
 
   const [ acceptsCorporate, setAcceptsCorporate ] = useState(false)
   const [ acceptsCoupons, setAcceptsCoupons ] = useState(false)
+  const [ publicPriceVisible, setPublicPriceVisible ] = useState(false)
   const [ savingCorporateFlags, setSavingCorporateFlags ] = useState(false)
 
   const [ activeTab, setActiveTab ] = useState('personal')
@@ -439,6 +440,7 @@ export function UserProfileModal({
       if (profile) {
         setAcceptsCorporate(profile.accepts_corporate_plans || false)
         setAcceptsCoupons(profile.aceita_cupons || false)
+        setPublicPriceVisible(profile.public_price_visible || false)
       }
     } catch (error) {
       console.error('Erro ao carregar flags corporativos:', error)
@@ -451,6 +453,7 @@ export function UserProfileModal({
       await updateMyCorporateFlags({
         accepts_corporate_plans: acceptsCorporate,
         aceita_cupons: acceptsCoupons,
+        public_price_visible: publicPriceVisible,
       })
 
       toast({
@@ -1969,67 +1972,79 @@ export function UserProfileModal({
 
                   {userType === 'nutricionista' && (
                     <>
-                      <Card className="mt-6">
-                        <CardHeader>
-                          <CardTitle>Atende no modo corporativo?</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                          <p className="text-sm text-muted-foreground">
-                            Defina se você aceita atender pacientes através de planos corporativos e se disponibiliza cupons de desconto.
-                          </p>
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle>Atende no modo corporativo?</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Defina se você aceita atender pacientes através de planos corporativos e se disponibiliza cupons de desconto.
+          </p>
 
-                          <div className="space-y-4">
-                            <div>
-                              <Label className="text-base font-medium">Aceita planos corporativos?</Label>
-                              <div className="flex gap-2 mt-2">
-                                <Button
-                                  type="button"
-                                  variant={acceptsCorporate ? "default" : "outline"}
-                                  onClick={() => setAcceptsCorporate(true)}
-                                  disabled={savingCorporateFlags}
-                                >
-                                  Sim
-                                </Button>
-                                <Button
-                                  type="button"
-                                  variant={!acceptsCorporate ? "default" : "outline"}
-                                  onClick={() => setAcceptsCorporate(false)}
-                                  disabled={savingCorporateFlags}
-                                >
-                                  Não
-                                </Button>
-                              </div>
-                            </div>
+          <div className="space-y-4">
+            <div>
+              <Label className="text-base font-medium">Aceita planos corporativos?</Label>
+              <div className="flex gap-2 mt-2">
+                <Button
+                  type="button"
+                  variant={acceptsCorporate ? "default" : "outline"}
+                  onClick={() => setAcceptsCorporate(true)}
+                  disabled={savingCorporateFlags}
+                >
+                  Sim
+                </Button>
+                <Button
+                  type="button"
+                  variant={!acceptsCorporate ? "default" : "outline"}
+                  onClick={() => setAcceptsCorporate(false)}
+                  disabled={savingCorporateFlags}
+                >
+                  Não
+                </Button>
+              </div>
+            </div>
 
-                            <div className="flex items-center space-x-2">
-                              <Checkbox
-                                id="aceita-cupons"
-                                checked={acceptsCoupons}
-                                onCheckedChange={(checked) => setAcceptsCoupons(checked as boolean)}
-                                disabled={savingCorporateFlags}
-                              />
-                              <Label htmlFor="aceita-cupons" className="text-sm">
-                                Aceito disponibilizar cupons de desconto para meus pacientes
-                              </Label>
-                            </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="aceita-cupons"
+                checked={acceptsCoupons}
+                onCheckedChange={(checked) => setAcceptsCoupons(checked as boolean)}
+                disabled={savingCorporateFlags}
+              />
+              <Label htmlFor="aceita-cupons" className="text-sm">
+                Aceito disponibilizar cupons de desconto para meus pacientes
+              </Label>
+            </div>
 
-                            <Button
-                              onClick={handleSaveCorporateFlags}
-                              disabled={savingCorporateFlags}
-                              className="w-full"
-                            >
-                              {savingCorporateFlags ? (
-                                <>
-                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                  Salvando...
-                                </>
-                              ) : (
-                                'Salvar preferências'
-                              )}
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="public-price-visible"
+                checked={publicPriceVisible}
+                onCheckedChange={(checked) => setPublicPriceVisible(checked as boolean)}
+                disabled={savingCorporateFlags}
+              />
+              <Label htmlFor="public-price-visible" className="text-sm">
+                Exibir o preço da consulta publicamente
+              </Label>
+            </div>
+
+            <Button
+              onClick={handleSaveCorporateFlags}
+              disabled={savingCorporateFlags}
+              className="w-full"
+            >
+              {savingCorporateFlags ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Salvando...
+                </>
+              ) : (
+                'Salvar preferências'
+              )}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
 
                       <Card className="mt-6">

@@ -445,7 +445,7 @@ const SUBS_GATE_BY_ROLE: Record<string, Set<string>> = {
   // se quiser aplicar para outras roles depois
 }
 
-// Aplica o “gate” de assinatura
+// Aplica o "gate" de assinatura
 function applySubscriptionGate(
   items: DashboardMenuItem[],
   userType: string,

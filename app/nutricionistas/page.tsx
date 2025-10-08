@@ -1082,7 +1082,7 @@ export default function NutricionistasPage() {
                               <div className="text-2xl font-bold text-[#4AB0D9]">
                                 {formatted.price > 0
                                   ? `R$ ${formatted.price}`
-                                  : 'Consultar'}
+                                  : 'Preço a Consultar'}
                               </div>
                               <p className="text-xs text-[#1E1D40]/70">
                                 por consulta
@@ -1102,11 +1102,17 @@ export default function NutricionistasPage() {
                               </Link>
 
                              {formatted.price > 0 && <Link
-                                href={`/dashboard/paciente/agendar?nutritionistId=${nutritionist.id}`}
+                               href={`/dashboard/paciente/agendar?nutritionistId=${nutritionist.id}`}
                               >
-                                <Button className="flex-1 bg-[#4AB0D9] hover:bg-[#4AB0D9]/90 text-white">
-                                  Agendar
-                                </Button>
+                                {nutritionist.consultation_price && (nutritionist.online_consultation_available || (nutritionist as any)?.service_online_available) ? (
+                                  <Button className="flex-1 bg-[#4AB0D9] hover:bg-[#4AB0D9]/90 text-white">
+                                    Agendar
+                                  </Button>
+                                ) : (
+                                  <span className="text-xs text-yellow-700 bg-yellow-50 border border-yellow-200 rounded px-2 py-1">
+                                    Indisponível para agendamento
+                                  </span>
+                                )}
                               </Link>}
                             </div>
                           </div>

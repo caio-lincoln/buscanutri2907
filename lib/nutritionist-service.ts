@@ -38,7 +38,9 @@ export function formatNutritionistData(
   const formattedRating = nutritionist.rating || 0
   const formattedReviews = nutritionist.total_reviews || 0
   const formattedExperience = nutritionist.experience_years || 0
-  const formattedPrice = nutritionist.consultation_price || 0
+  const formattedPrice = nutritionist.public_price_visible === false
+    ? null
+    : (nutritionist.consultation_price || 0)
   const formattedBio = nutritionist.bio || 'Sem biografia disponível.'
   const formattedImage =
     nutritionist?.profile_image_url ||

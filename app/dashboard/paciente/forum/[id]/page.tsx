@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
@@ -78,10 +78,10 @@ const formatQuestionDate = (timestamp: string): string => {
   }
 }
 
-export default function PatientForumQuestionPage() {
-  const params = useParams()
+import React from 'react'
+export default function PatientForumQuestionPage(props: { params: Promise<{ id: string }> }) {
   const router = useRouter()
-  const questionId = params.id as string
+  const { id: questionId } = React.use(props.params)
 
   const [question, setQuestion] = useState<ForumQuestion | null>(null)
   const [loading, setLoading] = useState(true)

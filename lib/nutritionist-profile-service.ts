@@ -3,6 +3,7 @@ import { createSupabaseClient } from '@/lib/supabase'
 export type CorporateFlags = {
   accepts_corporate_plans?: boolean
   aceita_cupons?: boolean
+  public_price_visible?: boolean
 }
 
 const supabase = createSupabaseClient()
@@ -12,7 +13,7 @@ export async function getMyNutritionistProfileMinimal() {
   if (!user) return null
   const { data } = await supabase
     .from('nutritionist_profiles')
-    .select('id, user_id, full_name, accepts_corporate_plans, aceita_cupons')
+    .select('id, user_id, full_name, accepts_corporate_plans, aceita_cupons, public_price_visible')
     .eq('user_id', user.id)
     .maybeSingle()
   return data

@@ -144,7 +144,9 @@ export default function NutritionistProfilePageClient({
   const formattedReviews = nutritionist.total_reviews || 0
   const formattedExperience = nutritionist.experience_years || 0
   const formattedPatients = 0
-  const formattedPrice = nutritionist.consultation_price || 0
+const formattedPrice = (nutritionist as any)?.public_price_visible === false
+  ? null
+  : (nutritionist.consultation_price || 0)
   // Gerar variantes de imagem otimizadas
   const avatarVariants = generateImageVariants(
     nutritionist?.profile_image_url,
@@ -550,10 +552,20 @@ export default function NutritionistProfilePageClient({
                   </div>
 
                   <div className="text-right">
-                    <div className="text-3xl font-bold text-[#4AB0D9] mb-1">
-                      R$ {formattedPrice}
-                    </div>
-                    <p className="text-sm text-[#1E1D40]/70">a partir de</p>
+                    {(nutritionist as any)?.public_price_visible === false ? (
+                      <>
+                        <div className="text-3xl font-bold text-[#4AB0D9] mb-1">Preço a Consultar</div>
+                      </>
+                    ) : formattedPrice && formattedPrice > 0 ? (
+                      <>
+                        <div className="text-3xl font-bold text-[#4AB0D9] mb-1">R$ {formattedPrice}</div>
+                        <p className="text-sm text-[#1E1D40]/70">a partir de</p>
+                      </>
+                    ) : (
+                      <>
+                        <div className="text-3xl font-bold text-[#4AB0D9] mb-1">Preço a Consultar</div>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
@@ -562,7 +574,7 @@ export default function NutritionistProfilePageClient({
 
           {/* Quick Actions */}
           <div className="flex flex-wrap gap-4 mb-8">
-            {nutritionist.consultation_price && <Link href={`/dashboard/paciente/agendar?nutritionistId=${nutritionist.id}`}>
+            {(nutritionist as any)?.public_price_visible !== false && nutritionist.consultation_price && <Link href={`/dashboard/paciente/agendar?nutritionistId=${nutritionist.id}`}>
               <Button
                 size="lg"
                 className="bg-[#4AB0D9] hover:bg-[#4AB0D9]/90 text-white"
@@ -832,7 +844,9 @@ export default function NutritionistProfilePageClient({
 
                             <div className="text-center md:text-right mt-5">
                               <div className="text-3xl font-bold text-[#4AB0D9] mb-2">
-                                R$ {service.price}
+                                {(nutritionist as any)?.public_price_visible === false
+                                  ? 'Preço a Consultar'
+                                  : `R$ ${service.price}`}
                               </div>
                               {/* <Link
                                 href={`/dashboard/paciente/agendar?nutritionistId=${nutritionist.id}`}
@@ -1190,14 +1204,26 @@ export default function NutritionistProfilePageClient({
                     Agende sua consulta e inicie sua jornada rumo ao bem-estar
                   </p>
                   <div className="space-y-3">
-                    {nutritionist?.consultation_price && <Link
-                      href={`/dashboard/paciente/agendar?nutritionistId=${nutritionist.id}`}
-                    >
-                      <Button className="w-full bg-[#4AB0D9] hover:bg-[#4AB0D9]/90 text-white text-lg py-3">
-                        <Calendar className="h-5 w-5 mr-2" />
-                        Agendar Consulta
-                      </Button>
-                    </Link>}
+                    {(nutritionist as any)?.public_price_visible !== false && nutritionist?.consultation_price && (nutritionist?.online_consultation_available || (nutritionist as any)?.service_online_available) ? (
+                      <Link
+                        href={`/dashboard/paciente/agendar?nutritionistId=${nutritionist.id}`}
+                      >
+                        <Button className="w-full bg-[#4AB0D9] hover:bg-[#4AB0D9]/90 text-white text-lg py-3">
+                          <Calendar className="h-5 w-5 mr-2" />
+                          Agendar Consulta
+                        </Button>
+                      </Link>
+                    ) : (
+                      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                        <h3 className="text-lg font-semibold text-yellow-800 mb-2">
+                          Indisponível para agendamento
+                        </h3>
+                        <p className="text-yellow-700">
+                          No momento, este nutricionista está indisponível para agendamento.
+                          Entre em contato diretamente para mais informações.
+                        </p>
+                      </div>
+                    )}
                     <Button
                       onClick={async () => {
                         try {

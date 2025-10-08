@@ -25,7 +25,9 @@ export async function GET(request: NextRequest) {
       q = q.eq('is_listed', true) // <- remova se quiser listar quem só criou a conta
 
       if (onlineOnly) {
-        q = q.eq('online_consultation_available', true)
+        // Considera qualquer uma das flags de disponibilidade online
+        // para evitar inconsistências entre campos
+        q = q.or('online_consultation_available.eq.true,service_online_available.eq.true')
       }
 
       if (minPrice > 0 || maxPrice < 1000) {
@@ -116,7 +118,13 @@ export async function GET(request: NextRequest) {
       const specialties = (specialties_join || [])
         .map((s: any) => s?.specialty?.name)
         .filter(Boolean)
-      return { ...rest, specialties }
+      return {
+        ...rest,
+        consultation_price: Number(rest.consultation_price ?? 0),
+        online_consultation_available: Boolean(rest.online_consultation_available),
+        service_online_available: Boolean(rest.service_online_available),
+        specialties,
+      }
     })
 
     // Count com MESMOS filtros (sem paginação/ordenação)

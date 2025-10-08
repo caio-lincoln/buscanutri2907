@@ -47,7 +47,8 @@ interface NutritionistProfile {
   total_reviews: number
   city: string | null
   state: string | null
-  offers_online_consultation: boolean
+  online_consultation_available?: boolean
+  service_online_available?: boolean
 }
 
 interface AvailableSlot {
@@ -87,14 +88,15 @@ export default function AgendarPage() {
     if (nutritionistId && nutritionists.length > 0) {
       const currentNutritionist = nutritionists.find(nutritionist => nutritionist.id === nutritionistId)
 
-      if (!currentNutritionist?.consultation_price || currentNutritionist.consultation_price <= 0) {
-        toast.error('Nutricionista não está disponível para agendamento.')
-        router.push('/nutricionistas')
-        return
-      }
-
-      // Buscar dados do nutricionista específico
       if (currentNutritionist) {
+        const onlineAvailable = Boolean(currentNutritionist.online_consultation_available || currentNutritionist.service_online_available)
+        if (!currentNutritionist.consultation_price || currentNutritionist.consultation_price <= 0) {
+          toast.warning('Nutricionista sem preço definido. Teleconsulta indisponível.')
+        }
+        if (!onlineAvailable) {
+          toast.warning('Este nutricionista não oferece teleconsulta. Alternando para consulta presencial.')
+          setConsultationType('presential')
+        }
         handleSelectNutritionist(currentNutritionist)
       }
     }
@@ -547,10 +549,23 @@ export default function AgendarPage() {
                     {consultationType === 'online' ? 'Teleconsulta' : 'Consulta Presencial'}
                   </CardTitle>
                   <div className="flex gap-2">
+                    {selectedNutritionist && (
+                      <>
+                        {/* Teleconsulta disponível? */}
+                      </>
+                    )}
                     <Button
                       variant={consultationType === 'online' ? 'default' : 'outline'}
                       size="sm"
-                      onClick={() => setConsultationType('online')}
+                      disabled={!(selectedNutritionist?.online_consultation_available || selectedNutritionist?.service_online_available)}
+                      title={!(selectedNutritionist?.online_consultation_available || selectedNutritionist?.service_online_available) ? 'Este nutricionista não oferece teleconsulta' : undefined}
+                      onClick={() => {
+                        if (selectedNutritionist?.online_consultation_available || selectedNutritionist?.service_online_available) {
+                          setConsultationType('online')
+                        } else {
+                          toast.warning('Este nutricionista não oferece teleconsulta')
+                        }
+                      }}
                     >
                       Teleconsulta
                     </Button>
@@ -625,6 +640,11 @@ export default function AgendarPage() {
                         <span className="text-sm text-gray-600">Duração:</span>
                         <span className="font-medium">60 minutos</span>
                       </div>
+                      {consultationType === 'online' && !(selectedNutritionist.online_consultation_available || selectedNutritionist.service_online_available) && (
+                        <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-800">
+                          Este nutricionista não oferece teleconsulta. Selecione "Presencial" para continuar.
+                        </div>
+                      )}
                     </div>
 
                     {selectedSlot && (
@@ -647,13 +667,19 @@ export default function AgendarPage() {
                           </div>
                         </div>
                         {consultationType === 'online' ? (
-                          <Button
-                            onClick={handleBooking}
-                            disabled={booking}
-                            className="w-full mt-4"
-                          >
-                            {booking ? 'Agendando...' : 'Confirmar Teleconsulta'}
-                          </Button>
+                          (selectedNutritionist.online_consultation_available || selectedNutritionist.service_online_available) ? (
+                            <Button
+                              onClick={handleBooking}
+                              disabled={booking}
+                              className="w-full mt-4"
+                            >
+                              {booking ? 'Agendando...' : 'Confirmar Teleconsulta'}
+                            </Button>
+                          ) : (
+                            <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-800">
+                              Teleconsulta indisponível para este nutricionista.
+                            </div>
+                          )
                         ) : (
                           <Button
                             onClick={handlePresentialConfirm}

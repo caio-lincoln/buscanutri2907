@@ -139,6 +139,7 @@ export interface NutritionistProfile extends UserProfile {
   emergency_consultation?: boolean | null
   consultation_languages?: string | null // separado por vírgula
   payment_methods?: string | null // separado por vírgula
+  public_price_visible?: boolean | null // controla exibição pública do preço
   max_patients_per_day?: number | null
   aceita_cupons?: boolean | null // Consentimento para participar de campanhas com cupons de desconto
 

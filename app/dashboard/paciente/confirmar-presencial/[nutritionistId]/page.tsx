@@ -11,6 +11,8 @@ import { toast } from 'sonner'
 import { ptBR } from 'date-fns/locale'
 import { format, parseISO } from 'date-fns'
 import { nutritionistAddressService } from '@/lib/nutritionist-address-service'
+import { useAuth } from '@/contexts/auth-context'
+import { createSupabaseClient } from '@/lib/supabase'
 
 interface NutritionistData {
   id: string // nutritionist_profiles.id
@@ -21,12 +23,15 @@ interface NutritionistData {
   phone?: string | null
   city?: string | null
   state?: string | null
+  consultation_fee?: number | null
 }
 
 export default function ConfirmarPresencialPage() {
   const params = useParams<{ nutritionistId: string }>()
   const searchParams = useSearchParams()
   const router = useRouter()
+  const { user, loading: authLoading, patientProfile } = useAuth()
+  const supabase = useMemo(() => createSupabaseClient(), [])
 
   const nutritionistUserId = params?.nutritionistId
   const dateParam = searchParams.get('date') || ''
@@ -35,6 +40,7 @@ export default function ConfirmarPresencialPage() {
   const [ loading, setLoading ] = useState(true)
   const [ nutritionist, setNutritionist ] = useState<NutritionistData | null>(null)
   const [ address, setAddress ] = useState<any | null>(null)
+  const [ confirming, setConfirming ] = useState(false)
 
   const scheduledDateTime = useMemo(() => {
     try {
@@ -73,6 +79,7 @@ export default function ConfirmarPresencialPage() {
           phone: n.phone || null,
           city: n.city || null,
           state: n.state || null,
+          consultation_fee: typeof n.consultation_fee === 'number' ? n.consultation_fee : null,
         }
         setNutritionist(formatted)
 
@@ -129,6 +136,66 @@ export default function ConfirmarPresencialPage() {
     )
     return `https://wa.me/${digits}?text=${text}`
   }, [ nutritionist?.phone, scheduledDateTime, dateParam, timeParam ])
+
+  async function handleConfirm() {
+    try {
+      if (authLoading) return
+      if (!user || !patientProfile?.id) {
+        toast.error('Você precisa estar autenticado como paciente para confirmar.')
+        return
+      }
+      if (!nutritionist?.id) {
+        toast.error('Nutricionista não encontrado para confirmar.')
+        return
+      }
+      if (!scheduledDateTime) {
+        toast.error('Data ou horário inválidos.')
+        return
+      }
+      setConfirming(true)
+
+      const payload: any = {
+        patient_id: patientProfile.id,
+        nutritionist_id: nutritionist.id,
+        // O campo no banco é DATE, então gravamos apenas 'yyyy-MM-dd'
+        appointment_date: format(scheduledDateTime, 'yyyy-MM-dd'),
+        // O campo no banco é TIME, gravamos 'HH:mm:ss'
+        appointment_time: format(scheduledDateTime, 'HH:mm:ss'),
+        duration_minutes: 60,
+        status: 'confirmed',
+        type: 'consultation',
+        is_online: false,
+      }
+      if (typeof nutritionist.consultation_fee === 'number') {
+        payload.consultation_fee = nutritionist.consultation_fee
+      }
+
+      // Inserir na nova tabela dedicada a consultas presenciais
+      const { error } = await supabase
+        .from('in_person_consultations')
+        .insert({
+          patient_id: payload.patient_id,
+          nutritionist_id: payload.nutritionist_id,
+          scheduled_at: parseISO(`${payload.appointment_date}T${payload.appointment_time}`),
+          duration_minutes: payload.duration_minutes,
+          status: payload.status,
+          type: payload.type,
+          patient_notes: payload.patient_notes,
+        })
+
+      if (error) {
+        throw error
+      }
+
+      toast.success('Consulta presencial confirmada!')
+      router.push('/dashboard/paciente/presenciais')
+    } catch (err: any) {
+      console.error('Erro ao confirmar consulta presencial:', err)
+      toast.error('Não foi possível confirmar a consulta. Tente novamente.')
+    } finally {
+      setConfirming(false)
+    }
+  }
 
   return (
     <div className="max-w-4xl mx-auto p-6">
@@ -214,8 +281,8 @@ export default function ConfirmarPresencialPage() {
                   <ArrowLeft className="h-4 w-4" />
                   Alterar horário
                 </Button>
-                <Button onClick={() => toast.success('Consulta presencial confirmada!')}>
-                  Confirmar Presencial
+                <Button onClick={handleConfirm} disabled={confirming || !scheduledDateTime || !nutritionist?.id}>
+                  {confirming ? 'Concluindo...' : 'Concluir'}
                 </Button>
               </div>
             </>
