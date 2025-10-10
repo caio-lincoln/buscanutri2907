@@ -5,6 +5,7 @@ import { Toaster } from '@/components/ui/toaster'
 import { Toaster as Sonner } from '@/components/ui/sonner'
 import { AuthProvider } from '@/contexts/auth-context'
 import { SessionTrackerProvider } from '@/components/session-tracker-provider'
+import { VisitTrackerProvider } from '@/components/visit-tracker-provider'
 import { Suspense } from 'react'
 import Script from 'next/script'
 import MetaPixelRouteChange from './MetaPixelRouteChange'
@@ -60,6 +61,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         )}
 
         <AuthProvider>
+          <VisitTrackerProvider>
           <SessionTrackerProvider>
             <Suspense fallback={<div>Carregando...</div>}>
               {children}
@@ -68,6 +70,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <FloatingWhatsApp />
             </Suspense>
           </SessionTrackerProvider>
+          </VisitTrackerProvider>
         </AuthProvider>
       </body>
     </html>

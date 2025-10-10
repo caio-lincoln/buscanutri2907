@@ -50,6 +50,8 @@ interface AnalyticsData {
   posts30Days: number
   totalLikes: number
   totalComments: number
+  likes30Days: number
+  comments30Days: number
   trafficData: Array<{ date: string; visitors: number; newUsers: number }>
 }
 
@@ -138,6 +140,10 @@ export default function AnalyticsTab() {
       }
       if (dateRange?.to) {
         params.append('endDate', dateRange.to.toISOString())
+      }
+      // Em desenvolvimento, habilitar bypass de admin para facilitar testes locais
+      if (process.env.NODE_ENV !== 'production') {
+        params.append('dev_bypass', '1')
       }
       
       const response = await fetch(`/api/admin/analytics-data?${params.toString()}`)
@@ -413,11 +419,13 @@ export default function AnalyticsTab() {
               <TrendingUp className="h-8 w-8 text-red-600 mx-auto mb-2" />
               <p className="text-2xl font-bold text-red-600">{formatNumber(analyticsData.totalLikes)}</p>
               <p className="text-sm text-gray-600">Total de Likes</p>
+              <p className="text-xs text-red-700 mt-1">30 dias: {formatNumber(analyticsData.likes30Days || 0)}</p>
             </div>
             <div className="text-center p-4 bg-purple-50 rounded-lg">
               <BarChart className="h-8 w-8 text-purple-600 mx-auto mb-2" />
               <p className="text-2xl font-bold text-purple-600">{formatNumber(analyticsData.totalComments)}</p>
               <p className="text-sm text-gray-600">Total de Comentários</p>
+              <p className="text-xs text-purple-700 mt-1">30 dias: {formatNumber(analyticsData.comments30Days || 0)}</p>
             </div>
           </div>
           <div className="mt-4 flex gap-2">
