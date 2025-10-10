@@ -22,6 +22,7 @@ import {
   Award,
 } from 'lucide-react'
 import { getBlogPostById, type BlogPost } from '@/lib/blog-data'
+import { useRealtimeBlogViews } from '@/hooks/use-realtime-blog-views'
 import { toast } from '@/components/ui/use-toast'
 
 export default function BlogPostPage() {
@@ -29,6 +30,9 @@ export default function BlogPostPage() {
   const router = useRouter()
   const postId = params['id'] as string
   const [post, setPost] = useState<BlogPost | null>(null)
+  const { stats, recordView } = useRealtimeBlogViews({
+    blogPostId: postId,
+  })
 
   const [loading, setLoading] = useState(true)
 
@@ -40,6 +44,8 @@ export default function BlogPostPage() {
       const fetchedPost = await getBlogPostById(postId)
       if (fetchedPost) {
         setPost(fetchedPost)
+        // Registrar visualização
+        recordView().catch(() => {})
       } else {
         toast({
           title: 'Artigo não encontrado',
@@ -158,7 +164,7 @@ export default function BlogPostPage() {
             </div>
             <div className="flex items-center gap-1">
               <Eye className="h-4 w-4" />
-              <span>{post.views.toLocaleString()} visualizações</span>
+              <span>{(stats.totalViews || post.views || 0).toLocaleString()} visualizações</span>
             </div>
           </div>
 

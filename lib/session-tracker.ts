@@ -21,6 +21,7 @@ class SessionTracker {
   private heartbeatInterval: NodeJS.Timeout | null = null
   private lastActivity: Date = new Date()
   private isActive = true
+  private isEnding = false
 
   // Iniciar rastreamento de sessão
   async startSession(userId: string): Promise<void> {
@@ -69,6 +70,8 @@ class SessionTracker {
   // Finalizar sessão
   async endSession(): Promise<void> {
     if (!this.sessionId || !this.sessionStart) return
+    if (this.isEnding) return
+    this.isEnding = true
 
     try {
       // Verificar se o usuário ainda está autenticado
@@ -81,7 +84,8 @@ class SessionTracker {
       }
 
       const sessionEnd = new Date()
-      const durationSeconds = Math.floor((sessionEnd.getTime() - this.sessionStart.getTime()) / 1000)
+      const startTime = this.sessionStart ? this.sessionStart.getTime() : Date.now()
+      const durationSeconds = Math.floor((sessionEnd.getTime() - startTime) / 1000)
 
       await this.supabase
         .from('user_sessions')
@@ -96,6 +100,8 @@ class SessionTracker {
 
     } catch (error) {
       console.error('Erro ao finalizar sessão:', error)
+    } finally {
+      this.isEnding = false
     }
   }
 
@@ -143,7 +149,8 @@ class SessionTracker {
   // Verificar se o usuário ainda está ativo
   private checkActivity(): void {
     const now = new Date()
-    const timeSinceLastActivity = now.getTime() - this.lastActivity.getTime()
+    const last = this.lastActivity ? this.lastActivity.getTime() : 0
+    const timeSinceLastActivity = now.getTime() - last
     
     // Se não há atividade por mais de 5 minutos, considerar sessão inativa
     if (timeSinceLastActivity > 5 * 60 * 1000) {
@@ -198,6 +205,7 @@ class SessionTracker {
     this.sessionStart = null
     this.pageViews = 0
     this.isActive = false
+    this.isEnding = false
   }
 
   // Obter estatísticas da sessão atual

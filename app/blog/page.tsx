@@ -26,6 +26,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { getAllBlogPosts, blogCategories, type BlogPost } from '@/lib/blog-data'
+import { useRealtimeBlogViewsBulk } from '@/hooks/use-realtime-blog-views'
 
 export default function BlogPage() {
   const [allBlogPosts, setAllBlogPosts] = useState<BlogPost[]>([])
@@ -35,18 +36,26 @@ export default function BlogPage() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [visiblePosts, setVisiblePosts] = useState(6)
 
+  const blogPostIds = useMemo(() => allBlogPosts.map(p => p.id), [allBlogPosts])
+  const { statsMap, refreshStats, getStatsForPost } = useRealtimeBlogViewsBulk({
+    blogPostIds,
+  })
+
   useEffect(() => {
     const loadPosts = async () => {
       const posts = await getAllBlogPosts()
       setAllBlogPosts(posts)
+      // Carregar estatísticas em lote após obter posts
+      refreshStats().catch(() => {})
     }
     loadPosts()
   }, [])
 
   // Função para obter visualizações atualizadas (temporariamente usando valores padrão)
   const getUpdatedViews = useCallback((post: BlogPost) => {
-    return post.views
-  }, [])
+    const stats = getStatsForPost(post.id)
+    return stats?.totalViews ?? post.views
+  }, [getStatsForPost])
 
   const sortOptions = [
     { value: 'recent', label: 'Mais Recentes' },

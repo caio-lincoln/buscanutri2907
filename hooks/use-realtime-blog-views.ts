@@ -95,17 +95,20 @@ export function useRealtimeBlogViews({
           event: 'INSERT',
           schema: 'public',
           table: 'blog_post_views',
-          filter: `blog_post_id=eq.${blogPostId}`,
         },
         async payload => {
-          console.log('Nova visualização recebida:', payload)
+          const newView = payload.new as any
+          const viewPostId = newView?.post_id ?? newView?.blog_post_id
 
-          // Atualizar estatísticas quando uma nova visualização é inserida
-          try {
-            const updatedStats = await BlogViewsService.getViewStats(blogPostId)
-            setStats(updatedStats)
-          } catch (err) {
-            console.error('Erro ao atualizar estatísticas em tempo real:', err)
+          // Filtrar no cliente quando post_id não está disponível no servidor
+          if (viewPostId === blogPostId) {
+            console.log('Nova visualização recebida:', payload)
+            try {
+              const updatedStats = await BlogViewsService.getViewStats(blogPostId)
+              setStats(updatedStats)
+            } catch (err) {
+              console.error('Erro ao atualizar estatísticas em tempo real:', err)
+            }
           }
         }
       )
@@ -216,7 +219,8 @@ export function useRealtimeBlogViewsBulk({
           const newView = payload.new as any
 
           // Verificar se a visualização é de um dos posts que estamos monitorando
-          if (blogPostIds.includes(newView.blog_post_id)) {
+          const viewPostId = newView?.post_id ?? newView?.blog_post_id
+          if (blogPostIds.includes(viewPostId)) {
             console.log(
               'Nova visualização recebida para post monitorado:',
               newView
@@ -224,12 +228,10 @@ export function useRealtimeBlogViewsBulk({
 
             // Atualizar apenas as estatísticas do post específico
             try {
-              const updatedStats = await BlogViewsService.getViewStats(
-                newView.blog_post_id
-              )
+              const updatedStats = await BlogViewsService.getViewStats(viewPostId)
               setStatsMap(prev => ({
                 ...prev,
-                [newView.blog_post_id]: updatedStats,
+                [viewPostId]: updatedStats,
               }))
             } catch (err) {
               console.error(

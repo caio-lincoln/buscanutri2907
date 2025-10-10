@@ -77,7 +77,13 @@ export async function getAllBlogPosts(): Promise<BlogPost[]> {
           date: new Date(post.created_at).toISOString().split('T')[0],
           category: post.category,
           tags: post.tags || [],
-          readTime: post.read_time || '5 min de leitura',
+          readTime: `${
+            typeof post.read_time_minutes === 'number'
+              ? post.read_time_minutes
+              : typeof post.read_time === 'number'
+              ? post.read_time
+              : 5
+          } min de leitura`,
           views: post.views || 0,
           featured: post.featured || false,
           centerImage: post.center_image || false,
@@ -119,12 +125,6 @@ export async function getBlogPostById(id: string): Promise<BlogPost | null> {
 
     const badges = await getNutritionistBadges(post.author_id)
 
-    // Incrementar visualizações
-    await supabase
-      .from('blog_posts')
-      .update({ views: (post.views || 0) + 1 })
-      .eq('id', id)
-
     return {
       id: post.id,
       title: post.title,
@@ -140,8 +140,14 @@ export async function getBlogPostById(id: string): Promise<BlogPost | null> {
       date: new Date(post.created_at).toISOString().split('T')[0],
       category: post.category,
       tags: post.tags || [],
-      readTime: post.read_time || '5 min de leitura',
-      views: (post.views || 0) + 1,
+      readTime: `${
+        typeof post.read_time_minutes === 'number'
+          ? post.read_time_minutes
+          : typeof post.read_time === 'number'
+          ? post.read_time
+          : 5
+      } min de leitura`,
+      views: post.views || 0,
       featured: post.featured || false,
       centerImage: post.center_image || false,
       badges: badges.map(nb => nb.badge),
@@ -245,7 +251,7 @@ export async function addBlogPost(
         author_id: newPostData.authorId,
         category: newPostData.category,
         tags: newPostData.tags,
-        read_time: newPostData.readTime,
+        // read_time_minutes calculado automaticamente por trigger
         featured: newPostData.featured,
         center_image: newPostData.centerImage || false,
         published: true,
@@ -271,7 +277,13 @@ export async function addBlogPost(
       date: new Date(post.created_at).toISOString().split('T')[0],
       category: post.category,
       tags: post.tags || [],
-      readTime: post.read_time || '5 min de leitura',
+      readTime: `${
+        typeof post.read_time_minutes === 'number'
+          ? post.read_time_minutes
+          : typeof post.read_time === 'number'
+          ? post.read_time
+          : 5
+      } min de leitura`,
       views: 0,
       featured: post.featured || false,
       centerImage: post.center_image || false,
@@ -297,7 +309,7 @@ export async function updateBlogPost(
         image_url: updatedPost.image,
         category: updatedPost.category,
         tags: updatedPost.tags,
-        read_time: updatedPost.readTime,
+        // read_time_minutes calculado automaticamente por trigger
         featured: updatedPost.featured,
         center_image: updatedPost.centerImage || false,
         updated_at: new Date().toISOString(),
