@@ -21,6 +21,7 @@ export async function GET(
       .from('nutritionist_badges')
       .select(`
         id,
+        badge_id,
         awarded_at,
         awarded_by,
         notes,

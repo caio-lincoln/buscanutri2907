@@ -9,6 +9,7 @@ export type Badge = {
 
 export type NutritionistBadge = {
   id: string
+  badge_id?: string
   awarded_at: string
   awarded_by: string | null
   notes: string | null
