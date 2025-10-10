@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Loading from '@/components/ui/loading'
 import { useRouter, useParams } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -57,8 +58,17 @@ export default function AgendarTeleconsultaPage() {
 
   useEffect(() => {
     if (nutritionistId) {
-      loadNutritionist()
-      loadAvailableSlots()
+      setLoading(true)
+      ;(async () => {
+        try {
+          const nutri = await loadNutritionist()
+          if (nutri?.id) {
+            await loadAvailableSlots(nutri.id)
+          }
+        } finally {
+          setLoading(false)
+        }
+      })()
     }
   }, [nutritionistId])
 
@@ -79,29 +89,36 @@ export default function AgendarTeleconsultaPage() {
 
   const loadNutritionist = async () => {
     try {
-      const response = await fetch(`/api/nutritionists/${nutritionistId}`)
+      const response = await fetch(`/api/nutritionists/${nutritionistId}`, {
+        credentials: 'include',
+      })
       if (!response.ok) {
-        throw new Error('Erro ao carregar nutricionista')
+        const msg = await safeErrorMessage(response)
+        throw new Error(msg || 'Erro ao carregar nutricionista')
       }
       const data = await response.json()
       setNutritionist(data.nutritionist)
+      return data.nutritionist as NutritionistProfile
     } catch (error) {
       console.error('Erro ao carregar nutricionista:', error)
       toast.error('Erro ao carregar dados do nutricionista')
+      return null
     }
   }
 
-  const loadAvailableSlots = async () => {
+  const loadAvailableSlots = async (nutritionistProfileId: string) => {
     try {
       const startDate = new Date().toISOString()
       const endDate = addDays(new Date(), 14).toISOString()
       
       const response = await fetch(
-        `/api/teleconsulta/horarios-disponiveis?nutritionistId=${nutritionistId}&startDate=${startDate}&endDate=${endDate}`
+        `/api/teleconsulta/horarios-disponiveis?nutritionistId=${nutritionistProfileId}&startDate=${startDate}&endDate=${endDate}`,
+        { credentials: 'include' }
       )
       
       if (!response.ok) {
-        throw new Error('Erro ao carregar horários disponíveis')
+        const msg = await safeErrorMessage(response)
+        throw new Error(msg || 'Erro ao carregar horários disponíveis')
       }
       
       const data = await response.json()
@@ -109,8 +126,6 @@ export default function AgendarTeleconsultaPage() {
     } catch (error) {
       console.error('Erro ao carregar horários:', error)
       toast.error('Erro ao carregar horários disponíveis')
-    } finally {
-      setLoading(false)
     }
   }
 
@@ -127,17 +142,18 @@ export default function AgendarTeleconsultaPage() {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({
-          nutritionist_id: nutritionist.user_id,
-          patient_id: profile.user_id,
-          scheduled_at: selectedSlot.datetime,
+          nutritionist_id: nutritionist.id,
+          scheduled_for: selectedSlot.datetime,
           duration_minutes: selectedSlot.duration,
           price: nutritionist.consultation_price,
         }),
       })
 
       if (!response.ok) {
-        throw new Error('Erro ao agendar teleconsulta')
+        const msg = await safeErrorMessage(response)
+        throw new Error(msg || 'Erro ao agendar teleconsulta')
       }
 
       const data = await response.json()
@@ -151,6 +167,15 @@ export default function AgendarTeleconsultaPage() {
     }
   }
 
+  async function safeErrorMessage(response: Response) {
+    try {
+      const data = await response.json()
+      return (data && (data.message || data.error)) || ''
+    } catch {
+      return ''
+    }
+  }
+
   // Agrupar slots por data
   const slotsByDate = availableSlots.reduce((acc, slot) => {
     if (!acc[slot.date]) {
@@ -160,12 +185,9 @@ export default function AgendarTeleconsultaPage() {
     return acc
   }, {} as Record<string, AvailableSlot[]>)
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-green-600"></div>
-      </div>
-    )
+  const isLoading = authLoading || loading
+  if (isLoading) {
+    return <Loading message="Carregando teleconsulta..." />
   }
 
   return (

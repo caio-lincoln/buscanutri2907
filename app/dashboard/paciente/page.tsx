@@ -18,6 +18,7 @@ import IrisTab from './_components/IrisTab'
 import PerfilTab from './_components/PerfilTab'
 import { AnamneseNutricionalModal } from '../../../components/anamnese-nutricional-modal'
 import { createSupabaseClient } from '../../../lib/supabase'
+import Loading from '@/components/ui/loading'
 
 const TABS = [
   'overview',
@@ -111,16 +112,7 @@ export default function PatientDashboard() {
   }
 
   if (authLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-red-50/50 via-white to-white flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-4 border-red-200 border-t-red-500 mx-auto"></div>
-          <p className="text-[#1E1D40]/70 font-medium">
-            Carregando seu dashboard...
-          </p>
-        </div>
-      </div>
-    )
+    return <Loading message="Carregando seu dashboard..." />
   }
 
   return (

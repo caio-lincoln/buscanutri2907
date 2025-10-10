@@ -26,11 +26,11 @@ import {
   Briefcase,
   Menu,
   X,
-  Loader2,
   Award,
   LogOut,
   LayoutDashboard,
 } from 'lucide-react'
+import Loading from '@/components/ui/loading'
 import {
   getAllNutritionists,
   formatNutritionistData,
@@ -403,19 +403,7 @@ export default function NutricionistasPage() {
   }
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-[#4AB0D9] mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-[#1E1D40] mb-2">
-            Carregando nutricionistas...
-          </h2>
-          <p className="text-[#1E1D40]/70">
-            Buscando os melhores profissionais para você
-          </p>
-        </div>
-      </div>
-    )
+    return <Loading message="Carregando nutricionistas..." />
   }
 
   return (

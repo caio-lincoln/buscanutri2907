@@ -24,6 +24,7 @@ import {
 import { getBlogPostById, type BlogPost } from '@/lib/blog-data'
 import { useRealtimeBlogViews } from '@/hooks/use-realtime-blog-views'
 import { toast } from '@/components/ui/use-toast'
+import Loading from '@/components/ui/loading'
 
 export default function BlogPostPage() {
   const params = useParams()
@@ -62,11 +63,7 @@ export default function BlogPostPage() {
   }, [postId, router])
 
   if (loading) {
-    return (
-      <main className="container mx-auto px-4 py-8 md:py-12 text-center">
-        <p className="text-gray-600">Carregando artigo...</p>
-      </main>
-    )
+    return <Loading message="Carregando artigo..." />
   }
 
   if (!post) {

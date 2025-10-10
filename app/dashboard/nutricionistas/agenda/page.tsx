@@ -23,6 +23,7 @@ import {
   Users,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/auth-context'
+import Loading from '@/components/ui/loading'
 import { format, parseISO, addDays, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import {
@@ -301,11 +302,7 @@ export default function AgendaPage() {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-green-600"></div>
-      </div>
-    )
+    return <Loading message="Carregando agenda..." />
   }
 
   const weekDays = getWeekDays()

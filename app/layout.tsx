@@ -7,6 +7,7 @@ import { AuthProvider } from '@/contexts/auth-context'
 import { SessionTrackerProvider } from '@/components/session-tracker-provider'
 import { VisitTrackerProvider } from '@/components/visit-tracker-provider'
 import { Suspense } from 'react'
+import Loading from '@/components/ui/loading'
 import Script from 'next/script'
 import MetaPixelRouteChange from './MetaPixelRouteChange'
 import { FloatingWhatsApp } from '@/components/FloatingWhatsApp'
@@ -54,7 +55,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </noscript>
 
             {/* Dispara PageView a cada navegação */}
-            <Suspense fallback={<div>Carregando...</div>}>
+            <Suspense fallback={<Loading /> }>
               <MetaPixelRouteChange />
             </Suspense>
           </>
@@ -63,7 +64,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <AuthProvider>
           <VisitTrackerProvider>
           <SessionTrackerProvider>
-            <Suspense fallback={<div>Carregando...</div>}>
+            <Suspense fallback={<Loading /> }>
               {children}
               <Toaster />
               <Sonner />

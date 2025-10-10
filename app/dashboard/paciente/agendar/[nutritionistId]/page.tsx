@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { ArrowLeft, MapPin, Star, AlertCircle, Shield } from 'lucide-react'
+import Loading from '@/components/ui/loading'
 import { useAuth } from '@/contexts/auth-context'
 import { supabase } from '@/lib/supabase'
 import { toast } from '@/components/ui/use-toast'
@@ -149,16 +150,7 @@ export default function ScheduleConsultationPage() {
   }
 
   if (authLoading || loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-red-50/50 via-white to-white flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-4 border-red-200 border-t-red-500 mx-auto"></div>
-          <p className="text-[#1E1D40]/70 font-medium">
-            Carregando informações...
-          </p>
-        </div>
-      </div>
-    )
+    return <Loading message="Carregando informações..." />
   }
 
   if (!nutritionist) {

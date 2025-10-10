@@ -24,6 +24,7 @@ import {
   Trash2,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/auth-context'
+import Loading from '@/components/ui/loading'
 import { QuestionModal } from '@/components/question-modal'
 import { DeleteQuestionModal } from '@/components/delete-question-modal'
 import {
@@ -250,16 +251,7 @@ export default function NutritionistForumPage() {
   }
 
   if (authLoading || loading) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Carregando fórum...</p>
-          </div>
-        </div>
-      </div>
-    )
+    return <Loading message="Carregando fórum..." />
   }
 
   return (
