@@ -3,7 +3,7 @@ import { createAdminClient, createClient } from '../../../../../lib/supabase/ser
 
 export async function POST(req: Request) {
   const body = await req.json()
-  const { paths, expiresIn = 300, bucket = 'nutritionist_documents' } = body as { paths: string[]; expiresIn?: number; bucket?: string }
+  const { paths, expiresIn = 300, bucket = 'documentos-nutricionistas' } = body as { paths: string[]; expiresIn?: number; bucket?: string }
 
   const supa = await createClient()
   const { data: { user } } = await supa.auth.getUser()

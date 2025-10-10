@@ -209,21 +209,24 @@ export function CompanyProfileModal({
 
     setLoading(true)
     try {
-      let logoUrl = formData.logo_url
+      // 1) Salvar/garantir o perfil SEM o logo primeiro (satisfaz RLS)
+      const baseData = { ...formData, logo_url: undefined as unknown as string }
+      await updateCompanyProfile(initialData.user_id, baseData)
 
-      // Upload do logo se houver arquivo selecionado
+      // 2) Se houver logo, fazer upload e atualizar somente o logo_url
       if (logoFile) {
-        logoUrl = await uploadCompanyLogo(logoFile, initialData.user_id)
+        try {
+          const logoUrl = await uploadCompanyLogo(logoFile, initialData.user_id)
+          await updateCompanyProfile(initialData.user_id, { logo_url: logoUrl })
+        } catch (uploadError: any) {
+          console.error('Erro ao fazer upload do logo:', uploadError)
+          toast({
+            title: 'Logo não atualizado',
+            description: uploadError.message || 'O restante do perfil foi salvo, mas o logo não pôde ser atualizado.',
+            variant: 'destructive',
+          })
+        }
       }
-
-      // Preparar dados para atualização
-      const updateData = {
-        ...formData,
-        logo_url: logoUrl,
-      }
-
-      // Atualizar perfil da empresa
-      await updateCompanyProfile(initialData.user_id, updateData)
 
       toast({
         title: 'Perfil atualizado!',

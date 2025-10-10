@@ -25,7 +25,7 @@ export async function signDocUrls(keys: string[], expiresIn = 300) {
   const res = await fetch('/api/nutritionist/documents/signed-urls', {
     method: 'POST',
     headers: { 'Content-Type':'application/json' },
-    body: JSON.stringify({ bucket: 'nutritionist_documents', paths: keys, expiresIn })
+    body: JSON.stringify({ bucket: 'documentos-nutricionistas', paths: keys, expiresIn })
   })
   const j = await res.json()
   return (j?.results ?? {}) as Record<string,string|null>

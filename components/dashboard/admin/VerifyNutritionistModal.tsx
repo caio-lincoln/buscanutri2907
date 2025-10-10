@@ -64,7 +64,7 @@ export function VerifyNutritionistModal({
   const loadDocuments = async () => {
     try {
       setLoadingDocs(true)
-      const documents = await getNutritionistDocuments(user.id)
+      const documents = await getNutritionistDocuments(user.nutritionistProfileId)
       setDocs(documents)
     } catch {
       toast({
@@ -102,7 +102,7 @@ export function VerifyNutritionistModal({
     }
     try {
       setProcessing(true)
-      const success = await rejectNutritionist()
+    const success = await rejectNutritionist(user.nutritionistProfileId, reason)
       if (success) {
         toast({ title: 'Informação', description: 'Rejeição registrada com sucesso' })
         setRejecting(false)

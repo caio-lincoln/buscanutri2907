@@ -236,6 +236,18 @@ export async function requireCompany(): Promise<CompanyProfile> {
 }
 
 export async function requireAdmin(): Promise<UserProfile> {
+  // Development bypass: allow requests to proceed as admin when enabled
+  if (process.env['DEV_ADMIN_BYPASS'] === 'true') {
+    // Return a minimal admin-like profile for local testing
+    return {
+      id: 'dev-admin-bypass',
+      email: 'dev-admin@example.com',
+      name: 'Dev Admin',
+      user_type: 'admin',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }
+  }
   return requireUserType([ 'admin' ])
 }
 

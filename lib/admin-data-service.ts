@@ -267,7 +267,7 @@ export async function getNutritionistDocuments(nutritionistProfileId: string): P
     const res = await fetch('/api/admin/storage/signed-urls', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ bucket: 'nutritionist-documents', paths, expiresIn: 60 * 5 })
+      body: JSON.stringify({ bucket: 'documentos-nutricionistas', paths, expiresIn: 60 * 5 })
     })
     const j = await res.json().catch(() => ({}))
     const map: Record<string, string> = j?.results ?? {}
@@ -336,14 +336,16 @@ export async function approveNutritionist(nutritionistProfileId: string): Promis
 /**
  * Rejeitar nutricionista
  */
-export async function rejectNutritionist(): Promise<boolean> {
+export async function rejectNutritionist(nutritionistProfileId: string, reason: string): Promise<boolean> {
   try {
-    // MVP: apenas log do motivo
-    // TODO: Implementar envio de e-mail e registro de log
-    // - Criar tabela verification_logs
-    // - Enviar e-mail para o nutricionista
-
-    return true
+    const res = await fetch('/api/admin/nutritionists/reject', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nutritionistProfileId, reason }),
+    })
+    if (!res.ok) return false
+    const j = await res.json()
+    return !!j?.ok
   } catch {
     // Silent error handling: Error in rejectNutritionist
     return false
