@@ -307,10 +307,11 @@ export class BlogPostsService {
         .select('id')
         .eq('post_id', postId)
         .eq('user_id', user.id)
-        .single()
+        .maybeSingle()
 
       if (existingLike) {
-        return { error: { message: 'Post já foi curtido' } }
+        // Idempotente: já curtido, não retorna erro
+        return { error: null }
       }
 
       const { error } = await supabase

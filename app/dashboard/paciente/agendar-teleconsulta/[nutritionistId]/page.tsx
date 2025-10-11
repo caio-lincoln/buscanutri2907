@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Calendar, Clock, ArrowLeft, Video, Star, MapPin, DollarSign } from 'lucide-react'
+import { Calendar, Clock, ArrowLeft, Video, Star, MapPin, DollarSign, Eye } from 'lucide-react'
 import { useAuth } from '@/contexts/auth-context'
 import { getUserProfile } from '@/lib/auth'
 import type { PatientProfile } from '@/lib/supabase'
@@ -38,6 +38,12 @@ interface AvailableSlot {
   available: boolean
 }
 
+interface ViewStats {
+  totalViews: number
+  uniqueViews: number
+  lastViewAt: string | null
+}
+
 export default function AgendarTeleconsultaPage() {
   const [profile, setProfile] = useState<PatientProfile | null>(null)
   const [nutritionist, setNutritionist] = useState<NutritionistProfile | null>(null)
@@ -45,10 +51,13 @@ export default function AgendarTeleconsultaPage() {
   const [selectedSlot, setSelectedSlot] = useState<AvailableSlot | null>(null)
   const [loading, setLoading] = useState(true)
   const [booking, setBooking] = useState(false)
+  const [viewStats, setViewStats] = useState<ViewStats | null>(null)
   const router = useRouter()
   const params = useParams()
   const { user, loading: authLoading } = useAuth()
   const nutritionistId = params.nutritionistId as string
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  const isValidUUID = (id: string) => uuidRegex.test(id)
 
   useEffect(() => {
     if (!authLoading) {
@@ -57,6 +66,16 @@ export default function AgendarTeleconsultaPage() {
   }, [user, authLoading])
 
   useEffect(() => {
+    if (!nutritionistId) return
+
+    // Evita chamadas inválidas ao backend quando o ID não é um UUID
+    if (!isValidUUID(nutritionistId)) {
+      setLoading(false)
+      toast.error('Link de nutricionista inválido')
+      router.push('/nutricionistas')
+      return
+    }
+
     if (nutritionistId) {
       setLoading(true)
       ;(async () => {
@@ -64,6 +83,7 @@ export default function AgendarTeleconsultaPage() {
           const nutri = await loadNutritionist()
           if (nutri?.id) {
             await loadAvailableSlots(nutri.id)
+            await loadViewStats(nutri.id)
           }
         } finally {
           setLoading(false)
@@ -89,6 +109,7 @@ export default function AgendarTeleconsultaPage() {
 
   const loadNutritionist = async () => {
     try {
+      if (!isValidUUID(nutritionistId)) return null
       const response = await fetch(`/api/nutritionists/${nutritionistId}`, {
         credentials: 'include',
       })
@@ -126,6 +147,23 @@ export default function AgendarTeleconsultaPage() {
     } catch (error) {
       console.error('Erro ao carregar horários:', error)
       toast.error('Erro ao carregar horários disponíveis')
+    }
+  }
+
+  const loadViewStats = async (nutritionistProfileId: string) => {
+    try {
+      const response = await fetch(`/api/profile-views/stats/${nutritionistProfileId}`, {
+        credentials: 'include',
+      })
+      if (!response.ok) {
+        const msg = await safeErrorMessage(response)
+        throw new Error(msg || 'Erro ao carregar visualizações do perfil')
+      }
+      const data = await response.json()
+      setViewStats(data?.stats || null)
+    } catch (error) {
+      console.error('Erro ao carregar visualizações:', error)
+      // Visualizações não são críticas para o agendamento; evitar toast barulhento
     }
   }
 
@@ -280,6 +318,24 @@ export default function AgendarTeleconsultaPage() {
                       <span className="text-sm text-gray-600">Duração:</span>
                       <span className="font-medium">60 minutos</span>
                     </div>
+                    <div className="flex items-center justify-between mt-2">
+                      <span className="text-sm text-gray-600">Visualizações:</span>
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-1 text-gray-800">
+                          <Eye className="h-4 w-4" />
+                          <span className="font-medium">{viewStats?.totalViews ?? 0}</span>
+                        </div>
+                        <span className="text-xs text-gray-500">Únicas: {viewStats?.uniqueViews ?? 0}</span>
+                      </div>
+                    </div>
+                    {viewStats?.lastViewAt && (
+                      <div className="flex items-center justify-between mt-1">
+                        <span className="text-xs text-gray-600">Última visualização:</span>
+                        <span className="text-xs">
+                          {format(parseISO(viewStats.lastViewAt), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   {selectedSlot && (

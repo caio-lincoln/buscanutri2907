@@ -45,8 +45,9 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 BEGIN
-    UPDATE blog_questions 
-    SET views = views + 1 
+    UPDATE public.forum_questions 
+    SET views = views + 1,
+        last_activity_at = NOW() 
     WHERE id = question_id;
 END;
 $$;

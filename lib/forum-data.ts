@@ -21,6 +21,7 @@ export interface ForumReply {
   timestamp: string
   likes: number
   isBestAnswer: boolean
+  hasLiked?: boolean
 }
 
 export interface ForumQuestion {
@@ -36,6 +37,7 @@ export interface ForumQuestion {
   category: string
   replies: ForumReply[]
   isBestAnswerSelected: boolean
+  hasLiked?: boolean
 }
 
 // Função auxiliar para converter dados do Supabase para o formato do fórum
@@ -112,7 +114,7 @@ function convertSupabaseToForumQuestion(data: any): ForumQuestion {
     timestamp: new Date(data.created_at).toLocaleString('pt-BR'),
     likes: data.likes_count || 0,
     repliesCount: data.answers_count || 0,
-    views: data.views_count || 0,
+    views: data.views || 0,
     tags: data.tags || [],
     category: data.category || '',
     replies,
@@ -181,7 +183,7 @@ export async function getAllForumQuestions(): Promise<ForumQuestion[]> {
         timestamp: new Date(data.created_at).toLocaleString('pt-BR'),
         likes: data.likes_count || 0,
         repliesCount: data.answers_count || 0,
-        views: data.views_count || 0,
+    views: data.views || 0,
         tags: data.tags || [],
         category: data.category || '',
         replies: [],
@@ -282,7 +284,7 @@ export async function getNutritionistForumQuestions(): Promise<
         timestamp: new Date(data.created_at).toLocaleString('pt-BR'),
         likes: data.likes_count || 0,
         repliesCount: data.answers_count || 0,
-        views: data.views_count || 0,
+    views: data.views || 0,
         tags: data.tags || [],
         category: data.category || '',
         replies: [],
@@ -423,7 +425,7 @@ export async function getForumQuestionById(
       timestamp: new Date(questionData.created_at).toLocaleString('pt-BR'),
       likes: questionData.likes_count || 0,
       repliesCount: questionData.answers_count || 0,
-      views: questionData.views_count || 0,
+      views: questionData.views || 0,
       tags: questionData.tags || [],
       category: questionData.category || '',
       replies,
@@ -521,7 +523,7 @@ export async function createForumQuestion(
         timestamp: new Date(data.created_at).toLocaleString('pt-BR'),
         likes: data.likes_count || 0,
         repliesCount: data.answers_count || 0,
-        views: data.views_count || 0,
+        views: data.views || 0,
         tags: data.tags || [],
         category: data.category || '',
         replies: [],
@@ -585,7 +587,7 @@ export async function createForumQuestion(
         timestamp: new Date(data.created_at).toLocaleString('pt-BR'),
         likes: data.likes_count || 0,
         repliesCount: data.answers_count || 0,
-        views: data.views_count || 0,
+        views: data.views || 0,
         tags: data.tags || [],
         category: data.category || '',
         replies: [],

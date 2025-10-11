@@ -23,6 +23,7 @@ import {
 } from 'lucide-react'
 import { toast } from "sonner"
 import { BlogPostsService } from '@/lib/blog-posts-service'
+import { BlogViewsService, BlogPostViewStats } from '@/lib/blog-views-service'
 import { BlogPost } from '@/lib/supabase'
 import Loading from '@/components/ui/loading'
 
@@ -32,6 +33,7 @@ export default function VisualizarPostPage({ params }: { params: Promise<{ id: s
   
   const [loading, setLoading] = useState(true)
   const [post, setPost] = useState<BlogPost | null>(null)
+  const [viewStats, setViewStats] = useState<BlogPostViewStats | null>(null)
 
   useEffect(() => {
     if (postId) {
@@ -58,8 +60,10 @@ export default function VisualizarPostPage({ params }: { params: Promise<{ id: s
 
       setPost(data)
       
-      // Incrementar visualizações
-      await BlogPostsService.incrementViews(postId)
+      // Carregar estatísticas reais de visualização
+      const stats = await BlogViewsService.getViewStats(postId)
+      setViewStats(stats)
+      // Não incrementar visualizações ao abrir no dashboard
     } catch (error) {
       console.error('Erro ao carregar post:', error)
       toast.error('Erro ao carregar post')
@@ -213,7 +217,7 @@ export default function VisualizarPostPage({ params }: { params: Promise<{ id: s
                 <div className="flex items-center gap-4 text-sm text-gray-500">
                   <div className="flex items-center gap-1">
                     <Eye className="h-4 w-4" />
-                    {post.views || 0}
+                    {viewStats?.totalViews ?? post.views ?? 0}
                   </div>
                   <div className="flex items-center gap-1">
                     <Heart className="h-4 w-4" />

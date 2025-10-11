@@ -405,25 +405,11 @@ export async function incrementForumQuestionViews(
   questionId: string
 ): Promise<void> {
   try {
-    // First get current views count
-    const { data: question } = await supabase
-      .from('forum_questions')
-      .select('views')
-      .eq('id', questionId)
-      .single()
-
-    if (question) {
-      const { error } = await supabase
-        .from('forum_questions')
-        .update({
-          views: question.views + 1,
-          last_activity_at: new Date().toISOString(),
-        })
-        .eq('id', questionId)
-
-      if (error) {
-        // Silent error handling: Error incrementing forum question views
-      }
+    const { error } = await supabase.rpc('increment_question_views', {
+      question_id: questionId,
+    })
+    if (error) {
+      // Silent error handling: Error incrementing forum question views
     }
   } catch (error) {
     // Silent error handling: Error in incrementForumQuestionViews
@@ -489,7 +475,7 @@ export async function getForumQuestionById(
       timestamp: new Date(data.created_at).toLocaleString('pt-BR'),
       likes: data.likes_count || 0,
       repliesCount: data.answers_count || 0,
-      views: data.views_count || 0,
+    views: data.views || 0,
       tags: data.tags || [],
       category: data.category || '',
       replies,

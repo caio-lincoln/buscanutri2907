@@ -198,7 +198,7 @@ export default function NutritionistForumQuestionPage() {
             },
             timestamp: questionData.created_at,
             likes: questionData.likes_count || 0,
-            views: questionData.views_count || 0,
+            views: questionData.views || 0,
             hasLiked: hasLikedQuestion,
             replies: questionData.answers_count || 0,
           }
@@ -206,11 +206,10 @@ export default function NutritionistForumQuestionPage() {
           setQuestion(transformedQuestion)
 
           // Increment view count
-          const newViewCount = (questionData.views_count || 0) + 1
-          await supabase
-            .from('forum_questions')
-            .update({ views_count: newViewCount })
-            .eq('id', questionId)
+          const newViewCount = (questionData.views || 0) + 1
+          await supabase.rpc('increment_question_views', {
+            question_id: questionId,
+          })
 
           // Update local state with new view count
           setQuestion(prev =>
@@ -335,7 +334,7 @@ export default function NutritionistForumQuestionPage() {
               ? {
                   ...prev,
                   likes: payload.new.likes_count || 0,
-                  views: payload.new.views_count || 0,
+                  views: payload.new.views || 0,
                   replies: payload.new.answers_count || 0,
                 }
               : null

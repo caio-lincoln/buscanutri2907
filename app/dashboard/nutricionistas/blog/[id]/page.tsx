@@ -29,6 +29,7 @@ import {
 } from 'lucide-react'
 import { getCurrentUser } from '@/lib/auth'
 import { getBlogPostById, updateBlogPost, type BlogPost } from '@/lib/blog-data'
+import { BlogPostsService } from '@/lib/blog-posts-service'
 import { toast } from '@/components/ui/use-toast'
 import { useAuth } from '../../../../../contexts/auth-context'
 
@@ -51,6 +52,8 @@ export default function NutritionistBlogPostPage() {
   const [saving, setSaving] = useState(false)
   const [ currentUserId, setCurrentUserId ] = useState<string | null>(null)
   const {user: currentUser, nutritionistProfile} = useAuth()
+  const [hasLiked, setHasLiked] = useState<boolean>(false)
+  const [likesCount, setLikesCount] = useState<number>(0)
   
 
   // Dashboard stats
@@ -77,6 +80,8 @@ export default function NutritionistBlogPostPage() {
       const postData = await getBlogPostById(postId)
       if (postData) {
         setPost(postData)
+        setHasLiked(postData.hasLiked)
+        setLikesCount(postData.likes_count)
         setEditForm({
           title: postData.title,
           excerpt: postData.excerpt,
@@ -102,6 +107,27 @@ export default function NutritionistBlogPostPage() {
       })
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleToggleLike = async () => {
+    if (!post) return
+    try {
+      if (!hasLiked) {
+        const { error } = await BlogPostsService.incrementLikes(post.id)
+        if (!error) {
+          setHasLiked(true)
+          setLikesCount(prev => prev + 1)
+        }
+      } else {
+        const { error } = await BlogPostsService.decrementLikes(post.id)
+        if (!error) {
+          setHasLiked(false)
+          setLikesCount(prev => Math.max(0, prev - 1))
+        }
+      }
+    } catch (e) {
+      // Silent error handling for like toggle
     }
   }
 
@@ -415,12 +441,14 @@ export default function NutritionistBlogPostPage() {
                   <div className="flex items-center justify-between pt-6 border-t">
                     <div className="flex items-center gap-4">
                       <Button
-                        variant="ghost"
+                        variant={hasLiked ? 'default' : 'ghost'}
                         size="sm"
-                        className="text-gray-600 hover:text-red-600"
+                        className={hasLiked ? 'bg-red-600 hover:bg-red-700 text-white' : 'text-gray-600 hover:text-red-600'}
+                        onClick={handleToggleLike}
                       >
-                        <Heart className="h-4 w-4 mr-2" />
-                        Curtir
+                        <Heart className={hasLiked ? 'h-4 w-4 mr-2 fill-current' : 'h-4 w-4 mr-2'} />
+                        {hasLiked ? 'Curtido' : 'Curtir'}
+                        <span className="ml-2 text-xs text-gray-500">{likesCount}</span>
                       </Button>
                       <Button
                         variant="ghost"

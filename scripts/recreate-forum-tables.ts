@@ -60,12 +60,13 @@ async function recreateForumTables() {
           author_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
           category VARCHAR(100) DEFAULT 'geral',
           tags TEXT[] DEFAULT '{}',
-          views_count INTEGER DEFAULT 0,
+          views INTEGER DEFAULT 0,
           answers_count INTEGER DEFAULT 0,
           likes_count INTEGER DEFAULT 0,
           best_answer_id UUID,
           is_resolved BOOLEAN DEFAULT false,
           created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+          last_activity_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
           updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
       );
 

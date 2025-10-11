@@ -162,16 +162,8 @@ export function useRealtimeBlogViewsBulk({
       // const bulkStats = await BlogViewsService.getBulkViewStats(blogPostIds);
       // setStatsMap(bulkStats);
 
-      // Inicializar com estatísticas vazias
-      const emptyStats: Record<string, BlogPostViewStats> = {}
-      blogPostIds.forEach(id => {
-        emptyStats[id] = {
-          totalViews: 0,
-          uniqueViews: 0,
-          lastViewAt: null,
-        }
-      })
-      setStatsMap(emptyStats)
+      // Evitar inicializar com zeros para não mascarar valores do banco
+      setStatsMap({})
     } catch (err) {
       console.error('Erro ao carregar estatísticas em lote:', err)
       setError('Erro ao carregar estatísticas de visualização')
@@ -261,7 +253,6 @@ export function useRealtimeBlogViewsBulk({
     isLoading,
     error,
     refreshStats,
-    getStatsForPost: (postId: string) =>
-      statsMap[postId] || { totalViews: 0, uniqueViews: 0, lastViewAt: null },
+    getStatsForPost: (postId: string) => statsMap[postId],
   }
 }

@@ -87,6 +87,37 @@ export default function PatientForumQuestionPage(props: { params: Promise<{ id: 
   const [loading, setLoading] = useState(true)
   const [currentUser, setCurrentUser] = useState<any>(null)
   const [currentPatientProfile, setCurrentPatientProfile] = useState<any>(null)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [sortOrder, setSortOrder] = useState<'recent' | 'likes' | 'best'>('recent')
+  const [replyContent, setReplyContent] = useState('')
+  const [isSubmittingReply, setIsSubmittingReply] = useState(false)
+
+  const filteredAndSortedReplies = useMemo(() => {
+    const base = question?.replies || []
+    const normalizedTerm = searchTerm.trim().toLowerCase()
+
+    let filtered = normalizedTerm
+      ? base.filter(r =>
+          (r.content || '').toLowerCase().includes(normalizedTerm) ||
+          ((r.author?.name || '').toLowerCase().includes(normalizedTerm))
+        )
+      : base
+
+    if (sortOrder === 'likes') {
+      filtered = [...filtered].sort((a, b) => (b.likes || 0) - (a.likes || 0))
+    } else if (sortOrder === 'best') {
+      filtered = [...filtered].sort((a, b) => Number(b.isBestAnswer) - Number(a.isBestAnswer))
+    } else {
+      // recent
+      filtered = [...filtered].sort((a, b) => {
+        const ta = new Date(a.timestamp || 0).getTime()
+        const tb = new Date(b.timestamp || 0).getTime()
+        return tb - ta
+      })
+    }
+
+    return filtered
+  }, [question?.replies, searchTerm, sortOrder])
 
   useEffect(() => {
     const loadData = async () => {
@@ -109,7 +140,55 @@ export default function PatientForumQuestionPage(props: { params: Promise<{ id: 
         }
 
         const questionData = await getForumQuestionById(questionId)
-        setQuestion(questionData)
+
+        // Enriquecer com estados de curtida reais para o usuário atual
+        if (user && questionData) {
+          const supabaseClient = createSupabaseClient()
+          // Curtida da pergunta
+          let hasLikedQuestion = false
+          try {
+            const { data: qLike } = await supabaseClient
+              .from('forum_question_likes')
+              .select('id')
+              .eq('question_id', questionId)
+              .eq('user_id', user.id)
+              .single()
+            hasLikedQuestion = !!qLike
+          } catch (_) {
+            hasLikedQuestion = false
+          }
+
+          // Curtidas nas respostas
+          const replyIds = (questionData.replies || []).map(r => r.id)
+          let likedRepliesSet = new Set<string>()
+          if (replyIds.length > 0) {
+            try {
+              const { data: replyLikes } = await supabaseClient
+                .from('forum_answer_likes')
+                .select('answer_id')
+                .eq('user_id', user.id)
+                .in('answer_id', replyIds)
+              likedRepliesSet = new Set(
+                (replyLikes || []).map((rl: any) => rl.answer_id)
+              )
+            } catch (_) {
+              likedRepliesSet = new Set<string>()
+            }
+          }
+
+          const enrichedReplies = (questionData.replies || []).map(r => ({
+            ...r,
+            hasLiked: likedRepliesSet.has(r.id),
+          }))
+
+          setQuestion({
+            ...questionData,
+            hasLiked: hasLikedQuestion,
+            replies: enrichedReplies,
+          })
+        } else {
+          setQuestion(questionData)
+        }
         console.log('Question data:', questionData)
         console.log('Question author:', questionData?.author)
         
@@ -185,7 +264,56 @@ export default function PatientForumQuestionPage(props: { params: Promise<{ id: 
       if (success) {
         // Reload question to reflect updated likes
         const updatedQuestion = await getForumQuestionById(questionId)
-        setQuestion(updatedQuestion)
+
+        // Recalcular estados de curtida reais para o usuário
+        if (updatedQuestion) {
+          const supabaseClient = createSupabaseClient()
+
+          // Pergunta
+          let hasLikedQuestion = false
+          try {
+            const { data: qLike } = await supabaseClient
+              .from('forum_question_likes')
+              .select('id')
+              .eq('question_id', questionId)
+              .eq('user_id', currentUser.id)
+              .single()
+            hasLikedQuestion = !!qLike
+          } catch (_) {
+            hasLikedQuestion = false
+          }
+
+          // Respostas
+          const replyIds = (updatedQuestion.replies || []).map(r => r.id)
+          let likedRepliesSet = new Set<string>()
+          if (replyIds.length > 0) {
+            try {
+              const { data: replyLikes } = await supabaseClient
+                .from('forum_answer_likes')
+                .select('answer_id')
+                .eq('user_id', currentUser.id)
+                .in('answer_id', replyIds)
+              likedRepliesSet = new Set(
+                (replyLikes || []).map((rl: any) => rl.answer_id)
+              )
+            } catch (_) {
+              likedRepliesSet = new Set<string>()
+            }
+          }
+
+          const enrichedReplies = (updatedQuestion.replies || []).map(r => ({
+            ...r,
+            hasLiked: likedRepliesSet.has(r.id),
+          }))
+
+          setQuestion({
+            ...updatedQuestion,
+            hasLiked: hasLikedQuestion,
+            replies: enrichedReplies,
+          })
+        } else {
+          setQuestion(updatedQuestion)
+        }
       }
     } catch (error) {
       // Error liking item - handled silently
@@ -328,7 +456,7 @@ export default function PatientForumQuestionPage(props: { params: Promise<{ id: 
                   variant="ghost"
                   size="sm"
                   onClick={() => handleLike(question.id, 'question')}
-                  className="flex items-center gap-1"
+                  className={`flex items-center gap-1 ${question.hasLiked ? 'text-[#D90D32]' : ''}`}
                 >
                   <ThumbsUp className="h-4 w-4" />
                   {question.likes || 0} Curtir
@@ -455,7 +583,7 @@ export default function PatientForumQuestionPage(props: { params: Promise<{ id: 
                       variant="ghost"
                       size="sm"
                       onClick={() => handleLike(reply.id, 'reply')}
-                      className="flex items-center gap-1"
+                      className={`flex items-center gap-1 ${reply.hasLiked ? 'text-[#D90D32]' : ''}`}
                     >
                       <ThumbsUp className="h-4 w-4" />
                       {reply.likes || 0} Curtir

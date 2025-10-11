@@ -20,6 +20,8 @@ export interface BlogPost {
   tags: string[]
   readTime: string // Ex: "5 min de leitura"
   views: number
+  likes_count: number
+  hasLiked: boolean
   featured: boolean
   centerImage?: boolean // Centralizar imagem de capa
   badges?: NutritionistBadge[] // Adicionar badges ao tipo
@@ -85,6 +87,8 @@ export async function getAllBlogPosts(): Promise<BlogPost[]> {
               : 5
           } min de leitura`,
           views: post.views || 0,
+          likes_count: post.likes_count || 0,
+          hasLiked: false,
           featured: post.featured || false,
           centerImage: post.center_image || false,
           badges: badges.map(nb => nb.badge),
@@ -123,6 +127,25 @@ export async function getBlogPostById(id: string): Promise<BlogPost | null> {
       return null
     }
 
+    // Verificar se usuário atual curtiu este post
+    let hasLiked = false
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (user) {
+        const { data: likeRow } = await supabase
+          .from('blog_post_likes')
+          .select('id')
+          .eq('post_id', post.id)
+          .eq('user_id', user.id)
+          .maybeSingle()
+        hasLiked = !!likeRow
+      }
+    } catch (e) {
+      hasLiked = false
+    }
+
     const badges = await getNutritionistBadges(post.author_id)
 
     return {
@@ -148,6 +171,8 @@ export async function getBlogPostById(id: string): Promise<BlogPost | null> {
           : 5
       } min de leitura`,
       views: post.views || 0,
+      likes_count: post.likes_count || 0,
+      hasLiked,
       featured: post.featured || false,
       centerImage: post.center_image || false,
       badges: badges.map(nb => nb.badge),
@@ -203,6 +228,8 @@ export async function getBlogPostsByAuthor(
           tags: post.tags || [],
           readTime: post.read_time || '5 min de leitura',
           views: post.views || 0,
+          likes_count: post.likes_count || 0,
+          hasLiked: false,
           featured: post.featured || false,
           centerImage: post.center_image || false,
           badges: badges.map(nb => nb.badge),
@@ -285,6 +312,8 @@ export async function addBlogPost(
           : 5
       } min de leitura`,
       views: 0,
+      likes_count: 0,
+      hasLiked: false,
       featured: post.featured || false,
       centerImage: post.center_image || false,
       badges: [],
@@ -328,6 +357,11 @@ export async function updateBlogPost(
       date: new Date(post.updated_at || post.created_at)
         .toISOString()
         .split('T')[0],
+      likes_count:
+        typeof updatedPost.likes_count === 'number'
+          ? updatedPost.likes_count
+          : post.likes_count || 0,
+      hasLiked: typeof updatedPost.hasLiked === 'boolean' ? updatedPost.hasLiked : false,
     }
   } catch (error) {
     // Silent error handling: Error updating post

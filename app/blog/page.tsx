@@ -37,7 +37,7 @@ export default function BlogPage() {
   const [visiblePosts, setVisiblePosts] = useState(6)
 
   const blogPostIds = useMemo(() => allBlogPosts.map(p => p.id), [allBlogPosts])
-  const { statsMap, refreshStats, getStatsForPost } = useRealtimeBlogViewsBulk({
+  const { statsMap, isLoading, refreshStats, getStatsForPost } = useRealtimeBlogViewsBulk({
     blogPostIds,
   })
 
@@ -46,15 +46,27 @@ export default function BlogPage() {
       const posts = await getAllBlogPosts()
       setAllBlogPosts(posts)
       // Carregar estatísticas em lote após obter posts
+      // Nota: o refresh aqui pode ocorrer antes de blogPostIds atualizar
+      // por isso também chamamos outro efeito quando blogPostIds mudar
       refreshStats().catch(() => {})
     }
     loadPosts()
   }, [])
 
+  // Atualizar estatísticas quando os IDs dos posts forem definidos/alterados
+  useEffect(() => {
+    if (blogPostIds.length === 0) return
+    refreshStats().catch(() => {})
+  }, [blogPostIds, refreshStats])
+
   // Função para obter visualizações atualizadas (temporariamente usando valores padrão)
   const getUpdatedViews = useCallback((post: BlogPost) => {
     const stats = getStatsForPost(post.id)
-    return stats?.totalViews ?? post.views
+    // Prioriza estatísticas reais do banco; se ausentes, usa post.views
+    if (stats && typeof stats.totalViews === 'number') {
+      return stats.totalViews
+    }
+    return post.views || 0
   }, [getStatsForPost])
 
   const sortOptions = [

@@ -1,4 +1,5 @@
 import { createSupabaseClient } from './supabase'
+import { BlogViewsService } from './blog-views-service'
 
 const supabase = createSupabaseClient()
 
@@ -80,10 +81,18 @@ export async function getContentEngagementStats(
       }
     }
 
+    // Carregar estatísticas reais de visualização
+    const blogIds = blogPosts?.map(p => p.id) || []
+    const bulkStats = blogIds.length
+      ? await BlogViewsService.getBulkViewStats(blogIds)
+      : {}
+
     // Calcular estatísticas
     const totalBlogPosts = blogPosts?.length || 0
-    const totalBlogViews =
-      blogPosts?.reduce((sum, post) => sum + (post.views || 0), 0) || 0
+    const totalBlogViews = blogIds.reduce(
+      (sum, id) => sum + (bulkStats[id]?.totalViews || 0),
+      0
+    )
     const totalForumAnswers = forumAnswers?.length || 0
     const totalForumQuestions = forumQuestions.length
     const totalForumViews = forumQuestions.reduce(
@@ -97,13 +106,21 @@ export async function getContentEngagementStats(
     const averageEngagementRate =
       totalContent > 0 ? Math.round(totalEngagement / totalContent) : 0
 
-    // Top 5 posts do blog
-    const topBlogPosts: BlogEngagement[] = (blogPosts || [])
+    // Top 5 posts do blog com contagem real
+    const orderedBlogPosts = (blogPosts || [])
+      .slice()
+      .sort((a, b) => {
+        const av = (bulkStats[a.id]?.totalViews ?? a.views ?? 0)
+        const bv = (bulkStats[b.id]?.totalViews ?? b.views ?? 0)
+        return bv - av
+      })
+
+    const topBlogPosts: BlogEngagement[] = orderedBlogPosts
       .slice(0, 5)
       .map(post => ({
         id: post.id,
         title: post.title,
-        views: post.views || 0,
+        views: bulkStats[post.id]?.totalViews ?? post.views ?? 0,
         created_at: post.created_at,
         tags: post.tags || [],
       }))
@@ -164,10 +181,12 @@ export async function getBlogPostDetails(
       return null
     }
 
+    const stats = await BlogViewsService.getViewStats(post.id)
+
     return {
       id: post.id,
       title: post.title,
-      views: post.views || 0,
+      views: stats.totalViews ?? post.views ?? 0,
       created_at: post.created_at,
       tags: post.tags || [],
     }

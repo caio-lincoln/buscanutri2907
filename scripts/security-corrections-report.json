@@ -30,7 +30,7 @@
     {
       "type": "Function",
       "description": "Corrigir função increment_question_views com search_path fixo",
-      "sql": "CREATE OR REPLACE FUNCTION public.increment_question_views(question_id uuid)\nRETURNS void\nLANGUAGE plpgsql\nSECURITY DEFINER\nSET search_path = public\nAS $$\nBEGIN\n    UPDATE blog_questions \n    SET views = views + 1 \n    WHERE id = question_id;\nEND;\n$$;",
+      "sql": "CREATE OR REPLACE FUNCTION public.increment_question_views(question_id uuid)\nRETURNS void\nLANGUAGE plpgsql\nSECURITY DEFINER\nSET search_path = public\nAS $$\nBEGIN\n    UPDATE public.forum_questions \n    SET views = views + 1,\n        last_activity_at = NOW() \n    WHERE id = question_id;\nEND;\n$$;",
       "priority": "Média",
       "status": "manual_required"
     },
