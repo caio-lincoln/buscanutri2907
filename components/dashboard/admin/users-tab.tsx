@@ -51,6 +51,8 @@ import {
 } from 'lucide-react'
 import { getAllUsers, type UserData } from '@/lib/admin-data-service'
 import { VerifyNutritionistModal } from './VerifyNutritionistModal'
+import EditUserModal, { EditUserData } from './EditUserModal'
+import ViewUserProfileModal, { ViewUserProfileData } from './ViewUserProfileModal'
 
 const userTypeIcons = {
   paciente: User,
@@ -83,6 +85,10 @@ export function UsersTab() {
     name?: string | null
     nutritionistProfileId: string
   } | null>(null)
+  const [ editModalOpen, setEditModalOpen ] = useState(false)
+  const [ editUser, setEditUser ] = useState<EditUserData | null>(null)
+  const [ viewModalOpen, setViewModalOpen ] = useState(false)
+  const [ viewUser, setViewUser ] = useState<ViewUserProfileData | null>(null)
 
   useEffect(() => {
     const loadUsers = async () => {
@@ -133,8 +139,66 @@ export function UsersTab() {
       })
       setVerifyModalOpen(true)
     } else {
-      // Implementar lógica real para cada ação (e.g., abrir modal de edição, chamar API)
-      alert(`Ação: ${action} para ${user.name} (${user.type})`)
+      if (action === 'edit') {
+        setEditUser({
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          type: user.type,
+          status: user.status,
+          nutritionist_profiles: user.nutritionist_profiles,
+        })
+        setEditModalOpen(true)
+        return
+      }
+      if (action === 'view') {
+        setViewUser({
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          type: user.type as ViewUserProfileData['type'],
+        })
+        setViewModalOpen(true)
+        return
+      }
+      // Ações administrativas: ativar/desativar/excluir
+      const exec = async () => {
+        try {
+          setLoading(true)
+          let url = ''
+          let options: RequestInit = { method: 'POST' }
+          if (action === 'deactivate') {
+            url = `/api/admin/users/${user.id}/deactivate`
+            options = { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ duration: '720h' }) }
+          } else if (action === 'activate') {
+            url = `/api/admin/users/${user.id}/activate`
+            options = { method: 'POST' }
+          } else if (action === 'delete') {
+            if (!window.confirm(`Tem certeza que deseja excluir ${user.name}?`)) {
+              return
+            }
+            url = `/api/admin/users/${user.id}/delete`
+            options = { method: 'DELETE' }
+          } else {
+            alert(`Ação não suportada: ${action}`)
+            return
+          }
+
+          const res = await fetch(url, options)
+          if (!res.ok) {
+            alert('Falha ao executar ação.')
+          }
+          // Recarregar lista
+          const refreshed = await getAllUsers()
+          setUsers(refreshed)
+        } catch (err) {
+          console.error('Erro executando ação admin:', err)
+          alert('Erro ao executar ação.')
+        } finally {
+          setLoading(false)
+        }
+      }
+      exec()
     }
   }
 
@@ -147,8 +211,21 @@ export function UsersTab() {
     // Recarregar dados após aprovação
     try {
       setLoading(true)
-      const userData = await getAllUsers()
-      setUsers(userData)
+      const refreshed = await getAllUsers()
+      setUsers(refreshed)
+    } catch {
+      // Silent error handling: Error reloading users
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleUserUpdated = async () => {
+    // Recarregar dados após atualização via modal de edição
+    try {
+      setLoading(true)
+      const refreshed = await getAllUsers()
+      setUsers(refreshed)
     } catch {
       // Silent error handling: Error reloading users
     } finally {
@@ -417,6 +494,19 @@ export function UsersTab() {
           onApproved={handleUserApproved}
         />
       )}
+
+      <EditUserModal
+        open={editModalOpen}
+        onOpenChange={setEditModalOpen}
+        user={editUser}
+        onUpdated={handleUserUpdated}
+      />
+
+      <ViewUserProfileModal
+        open={viewModalOpen}
+        onOpenChange={setViewModalOpen}
+        user={viewUser}
+      />
     </div>
   )
 }

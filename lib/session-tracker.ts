@@ -23,6 +23,15 @@ class SessionTracker {
   private isActive = true
   private isEnding = false
 
+  private isAbortLikeError(err: any): boolean {
+    const msg = String((err && (err.message || err.toString())) || '')
+    return (
+      (err && (err.name === 'AbortError' || err.code === 'ERR_ABORTED')) ||
+      msg.toLowerCase().includes('abort') ||
+      msg.toLowerCase().includes('networkerror when attempting to fetch resource')
+    )
+  }
+
   // Iniciar rastreamento de sessão
   async startSession(userId: string): Promise<void> {
     if (typeof window === 'undefined') return
@@ -54,7 +63,11 @@ class SessionTracker {
         .single()
 
       if (error) {
-        console.error('Erro ao iniciar sessão:', error)
+        if (this.isAbortLikeError(error)) {
+          console.debug('Sessão: insert abortado/ignorado')
+        } else {
+          console.error('Erro ao iniciar sessão:', error)
+        }
         return
       }
 
@@ -63,7 +76,11 @@ class SessionTracker {
       this.setupActivityListeners()
 
     } catch (error) {
-      console.error('Erro ao iniciar rastreamento de sessão:', error)
+      if (this.isAbortLikeError(error)) {
+        console.debug('Sessão: início abortado/ignorado')
+      } else {
+        console.error('Erro ao iniciar rastreamento de sessão:', error)
+      }
     }
   }
 
@@ -99,7 +116,11 @@ class SessionTracker {
       this.cleanup()
 
     } catch (error) {
-      console.error('Erro ao finalizar sessão:', error)
+      if (this.isAbortLikeError(error)) {
+        console.debug('Sessão: finalização abortada/ignorada')
+      } else {
+        console.error('Erro ao finalizar sessão:', error)
+      }
     } finally {
       this.isEnding = false
     }
@@ -134,7 +155,11 @@ class SessionTracker {
         .update({ page_views: this.pageViews })
         .eq('id', this.sessionId)
     } catch (error) {
-      console.error('Erro ao atualizar visualizações de página:', error)
+      if (this.isAbortLikeError(error)) {
+        console.debug('Sessão: atualização de page views abortada/ignorada')
+      } else {
+        console.error('Erro ao atualizar visualizações de página:', error)
+      }
     }
   }
 
@@ -184,14 +209,14 @@ class SessionTracker {
     })
 
     // Finalizar sessão quando a página é fechada
-    window.addEventListener('beforeunload', () => {
-      this.endSession()
+    window.addEventListener('pagehide', () => {
+      // Use beacon to avoid aborted network requests when page is unloading
+      this.sendSessionEndBeacon()
+      void this.endSession()
     })
 
     // Detectar mudanças de rota (para SPAs)
-    window.addEventListener('popstate', () => {
-      this.incrementPageView()
-    })
+    // Listener de rota removido; usamos SessionTrackerProvider para isso
   }
 
   // Limpar recursos
@@ -219,6 +244,24 @@ class SessionTracker {
       duration,
       pageViews: this.pageViews
     }
+  }
+
+  // Notificar servidor de fim de sessão via beacon
+  private sendSessionEndBeacon(): void {
+    if (!this.sessionId || !this.sessionStart || typeof navigator === 'undefined' || !('sendBeacon' in navigator)) return
+    try {
+      const end = new Date()
+      const durationSeconds = Math.floor((end.getTime() - this.sessionStart.getTime()) / 1000)
+      const payload = {
+        session_id: this.sessionId,
+        page_views: this.pageViews,
+        session_start: this.sessionStart.toISOString(),
+        session_end: end.toISOString(),
+        duration_seconds: durationSeconds,
+      }
+      const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' })
+      navigator.sendBeacon('/api/session/end', blob)
+    } catch {}
   }
 }
 

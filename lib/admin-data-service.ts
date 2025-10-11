@@ -26,6 +26,19 @@ export type {
  * Buscar todos os usuários do sistema
  */
 export async function getAllUsers(): Promise<UserData[]> {
+  // Preferir endpoint admin para status real quando disponível no cliente
+  if (typeof window !== 'undefined') {
+    try {
+      const response = await fetch('/api/admin/users', { cache: 'no-store' })
+      if (response.ok) {
+        const { data } = await response.json()
+        return data as UserData[]
+      }
+    } catch {
+      // Ignorar erro e fazer fallback
+    }
+  }
+
   try {
     const { data: users, error } = await supabase
       .from('users')
@@ -40,8 +53,7 @@ export async function getAllUsers(): Promise<UserData[]> {
       `)
       .order('created_at', { ascending: false })
 
-    if (error) {
-      // Silent error handling: Error fetching users
+    if (error || !users) {
       return []
     }
 
@@ -54,13 +66,12 @@ export async function getAllUsers(): Promise<UserData[]> {
         'Nome não disponível',
       email: user.email,
       type: user.user_type as 'paciente' | 'nutricionista' | 'empresa',
-      status: 'ativo',
+      status: user.nutritionist_profiles?.is_verified === false && user.user_type === 'nutricionista' ? 'pendente' : 'ativo',
       createdAt: user.created_at,
       is_verified: user.nutritionist_profiles?.is_verified,
       nutritionist_profiles: user.nutritionist_profiles,
     }))
   } catch {
-    // Silent error handling: Error in getAllUsers
     return []
   }
 }
