@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validar tipo de arquivo
-    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png']
+    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png']
     if (!allowedTypes.includes(file.type)) {
       return NextResponse.json(
         { error: 'Tipo de arquivo não suportado. Use PDF, JPG ou PNG.' },
@@ -117,8 +117,13 @@ export async function POST(request: NextRequest) {
     // Gerar nome único do arquivo
     const timestamp = Date.now()
     const fileExtension = file.name.split('.').pop()
+    // Sanitizar título preservando espaços que viram hífens e removendo caracteres inválidos
     const sanitizedTitle = title
-      ? title.replace(/[^a-zA-Z0-9s]/g, '').replace(/s+/g, '-')
+      ? title
+          .trim()
+          .replace(/[^\p{L}\p{N}\s-]/gu, '') // mantém letras (unicode), números, espaços e hífens
+          .replace(/\s+/g, '-')
+          .toLowerCase()
       : ''
     const fileName =
       documentType === 'crn_proof'

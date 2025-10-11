@@ -194,8 +194,19 @@ export async function signUp(
       // Silent error handling: General error creating profile
     }
 
+    // Preparar sessão final (da tentativa bem-sucedida de login)
+    const finalSession = signInError
+      ? (typeof retrySignIn !== 'undefined' ? retrySignIn?.session ?? null : null)
+      : (signInData?.session ?? null)
+
+    // Consolidar dados de retorno: manter usuário do signUp e sessão do signIn
+    const finalData = {
+      user: authData.user,
+      session: finalSession,
+    }
+
     // Silent logging: Signup with auto-confirmation completed successfully
-    return { data: authData, profileData: outProfileData, error: null }
+    return { data: finalData, profileData: outProfileData, error: null }
   } catch (error: any) {
     // Silent error handling: General signup error
     return {
