@@ -300,7 +300,7 @@ export default function CentralAjudaPage() {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link href="/vagas" className="w-full">
+                  <Link href="/cadastro?tipo=empresa" className="w-full">
                     Publicar Vagas
                   </Link>
                 </DropdownMenuItem>
@@ -506,13 +506,13 @@ export default function CentralAjudaPage() {
                   >
                     Encontrar Consultoria
                   </Link>
-                  <Link
-                    href="/vagas"
-                    className="block py-2 text-sm text-gray-600 hover:text-[#4AB0D9] transition-colors"
-                    onClick={closeMobileMenu}
-                  >
-                    Publicar Vagas
-                  </Link>
+                <Link
+                  href="/cadastro?tipo=empresa"
+                  className="block py-2 text-sm text-gray-600 hover:text-[#4AB0D9] transition-colors"
+                  onClick={closeMobileMenu}
+                >
+                  Publicar Vagas
+                </Link>
                   <Link
                     href="/cadastro?tipo=empresa"
                     className="block py-2 text-sm text-gray-600 hover:text-[#4AB0D9] transition-colors"

@@ -228,7 +228,7 @@ export default function Home({ initialStats }: Props) {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link href="/vagas" className="w-full">
+                  <Link href="/cadastro?tipo=empresa" className="w-full">
                     Publicar Vagas
                   </Link>
                 </DropdownMenuItem>
@@ -437,7 +437,7 @@ export default function Home({ initialStats }: Props) {
                   Encontrar Consultoria
                 </Link>
                 <Link
-                  href="/vagas"
+                  href="/cadastro?tipo=empresa"
                   onClick={closeMobileMenu}
                   className="flex items-center px-3 py-2.5 text-[#1E1D40]/70 hover:text-[#4AB0D9] hover:bg-[#4AB0D9]/5 rounded-lg transition-all duration-200 text-sm"
                 >

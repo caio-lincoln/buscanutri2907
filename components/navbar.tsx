@@ -150,7 +150,7 @@ export function Navbar() {
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href="/vagas" className="w-full">
+                <Link href="/cadastro?tipo=empresa" className="w-full">
                   Publicar Vagas
                 </Link>
               </DropdownMenuItem>
@@ -408,7 +408,7 @@ export function Navbar() {
                   Minha Área
                 </Link>
                 <Link
-                  href="/vagas"
+                  href="/cadastro?tipo=empresa"
                   onClick={closeMobileMenu}
                   className="text-gray-600 hover:text-[#1E1D40] transition duration-300 block py-1"
                 >
