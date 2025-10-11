@@ -2,7 +2,7 @@ import { listMyDocs, signDocUrls, deleteMyDoc, type NutritionistDoc } from '@/li
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { ExternalLink, Trash2, FileText } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { toast } from './ui/use-toast'
 
 export default function DocumentsCard() {
@@ -11,15 +11,13 @@ export default function DocumentsCard() {
   const [ loadingDocs, setLoadingDocs ] = useState(false)
 
   const loadDocuments = async () => {
-    if (!safeFormData.nutritionist_profile?.id) return
-
     setLoadingDocs(true)
     try {
-      const docs = await listMyDocs(safeFormData.nutritionist_profile.id)
+      const docs = await listMyDocs(safeFormData?.nutritionist_profile?.id)
       setDocuments(docs)
 
       if (docs.length > 0) {
-        const urls = await signDocUrls(docs.map(d => d.file_name))
+        const urls = await signDocUrls(docs.map(d => d.storage_path))
         setDocumentUrls(urls)
       }
     } catch (error) {
@@ -59,7 +57,7 @@ export default function DocumentsCard() {
 
   // Função para abrir documento
   const handleOpenDocument = (doc: NutritionistDoc) => {
-    const url = documentUrls[ doc.file_name ]
+    const url = documentUrls[ doc.storage_path ]
     if (url) {
       window.open(url, '_blank')
     } else {
@@ -154,6 +152,10 @@ export default function DocumentsCard() {
       </div>
     )
   }
+
+  useEffect(() => {
+    loadDocuments()
+  }, [])
 
   return renderDocumentsTab()
 

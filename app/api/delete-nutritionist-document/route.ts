@@ -93,7 +93,7 @@ export async function DELETE(request: NextRequest) {
 
     // Deletar arquivo do storage
     const { error: storageError } = await supabase.storage
-      .from('documentos-nutricionistas')
+      .from('nutritionist-documents')
       .remove([document.storage_path])
 
     if (storageError) {

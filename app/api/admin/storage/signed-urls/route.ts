@@ -5,7 +5,7 @@ import { requireAdmin } from '../../../../../lib/auth-utils'
 export async function POST(req: Request) {
   await requireAdmin()
   const body = await req.json().catch(() => ({}))
-  const { paths = [], expiresIn = 300, bucket = 'documentos-nutricionistas' } = body as { paths: string[]; expiresIn?: number; bucket?: string }
+  const { paths = [], expiresIn = 300, bucket = 'nutritionist-documents' } = body as { paths: string[]; expiresIn?: number; bucket?: string }
 
   if (!Array.isArray(paths) || paths.length === 0) {
     return NextResponse.json({ ok: false, message: 'paths inválidos' }, { status: 400 })

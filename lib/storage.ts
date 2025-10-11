@@ -5,7 +5,7 @@ const supabase = createSupabaseClient()
 /**
  * Helper para obter URL pública de um arquivo no storage
  */
-export function publicUrlFromStoragePath(path: string, bucket: string = 'documentos-nutricionistas'): string {
+export function publicUrlFromStoragePath(path: string, bucket: string = 'nutritionist-documents'): string {
   const { data } = supabase.storage.from(bucket).getPublicUrl(path)
   return data?.publicUrl ?? ''
 }

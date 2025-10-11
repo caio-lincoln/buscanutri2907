@@ -64,7 +64,7 @@ export function VerifyNutritionistModal({
   const loadDocuments = async () => {
     try {
       setLoadingDocs(true)
-      const documents = await getNutritionistDocuments(user.nutritionistProfileId)
+      const documents = await getNutritionistDocuments(user.id)
       setDocs(documents)
     } catch {
       toast({

@@ -267,7 +267,7 @@ export async function getNutritionistDocuments(nutritionistProfileId: string): P
     const res = await fetch('/api/admin/storage/signed-urls', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ bucket: 'documentos-nutricionistas', paths, expiresIn: 60 * 5 })
+      body: JSON.stringify({ bucket: 'nutritionist-documents', paths, expiresIn: 60 * 5 })
     })
     const j = await res.json().catch(() => ({}))
     const map: Record<string, string> = j?.results ?? {}
