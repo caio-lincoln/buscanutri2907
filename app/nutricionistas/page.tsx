@@ -148,6 +148,7 @@ export default function NutricionistasPage() {
   const [ sortBy, setSortBy ] = useState('rating')
   const [ viewMode, setViewMode ] = useState<'grid' | 'list'>('grid')
   const [ mobileMenuOpen, setMobileMenuOpen ] = useState(false)
+  const [ isHydrated, setIsHydrated ] = useState(false)
   const { user, signOut } = useAuth()
   const [ specialties, setSpecialties ] = useState<Specialty[]>([])
   const [ citiesOptions, setCitiesOptions ] = useState<BRCity[]>([])
@@ -232,6 +233,11 @@ export default function NutricionistasPage() {
     })()
   }, [ selectedState ])
 
+  // Evitar mismatch de hidratação: renderizar somente após montagem
+  useEffect(() => {
+    setIsHydrated(true)
+  }, [])
+
   // Gerenciar overflow do body quando o menu mobile está aberto
   useEffect(() => {
     if (mobileMenuOpen) {
@@ -273,7 +279,7 @@ export default function NutricionistasPage() {
   const currentDashboardUrl = useMemo(() => {
     return getDashboardUrl(user?.user_metadata[ 'user_type' ])
 
-  }, [ user?.user_type, getDashboardUrl ])
+  }, [ user?.user_metadata?.['user_type'], getDashboardUrl ])
 
   // Filtrar e ordenar nutricionistas
   const filteredNutritionists = useMemo(() => {
@@ -285,6 +291,9 @@ export default function NutricionistasPage() {
       if ((nutritionist.experience_years || 0) > 1 && mainAddressDisplay) {
         formattedData.location = mainAddressDisplay
       }
+
+      // Usar endereço principal quando disponível para aplicar filtros de UF/Cidade
+      const addressForFilter = mainAddressDisplay || nutritionist.address
 
       const matchesSearch =
         formattedData.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -314,7 +323,7 @@ export default function NutricionistasPage() {
       // O filtro por estado agora verifica se a string do estado está contida no endereço
       const matchesState =
         selectedState === 'Todas' ||
-        (nutritionist.address && addressMatchesState(nutritionist.address, selectedState))
+        (addressForFilter && addressMatchesState(addressForFilter, selectedState))
 
       const addressMatchesCity = (address: string | null | undefined, city: string): boolean => {
         if (!address || !city || city === 'Todas') return true
@@ -326,7 +335,7 @@ export default function NutricionistasPage() {
 
       const matchesCity =
         selectedCity === 'Todas' ||
-        addressMatchesCity(nutritionist.address, selectedCity)
+        addressMatchesCity(addressForFilter, selectedCity)
 
       const matchesPrice =
         selectedPriceRange.label === 'Todos' ||
@@ -380,6 +389,7 @@ export default function NutricionistasPage() {
     onlineOnly,
     aceitaCupons,
     sortBy,
+    mainAddresses,
   ])
 
   // Structured Data para SEO
@@ -428,10 +438,12 @@ export default function NutricionistasPage() {
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
-      />
+      {isHydrated && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+        />
+      )}
 
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
         {/* Header */}
@@ -469,7 +481,7 @@ export default function NutricionistasPage() {
             </nav>
 
             <div className="flex items-center gap-3">
-              {user && user.user_metadata[ 'user_type' ] ? (
+              {isHydrated && user && user.user_metadata[ 'user_type' ] ? (
                 // User is logged in - show dashboard and logout buttons
                 <>
                   <Link href={currentDashboardUrl}>

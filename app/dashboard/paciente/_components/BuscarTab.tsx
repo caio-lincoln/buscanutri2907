@@ -239,6 +239,7 @@ export default function BuscarTab() {
         const formattedMap: Record<string, string> = {}
         for (const addr of addresses) {
           const display = [ addr.state, addr.city, addr.neighborhood ].filter(Boolean).join(' / ')
+          // Preferir cidade/estado em formato consistente
           formattedMap[ addr.nutritionist_id ] = display
         }
         setMainAddresses(formattedMap)
@@ -534,9 +535,16 @@ export default function BuscarTab() {
                 // Determine effective view mode based on screen size
                 const effectiveViewMode = (isMobile || isVeryLargeScreen) ? 'list' : viewModeNutritionist
                 const mainAddressDisplay = mainAddresses[ nutritionist.id ]
-                const effectiveLocation = ((nutritionist.experience_years || 0) > 1 && mainAddressDisplay)
-                  ? mainAddressDisplay
-                  : (nutritionist.location || mainAddressDisplay)
+                const matchedAddress = (selectedNutritionistCity && selectedNutritionistCity !== 'Todas')
+                  ? (nutritionist as any).nutritionist_addresses?.find((addr: any) => {
+                      const addrCity = (addr?.city || '').toLowerCase()
+                      const selCity = (selectedNutritionistCity || '').toLowerCase()
+                      return addrCity === selCity
+                    })
+                  : undefined
+                const effectiveLocation = matchedAddress
+                  ? [ matchedAddress.state, matchedAddress.city, matchedAddress.neighborhood ].filter(Boolean).join(' / ')
+                  : (mainAddressDisplay || nutritionist.location)
 
                 return (
                   <Card

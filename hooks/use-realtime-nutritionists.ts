@@ -116,9 +116,10 @@ export function useRealtimeNutritionists(filters: UseRealtimeNutritionistsProps 
         // query = query.ilike('nutritionist_addresses.state', `%${filters.state}%`)
       }
 
-      // filtro por cidade
+      // filtro por cidade (case-insensitive)
       if (filters.city && filters.city !== 'Todas') {
-        query = query.eq('nutritionist_addresses.city', filters.city)
+        // Usar ilike para evitar problemas de maiúsculas/minúsculas/acentos
+        query = query.ilike('nutritionist_addresses.city', `%${filters.city}%`)
       }
 
       // filtro por região (aplica IN nos estados da região)
@@ -190,6 +191,7 @@ export function useRealtimeNutritionists(filters: UseRealtimeNutritionistsProps 
     filters.searchTerm,
     filters.priceRange,
     filters.state,
+    filters.city,
     filters.onlineOnly,
     filters.verifiedOnly,
     filters.sortBy,
