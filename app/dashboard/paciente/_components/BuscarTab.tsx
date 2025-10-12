@@ -39,6 +39,7 @@ import { toast } from 'sonner'
 import { addFavoriteNutritionist, FavoriteNutritionist, getPatientFavoriteNutritionists, removeFavoriteNutritionist } from '../../../../lib/consultation-service'
 import { useAuth } from '../../../../contexts/auth-context'
 import { BRState, BRCity, getStates, getCitiesByUF } from '../../../../lib/geo'
+import { nutritionistAddressService } from '@/lib/nutritionist-address-service'
 
 const getSpecialtiesText = (nutritionist: NutritionistProfile) => {
   return (
@@ -100,8 +101,6 @@ export default function BuscarTab() {
     useState('Todas')
   const [ selectedNutritionistCity, setSelectedNutritionistCity ] =
     useState('Todas')
-  const [ selectedNutritionistRegion, setSelectedNutritionistRegion ] =
-    useState('Todas')
   const [ selectedNutritionistPriceRange, setSelectedNutritionistPriceRange ] =
     useState(priceRanges[ 0 ])
   const [ onlineOnlyNutritionist, setOnlineOnlyNutritionist ] = useState(false)
@@ -158,7 +157,6 @@ export default function BuscarTab() {
     specialty: selectedNutritionistSpecialty === 'Todas' ? undefined : selectedNutritionistSpecialty,
     state: selectedNutritionistState === 'Todas' ? undefined : selectedNutritionistState,
     city: selectedNutritionistCity === 'Todas' ? undefined : selectedNutritionistCity,
-    region: selectedNutritionistRegion === 'Todas' ? undefined : selectedNutritionistRegion,
     priceRange: selectedNutritionistPriceRange && selectedNutritionistPriceRange.label === 'Todos'
       ? undefined
       : { min: selectedNutritionistPriceRange?.min as number, max: selectedNutritionistPriceRange?.max as number },
@@ -169,6 +167,7 @@ export default function BuscarTab() {
 
   const [ statesOptions, setStatesOptions ] = useState<BRState[]>([])
   const [ citiesOptions, setCitiesOptions ] = useState<BRCity[]>([])
+  const [ mainAddresses, setMainAddresses ] = useState<Record<string, string>>({})
 
   useEffect(() => {
     (async () => {
@@ -180,7 +179,7 @@ export default function BuscarTab() {
   useEffect(() => {
     (async () => {
       if (!selectedNutritionistState || selectedNutritionistState === 'Todas') {
-        setCitiesOptions([])
+        setCitiesOptions([ { ibge_id: Number.POSITIVE_INFINITY, name: 'Todas' } ])
         setSelectedNutritionistCity('Todas')
         return
       }
@@ -226,6 +225,39 @@ export default function BuscarTab() {
       setStartingChatFor(null)
     }
   }
+
+  // Buscar endereços principais em lote e formatar localização de exibição
+  useEffect(() => {
+    (async () => {
+      try {
+        const ids = (nutritionists || []).map(n => n.id).filter(Boolean)
+        if (!ids || ids.length === 0) {
+          setMainAddresses({})
+          return
+        }
+        const addresses = await nutritionistAddressService.getMainAddressesByNutritionistIds(ids as string[])
+        const formattedMap: Record<string, string> = {}
+        for (const addr of addresses) {
+          const display = [ addr.state, addr.city, addr.neighborhood ].filter(Boolean).join(' / ')
+          formattedMap[ addr.nutritionist_id ] = display
+        }
+        setMainAddresses(formattedMap)
+      } catch (e) {
+        // Silent error
+        setMainAddresses({})
+      }
+    })()
+  }, [ nutritionists ])
+
+  // Ajustar busca para incluir nomes de especialidades, alinhando com /nutricionistas
+  const normalizedSearch = (debouncedSearch || '').toLowerCase()
+  const displayNutritionists = nutritionists.filter(n => {
+    if (!normalizedSearch) return true
+    const nameMatch = (n.full_name || '').toLowerCase().includes(normalizedSearch)
+    const bioMatch = (n.bio || '').toLowerCase().includes(normalizedSearch)
+    const specialtyMatch = (n.nutritionist_specialties || []).some((s: any) => (s?.specialties?.name || '').toLowerCase().includes(normalizedSearch))
+    return nameMatch || bioMatch || specialtyMatch
+  })
 
   // const handleToggleFavorite = async (nutritionistId: string) => {
   //   try {
@@ -288,7 +320,6 @@ export default function BuscarTab() {
             setSelectedNutritionistSpecialty('Todas')
             setSelectedNutritionistState('Todas')
             setSelectedNutritionistCity('Todas')
-            setSelectedNutritionistRegion('Todas')
             setSelectedNutritionistPriceRange(priceRanges[ 0 ])
             setOnlineOnlyNutritionist(false)
             setShowVerifiedOnlyNutritionist(false)
@@ -336,7 +367,6 @@ export default function BuscarTab() {
             <Select
               value={selectedNutritionistState}
               onValueChange={(val) => {
-                setSelectedNutritionistRegion('Todas')
                 setSelectedNutritionistState(val)
               }}
             >
@@ -360,7 +390,6 @@ export default function BuscarTab() {
                 <SelectValue placeholder="Cidade" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={"Todas"}>Todas</SelectItem>
                 {citiesOptions.map(city => (
                   <SelectItem key={city.ibge_id} value={city.name}>
                     {city.name}
@@ -369,22 +398,6 @@ export default function BuscarTab() {
               </SelectContent>
             </Select>
 
-            <Select
-              value={selectedNutritionistRegion}
-              onValueChange={setSelectedNutritionistRegion}
-            >
-              <SelectTrigger className="h-11 md:h-12 border-0 bg-gray-50/50 focus:bg-white text-sm md:text-base">
-                <SelectValue placeholder="Região" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={"Todas"}>Todas</SelectItem>
-                <SelectItem value={"Norte"}>Norte</SelectItem>
-                <SelectItem value={"Nordeste"}>Nordeste</SelectItem>
-                <SelectItem value={"Centro-Oeste"}>Centro-Oeste</SelectItem>
-                <SelectItem value={"Sudeste"}>Sudeste</SelectItem>
-                <SelectItem value={"Sul"}>Sul</SelectItem>
-              </SelectContent>
-            </Select>
 
             <Select
               value={selectedNutritionistPriceRange?.label as string}
@@ -439,9 +452,9 @@ export default function BuscarTab() {
 
             <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 gap-4">
               <span className="text-xs md:text-sm text-[#1E1D40]/70 text-center sm:text-left">
-                {nutritionists.length} profissional
-                {nutritionists.length !== 1 ? 's' : ''} encontrado
-                {nutritionists.length !== 1 ? 's' : ''}
+                {displayNutritionists.length} profissional
+                {displayNutritionists.length !== 1 ? 's' : ''} encontrado
+                {displayNutritionists.length !== 1 ? 's' : ''}
               </span>
 
               {/* View mode toggle - hidden on mobile/tablet and very large screens, auto-switches to list */}
@@ -516,10 +529,14 @@ export default function BuscarTab() {
                   : 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6'
               }
             >
-              {nutritionists.map(nutritionist => {
+              {displayNutritionists.map(nutritionist => {
                 const formatted = formatNutritionistData(nutritionist)
                 // Determine effective view mode based on screen size
                 const effectiveViewMode = (isMobile || isVeryLargeScreen) ? 'list' : viewModeNutritionist
+                const mainAddressDisplay = mainAddresses[ nutritionist.id ]
+                const effectiveLocation = ((nutritionist.experience_years || 0) > 1 && mainAddressDisplay)
+                  ? mainAddressDisplay
+                  : (nutritionist.location || mainAddressDisplay)
 
                 return (
                   <Card
@@ -585,11 +602,11 @@ export default function BuscarTab() {
                               </span>
                             </div>
 
-                            {nutritionist.location && (
+                            {effectiveLocation && (
                               <div className="flex items-center gap-2">
                                 <MapPin className="h-4 w-4 text-gray-500 flex-shrink-0" />
                                 <span className="text-sm text-gray-600 truncate">
-                                  {nutritionist.location}
+                                  {effectiveLocation}
                                 </span>
                               </div>
                             )}
