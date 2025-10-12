@@ -51,6 +51,9 @@ interface TransactionData {
   stripe_session_id?: string
   stripe_payment_intent_id?: string
   stripe_customer_id?: string
+  had_coupon?: boolean
+  discount_brl?: number
+  coupon_code?: string
 }
 
 interface FinancialStats {
@@ -223,6 +226,69 @@ export default function FinancialTab() {
     return <Badge variant={config.variant}>{config.label}</Badge>
   }
 
+  // CSV export helpers
+  const sanitizeCsvValue = (value: unknown) => {
+    const str = value === undefined || value === null ? '' : String(value)
+    const safe = str.replace(/"/g, '""').replace(/\r?\n|\r/g, ' ')
+    return `"${safe}"`
+  }
+
+  const generateCsvContent = (txns: TransactionData[]) => {
+    const headers = [
+      'ID',
+      'Tipo',
+      'Descrição',
+      'Valor (BRL)',
+      'Status',
+      'Data',
+      'Usuário',
+      'Cupom',
+      'Desconto (BRL)',
+      'Stripe Session',
+      'Payment Intent',
+      'Customer'
+    ]
+
+    const rows = txns.map(t => [
+      t.id,
+      t.type,
+      t.description,
+      typeof t.amount === 'number' ? t.amount.toFixed(2) : '',
+      t.status,
+      formatDate(t.date),
+      t.user,
+      t.coupon_code ?? '',
+      typeof t.discount_brl === 'number' ? t.discount_brl.toFixed(2) : '',
+      t.stripe_session_id ?? '',
+      t.stripe_payment_intent_id ?? '',
+      t.stripe_customer_id ?? ''
+    ])
+
+    const headerLine = headers.join(',')
+    const bodyLines = rows.map(r => r.map(sanitizeCsvValue).join(',')).join('\n')
+    const content = `${headerLine}\n${bodyLines}`
+    // Add BOM for Excel UTF-8 compatibility
+    return `\ufeff${content}`
+  }
+
+  const handleExportCsv = () => {
+    try {
+      const csv = generateCsvContent(filteredTransactions)
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      const date = new Date().toISOString().slice(0, 10)
+      a.href = url
+      a.download = `transacoes_financeiras_${date}.csv`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      console.error('Erro ao exportar CSV:', err)
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -361,7 +427,7 @@ export default function FinancialTab() {
                 <SelectItem value="falhou">Falhou</SelectItem>
               </SelectContent>
             </Select>
-            <Button className="w-full sm:w-auto bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg shadow-md">
+            <Button onClick={handleExportCsv} className="w-full sm:w-auto bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg shadow-md">
               <Download className="h-4 w-4 mr-2" /> Exportar CSV
             </Button>
           </div>
@@ -374,7 +440,9 @@ export default function FinancialTab() {
                   <TableHead className="w-[100px]">ID</TableHead>
                   <TableHead>Tipo</TableHead>
                   <TableHead>Descrição</TableHead>
+                  <TableHead>Usou Cupom</TableHead>
                   <TableHead>Valor</TableHead>
+                  <TableHead>Desconto</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Data</TableHead>
                   <TableHead>Usuário</TableHead>
@@ -384,7 +452,7 @@ export default function FinancialTab() {
                 {currentTransactions.length === 0 ? (
                   <TableRow>
                     <TableCell
-                      colSpan={7}
+                      colSpan={9}
                       className="text-center py-8 text-gray-500"
                     >
                       Nenhuma transação encontrada com os filtros aplicados.
@@ -397,9 +465,36 @@ export default function FinancialTab() {
                         {txn.id}
                       </TableCell>
                       <TableCell>{getTypeBadge(txn.type)}</TableCell>
-                      <TableCell>{txn.description}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <span>{txn.description}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {(
+                          txn.had_coupon === true ||
+                          (txn.coupon_code && txn.coupon_code.trim() !== '') ||
+                          ((txn.discount_brl ?? 0) > 0)
+                        ) ? (
+                          <span className="text-gray-700">SIM</span>
+                        ) : (
+                          <span className="text-gray-500">NÃO</span>
+                        )}
+                      </TableCell>
                       <TableCell className="font-semibold">
                         {formatCurrency(txn.amount)}
+                      </TableCell>
+                      <TableCell>
+                        {txn.discount_brl && txn.discount_brl > 0 ? (
+                          <div className="flex items-center gap-2">
+                            <span className="text-gray-700">-{formatCurrency(txn.discount_brl)}</span>
+                            {txn.amount === 0 ? (
+                              <Badge variant="outline" className="text-xs">Desconto 100%</Badge>
+                            ) : null}
+                          </div>
+                        ) : (
+                          <span className="text-gray-500">—</span>
+                        )}
                       </TableCell>
                       <TableCell>
                         {getStatusBadge(txn.status)}
