@@ -2118,7 +2118,7 @@ export function UserProfileModal({
                       </Card>
 
                       <AddressCard userType={userType} open={open} />
-                      <DocumentsCard userType={userType} />
+                      <DocumentsCard profileId={userId} debug />
                     </>
                   )}
                 </>
