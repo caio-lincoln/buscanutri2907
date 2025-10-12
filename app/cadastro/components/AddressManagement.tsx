@@ -265,6 +265,10 @@ export default function AddressManagement({
           </Button>
         </div>
 
+        <p className="text-sm text-gray-600">
+          É obrigatório cadastrar pelo menos um endereço de atendimento. Se você atender apenas de forma virtual, cadastre o endereço da sua residência.
+        </p>
+
         {/* Lista de endereços */}
         {addresses.length > 0 && (
           <div className="space-y-3">

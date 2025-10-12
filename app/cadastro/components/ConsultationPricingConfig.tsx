@@ -104,11 +104,11 @@ export default function ConsultationPricingConfig({
     if (cfg.inPerson.enabled) {
       if (cfg.inPerson.pricingType === 'combined') {
         const p = parseCurrency(cfg.inPerson.combinedPrice)
-        if (p === null || p < 0) errs.push('Preço único presencial deve ser maior ou igual a R$ 0,00.')
+        if (p === null || p <= 60) errs.push('Preço único presencial deve ser acima de R$ 60,00.')
       } else {
         const c = parseCurrency(cfg.inPerson.consultationPrice)
         const f = parseCurrency(cfg.inPerson.followupPrice)
-        if (c === null || c < 0) errs.push('Preço da consulta presencial deve ser maior ou igual a R$ 0,00.')
+        if (c === null || c <= 60) errs.push('Preço da consulta presencial deve ser acima de R$ 60,00.')
         if (f === null || f < 0) errs.push('Preço do retorno presencial deve ser maior ou igual a R$ 0,00.')
       }
     }
@@ -116,11 +116,11 @@ export default function ConsultationPricingConfig({
     if (cfg.online.enabled) {
       if (cfg.online.pricingType === 'combined') {
         const p = parseCurrency(cfg.online.combinedPrice)
-        if (p === null || p < 0) errs.push('Preço único online deve ser maior ou igual a R$ 0,00.')
+        if (p === null || p <= 60) errs.push('Preço único de teleconsulta deve ser acima de R$ 60,00.')
       } else {
         const c = parseCurrency(cfg.online.consultationPrice)
         const f = parseCurrency(cfg.online.followupPrice)
-        if (c === null || c < 0) errs.push('Preço da consulta online deve ser maior ou igual a R$ 0,00.')
+        if (c === null || c <= 60) errs.push('Preço da consulta online deve ser acima de R$ 60,00.')
         if (f === null || f < 0) errs.push('Preço do retorno online deve ser maior ou igual a R$ 0,00.')
       }
     }
@@ -132,7 +132,7 @@ export default function ConsultationPricingConfig({
   const updateConfig = (updates: Partial<PricingConfig>) => {
     setPricingConfig(prev => {
       const next = { ...prev, ...updates }
-      // setErrors(validatePricing(next))
+      setErrors(validatePricing(next))
       return next
     })
   }
@@ -157,7 +157,7 @@ export default function ConsultationPricingConfig({
           <AlertDescription>
             Configure os preços para suas consultas. Você pode escolher entre
             preço único (consulta + retorno) ou preços separados para cada
-            modalidade. É obrigatório configurar pelo menos uma modalidade.
+            modalidade. É obrigatório configurar pelo menos uma modalidade. O preço mínimo por modalidade é R$ 60,00.
           </AlertDescription>
         </Alert>
 
@@ -218,6 +218,7 @@ export default function ConsultationPricingConfig({
                   <PriceInput
                     label="Preço único (consulta + retorno)"
                     value={priceValue}
+                    placeholder="R$ 60,00"
                     onChange={value => {
                       setPriceValue(value)
                       updateConfig({
@@ -236,6 +237,7 @@ export default function ConsultationPricingConfig({
                   <PriceInput
                     label="Preço da consulta"
                     value={pricingConfig.inPerson.consultationPrice}
+                    placeholder="R$ 60,00"
                     onChange={value =>
                       updateConfig({
                         inPerson: {
@@ -318,6 +320,7 @@ export default function ConsultationPricingConfig({
                   <PriceInput
                     label="Preço único (consulta + retorno)"
                     value={pricingConfig.online.combinedPrice}
+                    placeholder="R$ 60,00"
                     onChange={value =>
                       updateConfig({
                         online: {
@@ -335,6 +338,7 @@ export default function ConsultationPricingConfig({
                   <PriceInput
                     label="Preço da consulta"
                     value={pricingConfig.online.consultationPrice}
+                    placeholder="R$ 60,00"
                     onChange={value =>
                       updateConfig({
                         online: {

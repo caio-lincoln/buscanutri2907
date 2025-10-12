@@ -240,6 +240,28 @@ class NutritionistAddressService {
   }
 
   /**
+   * Get main addresses for multiple nutritionists in a single query
+   */
+  async getMainAddressesByNutritionistIds(
+    nutritionistIds: string[]
+  ): Promise<NutritionistAddress[]> {
+    if (!nutritionistIds || nutritionistIds.length === 0) return []
+
+    const { data, error } = await supabase
+      .from('nutritionist_addresses')
+      .select('*')
+      .in('nutritionist_id', nutritionistIds)
+      .eq('is_main', true)
+      .eq('status', 'active')
+
+    if (error) {
+      throw new Error(`Failed to fetch main addresses: ${error.message}`)
+    }
+
+    return data || []
+  }
+
+  /**
    * Get all unique cities where nutritionists provide in-person services
    * Used for city filter in search
    */

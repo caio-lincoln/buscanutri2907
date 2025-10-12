@@ -35,6 +35,7 @@ import {
   getAllNutritionists,
   formatNutritionistData,
 } from '@/lib/nutritionist-service'
+import { nutritionistAddressService } from '@/lib/nutritionist-address-service'
 import type { NutritionistProfile, Specialty } from '@/lib/supabase' // Importa a interface real
 import { useAuth } from '../../contexts/auth-context'
 import { normalizeText } from '../../lib/utils/normalize'
@@ -102,13 +103,7 @@ const UF_ALIASES: Record<string, string[]> = {
   TO: [ 'TO', 'TOCANTINS' ],
 };
 
-const REGION_STATES: Record<string, string[]> = {
-  'Norte': [ 'AC', 'AP', 'AM', 'PA', 'RO', 'RR', 'TO' ],
-  'Nordeste': [ 'AL', 'BA', 'CE', 'MA', 'PB', 'PE', 'PI', 'RN', 'SE' ],
-  'Centro-Oeste': [ 'DF', 'GO', 'MT', 'MS' ],
-  'Sudeste': [ 'ES', 'MG', 'RJ', 'SP' ],
-  'Sul': [ 'PR', 'RS', 'SC' ],
-}
+// Região removida dos filtros
 
 const normalize = (s: string) =>
   (s || '')
@@ -142,11 +137,11 @@ const priceRanges = [
 export default function NutricionistasPage() {
   const [ nutritionists, setNutritionists ] = useState<NutritionistProfile[]>([])
   const [ loading, setLoading ] = useState(true)
+  const [ mainAddresses, setMainAddresses ] = useState<Record<string, string>>({})
   const [ searchTerm, setSearchTerm ] = useState('')
   const [ selectedSpecialty, setSelectedSpecialty ] = useState('Todas')
   const [ selectedState, setSelectedState ] = useState('Todas')
   const [ selectedCity, setSelectedCity ] = useState('Todas')
-  const [ selectedRegion, setSelectedRegion ] = useState('Todas')
   const [ selectedPriceRange, setSelectedPriceRange ] = useState(priceRanges[ 0 ])
   const [ onlineOnly, setOnlineOnly ] = useState(false)
   const [ aceitaCupons, setAceitaCupons ] = useState(false)
@@ -164,6 +159,23 @@ export default function NutricionistasPage() {
         setLoading(true)
         const data = await getAllNutritionists()
         setNutritionists(data)
+
+        // Fetch main addresses in batch and store as formatted location strings
+        try {
+          const ids = (data || []).map(n => n.id).filter(Boolean)
+          const addresses = await nutritionistAddressService.getMainAddressesByNutritionistIds(ids as string[])
+          const formattedMap: Record<string, string> = {}
+          for (const addr of addresses) {
+            const parts = [addr.city, addr.state, addr.neighborhood].filter(Boolean)
+            // Prioritize Estado/Cidade/Bairro; if neighborhood exists, include it after city
+            const display = [addr.state, addr.city, addr.neighborhood].filter(Boolean).join(' / ')
+            formattedMap[addr.nutritionist_id] = display || parts.join(' / ')
+          }
+          setMainAddresses(formattedMap)
+        } catch (e) {
+          // Silent error: unable to load main addresses
+          setMainAddresses({})
+        }
       } catch (error) {
         // Silent error handling for nutritionist loading
       } finally {
@@ -202,7 +214,14 @@ export default function NutricionistasPage() {
       try {
         if (selectedState && selectedState !== 'Todas') {
           const cities = await getCitiesByUF(selectedState)
-          setCitiesOptions([ { ibge_id: Number.POSITIVE_INFINITY, name: 'Todas' }, ...cities ])
+          const uniqueMap = new Map<string, BRCity>()
+          for (const c of cities) {
+            const key = (c.name || '').trim().toUpperCase()
+            if (!uniqueMap.has(key)) uniqueMap.set(key, c)
+          }
+          const uniqueCities = Array.from(uniqueMap.values()).sort((a, b) => a.name.localeCompare(b.name))
+          setCitiesOptions([ { ibge_id: Number.POSITIVE_INFINITY, name: 'Todas' }, ...uniqueCities ])
+          setSelectedCity('Todas')
         } else {
           setCitiesOptions([ { ibge_id: Number.POSITIVE_INFINITY, name: 'Todas' } ])
           setSelectedCity('Todas')
@@ -261,6 +280,12 @@ export default function NutricionistasPage() {
     const filtered = nutritionists.filter(nutritionist => {
       const formattedData = formatNutritionistData(nutritionist)
 
+      // Override location display for experienced (>1 ano) using main address
+      const mainAddressDisplay = mainAddresses[nutritionist.id]
+      if ((nutritionist.experience_years || 0) > 1 && mainAddressDisplay) {
+        formattedData.location = mainAddressDisplay
+      }
+
       const matchesSearch =
         formattedData.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         formattedData.specialty
@@ -303,13 +328,6 @@ export default function NutricionistasPage() {
         selectedCity === 'Todas' ||
         addressMatchesCity(nutritionist.address, selectedCity)
 
-      const matchesRegion = (() => {
-        if (!selectedRegion || selectedRegion === 'Todas') return true
-        const ufs = REGION_STATES[selectedRegion] || []
-        if (!nutritionist.address) return false
-        return ufs.some(uf => addressMatchesState(nutritionist.address, uf))
-      })()
-
       const matchesPrice =
         selectedPriceRange.label === 'Todos' ||
         nutritionist.consultation_price === undefined ||
@@ -327,7 +345,6 @@ export default function NutricionistasPage() {
         matchesSpecialty &&
         matchesState &&
         matchesCity &&
-        matchesRegion &&
         matchesPrice &&
         matchesOnline &&
         matchesCupons
@@ -359,7 +376,6 @@ export default function NutricionistasPage() {
     selectedSpecialty,
     selectedState,
     selectedCity,
-    selectedRegion,
     selectedPriceRange,
     onlineOnly,
     aceitaCupons,
@@ -375,6 +391,10 @@ export default function NutricionistasPage() {
     numberOfItems: filteredNutritionists.length,
     itemListElement: filteredNutritionists.map((nutritionist, index) => {
       const formatted = formatNutritionistData(nutritionist)
+      const mainAddressDisplay = mainAddresses[nutritionist.id]
+      if ((nutritionist.experience_years || 0) > 1 && mainAddressDisplay) {
+        formatted.location = mainAddressDisplay
+      }
       return {
         '@type': 'Person',
         position: index + 1,
@@ -774,8 +794,8 @@ export default function NutricionistasPage() {
                   </SelectContent>
                 </Select>
 
-                {/* Cidade
-                 <Select value={selectedState} onValueChange={setSelectedState}>
+                {/* Cidade */}
+                <Select value={selectedCity} onValueChange={setSelectedCity}>
                   <SelectTrigger className="h-12">
                     <SelectValue placeholder="Cidade" />
                   </SelectTrigger>
@@ -783,20 +803,6 @@ export default function NutricionistasPage() {
                     {citiesOptions.map(city => (
                       <SelectItem key={city.ibge_id} value={city.name}>
                         {city.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                {/* Região */}
-                <Select value={selectedRegion} onValueChange={setSelectedRegion}>
-                  <SelectTrigger className="h-12">
-                    <SelectValue placeholder="Região" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {['Todas', 'Norte', 'Nordeste', 'Centro-Oeste', 'Sudeste', 'Sul'].map(region => (
-                      <SelectItem key={region} value={region}>
-                        {region}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -985,7 +991,9 @@ export default function NutricionistasPage() {
                             <div className="space-y-2 mb-4">
                               <div className="flex items-center gap-2 text-sm text-[#1E1D40]/70">
                                 <MapPin className="h-4 w-4" />
-                                {formatted.location}
+                                {(nutritionist.experience_years || 0) > 1 && mainAddresses[nutritionist.id]
+                                  ? mainAddresses[nutritionist.id]
+                                  : formatted.location}
                               </div>
                               <div className="flex items-center gap-2 text-sm text-[#1E1D40]/70">
                                 <Briefcase className="h-4 w-4" />
