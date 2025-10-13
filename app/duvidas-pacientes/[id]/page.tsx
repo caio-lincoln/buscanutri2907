@@ -53,14 +53,25 @@ export default function DuvidaPacienteDetalhePage(props: { params: Promise<{ id:
     loadQuestion()
   }, [questionId])
 
+  // Parser seguro para strings 'dd/mm/yyyy, HH:mm[:ss]' ou ISO
+  const parseBRDateTime = (ts: string): Date | null => {
+    try {
+      const m = ts.match(/(\d{2})\/(\d{2})\/(\d{4})(?:[,\s]+(\d{2}):(\d{2})(?::(\d{2}))?)?/)
+      if (!m) return null
+      const [, dd, mm, yyyy, HH = '00', MM = '00', SS = '00'] = m
+      const iso = `${yyyy}-${mm}-${dd}T${HH}:${MM}:${SS}`
+      const d = new Date(iso)
+      return isNaN(d.getTime()) ? null : d
+    } catch {
+      return null
+    }
+  }
+
   const formatTimeAgo = (timestamp: string) => {
     try {
-      const date = new Date(
-        timestamp.replace(
-          /(d{2})\/(d{2})\/(d{4}), (d{2}):(d{2}):(d{2})/,
-          '$3-$2-$1T$4:$5:$6'
-        )
-      )
+      const d1 = new Date(timestamp)
+      const date = isNaN(d1.getTime()) ? parseBRDateTime(timestamp) : d1
+      if (!date) return timestamp
       return formatDistanceToNow(date, { addSuffix: true, locale: ptBR })
     } catch {
       return timestamp
