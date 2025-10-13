@@ -331,7 +331,13 @@ Aguardo retorno para mais informações sobre os planos corporativos!`
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-4">
-                  <Link href="/cadastro?tipo=empresa">
+                  <Link
+                    href={
+                      `https://wa.me/5579998134938?text=${encodeURIComponent('Olá! Sou uma empresa e gostaria de solicitar uma proposta corporativa de planos e serviços.')}`
+                    }
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
                     <Button
                       size="lg"
                       className="bg-[#1E1D40] hover:bg-[#1E1D40]/90 text-white"
@@ -624,9 +630,9 @@ Aguardo retorno para mais informações sobre os planos corporativos!`
                   </Button>
                 </Link>
                 <Link
-                  href="https://wa.me/5579998134938?text=Olá! Sou uma empresa, e gostaria de agendar demonstração sobre nutrição corporativa"
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  href={
+                    `mailto:empresas@buscanutri.com.br?subject=${encodeURIComponent('Solicitação de proposta corporativa')}&body=${encodeURIComponent('Olá! Sou uma empresa e gostaria de solicitar uma proposta corporativa de planos e serviços. Podemos conversar?')}`
+                  }
                 >
                   <Button
                     size="lg"
