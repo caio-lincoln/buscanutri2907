@@ -2095,7 +2095,7 @@ export function UserProfileModal({
 
                             <div>
                               <Label htmlFor="service_meal_plan_price">
-                                Preco da Consultoria em cozinhas (UAN)
+                                Preço do Plano Alimentar (R$)
                               </Label>
                               <Input
                                 id="service_meal_plan_price"
