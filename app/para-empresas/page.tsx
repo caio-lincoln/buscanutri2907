@@ -341,7 +341,7 @@ Aguardo retorno para mais informações sobre os planos corporativos!`
                     </Button>
                   </Link>
                   <Link
-                    href="https://wa.me/5579998134938?text=Olá! Gostaria de tirar dúvidas sobre a plataforma Busca Nutri para empresas."
+                    href="https://wa.me/5579998134938?text=Olá! Sou uma empresa, e gostaria de agendar demonstração sobre nutrição corporativa"
                     target="_blank"
                     rel="noopener noreferrer"
                   >
@@ -624,7 +624,7 @@ Aguardo retorno para mais informações sobre os planos corporativos!`
                   </Button>
                 </Link>
                 <Link
-                  href="https://wa.me/5579998134938?text=Olá! Gostaria de tirar dúvidas sobre a plataforma Busca Nutri para empresas."
+                  href="https://wa.me/5579998134938?text=Olá! Sou uma empresa, e gostaria de agendar demonstração sobre nutrição corporativa"
                   target="_blank"
                   rel="noopener noreferrer"
                 >

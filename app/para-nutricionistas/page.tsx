@@ -211,14 +211,14 @@ export default function ParaNutricionistasPage() {
                       <ArrowRight className="ml-2 h-5 w-5" />
                     </Button>
                   </Link>
-                  <Link href="https://wa.me/5579998134938?text=Olá! Gostaria de tirar dúvidas sobre a plataforma Busca Nutri na visão de nutricionista." target="_blank" rel="noopener noreferrer">
+                  <Link href="https://wa.me/5579998134938?text=Olá, sou nutricionista, e gostaria de agendar uma demonstração da plataforma." target="_blank" rel="noopener noreferrer">
                     <Button
                       size="lg"
                       variant="outline"
                       className="border-2 border-[#4AB0D9] text-[#4AB0D9] bg-transparent"
                     >
                       Ver Demonstração
-                    </Button>
+                     </Button>
                   </Link>
                 </div>
 
@@ -419,11 +419,11 @@ export default function ParaNutricionistasPage() {
                     variant="secondary"
                     className="bg-white text-[#4AB0D9] hover:bg-gray-100"
                   >
-                    Começar Gratuitamente
+                    Entrar para contato
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
                 </Link>
-                <Link href="https://wa.me/5579998134938?text=Olá! Gostaria de tirar dúvidas sobre a plataforma Busca Nutri na visão de nutricionista." target="_blank" rel="noopener noreferrer">
+                <Link href="https://wa.me/5579998134938?text=Olá, sou nutricionista, e gostaria de agendar uma demonstração da plataforma." target="_blank" rel="noopener noreferrer">
                   <Button
                     size="lg"
                     variant="outline"
