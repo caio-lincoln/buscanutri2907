@@ -1,4 +1,7 @@
-import { supabase } from './supabase'
+import { createSupabaseClient } from './supabase'
+
+// Use o cliente autenticado (browser) para garantir sessão consistente
+const supabase = createSupabaseClient()
 
 // Novos tipos conforme especificação
 export type ServiceType = 'presencial' | 'online' | 'hibrido'
@@ -101,7 +104,6 @@ class NutritionistAddressService {
       .select()
       .single()
     console.log("🚀 ~ NutritionistAddressService ~ createAddress ~ address:", address)
-
     console.log("🚀 ~ NutritionistAddressService ~ createAddress ~ error:", error)
 
     if (error) {
@@ -444,7 +446,9 @@ export async function upsertMyAddress(address: Partial<NutritionistAddress> & { 
     number: address.number,
     neighborhood: address.neighborhood,
     complement: address.complement,
-    service_radius_km: address.radius_km,
+    service_radius_km: address.radius_km !== undefined && address.radius_km !== null
+      ? Number(address.radius_km)
+      : undefined,
     country: 'Brasil',
   }
 
@@ -458,6 +462,10 @@ export async function upsertMyAddress(address: Partial<NutritionistAddress> & { 
       .single()
 
     if (error) {
+      console.error('Erro ao atualizar endereço', {
+        payload: { id: address.id, ...dbAddress },
+        error: { message: error.message, code: (error as any)?.code },
+      })
       throw new Error(`Failed to update address: ${error.message}`)
     }
     return data
@@ -470,6 +478,10 @@ export async function upsertMyAddress(address: Partial<NutritionistAddress> & { 
       .single()
 
     if (error) {
+      console.error('Erro ao criar endereço', {
+        payload: dbAddress,
+        error: { message: error.message, code: (error as any)?.code },
+      })
       throw new Error(`Failed to create address: ${error.message}`)
     }
     return data

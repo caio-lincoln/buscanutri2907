@@ -107,6 +107,16 @@ export function AddressCard({ userType, open }: Props) {
       return
     }
 
+    // Estado e Cidade são obrigatórios para qualquer tipo de endereço
+    if (!addressFormData.state || !addressFormData.city) {
+      toast({
+        title: 'Erro de validação',
+        description: 'Estado e cidade são obrigatórios.',
+        variant: 'destructive',
+      })
+      return
+    }
+
     if (addressFormData.service_type === 'presencial' && !addressFormData.cep) {
       toast({
         title: 'Erro de validação',
@@ -129,6 +139,8 @@ export function AddressCard({ userType, open }: Props) {
     try {
       await upsertMyAddress({
         ...addressFormData,
+        // Garantir tipo numérico para o raio
+        radius_km: addressFormData.radius_km !== undefined ? Number(addressFormData.radius_km as any) : undefined,
         nutritionist_id: nutritionistProfile.id,
       })
 
@@ -149,7 +161,7 @@ export function AddressCard({ userType, open }: Props) {
     } catch (error) {
       toast({
         title: 'Erro ao salvar',
-        description: 'Não foi possível salvar o endereço.',
+        description: (error as any)?.message || 'Não foi possível salvar o endereço.',
         variant: 'destructive',
       })
     } finally {

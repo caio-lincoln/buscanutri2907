@@ -19,6 +19,31 @@ interface PlanOption {
   features: string[]
 }
 
+// Preços específicos por funcionário para contagens 10, 20 e 100
+// Somente para os planos Startup conforme solicitado
+const tierPrices: Record<string, Record<number, number>> = {
+  'startup-basico-mensal': {
+    10: 50,
+    20: 47,
+    100: 40,
+  },
+  'startup-basico-avulso': {
+    10: 60,
+    20: 55,
+    100: 47,
+  },
+  'startup-premium-mensal': {
+    10: 100,
+    20: 95,
+    100: 85,
+  },
+  'startup-premium-avulso': {
+    10: 110,
+    20: 105,
+    100: 95,
+  },
+}
+
 const planOptions: PlanOption[] = [
   // Startup Plans
   {
@@ -159,21 +184,30 @@ function CalculadoraCorporativa() {
 
   useEffect(() => {
     // Filtrar planos baseado no número de funcionários
-    const availablePlans = planOptions.filter(plan => numEmployees <= plan.maxEmployees)
+    const hasTierForCount = (plan: PlanOption, count: number) => !!tierPrices[plan.id]?.[count]
+    const availablePlans = planOptions.filter(
+      (plan) => numEmployees <= plan.maxEmployees || hasTierForCount(plan, numEmployees)
+    )
     setFilteredPlans(availablePlans)
     
     // Se o plano selecionado não está mais disponível, limpar seleção
-    if (selectedPlan && numEmployees > selectedPlan.maxEmployees) {
+    if (
+      selectedPlan &&
+      !(numEmployees <= selectedPlan.maxEmployees || hasTierForCount(selectedPlan, numEmployees))
+    ) {
       setSelectedPlan(null)
     }
   }, [numEmployees, selectedPlan])
 
   const calculatePrice = (plan: PlanOption): number => {
+    const tier = tierPrices[plan.id]?.[numEmployees]
+    if (typeof tier === 'number') {
+      return tier * numEmployees
+    }
     if (plan.priceType === 'fixed') {
       return plan.price
-    } else {
-      return plan.price * numEmployees
     }
+    return plan.price * numEmployees
   }
 
   const formatPrice = (price: number): string => {
@@ -184,6 +218,10 @@ function CalculadoraCorporativa() {
   }
 
   const getPricePerEmployee = (plan: PlanOption): number => {
+    const tier = tierPrices[plan.id]?.[numEmployees]
+    if (typeof tier === 'number') {
+      return tier
+    }
     const totalPrice = calculatePrice(plan)
     return totalPrice / numEmployees
   }
