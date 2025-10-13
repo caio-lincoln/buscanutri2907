@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
@@ -28,7 +28,7 @@ interface PricingConfig {
 
 interface ConsultationPricingConfigProps {
   pricingConfig: PricingConfig
-  setPricingConfig: (config: PricingConfig) => void
+  setPricingConfig: React.Dispatch<React.SetStateAction<PricingConfig>>
 }
 
 const formatCurrency = (value: string): string => {
@@ -81,7 +81,6 @@ export default function ConsultationPricingConfig({
   pricingConfig,
   setPricingConfig,
 }: ConsultationPricingConfigProps) {
-  const [ errors, setErrors ] = useState<string[]>([])
 
   // Função para formatar valor como moeda BRL
 
@@ -130,17 +129,16 @@ export default function ConsultationPricingConfig({
 
   // Atualizar configuração
   const updateConfig = (updates: Partial<PricingConfig>) => {
-    setPricingConfig(prev => {
-      const next = { ...prev, ...updates }
-      setErrors(validatePricing(next))
-      return next
-    })
+    setPricingConfig(prev => ({ ...prev, ...updates }))
   }
 
   // Componente para input de preço
  
 
-  const [ priceValue, setPriceValue ] = useState('')
+  // Remover estado local redundante; usar sempre o estado do pai
+
+  // Derivar erros da configuração atual sem atualizar estado durante render
+  const errors = useMemo(() => validatePricing(pricingConfig), [pricingConfig])
 
   return (
     <Card className="w-full">
@@ -213,24 +211,23 @@ export default function ConsultationPricingConfig({
                 </div>
               </RadioGroup>
 
-              {pricingConfig.inPerson.pricingType === 'combined' && (
-                <div className="ml-6 space-y-4">
-                  <PriceInput
-                    label="Preço único (consulta + retorno)"
-                    value={priceValue}
-                    placeholder="R$ 60,00"
-                    onChange={value => {
-                      setPriceValue(value)
-                      updateConfig({
-                        inPerson: {
-                          ...pricingConfig.inPerson,
-                          combinedPrice: value,
-                        },
-                      })
-                    }}
-                  />
-                </div>
-              )}
+  {pricingConfig.inPerson.pricingType === 'combined' && (
+    <div className="ml-6 space-y-4">
+      <PriceInput
+        label="Preço único (consulta + retorno)"
+        value={pricingConfig.inPerson.combinedPrice}
+        placeholder="R$ 60,00"
+        onChange={value => {
+          updateConfig({
+            inPerson: {
+              ...pricingConfig.inPerson,
+              combinedPrice: value,
+            },
+          })
+        }}
+      />
+    </div>
+  )}
 
               {pricingConfig.inPerson.pricingType === 'separate' && (
                 <div className="ml-6 grid grid-cols-1 md:grid-cols-2 gap-4">
