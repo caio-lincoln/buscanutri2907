@@ -468,9 +468,9 @@ export default function CadastroPage() {
           return Number.isFinite(n) ? n : null
         }
 
-        // Validações de preço e endereço (requisitos obrigatórios)
+        // Validações de preço e endereço
         // - Pelo menos uma modalidade habilitada
-        // - Preço de consulta acima de R$ 60,00 para cada modalidade configurada
+        // - Preço de consulta é opcional no cadastro
         // - Pelo menos um endereço de atendimento (mesmo para atendimento apenas virtual)
 
         const hasInPerson = !!pricingConfig.inPerson.enabled
@@ -482,44 +482,8 @@ export default function CadastroPage() {
           )
         }
 
-        // Validar preços mínimos > R$ 60,00
-        if (hasInPerson) {
-          if (pricingConfig.inPerson.pricingType === 'combined') {
-            const p = parsePrice(pricingConfig.inPerson.combinedPrice)
-            if (p === null || p <= 60) {
-              throw new Error(
-                'O preço único presencial deve ser informado e ser acima de R$ 60,00.'
-              )
-            }
-          } else {
-            const c = parsePrice(pricingConfig.inPerson.consultationPrice)
-            if (c === null || c <= 60) {
-              throw new Error(
-                'O preço da consulta presencial deve ser informado e ser acima de R$ 60,00.'
-              )
-            }
-            // Preço de retorno é opcional; não exigimos mínimo aqui
-          }
-        }
-
-        if (hasOnline) {
-          if (pricingConfig.online.pricingType === 'combined') {
-            const p = parsePrice(pricingConfig.online.combinedPrice)
-            if (p === null || p <= 60) {
-              throw new Error(
-                'O preço único de teleconsulta deve ser informado e ser acima de R$ 60,00.'
-              )
-            }
-          } else {
-            const c = parsePrice(pricingConfig.online.consultationPrice)
-            if (c === null || c <= 60) {
-              throw new Error(
-                'O preço da consulta online deve ser informado e ser acima de R$ 60,00.'
-              )
-            }
-            // Preço de retorno é opcional; não exigimos mínimo aqui
-          }
-        }
+        // Preços não são obrigatórios no cadastro; remover validações de mínimos
+        // (validações poderão ocorrer posteriormente no perfil se necessário)
 
         // Exigir pelo menos um endereço de atendimento
         if (!addresses || addresses.length < 1) {

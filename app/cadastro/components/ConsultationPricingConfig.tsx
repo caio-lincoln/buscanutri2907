@@ -92,38 +92,16 @@ export default function ConsultationPricingConfig({
     return Number.isFinite(n) ? n : null
   }
 
-  // Validação dos dados
+  // Validação dos dados (preços opcionais)
   const validatePricing = (cfg: PricingConfig): string[] => {
     const errs: string[] = []
 
+    // Mantemos apenas a regra de pelo menos uma modalidade habilitada
     if (!cfg.inPerson.enabled && !cfg.online.enabled) {
       errs.push('Pelo menos uma modalidade (Presencial ou Online) deve estar configurada.')
     }
 
-    if (cfg.inPerson.enabled) {
-      if (cfg.inPerson.pricingType === 'combined') {
-        const p = parseCurrency(cfg.inPerson.combinedPrice)
-        if (p === null || p <= 60) errs.push('Preço único presencial deve ser acima de R$ 60,00.')
-      } else {
-        const c = parseCurrency(cfg.inPerson.consultationPrice)
-        const f = parseCurrency(cfg.inPerson.followupPrice)
-        if (c === null || c <= 60) errs.push('Preço da consulta presencial deve ser acima de R$ 60,00.')
-        if (f === null || f < 0) errs.push('Preço do retorno presencial deve ser maior ou igual a R$ 0,00.')
-      }
-    }
-
-    if (cfg.online.enabled) {
-      if (cfg.online.pricingType === 'combined') {
-        const p = parseCurrency(cfg.online.combinedPrice)
-        if (p === null || p <= 60) errs.push('Preço único de teleconsulta deve ser acima de R$ 60,00.')
-      } else {
-        const c = parseCurrency(cfg.online.consultationPrice)
-        const f = parseCurrency(cfg.online.followupPrice)
-        if (c === null || c <= 60) errs.push('Preço da consulta online deve ser acima de R$ 60,00.')
-        if (f === null || f < 0) errs.push('Preço do retorno online deve ser maior ou igual a R$ 0,00.')
-      }
-    }
-
+    // Nenhuma validação de valores de preço no cadastro
     return errs
   }
 
@@ -153,9 +131,10 @@ export default function ConsultationPricingConfig({
         <Alert>
           <Info className="h-4 w-4" />
           <AlertDescription>
-            Configure os preços para suas consultas. Você pode escolher entre
-            preço único (consulta + retorno) ou preços separados para cada
-            modalidade. É obrigatório configurar pelo menos uma modalidade. O preço mínimo por modalidade é R$ 60,00.
+            Configure os preços para suas consultas se desejar. Você pode escolher
+            entre preço único (consulta + retorno) ou preços separados para cada
+            modalidade. Informar valores é opcional no cadastro; você pode ajustar
+            depois no seu perfil.
           </AlertDescription>
         </Alert>
 
