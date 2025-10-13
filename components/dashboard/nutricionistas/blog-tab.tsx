@@ -16,7 +16,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Checkbox } from '@/components/ui/checkbox'
 import { RichTextEditor } from '@/components/ui/rich-text-editor'
 import {
   Plus,
@@ -93,7 +92,6 @@ export function BlogTab() {
       category: '',
       image: '',
       tags: [],
-      featured: false,
       centerImage: false,
     })
   }, [])
@@ -370,16 +368,7 @@ export function BlogTab() {
                   placeholder="saúde, bem-estar, nutrição"
                 />
               </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="featured"
-                  checked={currentPost.featured || false}
-                  onCheckedChange={checked =>
-                    setCurrentPost({ ...currentPost, featured: !!checked })
-                  }
-                />
-                <Label htmlFor="featured">Artigo em Destaque</Label>
-              </div>
+              {/* Opção de artigo em destaque removida conforme solicitação */}
               <div className="flex gap-4">
                 <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
                   {currentPost.id ? 'Salvar Alterações' : 'Publicar Artigo'}

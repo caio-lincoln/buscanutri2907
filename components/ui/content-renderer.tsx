@@ -115,9 +115,10 @@ export function ContentRenderer({ content, className, centerImages = false }: Co
   return (
     <div
       className={cn(
-        'prose prose-lg max-w-none',
+        'prose prose-lg max-w-none whitespace-pre-wrap break-words',
         'prose-headings:text-gray-900 prose-headings:font-bold',
         'prose-p:text-gray-800 prose-p:leading-relaxed',
+        'prose-pre:whitespace-pre-wrap prose-pre:break-words',
         'prose-a:text-blue-600 hover:prose-a:text-blue-800',
         'prose-ul:list-disc prose-ol:list-decimal',
         'prose-blockquote:border-l-4 prose-blockquote:border-blue-500 prose-blockquote:pl-4 prose-blockquote:italic',
@@ -127,7 +128,7 @@ export function ContentRenderer({ content, className, centerImages = false }: Co
         '[&_.instagram-embed]:max-w-lg [&_.instagram-embed]:mx-auto',
         '[&_.tiktok-embed]:max-w-sm [&_.tiktok-embed]:mx-auto',
         // Imagens
-        '[&_img]:max-w-full [&_img]:h-auto [&_img]:rounded-lg [&_img]:shadow-sm',
+        '[&_img]:w-full [&_img]:h-auto [&_img]:rounded-lg [&_img]:shadow-sm [&_img]:object-contain',
         centerImages && '[&_img]:mx-auto [&_img]:block',
         className
       )}

@@ -22,7 +22,6 @@ export interface BlogPost {
   views: number
   likes_count: number
   hasLiked: boolean
-  featured: boolean
   centerImage?: boolean // Centralizar imagem de capa
   badges?: NutritionistBadge[] // Adicionar badges ao tipo
 }
@@ -89,7 +88,6 @@ export async function getAllBlogPosts(): Promise<BlogPost[]> {
           views: post.views || 0,
           likes_count: post.likes_count || 0,
           hasLiked: false,
-          featured: post.featured || false,
           centerImage: post.center_image || false,
           badges: badges.map(nb => nb.badge),
         } as BlogPost
@@ -173,7 +171,6 @@ export async function getBlogPostById(id: string): Promise<BlogPost | null> {
       views: post.views || 0,
       likes_count: post.likes_count || 0,
       hasLiked,
-      featured: post.featured || false,
       centerImage: post.center_image || false,
       badges: badges.map(nb => nb.badge),
     } as BlogPost
@@ -230,7 +227,6 @@ export async function getBlogPostsByAuthor(
           views: post.views || 0,
           likes_count: post.likes_count || 0,
           hasLiked: false,
-          featured: post.featured || false,
           centerImage: post.center_image || false,
           badges: badges.map(nb => nb.badge),
         } as BlogPost
@@ -279,8 +275,6 @@ export async function addBlogPost(
         category: newPostData.category,
         tags: newPostData.tags,
         // read_time_minutes calculado automaticamente por trigger
-        featured: newPostData.featured,
-        center_image: newPostData.centerImage || false,
         published: true,
       })
       .select()
@@ -314,8 +308,7 @@ export async function addBlogPost(
       views: 0,
       likes_count: 0,
       hasLiked: false,
-      featured: post.featured || false,
-      centerImage: post.center_image || false,
+      centerImage: false,
       badges: [],
     } as BlogPost
   } catch (error) {
@@ -339,8 +332,6 @@ export async function updateBlogPost(
         category: updatedPost.category,
         tags: updatedPost.tags,
         // read_time_minutes calculado automaticamente por trigger
-        featured: updatedPost.featured,
-        center_image: updatedPost.centerImage || false,
         updated_at: new Date().toISOString(),
       })
       .eq('id', updatedPost.id)

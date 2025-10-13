@@ -281,7 +281,7 @@ export default function BlogPage() {
                           alt={post.title}
                           width={400}
                           height={250}
-                          className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                          className="w-full h-48 object-contain object-center bg-gray-100 group-hover:scale-105 transition-transform duration-300"
                         />
                         <div className="absolute top-4 left-4">
                           <Badge className="bg-[#4AB0D9] text-white hover:bg-[#4AB0D9]/90">

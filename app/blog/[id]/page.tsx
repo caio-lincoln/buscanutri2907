@@ -85,12 +85,15 @@ export default function BlogPostPage() {
 
       <Card className="border-0 shadow-lg backdrop-blur-sm mb-8">
         <CardHeader className="p-0">
-          <div className="relative w-full h-64 md:h-80 lg:h-96 overflow-hidden rounded-t-xl">
+          <div className="relative w-full overflow-hidden rounded-t-xl">
             <Image
               src={post.image || '/placeholder.svg?height=400&width=800'}
               alt={post.title}
-              fill
-              className={`object-cover ${
+              width={0}
+              height={0}
+              sizes="100vw"
+              style={{ width: '100%', height: 'auto' }}
+              className={`w-full h-auto object-contain object-center bg-gray-100 ${
                 post.centerImage ? 'mx-auto block' : ''
               }`}
               priority
