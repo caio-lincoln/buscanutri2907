@@ -42,7 +42,28 @@ export default function SubscriptionCard() {
   useEffect(() => {
     fetch('/api/stripe/list-offers')
       .then((r) => r.json())
-      .then(({ offers }) => setOffers(offers))
+      .then(({ offers }) => {
+        // Filtrar para manter apenas o plano de R$ 24,90/mês
+        const parseBrlAmount = (label: string): number => {
+          try {
+            // Extrai o valor numérico de strings no formato "R$ 24,90/mês"
+            const match = label.match(/R\$\s*([0-9.,]+)/i);
+            if (!match) return NaN;
+            const raw = match[1]
+              .replace(/\./g, '') // remove separador de milhar
+              .replace(/,/g, '.'); // converte decimal
+            return parseFloat(raw);
+          } catch {
+            return NaN;
+          }
+        };
+
+        const filtered = (offers || []).filter((o: Offer) => {
+          const amount = parseBrlAmount(o.label);
+          return Math.abs(amount - 24.9) < 0.001; // mantém apenas 24,90
+        });
+        setOffers(filtered);
+      })
       .catch(() => setOffers([]));
   }, []);
 
@@ -280,6 +301,13 @@ export default function SubscriptionCard() {
 
                       <p className="mt-4 text-2xl font-bold text-[#1E1D40]">
                         {ptPrice(o.label)}
+                      </p>
+
+                      {/* Texto de promoção explícito */}
+                      <p className="mt-1 text-sm text-[#1E1D40]/70">
+                        De <span className="line-through">R$ 49,90</span> por
+                        {' '}<span className="font-semibold text-[#d95b4a]">R$ 24,90</span>
+                        {' '}<span className="text-[#1E1D40]/60">(promoção temporária)</span>
                       </p>
 
                       <Button
