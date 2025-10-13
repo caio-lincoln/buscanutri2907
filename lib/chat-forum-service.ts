@@ -1,4 +1,5 @@
 import { createSupabaseClient } from './supabase'
+import { formatDateBR } from './utils/format-date'
 import { ForumAuthor, ForumReply } from './forum-data'
 const supabase = createSupabaseClient()
 // Chat interfaces
@@ -461,7 +462,7 @@ export async function getForumQuestionById(
             : undefined,
           isVerified: answer.author_profile?.is_verified || false,
         },
-        timestamp: new Date(answer.created_at).toLocaleString('pt-BR'),
+        timestamp: formatDateBR(answer.created_at),
         likes: answer.likes_count || 0,
         isBestAnswer: answer.is_best_answer || false,
       })
@@ -472,7 +473,7 @@ export async function getForumQuestionById(
       title: data.title,
       content: data.content,
       author,
-      timestamp: new Date(data.created_at).toLocaleString('pt-BR'),
+      timestamp: formatDateBR(data.created_at),
       likes: data.likes_count || 0,
       repliesCount: data.answers_count || 0,
     views: data.views || 0,

@@ -34,29 +34,30 @@ import { getCurrentUser } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '../../../../../contexts/auth-context'
 import { User } from '@supabase/supabase-js'
+import { formatDateBR } from '@/lib/utils/format-date'
 
-// Função para formatar datas de forma segura
+// Função para formatar datas com timezone fixo
 const formatQuestionDate = (timestamp: string): string => {
   try {
-    // Se o timestamp for undefined ou null
-    if (!timestamp) {
-      return 'Data não disponível'
-    }
-    
-    // Se o timestamp já está formatado (contém espaços ou barras), retorna como está
-    if (timestamp.includes('/') || timestamp.includes(' ')) {
-      return timestamp
-    }
-    
-    // Caso contrário, tenta converter de ISO string
-    const date = new Date(timestamp)
-    if (isNaN(date.getTime())) {
-      return 'Data inválida'
-    }
-    
-    return date.toLocaleDateString('pt-BR')
-  } catch (error) {
+    if (!timestamp) return 'Data não disponível'
+    if (timestamp.includes('/') || timestamp.includes(' ')) return timestamp
+    return formatDateBR(timestamp)
+  } catch {
     return 'Data inválida'
+  }
+}
+
+// Parser seguro para strings 'dd/mm/yyyy hh:mm'
+const parseBRDateTime = (ts: string): Date | null => {
+  try {
+    const m = ts.match(/(\d{2})\/(\d{2})\/(\d{4})(?:\s+(\d{2}):(\d{2}))/)
+    if (!m) return null
+    const [, dd, mm, yyyy, HH = '00', MM = '00'] = m
+    const iso = `${yyyy}-${mm}-${dd}T${HH}:${MM}:00`
+    const d = new Date(iso)
+    return isNaN(d.getTime()) ? null : d
+  } catch {
+    return null
   }
 }
 
@@ -556,12 +557,16 @@ export default function NutritionistForumQuestionPage() {
           .delete()
           .eq('id', existingLike.id)
 
-        // Update question likes count
-        const newLikesCount = Math.max(0, question.likes - 1)
-        await supabase
-          .from('forum_questions')
-          .update({ likes_count: newLikesCount })
-          .eq('id', question.id)
+        // Update local state immediately
+        setQuestion(prev =>
+          prev
+            ? {
+                ...prev,
+                likes: Math.max(0, prev.likes - 1),
+                hasLiked: false,
+              }
+            : null
+        )
       } else {
         // Like: add the like
         await supabase.from('forum_question_likes').insert({
@@ -569,12 +574,16 @@ export default function NutritionistForumQuestionPage() {
           user_id: currentUser.id,
         })
 
-        // Update question likes count
-        const newLikesCount = question.likes + 1
-        await supabase
-          .from('forum_questions')
-          .update({ likes_count: newLikesCount })
-          .eq('id', question.id)
+        // Update local state immediately
+        setQuestion(prev =>
+          prev
+            ? {
+                ...prev,
+                likes: prev.likes + 1,
+                hasLiked: true,
+              }
+            : null
+        )
       }
     } catch (error) {
       // Error liking question
@@ -601,20 +610,16 @@ export default function NutritionistForumQuestionPage() {
           .delete()
           .eq('id', existingLike.id)
 
-        // Update likes count in reply
-        const currentReply = replies.find(r => r.id === replyId)
-        if (currentReply) {
-          const newLikesCount = Math.max(0, currentReply.likes - 1)
-          await supabase
-            .from('forum_answers')
-            .update({ likes_count: newLikesCount })
-            .eq('id', replyId)
-        }
-
         // Update local state immediately for better UX
         setReplies(prev =>
           prev.map(reply =>
-            reply.id === replyId ? { ...reply, hasLiked: false } : reply
+            reply.id === replyId
+              ? {
+                  ...reply,
+                  likes: Math.max(0, reply.likes - 1),
+                  hasLiked: false,
+                }
+              : reply
           )
         )
       } else {
@@ -624,20 +629,16 @@ export default function NutritionistForumQuestionPage() {
           user_id: currentUser.id,
         })
 
-        // Update likes count in reply
-        const currentReply = replies.find(r => r.id === replyId)
-        if (currentReply) {
-          const newLikesCount = currentReply.likes + 1
-          await supabase
-            .from('forum_answers')
-            .update({ likes_count: newLikesCount })
-            .eq('id', replyId)
-        }
-
         // Update local state immediately for better UX
         setReplies(prev =>
           prev.map(reply =>
-            reply.id === replyId ? { ...reply, hasLiked: true } : reply
+            reply.id === replyId
+              ? {
+                  ...reply,
+                  likes: reply.likes + 1,
+                  hasLiked: true,
+                }
+              : reply
           )
         )
       }

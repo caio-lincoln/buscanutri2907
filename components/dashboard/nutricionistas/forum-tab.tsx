@@ -33,28 +33,15 @@ import {
 import { QuestionModal } from '@/components/question-modal'
 import { DeleteQuestionModal } from '@/components/delete-question-modal'
 import { getCurrentUser } from '@/lib/auth'
+import { formatDateBR } from '@/lib/utils/format-date'
 
-// Função para formatar datas de forma segura
+// Função para formatar datas com timezone fixo
 const formatQuestionDate = (timestamp: string): string => {
   try {
-    // Se o timestamp for undefined ou null
-    if (!timestamp) {
-      return 'Data não disponível'
-    }
-    
-    // Se o timestamp já está formatado (contém espaços ou barras), retorna como está
-    if (timestamp.includes('/') || timestamp.includes(' ')) {
-      return timestamp
-    }
-    
-    // Caso contrário, tenta converter de ISO string
-    const date = new Date(timestamp)
-    if (isNaN(date.getTime())) {
-      return 'Data inválida'
-    }
-    
-    return date.toLocaleDateString('pt-BR')
-  } catch (error) {
+    if (!timestamp) return 'Data não disponível'
+    if (timestamp.includes('/') || timestamp.includes(' ')) return timestamp
+    return formatDateBR(timestamp)
+  } catch {
     return 'Data inválida'
   }
 }

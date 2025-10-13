@@ -11,6 +11,7 @@ import {
 } from '@/lib/chat-forum-service'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '../contexts/auth-context'
+import { formatDateOnlyBR, formatTimeOnlyBR, formatWeekdayBR } from '@/lib/utils/format-date'
 
 interface RecentChatsListProps {
   userId: string
@@ -49,19 +50,13 @@ export default function RecentChatsList({ userId }: RecentChatsListProps) {
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
 
     if (diffDays === 0) {
-      return date.toLocaleTimeString('pt-BR', {
-        hour: '2-digit',
-        minute: '2-digit',
-      })
+      return formatTimeOnlyBR(dateString)
     } else if (diffDays === 1) {
       return 'Ontem'
     } else if (diffDays < 7) {
-      return date.toLocaleDateString('pt-BR', { weekday: 'short' })
+      return formatWeekdayBR(dateString, 'America/Sao_Paulo', 'short')
     } else {
-      return date.toLocaleDateString('pt-BR', {
-        day: '2-digit',
-        month: '2-digit',
-      })
+      return formatDateOnlyBR(dateString)
     }
   }
 

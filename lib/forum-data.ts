@@ -1,4 +1,5 @@
 import { createSupabaseClient } from './supabase'
+import { formatDateBR } from './utils/format-date'
 
 // Usar o cliente que mantém a autenticação
 const supabase = createSupabaseClient()
@@ -100,7 +101,7 @@ function convertSupabaseToForumQuestion(data: any): ForumQuestion {
         isVerified: true,
         specialties: answer.author_profile?.specialties || [],
       },
-      timestamp: new Date(answer.created_at).toLocaleString('pt-BR'),
+      timestamp: formatDateBR(answer.created_at),
       likes: answer.likes_count || 0,
       isBestAnswer: answer.is_best_answer || false,
     })
@@ -111,7 +112,7 @@ function convertSupabaseToForumQuestion(data: any): ForumQuestion {
     title: data.title,
     content: data.content,
     author,
-    timestamp: new Date(data.created_at).toLocaleString('pt-BR'),
+    timestamp: formatDateBR(data.created_at),
     likes: data.likes_count || 0,
     repliesCount: data.answers_count || 0,
     views: data.views || 0,

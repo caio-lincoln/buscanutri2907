@@ -47,38 +47,15 @@ import {
 import { getCurrentUser } from '@/lib/auth'
 import { createSupabaseClient } from '@/lib/supabase'
 import { useToast } from '@/hooks/use-toast'
+import { formatDateBR } from '@/lib/utils/format-date'
 
 // Função para formatar datas de forma segura
 const formatQuestionDate = (timestamp: string): string => {
-  console.log('Formatando timestamp:', timestamp, 'Tipo:', typeof timestamp)
-  
   try {
-    // Se o timestamp for undefined ou null
-    if (!timestamp) {
-      console.log('Timestamp vazio ou undefined')
-      return 'Data não disponível'
-    }
-    
-    // Se o timestamp já está formatado (contém espaços ou barras), retorna como está
-    if (timestamp.includes('/') || timestamp.includes(' ')) {
-      console.log('Timestamp já formatado:', timestamp)
-      return timestamp
-    }
-    
-    // Caso contrário, tenta converter de ISO string
-    const date = new Date(timestamp)
-    console.log('Data convertida:', date, 'É válida:', !isNaN(date.getTime()))
-    
-    if (isNaN(date.getTime())) {
-      console.log('Data inválida para timestamp:', timestamp)
-      return 'Data inválida'
-    }
-    
-    const formatted = date.toLocaleDateString('pt-BR')
-    console.log('Data formatada:', formatted)
-    return formatted
-  } catch (error) {
-    console.error('Erro ao formatar data:', error, 'Timestamp:', timestamp)
+    if (!timestamp) return 'Data não disponível'
+    if (timestamp.includes('/') || timestamp.includes(' ')) return timestamp
+    return formatDateBR(timestamp)
+  } catch {
     return 'Data inválida'
   }
 }

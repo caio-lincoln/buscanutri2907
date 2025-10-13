@@ -52,29 +52,32 @@ import {
   likeForumItem,
 } from '@/lib/forum-data'
 import { getCurrentUser } from '@/lib/auth'
+import { formatDateBR } from '@/lib/utils/format-date'
 
-// Função para formatar datas de forma segura
+// Função para formatar datas com timezone fixo
 const formatQuestionDate = (timestamp: string): string => {
   try {
-    // Se o timestamp for undefined ou null
-    if (!timestamp) {
-      return 'Data não disponível'
-    }
-    
-    // Se o timestamp já está formatado (contém espaços ou barras), retorna como está
-    if (timestamp.includes('/') || timestamp.includes(' ')) {
-      return timestamp
-    }
-    
-    // Caso contrário, tenta converter de ISO string
-    const date = new Date(timestamp)
-    if (isNaN(date.getTime())) {
-      return 'Data inválida'
-    }
-    
-    return date.toLocaleDateString('pt-BR')
-  } catch (error) {
+    if (!timestamp) return 'Data não disponível'
+    // Se já estiver formatado em pt-BR, mantém
+    if (timestamp.includes('/') || timestamp.includes(' ')) return timestamp
+    // Senão, formata ISO com timezone fixo
+    return formatDateBR(timestamp)
+  } catch {
     return 'Data inválida'
+  }
+}
+
+// Parser seguro para strings 'dd/mm/yyyy hh:mm'
+const parseBRDateTime = (ts: string): Date | null => {
+  try {
+    const m = ts.match(/(\d{2})\/(\d{2})\/(\d{4})(?:\s+(\d{2}):(\d{2}))/)
+    if (!m) return null
+    const [, dd, mm, yyyy, HH = '00', MM = '00'] = m
+    const iso = `${yyyy}-${mm}-${dd}T${HH}:${MM}:00`
+    const d = new Date(iso)
+    return isNaN(d.getTime()) ? null : d
+  } catch {
+    return null
   }
 }
 
@@ -110,8 +113,10 @@ export default function PatientForumQuestionPage(props: { params: Promise<{ id: 
     } else {
       // recent
       filtered = [...filtered].sort((a, b) => {
-        const ta = new Date(a.timestamp || 0).getTime()
-        const tb = new Date(b.timestamp || 0).getTime()
+        const da = new Date(a.timestamp || 0)
+        const db = new Date(b.timestamp || 0)
+        const ta = !isNaN(da.getTime()) ? da.getTime() : (parseBRDateTime(a.timestamp || '')?.getTime() || 0)
+        const tb = !isNaN(db.getTime()) ? db.getTime() : (parseBRDateTime(b.timestamp || '')?.getTime() || 0)
         return tb - ta
       })
     }
@@ -260,60 +265,86 @@ export default function PatientForumQuestionPage(props: { params: Promise<{ id: 
     if (!currentUser) return
 
     try {
-      const success = await likeForumItem(itemId, type, currentUser.id)
-      if (success) {
-        // Reload question to reflect updated likes
-        const updatedQuestion = await getForumQuestionById(questionId)
-
-        // Recalcular estados de curtida reais para o usuário
-        if (updatedQuestion) {
-          const supabaseClient = createSupabaseClient()
-
-          // Pergunta
-          let hasLikedQuestion = false
-          try {
-            const { data: qLike } = await supabaseClient
-              .from('forum_question_likes')
-              .select('id')
-              .eq('question_id', questionId)
-              .eq('user_id', currentUser.id)
-              .single()
-            hasLikedQuestion = !!qLike
-          } catch (_) {
-            hasLikedQuestion = false
+      // Optimistic UI update
+      setQuestion(prev => {
+        if (!prev) return prev
+        if (type === 'question' && prev.id === itemId) {
+          const toggledHasLiked = !prev.hasLiked
+          const delta = toggledHasLiked ? 1 : -1
+          return {
+            ...prev,
+            hasLiked: toggledHasLiked,
+            likes: Math.max(0, (prev.likes || 0) + delta),
           }
-
-          // Respostas
-          const replyIds = (updatedQuestion.replies || []).map(r => r.id)
-          let likedRepliesSet = new Set<string>()
-          if (replyIds.length > 0) {
-            try {
-              const { data: replyLikes } = await supabaseClient
-                .from('forum_answer_likes')
-                .select('answer_id')
-                .eq('user_id', currentUser.id)
-                .in('answer_id', replyIds)
-              likedRepliesSet = new Set(
-                (replyLikes || []).map((rl: any) => rl.answer_id)
-              )
-            } catch (_) {
-              likedRepliesSet = new Set<string>()
-            }
-          }
-
-          const enrichedReplies = (updatedQuestion.replies || []).map(r => ({
-            ...r,
-            hasLiked: likedRepliesSet.has(r.id),
-          }))
-
-          setQuestion({
-            ...updatedQuestion,
-            hasLiked: hasLikedQuestion,
-            replies: enrichedReplies,
-          })
-        } else {
-          setQuestion(updatedQuestion)
         }
+        if (type === 'reply') {
+          const updatedReplies = (prev.replies || []).map(r => {
+            if (r.id !== itemId) return r
+            const toggledHasLiked = !r.hasLiked
+            const delta = toggledHasLiked ? 1 : -1
+            return {
+              ...r,
+              hasLiked: toggledHasLiked,
+              likes: Math.max(0, (r.likes || 0) + delta),
+            }
+          })
+          return { ...prev, replies: updatedReplies }
+        }
+        return prev
+      })
+
+      const success = await likeForumItem(itemId, type, currentUser.id)
+
+      // Revalidate from server regardless of success to sync counts
+      const updatedQuestion = await getForumQuestionById(questionId)
+
+      if (updatedQuestion) {
+        const supabaseClient = createSupabaseClient()
+
+        // Pergunta
+        let hasLikedQuestion = false
+        try {
+          const { data: qLike } = await supabaseClient
+            .from('forum_question_likes')
+            .select('id')
+            .eq('question_id', questionId)
+            .eq('user_id', currentUser.id)
+            .single()
+          hasLikedQuestion = !!qLike
+        } catch (_) {
+          hasLikedQuestion = false
+        }
+
+        // Respostas
+        const replyIds = (updatedQuestion.replies || []).map(r => r.id)
+        let likedRepliesSet = new Set<string>()
+        if (replyIds.length > 0) {
+          try {
+            const { data: replyLikes } = await supabaseClient
+              .from('forum_answer_likes')
+              .select('answer_id')
+              .eq('user_id', currentUser.id)
+              .in('answer_id', replyIds)
+            likedRepliesSet = new Set(
+              (replyLikes || []).map((rl: any) => rl.answer_id)
+            )
+          } catch (_) {
+            likedRepliesSet = new Set<string>()
+          }
+        }
+
+        const enrichedReplies = (updatedQuestion.replies || []).map(r => ({
+          ...r,
+          hasLiked: likedRepliesSet.has(r.id),
+        }))
+
+        setQuestion({
+          ...updatedQuestion,
+          hasLiked: hasLikedQuestion,
+          replies: enrichedReplies,
+        })
+      } else {
+        setQuestion(updatedQuestion)
       }
     } catch (error) {
       // Error liking item - handled silently
