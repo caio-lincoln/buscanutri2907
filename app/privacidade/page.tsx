@@ -79,8 +79,8 @@ export default function PrivacidadePage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <Mail className="h-4 w-4 text-[#4AB0D9]" />
-                    <a href="mailto:privacidade@buscanutri.com.br" className="text-[#4AB0D9] hover:underline">
-                      privacidade@buscanutri.com.br
+                    <a href="mailto:buscanutri@gmail.com" className="text-[#4AB0D9] hover:underline">
+                      buscanutri@gmail.com
                     </a>
                   </div>
                 </div>
@@ -310,14 +310,14 @@ export default function PrivacidadePage() {
                     </div>
                     <div className="flex items-center gap-2">
                       <Mail className="h-4 w-4 text-[#4AB0D9]" />
-                      <a href="mailto:dpo@buscanutri.com.br" className="text-[#4AB0D9] hover:underline">
-                        dpo@buscanutri.com.br
+                      <a href="mailto:buscanutri@gmail.com" className="text-[#4AB0D9] hover:underline">
+                        buscanutri@gmail.com
                       </a>
                     </div>
                     <div className="flex items-center gap-2">
                       <Mail className="h-4 w-4 text-[#4AB0D9]" />
-                      <a href="mailto:privacidade@buscanutri.com.br" className="text-[#4AB0D9] hover:underline">
-                        privacidade@buscanutri.com.br
+                      <a href="mailto:buscanutri@gmail.com" className="text-[#4AB0D9] hover:underline">
+                        buscanutri@gmail.com
                       </a>
                     </div>
                   </div>

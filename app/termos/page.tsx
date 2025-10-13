@@ -94,8 +94,8 @@ export default function TermosPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <Mail className="h-4 w-4 text-[#4AB0D9]" />
-                    <a href="mailto:legal@buscanutri.com.br" className="text-[#4AB0D9] hover:underline">
-                      legal@buscanutri.com.br
+                    <a href="mailto:buscanutri@gmail.com" className="text-[#4AB0D9] hover:underline">
+                      buscanutri@gmail.com
                     </a>
                   </div>
                 </div>
@@ -357,7 +357,7 @@ export default function TermosPage() {
                   Para dúvidas, sugestões ou questões acerca destes Termos:
                 </p>
                 <ul className="list-disc pl-6 space-y-2 text-[#1E1D40]/80">
-                  <li><strong>E-mail:</strong> legal@buscanutri.com.br</li>
+                  <li><strong>E-mail:</strong> buscanutri@gmail.com</li>
                   <li><strong>Telefone:</strong> (79) 9 9813-4938</li>
                   <li><strong>Atendimento:</strong> Segunda a Sexta, das 9h às 18h</li>
                 </ul>
