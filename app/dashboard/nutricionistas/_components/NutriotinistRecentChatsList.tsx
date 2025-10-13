@@ -12,7 +12,7 @@ import {
   type ChatConversation,
 } from '@/lib/chat-forum-service'
 import { useAuth } from '../../../../contexts/auth-context'
-import { formatDateOnlyBR, formatTimeOnlyBR, formatWeekdayBR } from '@/lib/utils/format-date'
+import { formatDateOnlyBR, formatTimeOnlyBR, formatWeekdayBR, isSameDayBR, diffCalendarDaysBR } from '@/lib/utils/format-date'
 
 interface Props {
   userId: string
@@ -40,20 +40,18 @@ export default function NutritionistRecentChatsList({ userId }: Props) {
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return ''
-    const date = new Date(dateString)
-    const now = new Date()
-    const diffTime = Math.abs(now.getTime() - date.getTime())
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-
-    if (diffDays === 0) {
-      return formatTimeOnlyBR(dateString)
-    } else if (diffDays === 1) {
-      return 'Ontem'
-    } else if (diffDays < 7) {
-      return formatWeekdayBR(dateString, 'America/Sao_Paulo', 'short')
-    } else {
-      return formatDateOnlyBR(dateString)
+    const referenceIso = new Date().toISOString()
+    if (isSameDayBR(dateString, referenceIso)) {
+      return 'Hoje'
     }
+    const days = diffCalendarDaysBR(dateString, referenceIso)
+    if (days === 1) {
+      return 'Ontem'
+    }
+    if (days > 1 && days < 7) {
+      return formatWeekdayBR(dateString, 'America/Sao_Paulo', 'short')
+    }
+    return formatDateOnlyBR(dateString)
   }
 
   if (loading) {

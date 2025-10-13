@@ -228,6 +228,17 @@ export async function sendChatMessage(
     throw error
   }
 
+  // Atualiza a conversa com o último timestamp e texto da mensagem
+  try {
+    await supabase
+      .from('chat_conversations')
+      .update({
+        last_message_at: (data as any).created_at,
+        last_message_text: (data as any).message_text,
+      })
+      .eq('id', conversationId)
+  } catch (_) {}
+
   return data as ChatMessage
 }
 
