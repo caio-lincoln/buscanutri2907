@@ -13,13 +13,24 @@ import {
   Dumbbell,
   Droplets,
 } from 'lucide-react'
+import dynamic from 'next/dynamic'
 import { Button } from '../../../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../../components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '../../../../components/ui/avatar';
 import { Badge } from '../../../../components/ui/badge';
 import { useAuth } from '../../../../contexts/auth-context';
 import { useState } from 'react';
-import { UserProfileModal } from '../../../../components/user-profile-modal';
+
+const UserProfileModal = dynamic(
+  () =>
+    import('../../../../components/user-profile-modal').then(
+      (mod) => mod.UserProfileModal
+    ),
+  {
+    ssr: false,
+    loading: () => null,
+  }
+)
 export default function PerfilTab({ anamneseData }: { anamneseData: any }) {
   const { patientProfile: profile, user } = useAuth()
   const [ isProfileModalOpen, setIsProfileModalOpen ] = useState(false)

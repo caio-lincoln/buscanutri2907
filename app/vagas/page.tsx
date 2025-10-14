@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import dynamic from 'next/dynamic'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -20,7 +21,10 @@ import {
   Plus,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
-import { JobDetailsModal } from '@/components/job-details-modal'
+const JobDetailsModal = dynamic(
+  () => import('@/components/job-details-modal').then((mod) => mod.JobDetailsModal),
+  { ssr: false, loading: () => null }
+)
 import { useAuth } from '@/contexts/auth-context'
 import { toast } from '@/components/ui/use-toast'
 

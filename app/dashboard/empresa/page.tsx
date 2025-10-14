@@ -28,13 +28,29 @@ import { NotificationsPanel } from '@/components/notifications-panel'
 import { DashboardSidebar, getMenuItems } from '@/components/dashboard-sidebar'
 import { IrisChat } from '@/components/iris-chat'
 import { StatsCard } from '@/components/stats-card'
-import { UserProfileModal } from '@/components/user-profile-modal'
+import dynamic from 'next/dynamic'
+const UserProfileModal = dynamic(
+  () => import('@/components/user-profile-modal').then((mod) => mod.UserProfileModal),
+  { ssr: false, loading: () => null }
+)
 // Importar o hook de estatísticas do dashboard
 import { useDashboardStats } from '@/hooks/use-dashboard-stats'
-import { JobsTab } from '@/components/dashboard/empresa/jobs-tab'
-import { CandidatesTab } from '@/components/dashboard/empresa/candidates-tab'
-import { ProcessesTab } from '@/components/dashboard/empresa/processes-tab'
-import { ReportsTab } from '@/components/dashboard/empresa/reports-tab'
+const JobsTab = dynamic(
+  () => import('@/components/dashboard/empresa/jobs-tab').then((mod) => mod.JobsTab),
+  { ssr: false, loading: () => null }
+)
+const CandidatesTab = dynamic(
+  () => import('@/components/dashboard/empresa/candidates-tab').then((mod) => mod.CandidatesTab),
+  { ssr: false, loading: () => null }
+)
+const ProcessesTab = dynamic(
+  () => import('@/components/dashboard/empresa/processes-tab').then((mod) => mod.ProcessesTab),
+  { ssr: false, loading: () => null }
+)
+const ReportsTab = dynamic(
+  () => import('@/components/dashboard/empresa/reports-tab').then((mod) => mod.ReportsTab),
+  { ssr: false, loading: () => null }
+)
 import {
   getCompanyOverviewData,
   type CompanyOverviewStats,

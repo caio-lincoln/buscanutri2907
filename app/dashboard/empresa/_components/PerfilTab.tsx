@@ -13,11 +13,21 @@ import {
   UserCheck,
   Settings,
 } from 'lucide-react'
+import dynamic from 'next/dynamic'
 import { Button } from '../../../../components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '../../../../components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '../../../../components/ui/avatar'
 import { useState } from 'react'
-import { CompanyProfileModal } from '../../../../components/company-profile-modal'
+const CompanyProfileModal = dynamic(
+  () =>
+    import('../../../../components/company-profile-modal').then(
+      (mod) => mod.CompanyProfileModal
+    ),
+  {
+    ssr: false,
+    loading: () => null,
+  }
+)
 import type { CompanyProfile } from '../../../../lib/supabase'
 
 interface PerfilTabProps {
