@@ -1696,7 +1696,13 @@ export function UserProfileModal({
                       </Label>
                       <Textarea
                         id="anamnese_medicacoes"
-                        value={anamneseData?.medicacoes_uso || ''}
+                        value={(() => {
+                          const v = anamneseData?.medicacoes_uso
+                          if (v == null) return ''
+                          if (Array.isArray(v)) return v.join(', ')
+                          if (typeof v === 'string') return v
+                          return String(v)
+                        })()}
                         onChange={e =>
                           handleAnamneseChange('medicacoes_uso', e.target.value)
                         }
@@ -1710,7 +1716,16 @@ export function UserProfileModal({
                       </Label>
                       <Textarea
                         id="anamnese_exames"
-                        value={anamneseData?.exames_laboratoriais || ''}
+                        value={(() => {
+                          const v = anamneseData?.exames_laboratoriais
+                          if (v == null) return ''
+                          if (typeof v === 'string') return v
+                          try {
+                            return JSON.stringify(v)
+                          } catch {
+                            return String(v)
+                          }
+                        })()}
                         onChange={e =>
                           handleAnamneseChange(
                             'exames_laboratoriais',

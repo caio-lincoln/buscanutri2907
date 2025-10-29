@@ -398,12 +398,6 @@ function SidebarShell({
             align="end"
             className="w-64 shadow-2xl border-0 bg-white/95 backdrop-blur-md rounded-xl"
           >
-            <DropdownMenuItem onClick={() => {
-              router.push(myProfileUrl as string)
-            }} className="hover:bg-gray-50 rounded-lg m-2 p-3 transition-colors duration-200">
-              <User className="h-4 w-4 mr-3 text-gray-600" />
-              <span className="font-medium text-sm">Meu Perfil</span>
-            </DropdownMenuItem>
             <DropdownMenuSeparator className="my-2" />
             <DropdownMenuItem
               onClick={onSignOut}

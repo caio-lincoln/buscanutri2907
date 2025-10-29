@@ -37,26 +37,7 @@ export default function PerfilTab({ anamneseData }: { anamneseData: any }) {
   return (
     <>
       <div className="space-y-8">
-        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl lg:text-4xl font-bold text-[#1E1D40] mb-2">
-              Meu Perfil
-            </h1>
-            <p className="text-gray-600">
-              Visualize todas as suas informações pessoais e de saúde
-            </p>
-          </div>
-          <div className="flex gap-3">
-            <Button
-              variant="outline"
-              className="hover-lift bg-white/80 backdrop-blur-sm border-gray-200"
-              onClick={() => setIsProfileModalOpen(true)}
-            >
-              <User className="h-4 w-4 mr-2" />
-              Editar Perfil
-            </Button>
-          </div>
-        </div>
+        {/* Cabeçalho removido conforme solicitado: manter apenas o módulo de perfil */}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Informações Pessoais */}
@@ -596,9 +577,37 @@ export default function PerfilTab({ anamneseData }: { anamneseData: any }) {
                       <FileText className="h-4 w-4" />
                       Exames Laboratoriais Recentes
                     </label>
-                    <p className="text-[#1E1D40] font-semibold mt-1">
-                      {anamneseData.exames_laboratoriais}
-                    </p>
+                    {anamneseData?.exames_laboratoriais &&
+                    typeof anamneseData.exames_laboratoriais === 'object' &&
+                    !Array.isArray(anamneseData.exames_laboratoriais) ? (
+                      <div className="space-y-2 mt-1">
+                        {Object.entries(anamneseData.exames_laboratoriais).map(([key, val]) => (
+                          <div key={key} className="flex items-start justify-between gap-2">
+                            <span className="text-sm text-gray-600 capitalize">
+                              {String(key).replace(/_/g, ' ')}
+                            </span>
+                            <span className="text-sm text-[#1E1D40] font-semibold">
+                              {Array.isArray(val)
+                                ? val.join(', ')
+                                : typeof val === 'object'
+                                ? JSON.stringify(val)
+                                : String(val)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-[#1E1D40] font-semibold mt-1">
+                        {(() => {
+                          const v = anamneseData?.exames_laboratoriais
+                          if (v == null) return '-'
+                          if (Array.isArray(v)) return v.join(', ')
+                          if (typeof v === 'string') return v
+                          if (typeof v === 'object') return JSON.stringify(v)
+                          return String(v)
+                        })()}
+                      </p>
+                    )}
                   </div>
                 </div>
               )}
