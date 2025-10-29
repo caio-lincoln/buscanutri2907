@@ -34,6 +34,7 @@ export default function NutritionistProfilePage() {
   const { user, nutritionistProfile, loading: authLoading, signOut } = useAuth()
   const [ loading, setLoading ] = useState(true)
   const [ isProfileModalOpen, setIsProfileModalOpen ] = useState(false)
+  const [ viewCount, setViewCount ] = useState<number>(0)
 
   const { hasActiveSubscription } = useSubscriptionContext()
 
@@ -61,6 +62,27 @@ export default function NutritionistProfilePage() {
       setLoading(false)
     }
   }, [ user, authLoading, profile, profileId, router ])
+
+  useEffect(() => {
+    // Carregar estatísticas reais de visualizações para alinhar com o perfil público
+    const loadViewStats = async () => {
+      try {
+        if (!profile?.id) return
+        const res = await fetch(`/api/profile-views/stats/${profile.id}`)
+        if (!res.ok) {
+          // Fallback para o valor do perfil caso a API falhe
+          setViewCount(Number((profile as any)?.total_views) || 0)
+          return
+        }
+        const json = await res.json()
+        const total = Number(json?.stats?.totalViews) || 0
+        setViewCount(total)
+      } catch {
+        setViewCount(Number((profile as any)?.total_views) || 0)
+      }
+    }
+    loadViewStats()
+  }, [ profile?.id ])
 
   const goToTab = useCallback((tab: string) => {
     const sp = new URLSearchParams();
@@ -171,7 +193,7 @@ export default function NutritionistProfilePage() {
                       />
                       <Badge variant="outline" className="flex items-center gap-1">
                         <Users className="h-3 w-3" />
-                        {profile.totalViews || 0} visualizações
+                        {viewCount} visualizações
                       </Badge>
                     </div>
                   </div>
@@ -270,7 +292,7 @@ export default function NutritionistProfilePage() {
                     <span className="text-sm">Visualizações</span>
                   </div>
                   <span className="font-semibold">
-                    {profile.totalViews || 0}
+                    {viewCount}
                   </span>
                 </div>
               </CardContent>

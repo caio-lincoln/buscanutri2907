@@ -6,9 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Button } from '@/components/ui/button'
 import { MapPin, Calendar, Clock, Loader2 } from 'lucide-react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+import AnamneseViewModal from '@/components/anamnese-view-modal'
 
 interface PresencialAppointment {
   id: string
@@ -44,6 +46,8 @@ export default function NutritionistPresenciaisTab({ nutritionistId }: Nutrition
   const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState<string>('')
   const [showUpcomingOnly, setShowUpcomingOnly] = useState<boolean>(true)
+  const [anamnesisPatientId, setAnamnesisPatientId] = useState<string | null>(null)
+  const [isAnamnesisOpen, setIsAnamnesisOpen] = useState<boolean>(false)
 
   const loadAppointments = useCallback(async () => {
     if (!nutritionistId) return
@@ -195,7 +199,7 @@ export default function NutritionistPresenciaisTab({ nutritionistId }: Nutrition
                                 <MapPin className="h-4 w-4" /> {appt.nutritionist.address}
                               </div>
                             )}
-                          </div>
+                  </div>
                         </div>
                         <div className="text-right">
                           <div className="text-sm text-gray-700">
@@ -208,11 +212,22 @@ export default function NutritionistPresenciaisTab({ nutritionistId }: Nutrition
                           )}
                         </div>
                       </div>
-                      {appt.notes && (
-                        <div className="mt-3 text-sm text-gray-700">
-                          Observações: {appt.notes}
-                        </div>
-                      )}
+                      <div className="mt-3 flex items-center justify-between">
+                        {appt.notes && (
+                          <div className="text-sm text-gray-700">
+                            Observações: {appt.notes}
+                          </div>
+                        )}
+                        {appt.patient_id && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => { setAnamnesisPatientId(appt.patient_id!); setIsAnamnesisOpen(true) }}
+                          >
+                            Ver Anamnese
+                          </Button>
+                        )}
+                      </div>
                     </CardContent>
                   </Card>
                 )
@@ -221,6 +236,11 @@ export default function NutritionistPresenciaisTab({ nutritionistId }: Nutrition
           )}
         </CardContent>
       </Card>
+      <AnamneseViewModal
+        open={isAnamnesisOpen}
+        onOpenChange={setIsAnamnesisOpen}
+        patientId={anamnesisPatientId}
+      />
     </div>
   )
 }

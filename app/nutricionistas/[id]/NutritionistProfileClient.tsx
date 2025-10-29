@@ -169,7 +169,12 @@ const formattedPrice = (nutritionist as any)?.public_price_visible === false
   const formattedCrn = nutritionist.crn || 'CRN não informado.'
   const formattedPhone = nutritionist.phone || 'Telefone não informado.'
   const formattedEmail = nutritionist.email || 'Email não informado.' // Assumindo que email pode vir do perfil ou ser um placeholder
-  const formattedWebsite = nutritionist.website || ''
+  // Website com fallback de múltiplos campos
+  const formattedWebsite =
+    (nutritionist as any)?.website ||
+    (nutritionist as any)?.website_url ||
+    (nutritionist as any)?.site ||
+    ''
   const formattedOnlineConsultation =
     nutritionist.service_online_available || false
   const formattedAddress = nutritionist.address || formattedLocation
@@ -186,13 +191,69 @@ const formattedPrice = (nutritionist as any)?.public_price_visible === false
   }
 
   // Campos individuais para redes sociais
+  // Tentar ler campo estruturado social_media (string JSON ou objeto)
+  let socialMediaObj: any = {}
+  try {
+    const sm = (nutritionist as any)?.social_media
+    if (sm) {
+      socialMediaObj = typeof sm === 'string' ? JSON.parse(sm) : sm
+    }
+  } catch {
+    socialMediaObj = {}
+  }
+
+  const instagramRaw =
+    nutritionist.instagram_username ||
+    (nutritionist as any)?.instagram ||
+    socialMediaObj.instagram_username ||
+    socialMediaObj.instagram ||
+    ''
+
+  const linkedinRaw =
+    nutritionist.linkedin_username ||
+    (nutritionist as any)?.linkedin ||
+    socialMediaObj.linkedin_username ||
+    socialMediaObj.linkedin ||
+    ''
+
+  const facebookRaw =
+    nutritionist.facebook_username ||
+    (nutritionist as any)?.facebook ||
+    socialMediaObj.facebook_username ||
+    socialMediaObj.facebook ||
+    ''
+
+  const youtubeRaw =
+    (nutritionist as any)?.youtube_channel ||
+    (nutritionist as any)?.youtube ||
+    (nutritionist as any)?.youtube_url ||
+    socialMediaObj.youtube_channel ||
+    socialMediaObj.youtube_url ||
+    socialMediaObj.youtube ||
+    ''
+
+  const tiktokRaw =
+    nutritionist.tiktok_username ||
+    (nutritionist as any)?.tiktok ||
+    socialMediaObj.tiktok_username ||
+    socialMediaObj.tiktok ||
+    ''
+
+  const websiteRaw =
+    (nutritionist as any)?.website_url ||
+    (nutritionist as any)?.website ||
+    (nutritionist as any)?.site ||
+    socialMediaObj.website_url ||
+    socialMediaObj.website ||
+    socialMediaObj.site ||
+    ''
   const formattedSocialMedia = {
-    instagram: nutritionist.instagram_username || '',
-    linkedin: nutritionist.linkedin_username || '',
-    facebook: nutritionist.facebook_username || '',
-    youtube: nutritionist.youtube_channel || '',
-    tiktok: nutritionist.tiktok_username || '',
-    website: nutritionist.website_url || '',
+    instagram: instagramRaw,
+    linkedin: linkedinRaw,
+    facebook: facebookRaw,
+    youtube: youtubeRaw,
+    tiktok: tiktokRaw,
+    website: websiteRaw,
   }
 
   // Campos individuais para serviços (usando os novos campos)
@@ -574,15 +635,37 @@ const formattedPrice = (nutritionist as any)?.public_price_visible === false
 
           {/* Quick Actions */}
           <div className="flex flex-wrap gap-4 mb-8">
-            {(nutritionist as any)?.public_price_visible !== false && nutritionist.consultation_price && <Link href={`/dashboard/paciente/agendar?nutritionistId=${nutritionist.id}`}>
-              <Button
-                size="lg"
-                className="bg-[#4AB0D9] hover:bg-[#4AB0D9]/90 text-white"
-              >
-                <Calendar className="h-5 w-5 mr-2" />
-                Agendar Consulta
-              </Button>
-            </Link>}
+            {(() => {
+              const publicPriceVisible = (nutritionist as any)?.public_price_visible !== false
+              const minServicePrice = (formattedServices?.length
+                ? Math.min(
+                    ...formattedServices
+                      .map(s => Number(s.price) || 0)
+                      .filter(p => p > 0)
+                  )
+                : null)
+              const effectivePrice = nutritionist?.consultation_price
+                || (nutritionist as any)?.service_consultation_price
+                || minServicePrice
+              const onlineAvailable = Boolean(
+                (nutritionist as any)?.online_consultation_available
+                || (nutritionist as any)?.service_online_available
+                || (nutritionist as any)?.accepts_telemedicine
+                || nutritionist?.accepts_telemedicine
+              )
+
+              return (publicPriceVisible && effectivePrice && onlineAvailable) ? (
+                <Link href={`/dashboard/paciente/agendar?nutritionistId=${nutritionist.id}`}>
+                  <Button
+                    size="lg"
+                    className="bg-[#4AB0D9] hover:bg-[#4AB0D9]/90 text-white"
+                  >
+                    <Calendar className="h-5 w-5 mr-2" />
+                    Agendar Consulta
+                  </Button>
+                </Link>
+              ) : null
+            })()}
             <Button
               onClick={async () => {
                 try {
@@ -1106,29 +1189,7 @@ const formattedPrice = (nutritionist as any)?.public_price_visible === false
               )}
 
               {/* Horários Disponíveis */}
-              {formattedAvailableTimes.length > 0 && (
-                <Card className="shadow-lg border-0">
-                  <CardHeader>
-                    <CardTitle className="text-xl">Próximos Horários</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-2 gap-2">
-                      {formattedAvailableTimes.map((time, index) => (
-                        <Badge
-                          key={index}
-                          variant="outline"
-                          className="justify-center py-2 text-[#4AB0D9] border-[#4AB0D9]"
-                        >
-                          {time}
-                        </Badge>
-                      ))}
-                    </div>
-                    <p className="text-xs text-[#1E1D40]/60 mt-3 text-center">
-                      Horários para hoje. Mais opções no agendamento.
-                    </p>
-                  </CardContent>
-                </Card>
-              )}
+              {/* Seção "Próximos Horários" removida conforme solicitação */}
 
               {/* Idiomas */}
               {formattedLanguages.length > 0 && (
@@ -1154,7 +1215,11 @@ const formattedPrice = (nutritionist as any)?.public_price_visible === false
 
               {/* Redes Sociais */}
               {(formattedSocialMedia.instagram ||
-                formattedSocialMedia.linkedin) && (
+                formattedSocialMedia.linkedin ||
+                formattedSocialMedia.facebook ||
+                formattedSocialMedia.youtube ||
+                formattedSocialMedia.tiktok ||
+                formattedSocialMedia.website) && (
                   <Card className="shadow-lg border-0">
                     <CardHeader>
                       <CardTitle className="text-xl">Redes Sociais</CardTitle>
@@ -1162,7 +1227,11 @@ const formattedPrice = (nutritionist as any)?.public_price_visible === false
                     <CardContent className="space-y-3">
                       {formattedSocialMedia.instagram && (
                         <a
-                          href={`https://instagram.com/${formattedSocialMedia.instagram.replace('@', '')}`}
+                          href={
+                            formattedSocialMedia.instagram.startsWith('http')
+                              ? formattedSocialMedia.instagram
+                              : `https://instagram.com/${formattedSocialMedia.instagram.replace('@', '')}`
+                          }
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex items-center gap-3 text-sm hover:text-[#4AB0D9] transition-colors"
@@ -1177,7 +1246,11 @@ const formattedPrice = (nutritionist as any)?.public_price_visible === false
                       )}
                       {formattedSocialMedia.linkedin && (
                         <a
-                          href={`https://linkedin.com/in/${formattedSocialMedia.linkedin}`}
+                          href={
+                            formattedSocialMedia.linkedin.startsWith('http')
+                              ? formattedSocialMedia.linkedin
+                              : `https://linkedin.com/in/${formattedSocialMedia.linkedin.replace(/^@/, '').replace(/^in\//, '')}`
+                          }
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex items-center gap-3 text-sm hover:text-[#4AB0D9] transition-colors"
@@ -1188,6 +1261,74 @@ const formattedPrice = (nutritionist as any)?.public_price_visible === false
                             </span>
                           </div>
                           <span>LinkedIn</span>
+                        </a>
+                      )}
+                      {formattedSocialMedia.facebook && (
+                        <a
+                          href={
+                            formattedSocialMedia.facebook.startsWith('http')
+                              ? formattedSocialMedia.facebook
+                              : `https://facebook.com/${formattedSocialMedia.facebook.replace('@', '')}`
+                          }
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-3 text-sm hover:text-[#4AB0D9] transition-colors"
+                        >
+                          <div className="w-8 h-8 bg-blue-700 rounded-lg flex items-center justify-center">
+                            <span className="text-white text-xs font-bold">fb</span>
+                          </div>
+                          <span>{formattedSocialMedia.facebook}</span>
+                        </a>
+                      )}
+                      {formattedSocialMedia.youtube && (
+                        <a
+                          href={
+                            formattedSocialMedia.youtube.startsWith('http')
+                              ? formattedSocialMedia.youtube
+                              : `https://youtube.com/${formattedSocialMedia.youtube.replace('@', '')}`
+                          }
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-3 text-sm hover:text-[#4AB0D9] transition-colors"
+                        >
+                          <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center">
+                            <span className="text-white text-xs font-bold">YT</span>
+                          </div>
+                          <span>{formattedSocialMedia.youtube}</span>
+                        </a>
+                      )}
+                      {formattedSocialMedia.tiktok && (
+                        <a
+                          href={
+                            formattedSocialMedia.tiktok.startsWith('http')
+                              ? formattedSocialMedia.tiktok
+                              : `https://tiktok.com/@${formattedSocialMedia.tiktok.replace('@', '')}`
+                          }
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-3 text-sm hover:text-[#4AB0D9] transition-colors"
+                        >
+                          <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center">
+                            <span className="text-white text-xs font-bold">TT</span>
+                          </div>
+                          <span>{formattedSocialMedia.tiktok}</span>
+                        </a>
+                      )}
+                      {formattedSocialMedia.website && (
+                        <a
+                          href={
+                            formattedSocialMedia.website.startsWith('http')
+                              ? formattedSocialMedia.website
+                              : `https://${formattedSocialMedia.website}`
+                          }
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-3 text-sm hover:text-[#4AB0D9] transition-colors"
+                        >
+                          <div className="w-8 h-8 bg-gray-700 rounded-lg flex items-center justify-center">
+                            <span className="text-white text-xs font-bold">WWW</span>
+                          </div>
+                          <span>{formattedSocialMedia.website}</span>
                         </a>
                       )}
                     </CardContent>
@@ -1204,16 +1345,35 @@ const formattedPrice = (nutritionist as any)?.public_price_visible === false
                     Agende sua consulta e inicie sua jornada rumo ao bem-estar
                   </p>
                   <div className="space-y-3">
-                    {(nutritionist as any)?.public_price_visible !== false && nutritionist?.consultation_price && (nutritionist?.online_consultation_available || (nutritionist as any)?.service_online_available) ? (
-                      <Link
-                        href={`/dashboard/paciente/agendar?nutritionistId=${nutritionist.id}`}
-                      >
-                        <Button className="w-full bg-[#4AB0D9] hover:bg-[#4AB0D9]/90 text-white text-lg py-3">
-                          <Calendar className="h-5 w-5 mr-2" />
-                          Agendar Consulta
-                        </Button>
-                      </Link>
-                    ) : (
+                    {(() => {
+                      const publicPriceVisible = (nutritionist as any)?.public_price_visible !== false
+                      const minServicePrice = (formattedServices?.length
+                        ? Math.min(
+                            ...formattedServices
+                              .map(s => Number(s.price) || 0)
+                              .filter(p => p > 0)
+                          )
+                        : null)
+                      const effectivePrice = nutritionist?.consultation_price
+                        || (nutritionist as any)?.service_consultation_price
+                        || minServicePrice
+                      const onlineAvailable = Boolean(
+                        (nutritionist as any)?.online_consultation_available
+                        || (nutritionist as any)?.service_online_available
+                        || (nutritionist as any)?.accepts_telemedicine
+                        || nutritionist?.accepts_telemedicine
+                      )
+
+                      return (publicPriceVisible && effectivePrice && onlineAvailable) ? (
+                        <Link
+                          href={`/dashboard/paciente/agendar?nutritionistId=${nutritionist.id}`}
+                        >
+                          <Button className="w-full bg-[#4AB0D9] hover:bg-[#4AB0D9]/90 text-white text-lg py-3">
+                            <Calendar className="h-5 w-5 mr-2" />
+                            Agendar Consulta
+                          </Button>
+                        </Link>
+                      ) : (
                       <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                         <h3 className="text-lg font-semibold text-yellow-800 mb-2">
                           Indisponível para agendamento
@@ -1223,7 +1383,8 @@ const formattedPrice = (nutritionist as any)?.public_price_visible === false
                           Entre em contato diretamente para mais informações.
                         </p>
                       </div>
-                    )}
+                      )
+                    })()}
                     <Button
                       onClick={async () => {
                         try {

@@ -1,4 +1,4 @@
-'use client'
+ 'use client'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -8,6 +8,8 @@ import { Calendar, Clock, Video, User, Copy, ExternalLink } from 'lucide-react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { toast } from 'sonner'
+import { useState } from 'react'
+import AnamneseViewModal from '@/components/anamnese-view-modal'
 
 export interface TeleconsultaSession {
   id: string
@@ -78,6 +80,7 @@ export function TeleconsultaCard({
   className
 }: TeleconsultaCardProps) {
  
+  const [isAnamnesisOpen, setIsAnamnesisOpen] = useState(false)
   const scheduledDate = new Date(session.scheduled_at)
 
   const now = new Date()
@@ -158,6 +161,15 @@ export function TeleconsultaCard({
           </div>
           
           <div className="flex space-x-2">
+            {userRole === 'nutricionista' && session.patient_id && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsAnamnesisOpen(true)}
+              >
+                Ver Anamnese
+              </Button>
+            )}
             {session.status === 'scheduled' && (
               <>
                 <Button
@@ -216,6 +228,13 @@ export function TeleconsultaCard({
           </div>
         </div>
       </CardContent>
+      {userRole === 'nutricionista' && session.patient_id && (
+        <AnamneseViewModal
+          open={isAnamnesisOpen}
+          onOpenChange={setIsAnamnesisOpen}
+          patientId={session.patient_id}
+        />
+      )}
     </Card>
   )
 }

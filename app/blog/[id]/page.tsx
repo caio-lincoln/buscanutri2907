@@ -85,15 +85,13 @@ export default function BlogPostPage() {
 
       <Card className="border-0 shadow-lg backdrop-blur-sm mb-8">
         <CardHeader className="p-0">
-          <div className="relative w-full overflow-hidden rounded-t-xl">
+          <div className="relative w-full max-w-[100vw] aspect-square overflow-hidden rounded-t-xl">
             <Image
-              src={post.image || '/placeholder.svg?height=400&width=800'}
+              src={post.image || '/placeholder.svg?height=1080&width=1080'}
               alt={post.title}
-              width={0}
-              height={0}
+              fill
               sizes="100vw"
-              style={{ width: '100%', height: 'auto' }}
-              className={`w-full h-auto object-contain object-center bg-gray-100 ${
+              className={`object-cover object-center bg-gray-100 ${
                 post.centerImage ? 'mx-auto block' : ''
               }`}
               priority
@@ -172,6 +170,7 @@ export default function BlogPostPage() {
             <ContentRenderer
               content={post.content}
               centerImages={post.centerImage || false}
+              className="[&_img]:w-full [&_img]:max-w-[100vw] [&_img]:aspect-square [&_img]:object-cover [&_img]:mx-auto"
             />
           </div>
 
