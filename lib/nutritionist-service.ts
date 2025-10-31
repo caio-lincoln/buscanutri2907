@@ -109,6 +109,9 @@ export async function getNutritionistById(id: string): Promise<
 
     const { data, error } = await supabase.rpc('get_nutritionist_by_id', {
       p_id: id,
+      p_tz: 'America/Sao_Paulo',
+      p_slot_minutes: 60,
+      p_max_today: 8,
     }).maybeSingle()
     
     if (error) {
