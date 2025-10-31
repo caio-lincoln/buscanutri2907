@@ -53,6 +53,7 @@ export function BadgesTab({ initialUser }: Props) {
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false)
   const [currentBadge, setCurrentBadge] = useState(null)
   const [adminUserId, setAdminUserId] = useState(null)
+  const [nutritionistSearch, setNutritionistSearch] = useState('')
   // Ícones padronizados: removemos upload e preview
 
   useEffect(() => {
@@ -432,6 +433,17 @@ export function BadgesTab({ initialUser }: Props) {
           <p className="text-gray-600 mb-4">
             Selecione um nutricionista para atribuir ou remover insígnias.
           </p>
+          <div className="flex flex-col sm:flex-row items-center gap-3 mb-4">
+            <Input
+              placeholder="Filtrar nutricionistas por nome ou email"
+              value={nutritionistSearch}
+              onChange={e => setNutritionistSearch(e.target.value)}
+              className="w-full sm:w-[360px]"
+            />
+            <Button variant="ghost" onClick={() => setNutritionistSearch('')}>
+              Mostrar todos
+            </Button>
+          </div>
           <Table>
             <TableHeader>
               <TableRow>
@@ -441,7 +453,15 @@ export function BadgesTab({ initialUser }: Props) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {nutritionists.map(nutri => (
+              {(nutritionists
+                .filter(n => {
+                  const term = nutritionistSearch.trim().toLowerCase()
+                  if (!term) return true
+                  const name = (n.full_name || '').toLowerCase()
+                  const email = (n.email || '').toLowerCase()
+                  return name.includes(term) || email.includes(term)
+                }))
+                .map(nutri => (
                 <TableRow key={nutri.id}>
                   <TableCell className="font-medium">
                     {nutri.full_name}
