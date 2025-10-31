@@ -186,7 +186,15 @@ export function UsersTab() {
 
           const res = await fetch(url, options)
           if (!res.ok) {
-            alert('Falha ao executar ação.')
+            // Tentar obter mensagem detalhada do backend
+            let errMsg = 'Falha ao executar ação.'
+            try {
+              const body = await res.json()
+              errMsg = body?.error?.message || body?.message || res.statusText || errMsg
+            } catch {
+              // Ignorar erro ao parsear o corpo
+            }
+            alert(errMsg)
           }
           // Recarregar lista
           const refreshed = await getAllUsers()

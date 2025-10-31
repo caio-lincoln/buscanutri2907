@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
     const adjustedEndDate = new Date(filterEndDate)
     adjustedEndDate.setHours(23, 59, 59, 999)
 
-    // Buscar dados de usuários filtrados por data
+    // Buscar dados de usuários filtrados por data (dados para agregações)
     const { data: usersData } = await supabase
       .from('user_profiles')
       .select(`
@@ -53,6 +53,13 @@ export async function GET(request: NextRequest) {
         city,
         state
       `)
+      .gte('created_at', filterStartDate.toISOString())
+      .lte('created_at', adjustedEndDate.toISOString())
+
+    // Contagem exata de novos usuários no período (sem limite de 1000)
+    const { count: newUsersExact } = await supabase
+      .from('user_profiles')
+      .select('id', { count: 'exact', head: true })
       .gte('created_at', filterStartDate.toISOString())
       .lte('created_at', adjustedEndDate.toISOString())
 
@@ -175,9 +182,9 @@ export async function GET(request: NextRequest) {
     const previousEndDate = new Date(filterStartDate.getTime() - 1)
 
     // Buscar dados do período anterior para comparação
-    const { data: previousUsersData } = await supabase
+    const { count: previousUsersExact } = await supabase
       .from('user_profiles')
-      .select('id, created_at, user_type')
+      .select('id', { count: 'exact', head: true })
       .gte('created_at', previousStartDate.toISOString())
       .lte('created_at', previousEndDate.toISOString())
 
@@ -189,8 +196,8 @@ export async function GET(request: NextRequest) {
 
     // Calcular métricas baseadas nos dados filtrados
     // Métricas de usuários no período selecionado
-    const newUsersInPeriod = usersData?.length || 0
-    const previousUsersCount = previousUsersData?.length || 0
+    const newUsersInPeriod = typeof newUsersExact === 'number' ? newUsersExact : (usersData?.length || 0)
+    const previousUsersCount = typeof previousUsersExact === 'number' ? previousUsersExact : 0
     
     // Cadastros por Tipo de Usuário (totais reais no Supabase)
     const usersByType = {
@@ -292,13 +299,14 @@ export async function GET(request: NextRequest) {
 
     // Visitas ao site reais no período usando web_visits (usar admin quando disponível)
     const supabaseForVisits = supabaseAdmin || supabase
-    const { data: webVisitsData } = await supabaseForVisits
+    // Contagem exata de visitas ao site no período (sem limite de 1000)
+    const { count: siteVisitsRealCount } = await supabaseForVisits
       .from('web_visits')
-      .select('id, created_at')
+      .select('id', { count: 'exact', head: true })
       .gte('created_at', filterStartDate.toISOString())
       .lte('created_at', adjustedEndDate.toISOString())
 
-    const siteVisitsReal = webVisitsData?.length || 0
+    const siteVisitsReal = siteVisitsRealCount || 0
 
     // Taxa de conversão real: cadastros / visitas
     const conversionRate = siteVisitsReal > 0 ? (newUsersInPeriod / siteVisitsReal * 100) : 0
@@ -359,30 +367,38 @@ export async function GET(request: NextRequest) {
       const date = new Date(filterStartDate.getTime() + i * 24 * 60 * 60 * 1000)
       const dateStr = date.toISOString().split('T')[0]
       
-      const dayUsers = (usersData || [])
-        .filter(user => (user.created_at || '').startsWith(dateStr))
-        .length
-      
-      // Visitas reais do dia
-      const dayVisits = (webVisitsData || [])
-        .filter(v => (v.created_at || '').startsWith(dateStr))
-        .length
+      // Contagem exata de novos usuários no dia
+      const dayStart = new Date(dateStr + 'T00:00:00.000Z')
+      const dayEnd = new Date(dateStr + 'T23:59:59.999Z')
+
+      const { count: dayUsersCount } = await supabase
+        .from('user_profiles')
+        .select('id', { count: 'exact', head: true })
+        .gte('created_at', dayStart.toISOString())
+        .lte('created_at', dayEnd.toISOString())
+
+      // Contagem exata de visitas reais no dia
+      const { count: dayVisitsCount } = await supabaseForVisits
+        .from('web_visits')
+        .select('id', { count: 'exact', head: true })
+        .gte('created_at', dayStart.toISOString())
+        .lte('created_at', dayEnd.toISOString())
       
       trafficData.push({
         date: dateStr,
-        visitors: dayVisits,
-        newUsers: dayUsers
+        visitors: dayVisitsCount || 0,
+        newUsers: dayUsersCount || 0
       })
     }
 
     // Conversão do período anterior com base em visitas reais
-    const { data: previousWebVisitsData } = await supabaseForVisits
+    const { count: previousVisitorsCountExact } = await supabaseForVisits
       .from('web_visits')
-      .select('id, created_at')
+      .select('id', { count: 'exact', head: true })
       .gte('created_at', previousStartDate.toISOString())
       .lte('created_at', previousEndDate.toISOString())
 
-    const previousVisitorsCount = previousWebVisitsData?.length || 0
+    const previousVisitorsCount = previousVisitorsCountExact || 0
     const previousConversionRate = previousVisitorsCount > 0 ? (previousUsersCount / previousVisitorsCount * 100) : 0
 
     const analyticsData = {

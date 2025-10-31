@@ -221,13 +221,6 @@ export default function AdminDashboard({ initialUser }: Props) {
                 // trend={{ value: 15, isPositive: true }}
                 description="Assinaturas"
               />
-              <StatsCard
-                title="Taxa de Conversão"
-                value="80.4%"
-                icon={TrendingUp}
-                color="orange"
-                description="Visitantes → Usuários"
-              />
             </div>
 
             {/* Quick Actions */}
