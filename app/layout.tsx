@@ -22,10 +22,29 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const pixelId = process.env[ 'NEXT_PUBLIC_FB_PIXEL_ID' ]
+  const gtagId = process.env['NEXT_PUBLIC_GTAG_ID'] || 'AW-17548763804'
 
   return (
     <html lang="pt-BR">
       <body className={inter.className}>
+        {gtagId && (
+          <>
+            {/* Google tag (gtag.js) */}
+            <Script
+              id="gtag-src"
+              src={`https://www.googletagmanager.com/gtag/js?id=${gtagId}`}
+              strategy="afterInteractive"
+            />
+            <Script id="gtag-init" strategy="afterInteractive">
+              {`
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);} 
+                gtag('js', new Date());
+                gtag('config', '${gtagId}');
+              `}
+            </Script>
+          </>
+        )}
         {pixelId && (
           <>
             <Script id="fb-pixel" strategy="afterInteractive">
