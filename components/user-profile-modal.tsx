@@ -345,6 +345,8 @@ export function UserProfileModal({
         safeFormData.specialties = Array.isArray(initialData?.specialties)
           ? initialData.specialties.join(', ')
           : initialData?.specialties || ''
+        // Garantir que o estado do checkbox de UAN seja preservado
+        safeFormData.enable_uan_consulting = initialData?.service_meal_plan_price > 0 ? true : initialData?.enable_uan_consulting || false
         // Para horários disponíveis, convertemos array do banco em objeto para o ScheduleSelector
         // safeFormData.available_times = Array.isArray(
         //   initialData?.available_times
@@ -2109,9 +2111,29 @@ export function UserProfileModal({
                             </div>
 
                             <div>
-                              <Label htmlFor="service_meal_plan_price">
-                                Preço do Plano Alimentar (R$)
-                              </Label>
+                              <div className="flex justify-between items-center mb-2">
+                                <Label htmlFor="service_meal_plan_price">
+                                  Preço da Consultoria de UAN (R$)
+                                </Label>
+                                <div className="flex items-center space-x-2">
+                                  <Label htmlFor="enable_uan_consulting" className="text-sm">
+                                    Ativar Consultoria de UAN
+                                  </Label>
+                                  <input
+                                    type="checkbox"
+                                    id="enable_uan_consulting"
+                                    checked={formData?.enable_uan_consulting || false}
+                                    onChange={(e) => {
+                                      setFormData({
+                                        ...formData,
+                                        enable_uan_consulting: e.target.checked,
+                                        service_meal_plan_price: e.target.checked ? formData?.service_meal_plan_price : 0
+                                      });
+                                    }}
+                                    className="h-4 w-4"
+                                  />
+                                </div>
+                              </div>
                               <Input
                                 id="service_meal_plan_price"
                                 type="number"
@@ -2120,6 +2142,7 @@ export function UserProfileModal({
                                 value={formData?.service_meal_plan_price || '0'}
                                 onChange={handleChange}
                                 placeholder="Ex: 120.00"
+                                disabled={!formData?.enable_uan_consulting}
                               />
                             </div>
                           </div>

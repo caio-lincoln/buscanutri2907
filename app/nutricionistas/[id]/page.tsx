@@ -115,12 +115,12 @@ export default async function NutritionistProfilePage({ params }: PageProps) {
         },
       ]
       : []),
-    ...(nutritionist.service_meal_plan_price
+    ...((nutritionist.service_meal_plan_price && nutritionist.service_meal_plan_price > 0)
       ? [
         {
-          name: 'Plano Alimentar',
-          price: nutritionist.service_meal_plan_price,
-          description: 'Elaboração de plano alimentar personalizado',
+          name: 'Consultoria em UAN',
+          price: nutritionist.service_meal_plan_price || 0,
+          description: 'Consultoria especializada em Unidade de Alimentação e Nutrição',
         },
       ]
       : []),

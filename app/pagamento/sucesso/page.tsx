@@ -33,6 +33,21 @@ export default function PagamentoSucesso() {
     return () => clearInterval(timer)
   }, [])
 
+  // Google tag (gtag.js) event – dispara na página de Obrigado
+  useEffect(() => {
+    try {
+      // Comentário equivalente ao pedido: <!-- Google tag (gtag.js) event -->
+      const gtag = (window as any)?.gtag
+      if (typeof gtag === 'function') {
+        gtag('event', 'ads_conversion_Contact_Us_1', {
+          // <event_parameters>
+        })
+      }
+    } catch {
+      // Silent: evita quebrar a página caso gtag não esteja disponível
+    }
+  }, [])
+
   const handleRedirect = () => {
     setIsRedirecting(true)
     router.replace('/dashboard/nutricionistas?activeTab=assinatura')
