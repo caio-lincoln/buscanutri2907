@@ -282,6 +282,14 @@ export function UserProfileModal({
     message: string
   }>({ status: 'idle', message: '' })
 
+  // Estado para troca de senha
+  const [ passwordForm, setPasswordForm ] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  })
+  const [ updatingPassword, setUpdatingPassword ] = useState(false)
+
   // Estado para paginação
   const [ currentPage, setCurrentPage ] = useState(1)
   const totalPages =
@@ -315,6 +323,9 @@ export function UserProfileModal({
       setRgValidation({ status: 'idle', message: '' })
       setError(null)
       setCurrentPage(1)
+
+      // Reset de campos de senha ao abrir
+      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' })
 
       // Garantir que formData sempre tenha as propriedades necessárias
       const safeFormData = {
@@ -435,6 +446,57 @@ export function UserProfileModal({
       }
     }
   }, [ open, userType, initialData?.id ])
+
+  // Atualizar senha do usuário
+  const handleUpdatePassword = async () => {
+    try {
+      if (!passwordForm.newPassword || !passwordForm.confirmPassword) {
+        toast({
+          title: 'Campos obrigatórios',
+          description: 'Informe a nova senha e a confirmação.',
+          variant: 'destructive',
+        })
+        return
+      }
+      if (passwordForm.newPassword.length < 6) {
+        toast({
+          title: 'Senha muito curta',
+          description: 'A nova senha deve ter pelo menos 6 caracteres.',
+          variant: 'destructive',
+        })
+        return
+      }
+      if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+        toast({
+          title: 'Senhas não coincidem',
+          description: 'A confirmação deve ser igual à nova senha.',
+          variant: 'destructive',
+        })
+        return
+      }
+
+      setUpdatingPassword(true)
+      const { error } = await supabase.auth.updateUser({ password: passwordForm.newPassword })
+      if (error) {
+        toast({
+          title: 'Erro ao atualizar senha',
+          description: error.message || 'Tente novamente mais tarde.',
+          variant: 'destructive',
+        })
+        return
+      }
+      toast({ title: 'Senha atualizada', description: 'Sua senha foi alterada com sucesso.' })
+      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' })
+    } catch (e: any) {
+      toast({
+        title: 'Erro inesperado',
+        description: e?.message || 'Ocorreu um erro ao atualizar a senha.',
+        variant: 'destructive',
+      })
+    } finally {
+      setUpdatingPassword(false)
+    }
+  }
 
   const loadCorporateFlags = async () => {
     try {
@@ -1463,6 +1525,52 @@ export function UserProfileModal({
                       nutricionais.
                     </p>
                   </div>
+
+                  {/* Alterar Senha */}
+                  <div className="mt-6 border-t pt-4">
+                    <h3 className="text-lg font-semibold mb-4">Alterar Senha</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <Label htmlFor="current_password">Senha atual</Label>
+                        <Input
+                          id="current_password"
+                          type="password"
+                          value={passwordForm.currentPassword}
+                          onChange={e => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
+                          placeholder="Digite sua senha atual"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="new_password">Nova senha</Label>
+                        <Input
+                          id="new_password"
+                          type="password"
+                          value={passwordForm.newPassword}
+                          onChange={e => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+                          placeholder="Digite a nova senha"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="confirm_password">Confirmar nova senha</Label>
+                        <Input
+                          id="confirm_password"
+                          type="password"
+                          value={passwordForm.confirmPassword}
+                          onChange={e => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+                          placeholder="Confirme a nova senha"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex justify-end mt-4">
+                      <Button type="button" onClick={handleUpdatePassword} disabled={updatingPassword}>
+                        {updatingPassword ? (
+                          <span className="inline-flex items-center"><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Atualizando...</span>
+                        ) : (
+                          'Atualizar senha'
+                        )}
+                      </Button>
+                    </div>
+                  </div>
                 </>
               )}
 
@@ -1969,6 +2077,52 @@ export function UserProfileModal({
                       onChange={handlePaymentMethodsChange}
                       placeholder="Selecione os métodos"
                     />
+                  </div>
+
+                  {/* Alterar Senha */}
+                  <div className="mt-6 border-t pt-4">
+                    <h3 className="text-lg font-semibold mb-4">Alterar Senha</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <Label htmlFor="current_password_nutri">Senha atual</Label>
+                        <Input
+                          id="current_password_nutri"
+                          type="password"
+                          value={passwordForm.currentPassword}
+                          onChange={e => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
+                          placeholder="Digite sua senha atual"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="new_password_nutri">Nova senha</Label>
+                        <Input
+                          id="new_password_nutri"
+                          type="password"
+                          value={passwordForm.newPassword}
+                          onChange={e => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+                          placeholder="Digite a nova senha"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="confirm_password_nutri">Confirmar nova senha</Label>
+                        <Input
+                          id="confirm_password_nutri"
+                          type="password"
+                          value={passwordForm.confirmPassword}
+                          onChange={e => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+                          placeholder="Confirme a nova senha"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex justify-end mt-4">
+                      <Button type="button" onClick={handleUpdatePassword} disabled={updatingPassword}>
+                        {updatingPassword ? (
+                          <span className="inline-flex items-center"><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Atualizando...</span>
+                        ) : (
+                          'Atualizar senha'
+                        )}
+                      </Button>
+                    </div>
                   </div>
 
                   <div>

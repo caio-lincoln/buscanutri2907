@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,6 +11,7 @@ import { toast } from '@/hooks/use-toast'
 import { Loader2, Upload, Building2, User, MapPin, ChevronLeft, ChevronRight } from 'lucide-react'
 import { updateCompanyProfile, uploadCompanyLogo } from '@/lib/company-service'
 import type { CompanyProfile } from '@/lib/company-service'
+import { createSupabaseClient } from '@/lib/supabase'
 
 // Opções para os selects
 const COMPANY_SIZE_OPTIONS = [
@@ -45,6 +46,7 @@ export function CompanyProfileModal({
   initialData,
   onProfileUpdate,
 }: CompanyProfileModalProps) {
+  const supabase = useMemo(() => createSupabaseClient(), [])
   const [currentPage, setCurrentPage] = useState(1)
   const [loading, setLoading] = useState(false)
   const [logoFile, setLogoFile] = useState<File | null>(null)
@@ -70,6 +72,14 @@ export function CompanyProfileModal({
     responsible_position: '',
   })
 
+  // Estado para troca de senha
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  })
+  const [updatingPassword, setUpdatingPassword] = useState(false)
+
   const totalPages = 3
 
   // Inicializar dados do formulário
@@ -91,6 +101,13 @@ export function CompanyProfileModal({
       setLogoPreview(initialData.logo_url || null)
     }
   }, [initialData])
+
+  // Reset de campos de senha ao abrir
+  useEffect(() => {
+    if (open) {
+      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' })
+    }
+  }, [open])
 
   // Função para atualizar campos do formulário
   const updateFormData = (field: string, value: string) => {
@@ -328,6 +345,100 @@ export function CompanyProfileModal({
                 placeholder="Descreva brevemente sua empresa, seus valores e objetivos..."
                 rows={4}
               />
+            </div>
+
+            {/* Alterar Senha */}
+            <div className="mt-6 border-t pt-4">
+              <h3 className="text-lg font-semibold mb-4">Alterar Senha</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="current_password_empresa">Senha atual</Label>
+                  <Input
+                    id="current_password_empresa"
+                    type="password"
+                    value={passwordForm.currentPassword}
+                    onChange={e => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
+                    placeholder="Digite sua senha atual"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="new_password_empresa">Nova senha</Label>
+                  <Input
+                    id="new_password_empresa"
+                    type="password"
+                    value={passwordForm.newPassword}
+                    onChange={e => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+                    placeholder="Digite a nova senha"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="confirm_password_empresa">Confirmar nova senha</Label>
+                  <Input
+                    id="confirm_password_empresa"
+                    type="password"
+                    value={passwordForm.confirmPassword}
+                    onChange={e => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+                    placeholder="Confirme a nova senha"
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end mt-4">
+                <Button type="button" onClick={async () => {
+                  try {
+                    if (!passwordForm.newPassword || !passwordForm.confirmPassword) {
+                      toast({
+                        title: 'Campos obrigatórios',
+                        description: 'Informe a nova senha e a confirmação.',
+                        variant: 'destructive',
+                      })
+                      return
+                    }
+                    if (passwordForm.newPassword.length < 6) {
+                      toast({
+                        title: 'Senha muito curta',
+                        description: 'A nova senha deve ter pelo menos 6 caracteres.',
+                        variant: 'destructive',
+                      })
+                      return
+                    }
+                    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+                      toast({
+                        title: 'Senhas não coincidem',
+                        description: 'A confirmação deve ser igual à nova senha.',
+                        variant: 'destructive',
+                      })
+                      return
+                    }
+
+                    setUpdatingPassword(true)
+                    const { error } = await supabase.auth.updateUser({ password: passwordForm.newPassword })
+                    if (error) {
+                      toast({
+                        title: 'Erro ao atualizar senha',
+                        description: error.message || 'Tente novamente mais tarde.',
+                        variant: 'destructive',
+                      })
+                      return
+                    }
+                    toast({ title: 'Senha atualizada', description: 'Sua senha foi alterada com sucesso.' })
+                    setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' })
+                  } catch (e: any) {
+                    toast({
+                      title: 'Erro inesperado',
+                      description: e?.message || 'Ocorreu um erro ao atualizar a senha.',
+                      variant: 'destructive',
+                    })
+                  } finally {
+                    setUpdatingPassword(false)
+                  }
+                }} disabled={updatingPassword}>
+                  {updatingPassword ? (
+                    <span className="inline-flex items-center"><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Atualizando...</span>
+                  ) : (
+                    'Atualizar senha'
+                  )}
+                </Button>
+              </div>
             </div>
           </div>
         )
