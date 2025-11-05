@@ -20,10 +20,34 @@ export default function ResetPasswordPage() {
   const router = useRouter()
 
   useEffect(() => {
-    const checkSession = async () => {
+    const handleRecoveryRedirect = async () => {
       const supabase = createSupabaseClient()
+
+      try {
+        // Tentar estabelecer sessão a partir dos tokens na URL (hash) ou código (query)
+        const currentUrl = new URL(window.location.href)
+        const hashParams = new URLSearchParams(currentUrl.hash.replace('#', ''))
+        const accessToken = hashParams.get('access_token')
+        const refreshToken = hashParams.get('refresh_token')
+        const code = currentUrl.searchParams.get('code')
+
+        if (accessToken && refreshToken) {
+          await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          })
+          // Limpar tokens da URL
+          router.replace('/redefinir-senha')
+        } else if (code) {
+          // Fluxo PKCE: troca código por sessão, se aplicável
+          await supabase.auth.exchangeCodeForSession(code)
+          router.replace('/redefinir-senha')
+        }
+      } catch (e) {
+        // Ignorar falhas de troca de sessão; trataremos abaixo
+      }
+
       const { data } = await supabase.auth.getSession()
-      
       if (!data.session) {
         toast({
           title: 'Link inválido ou expirado',
@@ -33,11 +57,11 @@ export default function ResetPasswordPage() {
         router.push('/esqueci-senha')
         return
       }
-      
+
       setIsAuthenticated(true)
     }
-    
-    checkSession()
+
+    handleRecoveryRedirect()
   }, [])
 
   const validatePassword = () => {

@@ -43,8 +43,13 @@ export async function signUp(
     })
 
     if (authError) {
-      // Silent error handling: Error in auth.signUp
-      throw new Error(authError.message)
+      // Mapear mensagem para um texto mais claro em PT-BR
+      const raw = authError.message || ''
+      const lower = raw.toLowerCase()
+      const friendly = lower.includes('already registered')
+        ? 'Este email já possui uma conta. Faça login ou recupere a senha.'
+        : raw
+      throw new Error(friendly)
     }
 
     if (!authData.user) {

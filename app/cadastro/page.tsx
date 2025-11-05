@@ -492,6 +492,36 @@ export default function CadastroPage() {
           )
         }
 
+        // Validação de campos obrigatórios do endereço
+        const hasInvalidAddress = addresses.some(
+          a => !a.state?.trim() || !a.city?.trim()
+        )
+        if (hasInvalidAddress) {
+          throw new Error(
+            'Endereços devem conter Estado e Cidade. Verifique seus endereços antes de continuar.'
+          )
+        }
+
+        // Garantir pelo menos um endereço principal
+        const hasMainAddress = addresses.some(a => a.is_main === true)
+        if (!hasMainAddress) {
+          throw new Error(
+            'Defina um endereço principal antes de concluir o cadastro.'
+          )
+        }
+
+        // Se presencial estiver habilitado, exigir endereço presencial
+        if (hasInPerson) {
+          const hasInPersonAddress = addresses.some(
+            a => (a.type || 'in_person') === 'in_person'
+          )
+          if (!hasInPersonAddress) {
+            throw new Error(
+              'Para consultas presenciais, adicione pelo menos um endereço presencial.'
+            )
+          }
+        }
+
         additionalData = {
           full_name,
           crn: crnValue,
@@ -575,6 +605,15 @@ export default function CadastroPage() {
       }
 
       // Processing registration data
+
+      // Pré-validação: documentos obrigatórios para nutricionista antes do cadastro
+      if (userType === 'nutricionista') {
+        if (!crnProofFile) {
+          throw new Error(
+            'Comprovante de CRN é obrigatório antes do cadastro. Adicione o arquivo e tente novamente.'
+          )
+        }
+      }
 
       const { data, profileData, error: signUpError } = await signUp(
         email,
