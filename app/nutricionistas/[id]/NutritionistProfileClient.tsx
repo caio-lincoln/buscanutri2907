@@ -589,6 +589,13 @@ const formattedPrice = (nutritionist as any)?.public_price_visible === false
                       {nutritionist.is_verified && <Badge className="bg-green-100 text-green-800">
                         Verificado
                       </Badge>}
+                      {nutritionist.aceita_cupons && (
+                        <div className="flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-green-50 to-emerald-50 rounded-full border border-green-200">
+                          <span className="text-xs font-medium text-green-700">
+                            Aceita cupom
+                          </span>
+                        </div>
+                      )}
                     </div>
                     <div className="flex flex-wrap items-center gap-4 text-sm text-[#1E1D40]/70">
                       <div className="flex items-center gap-1">

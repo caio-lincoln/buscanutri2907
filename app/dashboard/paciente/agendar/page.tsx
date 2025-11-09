@@ -49,6 +49,7 @@ interface NutritionistProfile {
   state: string | null
   online_consultation_available?: boolean
   service_online_available?: boolean
+  aceita_cupons?: boolean
 }
 
 interface AvailableSlot {
@@ -72,6 +73,7 @@ export default function AgendarPage() {
   const [ selectedState, setSelectedState ] = useState('Todas')
   const [ selectedPriceRange, setSelectedPriceRange ] = useState({ min: 0, max: 500 })
   const [ onlineOnly, setOnlineOnly ] = useState(true) // Padrão para teleconsultas
+  const [ aceitaCupons, setAceitaCupons ] = useState(false)
   const [ sortBy, setSortBy ] = useState('rating')
   const [ viewMode, setViewMode ] = useState<'grid' | 'list'>('grid')
   const [ loading, setLoading ] = useState(false)
@@ -114,7 +116,7 @@ export default function AgendarPage() {
         loadNutritionists()
       }
     }
-  }, [ user, authLoading, step, searchTerm, selectedSpecialty, selectedState, selectedPriceRange, onlineOnly, sortBy, patientProfile ])
+  }, [ user, authLoading, step, searchTerm, selectedSpecialty, selectedState, selectedPriceRange, onlineOnly, aceitaCupons, sortBy, patientProfile ])
 
   const loadProfile = async () => {
     try {
@@ -138,13 +140,21 @@ export default function AgendarPage() {
         limit: '20'
       })
 
+      if (aceitaCupons) {
+        params.set('aceitaCupons', 'true')
+      }
+
       const response = await fetch(`/api/nutritionists?${params}`)
       if (!response.ok) {
         throw new Error('Erro ao buscar nutricionistas')
       }
 
       const data = await response.json()
-      setNutritionists(data.nutritionists || [])
+      const rows: NutritionistProfile[] = data.nutritionists || []
+      const filteredByCoupon = aceitaCupons
+        ? rows.filter(n => Boolean(n.aceita_cupons))
+        : rows
+      setNutritionists(filteredByCoupon)
     } catch (error) {
       console.error('Erro ao carregar nutricionistas:', error)
       setNutritionists([])
@@ -253,6 +263,82 @@ export default function AgendarPage() {
     const timeStr = selectedSlot.time
     router.push(`/dashboard/paciente/confirmar-presencial/${selectedNutritionist.user_id}?date=${encodeURIComponent(dateStr)}&time=${encodeURIComponent(timeStr)}`)
   }
+
+  const FiltersBar = () => (
+    <div className="flex flex-wrap items-center gap-3 mb-4">
+      <div className="flex items-center gap-2">
+        <Input
+          placeholder="Buscar por nome ou especialidade"
+          value={searchTerm}
+          onChange={e => setSearchTerm(e.target.value)}
+          className="w-64"
+        />
+      </div>
+      <div className="flex items-center gap-2">
+        <Select value={selectedSpecialty} onValueChange={setSelectedSpecialty}>
+          <SelectTrigger className="w-48">
+            <SelectValue placeholder="Especialidade" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="Todas">Todas</SelectItem>
+            <SelectItem value="Emagrecimento">Emagrecimento</SelectItem>
+            <SelectItem value="Esportiva">Esportiva</SelectItem>
+            <SelectItem value="Clínica">Clínica</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="flex items-center gap-2">
+        <Select value={selectedState} onValueChange={setSelectedState}>
+          <SelectTrigger className="w-32">
+            <SelectValue placeholder="Estado" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="Todas">Todas</SelectItem>
+            <SelectItem value="SP">SP</SelectItem>
+            <SelectItem value="RJ">RJ</SelectItem>
+            <SelectItem value="MG">MG</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="flex items-center gap-2">
+        <Select
+          value={`${selectedPriceRange.min}-${selectedPriceRange.max}`}
+          onValueChange={val => {
+            const [min, max] = val.split('-').map(Number)
+            setSelectedPriceRange({ min, max })
+          }}
+        >
+          <SelectTrigger className="w-40">
+            <SelectValue placeholder="Preço" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={`0-500`}>Até R$ 500</SelectItem>
+            <SelectItem value={`0-150`}>Até R$ 150</SelectItem>
+            <SelectItem value={`150-300`}>R$ 150 - R$ 300</SelectItem>
+            <SelectItem value={`300-500`}>R$ 300 - R$ 500</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="flex items-center gap-2">
+        <Button
+          variant={onlineOnly ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setOnlineOnly(v => !v)}
+        >
+          Teleconsulta
+        </Button>
+      </div>
+      <div className="flex items-center gap-2">
+        <Button
+          variant={aceitaCupons ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setAceitaCupons(v => !v)}
+        >
+          Aceitam cupom
+        </Button>
+      </div>
+    </div>
+  )
 
   // const handleBooking = async () => {
   //   if (!selectedSlot || !profile || !selectedNutritionist) {
@@ -416,6 +502,23 @@ export default function AgendarPage() {
                   </Select>
                 </div>
               </div>
+              {/* Toggles adicionais */}
+              <div className="flex items-center gap-2">
+                <Button
+                  variant={onlineOnly ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setOnlineOnly(v => !v)}
+                >
+                  Teleconsulta
+                </Button>
+                <Button
+                  variant={aceitaCupons ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setAceitaCupons(v => !v)}
+                >
+                  Aceitam cupom
+                </Button>
+              </div>
             </CardContent>
           </Card>
 
@@ -504,6 +607,11 @@ export default function AgendarPage() {
                                   {nutritionist.specialties.length > 2 && (
                                     <Badge variant="outline" className="text-xs">
                                       +{nutritionist.specialties.length - 2}
+                                    </Badge>
+                                  )}
+                                  {nutritionist.aceita_cupons && (
+                                    <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                                      Aceita cupom
                                     </Badge>
                                   )}
                                 </div>

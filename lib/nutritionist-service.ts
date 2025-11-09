@@ -161,7 +161,10 @@ export async function getAllNutritionists(): Promise<
   })[]
 > {
   try {
-    const { data, error } = await supabase.rpc('get_nutritionists_safe', {})
+    const { data, error } = await supabase.rpc('get_nutritionists_safe', {
+      p_limit: 1000,
+      p_offset: 0,
+    })
 
     if (error) {
       // Silent error handling: Error fetching all nutritionists
@@ -172,10 +175,18 @@ export async function getAllNutritionists(): Promise<
       return []
     }
 
+    // Diagnóstico: contabiliza quantos vieram com aceita_cupons=true antes do mapeamento
+    try {
+      const rawCouponTrue = (data || []).filter((n: any) => n?.aceita_cupons === true).length
+      // eslint-disable-next-line no-console
+      console.debug('[getAllNutritionists] Raw aceita_cupons count:', rawCouponTrue)
+    } catch {}
+
     // Mapeia os dados para incluir o email e garantir a tipagem correta
     const nutritionistsWithEmail = data.map((n: any) => ({
       ...n,
       email: n.email || null,
+      aceita_cupons: typeof n.aceita_cupons === 'boolean' ? n.aceita_cupons : false,
     })) as NutritionistProfile[]
 
     // Para cada nutricionista, busca suas insígnias e estatísticas
@@ -212,6 +223,8 @@ export async function getNutritionistsBySpecialty(specialty: string): Promise<
   try {
     const { data, error } = await supabase.rpc('get_nutritionists_safe', {
       p_specialty: specialty,
+      p_limit: 1000,
+      p_offset: 0,
     })
 
     if (error) {

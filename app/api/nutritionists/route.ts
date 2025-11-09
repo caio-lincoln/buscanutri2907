@@ -17,6 +17,7 @@ export async function GET(request: NextRequest) {
     const sortBy = searchParams.get('sortBy') || 'rating'
     const limit = parseInt(searchParams.get('limit') || '50')
     const offset = parseInt(searchParams.get('offset') || '0')
+    const aceitaCupons = searchParams.get('aceitaCupons') === 'true'
 
     // Helper p/ aplicar filtros iguais na query e no count
     const applyFilters = (q: ReturnType<typeof supabase.from> extends infer T
@@ -28,6 +29,11 @@ export async function GET(request: NextRequest) {
         // Considera qualquer uma das flags de disponibilidade online
         // para evitar inconsistências entre campos
         q = q.or('online_consultation_available.eq.true,service_online_available.eq.true')
+      }
+
+      // Filtro: apenas profissionais que aceitam cupom
+      if (aceitaCupons) {
+        q = q.eq('aceita_cupons', true)
       }
 
       if (minPrice > 0 || maxPrice < 1000) {
@@ -75,6 +81,7 @@ export async function GET(request: NextRequest) {
         consultation_price,
         online_consultation_available,
         service_online_available,
+        aceita_cupons,
         is_verified,
         created_at
       `)
@@ -123,6 +130,7 @@ export async function GET(request: NextRequest) {
         consultation_price: Number(rest.consultation_price ?? 0),
         online_consultation_available: Boolean(rest.online_consultation_available),
         service_online_available: Boolean(rest.service_online_available),
+        aceita_cupons: Boolean(rest.aceita_cupons),
         specialties,
       }
     })

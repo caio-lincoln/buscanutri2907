@@ -2,7 +2,9 @@
 
 import React, { useCallback, useEffect } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
+import { Extension } from '@tiptap/core'
 import StarterKit from '@tiptap/starter-kit'
+import HardBreak from '@tiptap/extension-hard-break'
 import Image from '@tiptap/extension-image'
 import Link from '@tiptap/extension-link'
 import TextAlign from '@tiptap/extension-text-align'
@@ -425,13 +427,36 @@ export function RichTextEditor({
   centerImage,
   onCenterImageChange,
 }: RichTextEditorProps) {
+  // Extension to map Enter to hard break (<br>) outside of code blocks
+  const EnterAsHardBreak = Extension.create({
+    name: 'enterAsHardBreak',
+    addKeyboardShortcuts() {
+      return {
+        Enter: () => {
+          const { state } = this.editor
+          const { $from } = state.selection
+          const parentName = $from.parent?.type?.name
+          // Keep default behavior inside code blocks
+          if (parentName === 'codeBlock') {
+            return false
+          }
+          return this.editor.commands.setHardBreak()
+        },
+      }
+    },
+  })
+
   const editor = useEditor({
     extensions: [
+      // Disable StarterKit's default hardBreak to avoid duplication
       StarterKit.configure({
         heading: {
           levels: [ 1, 2, 3 ],
         },
+        hardBreak: false,
       }),
+      HardBreak.configure({ keepMarks: true }),
+      EnterAsHardBreak,
       Image.configure({
         HTMLAttributes: {
           class: 'max-w-full h-auto rounded-lg',
@@ -543,7 +568,8 @@ export function RichTextEditor({
         <p>
           <strong>Dica:</strong> Cole links do YouTube, Instagram ou TikTok para
           incorporar vídeos automaticamente. Use Ctrl+B para negrito, Ctrl+I
-          para itálico, Ctrl+Z para desfazer.
+          para itálico, Ctrl+Z para desfazer. Use Shift + Enter para pular uma
+          linha.
         </p>
       </div>
     </div>

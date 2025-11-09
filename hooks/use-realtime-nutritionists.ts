@@ -16,6 +16,7 @@ export interface NutritionistProfile {
   total_reviews?: number
   experience_years?: number
   is_verified: boolean
+  aceita_cupons?: boolean | null
   nutritionist_services?: any[]
   nutritionist_specialties?: any[]
 }
@@ -94,6 +95,7 @@ export function useRealtimeNutritionists(filters: UseRealtimeNutritionistsProps 
         total_reviews,
         experience_years,
         is_verified,
+        aceita_cupons,
         online_available:service_online_available,
         nutritionist_services(*)
         ${addrJoin}

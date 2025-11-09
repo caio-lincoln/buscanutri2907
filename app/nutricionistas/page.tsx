@@ -144,7 +144,7 @@ export default function NutricionistasPage() {
   const [ selectedCity, setSelectedCity ] = useState('Todas')
   const [ selectedPriceRange, setSelectedPriceRange ] = useState(priceRanges[ 0 ])
   const [ onlineOnly, setOnlineOnly ] = useState(false)
-  const [ aceitaCupons, setAceitaCupons ] = useState(false)
+  const [ verifiedOnly, setVerifiedOnly ] = useState(false)
   const [ sortBy, setSortBy ] = useState('rating')
   const [ viewMode, setViewMode ] = useState<'grid' | 'list'>('grid')
   const [ mobileMenuOpen, setMobileMenuOpen ] = useState(false)
@@ -283,6 +283,8 @@ export default function NutricionistasPage() {
 
   // Filtrar e ordenar nutricionistas
   const filteredNutritionists = useMemo(() => {
+    // Removido: filtro exclusivo de cupons. Mantém filtragem padrão.
+
     const filtered = nutritionists.filter(nutritionist => {
       const formattedData = formatNutritionistData(nutritionist)
 
@@ -344,20 +346,33 @@ export default function NutricionistasPage() {
         (nutritionist.consultation_price >= selectedPriceRange.min &&
           nutritionist.consultation_price <= selectedPriceRange.max)
 
-      const matchesOnline =
-        !onlineOnly || nutritionist.service_online_available || nutritionist.service_online_available || false
+      // Apenas consultas online: deve ter atendimento online disponível e NÃO ter presencial
+      const onlineAvailable =
+        (nutritionist as any)?.service_online_available === true
+          ? true
+          : ((nutritionist as any)?.is_online === true || (nutritionist as any)?.accepts_telemedicine === true || false)
 
-      const matchesCupons = !aceitaCupons || nutritionist.aceita_cupons || false
+      const hasPresential =
+        (nutritionist as any)?.service_presential_available === true || Boolean(mainAddresses[nutritionist.id])
 
-      return (
+      // Ajuste: permitir perfis que oferecem consulta online mesmo que também tenham presencial
+      const matchesOnline = !onlineOnly || onlineAvailable
+
+      const matchesVerified = !verifiedOnly || Boolean((nutritionist as any)?.is_verified)
+
+      const passes = (
         matchesSearch &&
         matchesSpecialty &&
         matchesState &&
         matchesCity &&
         matchesPrice &&
         matchesOnline &&
-        matchesCupons
+        matchesVerified
       )
+
+      // Removido: diagnóstico específico do filtro de cupom
+
+      return passes
     })
 
     // Ordenar
@@ -387,10 +402,12 @@ export default function NutricionistasPage() {
     selectedCity,
     selectedPriceRange,
     onlineOnly,
-    aceitaCupons,
+    verifiedOnly,
     sortBy,
     mainAddresses,
   ])
+
+  // Removido: contagem e logs relacionados ao filtro de cupons
 
   // Structured Data para SEO
   const structuredData = {
@@ -857,34 +874,36 @@ export default function NutricionistasPage() {
 
               {/* Filtros adicionais */}
               <div className="flex flex-wrap items-center justify-between mt-6 pt-6 border-t">
-                <div className="flex items-center gap-6">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="online-only"
-                      checked={onlineOnly}
-                      onCheckedChange={setOnlineOnly}
-                    />
-                    <label
-                      htmlFor="online-only"
-                      className="text-sm font-medium"
-                    >
-                      Apenas consultas online
-                    </label>
-                  </div>
-
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="aceita-cupons"
-                      checked={aceitaCupons}
-                      onCheckedChange={setAceitaCupons}
-                    />
-                    <label
-                      htmlFor="aceita-cupons"
-                      className="text-sm font-medium"
-                    >
-                      Aceitam cupom
-                    </label>
-                  </div>
+              <div className="flex items-center gap-6">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="online-only"
+                    checked={onlineOnly}
+                    onCheckedChange={(checked) => setOnlineOnly(Boolean(checked))}
+                  />
+                  <label
+                    htmlFor="online-only"
+                    className="text-sm font-medium"
+                  >
+                    Apenas consultas online
+                  </label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="verified-only"
+                    checked={verifiedOnly}
+                    onCheckedChange={(checked) => setVerifiedOnly(Boolean(checked))}
+                  />
+                  <label
+                    htmlFor="verified-only"
+                    className="text-sm font-medium"
+                  >
+                    Apenas profissionais verificados
+                  </label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  {/* Removido: filtro "Apenas profissionais que aceitam cupom" */}
+                </div>
                 </div>
 
                 <div className="flex items-center gap-4">
@@ -1024,13 +1043,22 @@ export default function NutricionistasPage() {
                             {/* Badges */}
                             <div className="flex flex-wrap gap-1 mb-4">
                               {/* Badge de cupom */}
-                              {/* {nutritionist.aceita_cupons && (
+                              {Boolean(nutritionist.aceita_cupons) && (
                                 <div className="flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-green-50 to-emerald-50 rounded-full border border-green-200">
                                   <span className="text-xs font-medium text-green-700">
                                     Aceita cupom
                                   </span>
                                 </div>
-                              )} */}
+                              )}
+
+                              {/* Badge de verificado */}
+                              {Boolean((nutritionist as any)?.is_verified) && (
+                                <div className="flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-full border border-blue-200">
+                                  <span className="text-xs font-medium text-blue-700">
+                                    Verificado
+                                  </span>
+                                </div>
+                              )}
 
                               {/* Badges existentes */}
                               {nutritionist.badges &&

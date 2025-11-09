@@ -106,6 +106,7 @@ export default function BuscarTab() {
   const [ onlineOnlyNutritionist, setOnlineOnlyNutritionist ] = useState(false)
   const [ showVerifiedOnlyNutritionist, setShowVerifiedOnlyNutritionist ] =
     useState(false)
+  const [ aceitaCupons, setAceitaCupons ] = useState(false)
   const [ sortByNutritionist, setSortByNutritionist ] = useState('rating')
 
   const debouncedSearch = useDebouncedValue(searchNutritionistTerm, 600);
@@ -253,11 +254,13 @@ export default function BuscarTab() {
   // Ajustar busca para incluir nomes de especialidades, alinhando com /nutricionistas
   const normalizedSearch = (debouncedSearch || '').toLowerCase()
   const displayNutritionists = nutritionists.filter(n => {
-    if (!normalizedSearch) return true
+    if (!normalizedSearch) return !aceitaCupons || n.aceita_cupons === true
     const nameMatch = (n.full_name || '').toLowerCase().includes(normalizedSearch)
     const bioMatch = (n.bio || '').toLowerCase().includes(normalizedSearch)
     const specialtyMatch = (n.nutritionist_specialties || []).some((s: any) => (s?.specialties?.name || '').toLowerCase().includes(normalizedSearch))
-    return nameMatch || bioMatch || specialtyMatch
+    const matchesSearch = nameMatch || bioMatch || specialtyMatch
+    const matchesCoupon = !aceitaCupons || n.aceita_cupons === true
+    return matchesSearch && matchesCoupon
   })
 
   // const handleToggleFavorite = async (nutritionistId: string) => {
@@ -324,6 +327,7 @@ export default function BuscarTab() {
             setSelectedNutritionistPriceRange(priceRanges[ 0 ])
             setOnlineOnlyNutritionist(false)
             setShowVerifiedOnlyNutritionist(false)
+            setAceitaCupons(false)
             setSortByNutritionist('rating')
           }}
         >
@@ -423,33 +427,46 @@ export default function BuscarTab() {
           {/* Filtros adicionais */}
           <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0 mt-4 md:mt-6 pt-4 md:pt-6 border-t">
             <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-4">
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="online-only-nutritionist"
-                  checked={onlineOnlyNutritionist}
-                  onCheckedChange={setOnlineOnlyNutritionist}
-                />
-                <label
-                  htmlFor="online-only-nutritionist"
-                  className="text-xs md:text-sm font-medium"
-                >
-                  Apenas consultas online
-                </label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="verified-only-nutritionist"
-                  checked={showVerifiedOnlyNutritionist}
-                  onCheckedChange={setShowVerifiedOnlyNutritionist}
-                />
-                <label
-                  htmlFor="verified-only-nutritionist"
-                  className="text-xs md:text-sm font-medium"
-                >
-                  Apenas profissionais verificados
-                </label>
-              </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="online-only-nutritionist"
+                checked={onlineOnlyNutritionist}
+                onCheckedChange={setOnlineOnlyNutritionist}
+              />
+              <label
+                htmlFor="online-only-nutritionist"
+                className="text-xs md:text-sm font-medium"
+              >
+                Apenas consultas online
+              </label>
             </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="verified-only-nutritionist"
+                checked={showVerifiedOnlyNutritionist}
+                onCheckedChange={setShowVerifiedOnlyNutritionist}
+              />
+              <label
+                htmlFor="verified-only-nutritionist"
+                className="text-xs md:text-sm font-medium"
+              >
+                Apenas profissionais verificados
+              </label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="accepts-coupons"
+                checked={aceitaCupons}
+                onCheckedChange={setAceitaCupons}
+              />
+              <label
+                htmlFor="accepts-coupons"
+                className="text-xs md:text-sm font-medium"
+              >
+                Aceitam cupom
+              </label>
+            </div>
+          </div>
 
             <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 gap-4">
               <span className="text-xs md:text-sm text-[#1E1D40]/70 text-center sm:text-left">
@@ -666,14 +683,19 @@ export default function BuscarTab() {
                                   </span>
                                 </div>
                               )}
-                              {hasOnlineConsultation(
-                                nutritionist.nutritionist_services
-                              ) && (
-                                <div className="flex items-center gap-1 text-sm text-green-600 bg-green-50 px-2 py-1 rounded-full">
-                                  <Video className="h-4 w-4 flex-shrink-0" />
-                                  <span className="font-medium">Online</span>
-                                </div>
-                              )}
+                            {hasOnlineConsultation(
+                              nutritionist.nutritionist_services
+                            ) && (
+                              <div className="flex items-center gap-1 text-sm text-green-600 bg-green-50 px-2 py-1 rounded-full">
+                                <Video className="h-4 w-4 flex-shrink-0" />
+                                <span className="font-medium">Online</span>
+                              </div>
+                            )}
+                            {nutritionist.aceita_cupons && (
+                              <Badge className="text-xs bg-green-100 text-green-800 border-green-200 px-2 py-1">
+                                Aceita cupom
+                              </Badge>
+                            )}
                             </div>
                           </div>
                         </div>

@@ -86,8 +86,21 @@ function tweakImages(html: string, center = false): string {
 }
 
 export function ContentRenderer({ content, className, centerImages = false }: ContentRendererProps) {
-  // 1) Markdown -> HTML
-  let html = marked.parse((content || '').trim()) as string
+  // 1) Entrada crua
+  const rawContent = (content || '').trim()
+  let html: string
+
+  // Se o conteúdo já vier em HTML (ex.: <p>...</p> do editor),
+  // convertemos <p> em quebras de linha para respeitar Enter => <br>
+  const hasHtmlTags = /<\s*(\/)?([a-zA-Z][a-zA-Z0-9]*)\b[^>]*>/m.test(rawContent)
+  if (hasHtmlTags) {
+    html = rawContent
+      .replace(/<p[^>]*>/gi, '')
+      .replace(/<\/p>/gi, '<br>')
+  } else {
+    // Markdown -> HTML com breaks: true (Enter => <br>)
+    html = marked.parse(rawContent) as string
+  }
 
   // 2) Embeds
   html = embedVideos(html)
