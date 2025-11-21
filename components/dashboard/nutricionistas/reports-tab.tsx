@@ -22,6 +22,8 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useAuth } from '../../../contexts/auth-context'
 import { createSupabaseClient } from '@/lib/supabase'
 import Link from 'next/link'
+import { BlogPostsService } from '@/lib/blog-posts-service'
+import { getBlogPostsByAuthor } from '@/lib/blog-data'
 
 export function ReportsTab() {
   // const { user } = useUser()
@@ -36,12 +38,51 @@ export function ReportsTab() {
 
   useEffect(() => {
     const loadEngagementData = async () => {
-      if (!user?.id) return
+      const authorId = (nutritionistProfile as any)?.user_id || user?.id
+      if (!authorId) return
 
       try {
         setLoading(true)
-        const stats = await getContentEngagementStats(user.id)
-        setEngagementStats(stats)
+        const stats = await getContentEngagementStats(authorId)
+
+        // Fallback: se não houver dados, carregar todos os posts e computar métricas básicas
+        const needsFallback = (stats.totalBlogPosts ?? 0) === 0 || !stats.allBlogPosts || stats.allBlogPosts.length === 0
+        if (needsFallback) {
+          // Tentar via serviço genérico
+          const { data: myPosts } = await BlogPostsService.getMyPosts({}, 1, 200, 'created_at', 'desc')
+          let all = (myPosts || []).map(p => ({
+            id: (p as any).id,
+            title: (p as any).title,
+            views: Number((p as any).views || 0),
+            created_at: (p as any).created_at,
+            tags: (p as any).tags || [],
+            slug: (p as any).slug,
+          }))
+
+          // Fallback definitivo: buscar por autor explicitamente
+          if (!all.length) {
+            const authorPosts = await getBlogPostsByAuthor(authorId)
+            all = (authorPosts || []).map(p => ({
+              id: (p as any).id,
+              title: (p as any).title,
+              views: Number((p as any).views || 0),
+              created_at: (p as any).date || (p as any).created_at,
+              tags: (p as any).tags || [],
+              slug: (p as any).slug,
+            }))
+          }
+          const totalViews = all.reduce((sum, x) => sum + (Number(x.views) || 0), 0)
+          const top = all.slice().sort((a, b) => b.views - a.views).slice(0, 5)
+          setEngagementStats({
+            ...stats,
+            totalBlogPosts: all.length,
+            totalBlogViews: totalViews,
+            topBlogPosts: top,
+            allBlogPosts: all,
+          })
+        } else {
+          setEngagementStats(stats)
+        }
       } catch (error) {
         // Silent error handling: Error loading engagement data
       } finally {
@@ -50,7 +91,7 @@ export function ReportsTab() {
     }
 
     loadEngagementData()
-  }, [user?.id])
+  }, [user?.id, (nutritionistProfile as any)?.user_id])
 
   useEffect(() => {
     const loadConsultationsAndRevenue = async () => {
@@ -276,6 +317,40 @@ export function ReportsTab() {
                     </div>
                   </div>
                 )}
+
+              {/* Todos os Posts do Blog */}
+              {engagementStats?.allBlogPosts && engagementStats.allBlogPosts.length > 0 && (
+                <div className="mt-8">
+                  <h4 className="font-semibold text-[#1E1D40] mb-3">
+                    Todos os Posts do Blog
+                  </h4>
+                  <div className="space-y-2">
+                    {engagementStats.allBlogPosts.map(post => (
+                      <div key={post.id} className="flex items-center justify-between p-3 rounded-lg border border-gray-100">
+                        <div className="flex-1">
+                          <p className="font-medium text-[#1E1D40]">{post.title}</p>
+                          <div className="flex items-center gap-3 text-xs text-gray-600">
+                            <span className="flex items-center gap-1">
+                              <Eye className="h-3 w-3" />
+                              {post.views}
+                            </span>
+                            {post.tags && post.tags.length > 0 && (
+                              <span className="truncate max-w-[300px]">
+                                {post.tags.join(', ')}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <Button variant="ghost" size="sm" asChild>
+                          <Link href={post.slug ? `/blog/${post.slug}` : `/dashboard/nutricionistas/posts/${post.id}`} target={post.slug ? '_blank' : undefined}>
+                            Ver
+                          </Link>
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Top Perguntas do Fórum Respondidas */}
               {engagementStats?.topForumQuestions &&

@@ -31,6 +31,7 @@ export interface ContentEngagementStats {
   averageEngagementRate: number
   topBlogPosts: BlogEngagement[]
   topForumQuestions: ForumEngagement[]
+  allBlogPosts?: BlogEngagement[]
 }
 
 /**
@@ -127,6 +128,15 @@ export async function getContentEngagementStats(
         slug: (post as any).slug,
       }))
 
+    const allBlogPosts: BlogEngagement[] = orderedBlogPosts.map(post => ({
+      id: post.id,
+      title: post.title,
+      views: bulkStats[post.id]?.totalViews ?? post.views ?? 0,
+      created_at: post.created_at,
+      tags: post.tags || [],
+      slug: (post as any).slug,
+    }))
+
     // Top 5 perguntas do fórum respondidas
     const topForumQuestions: ForumEngagement[] = forumQuestions
       .slice(0, 5)
@@ -149,6 +159,7 @@ export async function getContentEngagementStats(
       averageEngagementRate,
       topBlogPosts,
       topForumQuestions,
+      allBlogPosts,
     }
   } catch (error) {
     // Silent error handling: Error fetching engagement statistics
@@ -161,6 +172,7 @@ export async function getContentEngagementStats(
       averageEngagementRate: 0,
       topBlogPosts: [],
       topForumQuestions: [],
+      allBlogPosts: [],
     }
   }
 }
