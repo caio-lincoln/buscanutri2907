@@ -12,7 +12,7 @@ import {
   TrendingUp,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useUser } from '@/hooks/use-user'
 import {
   getContentEngagementStats,
@@ -20,13 +20,19 @@ import {
 } from '@/lib/content-engagement-service'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAuth } from '../../../contexts/auth-context'
+import { createSupabaseClient } from '@/lib/supabase'
+import Link from 'next/link'
 
 export function ReportsTab() {
   // const { user } = useUser()
-  const {user} = useAuth()
+  const { user, nutritionistProfile } = useAuth()
   const [engagementStats, setEngagementStats] =
     useState<ContentEngagementStats | null>(null)
   const [loading, setLoading] = useState(true)
+  const [consultationsThisMonth, setConsultationsThisMonth] = useState<number>(0)
+  const [estimatedRevenueBRL, setEstimatedRevenueBRL] = useState<number>(0)
+  const [newPatientsThisMonth, setNewPatientsThisMonth] = useState<number>(0)
+  const supabase = useMemo(() => createSupabaseClient(), [])
 
   useEffect(() => {
     const loadEngagementData = async () => {
@@ -45,6 +51,68 @@ export function ReportsTab() {
 
     loadEngagementData()
   }, [user?.id])
+
+  useEffect(() => {
+    const loadConsultationsAndRevenue = async () => {
+      if (!nutritionistProfile?.id || !user?.id) return
+
+      const now = new Date()
+      const start = new Date(now.getFullYear(), now.getMonth(), 1)
+      const end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59)
+
+      const { data: monthSessions } = await supabase
+        .from('teleconsulta_sessions')
+        .select('id, patient_id, scheduled_at, price, status')
+        .eq('nutritionist_id', nutritionistProfile.id)
+        .gte('scheduled_at', start.toISOString())
+        .lte('scheduled_at', end.toISOString())
+
+      const monthCount = monthSessions?.length || 0
+      setConsultationsThisMonth(monthCount)
+
+      let revenueBRL = 0
+      const { data: payments } = await supabase
+        .from('payments')
+        .select('amount_brl, status, created_at')
+        .eq('nutritionist_id', user.id)
+        .gte('created_at', start.toISOString())
+        .lte('created_at', end.toISOString())
+
+      if (payments && payments.length > 0) {
+        revenueBRL = payments
+          .filter(p => (p as any).status === 'succeeded')
+          .reduce((sum, p) => sum + Number((p as any).amount_brl || 0), 0)
+      } else if (monthSessions && monthSessions.length > 0) {
+        revenueBRL = monthSessions
+          .filter(s => (s as any).status === 'completed' || (s as any).status === 'scheduled')
+          .reduce((sum, s) => sum + Number((s as any).price || 0), 0)
+      }
+
+      setEstimatedRevenueBRL(revenueBRL)
+
+      const { data: allSessions } = await supabase
+        .from('teleconsulta_sessions')
+        .select('patient_id, scheduled_at')
+        .eq('nutritionist_id', nutritionistProfile.id)
+        .order('scheduled_at', { ascending: true })
+
+      const earliestByPatient = new Map<string, Date>()
+      ;(allSessions || []).forEach(s => {
+        const pid = (s as any).patient_id as string
+        const d = new Date((s as any).scheduled_at)
+        const existing = earliestByPatient.get(pid)
+        if (!existing || d < existing) earliestByPatient.set(pid, d)
+      })
+
+      const newPatients = Array.from(earliestByPatient.values()).filter(d => {
+        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
+      }).length
+
+      setNewPatientsThisMonth(newPatients)
+    }
+
+    loadConsultationsAndRevenue()
+  }, [supabase, nutritionistProfile?.id, user?.id])
   return (
     <div className="space-y-8">
       <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
@@ -70,12 +138,14 @@ export function ReportsTab() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-48 flex items-center justify-center text-gray-500">
-              {/* Placeholder for a chart */}
-              Gráfico de Barras Aqui
+            <div className="flex items-center justify-center">
+              <div className="text-center">
+                <p className="text-4xl font-bold text-[#1E1D40]">{consultationsThisMonth}</p>
+                <p className="text-sm text-gray-600">consultas neste mês</p>
+              </div>
             </div>
             <p className="text-sm text-gray-600 mt-4">
-              Total de 45 consultas no último mês.
+              {`Total de ${consultationsThisMonth} consultas neste mês.`}
             </p>
           </CardContent>
         </Card>
@@ -88,12 +158,8 @@ export function ReportsTab() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-48 flex items-center justify-center text-gray-500">
-              {/* Placeholder for a chart */}
-              Gráfico de Linha Aqui
-            </div>
             <p className="text-sm text-gray-600 mt-4">
-              Estimativa de R$ 7.500,00 no último mês.
+              {`Estimativa de ${estimatedRevenueBRL.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} neste mês.`}
             </p>
           </CardContent>
         </Card>
@@ -106,12 +172,8 @@ export function ReportsTab() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-48 flex items-center justify-center text-gray-500">
-              {/* Placeholder for a chart */}
-              Gráfico de Linha Aqui
-            </div>
             <p className="text-sm text-gray-600 mt-4">
-              10 novos pacientes este mês.
+              {`${newPatientsThisMonth} novos pacientes neste mês.`}
             </p>
           </CardContent>
         </Card>
@@ -204,8 +266,10 @@ export function ReportsTab() {
                               </div>
                             </div>
                           </div>
-                          <Button variant="outline" size="sm">
-                            Ver Detalhes
+                          <Button variant="outline" size="sm" asChild>
+                            <Link href={post.slug ? `/blog/${post.slug}` : `/dashboard/nutricionistas/posts/${post.id}`} target={post.slug ? '_blank' : undefined}>
+                              Ver Detalhes
+                            </Link>
                           </Button>
                         </div>
                       ))}

@@ -18,6 +18,7 @@ import {
   AlertTriangle,
   CheckCircle,
   Clock,
+  BookOpen,
   Award,
   User,
 } from 'lucide-react'
@@ -37,6 +38,7 @@ import { SystemTab } from '@/components/dashboard/admin/system-tab'
 import { SettingsTab } from '@/components/dashboard/admin/settings-tab'
 import { BadgesTab } from '@/components/dashboard/admin/badges-tab' // Importar a nova aba de insígnias
 import { ProfileTab } from '@/components/dashboard/admin/profile-tab'
+import AdminCoursesTab from '@/components/dashboard/admin/courses-tab'
 import { getAllUsers } from '../../../lib/admin-data-service'
 import { User as SupabaseUser } from '@supabase/supabase-js'
 import { ProfileProvider } from '@/contexts/profile-context'
@@ -50,6 +52,7 @@ const TABS = [
   'usuarios',
   'vagas',
   'relatorios',
+  'cursos',
   'financeiro',
   'analytics',
   'configuracoes',
@@ -111,6 +114,15 @@ export default function AdminDashboard({ initialUser }: Props) {
     0,
     { id: 'insignias', label: 'Insígnias', icon: Award }
   )
+
+  // Inserir "Cursos" logo após "Relatórios"
+  const relatoriosIndex = menuItems.findIndex(item => item.id === 'relatorios')
+  if (relatoriosIndex !== -1) {
+    menuItems.splice(relatoriosIndex + 1, 0, { id: 'cursos', label: 'Cursos', icon: BookOpen })
+  } else {
+    // Caso não exista "relatorios" no menu por algum motivo, adiciona ao final
+    menuItems.push({ id: 'cursos', label: 'Cursos', icon: BookOpen })
+  }
 
   useEffect(() => {
     if (!loading && (!initialUser || initialUser?.user_metadata[ 'user_type' ] !== 'admin')) {
@@ -497,6 +509,7 @@ export default function AdminDashboard({ initialUser }: Props) {
         {activeTab === 'usuarios' && <UsersTab />}
         {activeTab === 'vagas' && <JobsTab />}
         {activeTab === 'relatorios' && <ReportsTab />}
+        {activeTab === 'cursos' && <AdminCoursesTab />}
         {activeTab === 'financeiro' && <FinancialTab />}
         {activeTab === 'analytics' && <AnalyticsTab />}
         {activeTab === 'insignias' && <BadgesTab initialUser={initialUser} />}{' '}

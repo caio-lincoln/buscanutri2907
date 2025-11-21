@@ -9,6 +9,7 @@ export interface BlogEngagement {
   views: number
   created_at: string
   tags: string[]
+  slug?: string
 }
 
 export interface ForumEngagement {
@@ -42,7 +43,7 @@ export async function getContentEngagementStats(
     // Buscar posts do blog do nutricionista
     const { data: blogPosts, error: blogError } = await supabase
       .from('blog_posts')
-      .select('id, title, views, created_at, tags')
+      .select('id, title, views, created_at, tags, slug')
       .eq('author_id', nutritionistId)
       .order('views', { ascending: false })
 
@@ -123,6 +124,7 @@ export async function getContentEngagementStats(
         views: bulkStats[post.id]?.totalViews ?? post.views ?? 0,
         created_at: post.created_at,
         tags: post.tags || [],
+        slug: (post as any).slug,
       }))
 
     // Top 5 perguntas do fórum respondidas

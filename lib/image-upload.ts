@@ -74,7 +74,15 @@ export async function uploadBlogImage(
       method: 'POST',
       body: formData,
     })
-    const data = await response.json()
+    const data = await response.json().catch(() => ({}))
+
+    // Validar resposta da API de upload
+    if (!response.ok || (data && data.error)) {
+      return {
+        success: false,
+        error: (data && data.error) || 'Erro no upload da imagem',
+      }
+    }
 
     // // Listar arquivos do usuário usando service role
     // const { data, error } = await serviceSupabase.storage
@@ -103,7 +111,7 @@ export async function uploadBlogImage(
 
     return {
       success: true,
-      ...data
+      url: data?.url,
     }
   } catch (error) {
     // Silent error handling - unexpected list error
