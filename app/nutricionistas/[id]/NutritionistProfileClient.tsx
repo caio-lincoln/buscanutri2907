@@ -51,6 +51,11 @@ import {
 } from '@/lib/structured-data-utils'
 import { useAuth } from '../../../contexts/auth-context'
 import { openConversationWithNutritionist } from '../../../lib/chat-forum-service'
+import { formatNameProperCase } from '@/lib/utils/format-name'
+import { RatingModal } from '@/components/ui/rating-modal'
+import { createDirectRating, getNutritionistRatingStats } from '@/lib/rating-service'
+import { createSupabaseClient } from '@/lib/supabase'
+import { toast } from '@/components/ui/use-toast'
 
 // Garante que o valor retornado seja sempre um array
 function toArray(value: unknown): string[] {
@@ -126,6 +131,10 @@ export default function NutritionistProfilePageClient({
     lastViewAt: nutritionist.lastViewAt || null,
   })
   const { user, signOut } = useAuth()
+  const [ isRatingModalOpen, setIsRatingModalOpen ] = useState(false)
+  const [ userHasRated, setUserHasRated ] = useState(false)
+  const [ currentRating, setCurrentRating ] = useState<number>(Number(nutritionist.rating || 0))
+  const [ currentTotalReviews, setCurrentTotalReviews ] = useState<number>(Number(nutritionist.total_reviews || 0))
 
   if (!nutritionist) {
     notFound()
@@ -136,12 +145,42 @@ export default function NutritionistProfilePageClient({
     recordView()
   }, [ recordView ])
 
+  useEffect(() => {
+    const run = async () => {
+      try {
+        if (!user?.id || !nutritionist?.user_id) return
+        const sb = createSupabaseClient()
+        const { data } = await sb
+          .from('consultation_reviews')
+          .select('id')
+          .eq('patient_id', user.id)
+          .eq('nutritionist_id', nutritionist.user_id)
+          .eq('is_direct_rating', true)
+          .maybeSingle()
+        setUserHasRated(Boolean(data?.id))
+      } catch {}
+    }
+    run()
+  }, [ user?.id, nutritionist?.user_id ])
+
+  useEffect(() => {
+    const loadStats = async () => {
+      try {
+        if (!nutritionist?.user_id) return
+        const stats = await getNutritionistRatingStats(nutritionist.user_id)
+        setCurrentRating(stats.averageRating)
+        setCurrentTotalReviews(stats.totalReviews)
+      } catch {}
+    }
+    loadStats()
+  }, [ nutritionist?.user_id ])
+
   // Formatações para exibição, usando dados reais ou placeholders
-  const formattedName = nutritionist.full_name || 'Nutricionista Desconhecido'
+  const formattedName = formatNameProperCase(nutritionist.full_name) || 'Nutricionista Desconhecido'
   const formattedSpecialty = nutritionist.specialties?.[ 0 ] || 'Nutrição'
   const formattedLocation = nutritionist.location || 'Localização não informada'
-  const formattedRating = nutritionist.rating?.toFixed(1) || '0.0'
-  const formattedReviews = nutritionist.total_reviews || 0
+  const formattedRating = Number(currentRating || 0).toFixed(1)
+  const formattedReviews = currentTotalReviews || 0
   const formattedExperience = nutritionist.experience_years || 0
   const formattedPatients = 0
 const formattedPrice = (nutritionist as any)?.public_price_visible === false
@@ -332,6 +371,58 @@ const formattedPrice = (nutritionist as any)?.public_price_visible === false
     return getDashboardUrl(user?.user_metadata[ 'user_type' ])
 
   }, [ user?.user_type, getDashboardUrl ])
+
+  const isValidUuid = useCallback((v: string) => {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(v).trim())
+  }, [])
+
+  const handleDirectRatingSubmit = async (rating: number, comment: string) => {
+    try {
+      if (!user) {
+        router.push('/login')
+        return
+      }
+      if (!nutritionist?.user_id || !isValidUuid(nutritionist.user_id)) {
+        toast({
+          title: 'Erro ao enviar avaliação',
+          description: 'Perfil inválido: ID do nutricionista inválido.',
+          variant: 'destructive',
+        })
+        return
+      }
+      console.log('Submitting direct rating', {
+        patientId: user.id,
+        nutritionistId: nutritionist.user_id,
+        rating,
+        comment,
+        nutritionistName: formattedName,
+      })
+      toast({ title: 'Enviando avaliação...', description: `${formattedName} • ${rating} estrelas` })
+      await createDirectRating(user.id, nutritionist.user_id, rating, comment)
+      console.log('Direct rating submitted successfully')
+      toast({ title: 'Avaliação enviada!', description: `Obrigado por avaliar ${formattedName}.` })
+      setUserHasRated(true)
+      try {
+        const stats = await getNutritionistRatingStats(nutritionist.user_id)
+        setCurrentRating(stats.averageRating)
+        setCurrentTotalReviews(stats.totalReviews)
+      } catch {}
+      setIsRatingModalOpen(false)
+    } catch (error: any) {
+      console.error('Error submitting direct rating', {
+        message: error?.message,
+        details: error?.details,
+        code: error?.code,
+      })
+      toast({
+        title: 'Erro ao enviar avaliação',
+        description: String(
+          error?.message || error?.details || 'Tente novamente.'
+        ),
+        variant: 'destructive',
+      })
+    }
+  }
 
   return (
     <>
@@ -693,6 +784,16 @@ const formattedPrice = (nutritionist as any)?.public_price_visible === false
               <MessageSquare className="h-5 w-5 mr-2" />
               Enviar Mensagem
             </Button>
+            {user?.user_metadata?.user_type === 'paciente' && (
+              <Button
+                onClick={() => setIsRatingModalOpen(true)}
+                size="lg"
+                className="bg-yellow-500 hover:bg-yellow-500/90 text-white"
+              >
+                <Star className="h-5 w-5 mr-2" />
+                {userHasRated ? 'Editar Avaliação' : 'Avaliar Nutricionista'}
+              </Button>
+            )}
             {/* <Button variant="outline" size="lg">
               <Heart className="h-5 w-5 mr-2" />
               Favoritar
@@ -1418,6 +1519,14 @@ const formattedPrice = (nutritionist as any)?.public_price_visible === false
           </div>
         </main>
       </div>
+      {user?.user_metadata?.user_type === 'paciente' && (
+        <RatingModal
+          open={isRatingModalOpen}
+          onOpenChange={setIsRatingModalOpen}
+          nutritionistName={formattedName}
+          onSubmit={handleDirectRatingSubmit}
+        />
+      )}
     </>
   )
 }

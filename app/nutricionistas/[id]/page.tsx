@@ -2,6 +2,7 @@ import { getNutritionistById } from '@/lib/nutritionist-service'
 import NutritionistProfilePageClient from './NutritionistProfileClient'
 import { notFound } from 'next/navigation'
 import { generateImageVariants } from '@/lib/image-variants'
+import { formatNameProperCase } from '@/lib/utils/format-name'
 
 interface PageProps {
   params: {
@@ -40,10 +41,10 @@ export async function generateMetadata({ params }: PageProps) {
   }
 
   return {
-    title: `${nutritionist.full_name} - Nutricionista em ${nutritionist.address || nutritionist.specialties?.[ 0 ]}`,
+    title: `${formatNameProperCase(nutritionist.full_name)} - Nutricionista em ${nutritionist.address || nutritionist.specialties?.[ 0 ]}`,
     description: nutritionist.bio,
     openGraph: {
-      title: `${nutritionist.full_name} - Busca Nutri`,
+      title: `${formatNameProperCase(nutritionist.full_name)} - Busca Nutri`,
       description: nutritionist.bio,
       images: [
         {
@@ -74,7 +75,7 @@ export default async function NutritionistProfilePage({ params }: PageProps) {
   }
 
   // Generate structured data on the server to avoid hydration mismatch
-  const formattedName = nutritionist.full_name || 'Nutricionista Desconhecido'
+  const formattedName = formatNameProperCase(nutritionist.full_name) || 'Nutricionista Desconhecido'
   const formattedFullBio = nutritionist.bio || 'Sem biografia disponível.'
   const formattedEducation = nutritionist.academic_background || 'Formação não informada.'
   const formattedCrn = nutritionist.crn || 'CRN não informado.'

@@ -1,9 +1,9 @@
-import { supabase } from './supabase'
+import { supabase, createSupabaseClient } from './supabase'
 import { createRatingReceivedNotification } from './rating-notification-service'
 
 export interface Rating {
   id: string
-  consultation_id: string
+  consultation_id: string | null
   patient_id: string
   nutritionist_id: string
   rating: number
@@ -31,12 +31,22 @@ export async function createRating(
   rating: number,
   comment?: string
 ): Promise<Rating> {
+  const normalizeUuid = (v: string) => (typeof v === 'string' ? v.trim() : '')
+  const isValidUuid = (v: string) =>
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v)
+
+  const pId = normalizeUuid(patientId)
+  const nId = normalizeUuid(nutritionistId)
+  if (!isValidUuid(pId) || !isValidUuid(nId)) {
+    throw new Error('IDs inválidos para avaliação')
+  }
+
   const { data, error } = await supabase
     .from('consultation_reviews')
     .insert({
       consultation_id: consultationId,
-      patient_id: patientId,
-      nutritionist_id: nutritionistId,
+      patient_id: pId,
+      nutritionist_id: nId,
       rating,
       comment,
     })
@@ -78,6 +88,145 @@ export async function createRating(
   }
 
   return data
+}
+
+export async function createDirectRating(
+  patientId: string,
+  nutritionistId: string,
+  rating: number,
+  comment?: string
+): Promise<void> {
+  const normalizeUuid = (v: string) => (typeof v === 'string' ? v.trim() : '')
+  const isValidUuid = (v: string) =>
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v)
+
+  const pId = normalizeUuid(patientId)
+  const nId = normalizeUuid(nutritionistId)
+  if (!isValidUuid(pId) || !isValidUuid(nId)) {
+    throw new Error('IDs inválidos para avaliação')
+  }
+
+  const sb = createSupabaseClient()
+  const { data: userData } = await sb.auth.getUser()
+
+  const { data: existing } = await sb
+    .from('consultation_reviews')
+    .select('id')
+    .eq('patient_id', pId)
+    .eq('nutritionist_id', nId)
+    .eq('is_direct_rating', true)
+    .maybeSingle()
+
+  if (existing?.id) {
+    const { error: updError } = await sb
+      .from('consultation_reviews')
+      .update({ rating, comment })
+      .eq('id', existing.id)
+    if (updError) throw updError
+  } else {
+    const rpc = await sb.rpc('create_direct_consultation_review', {
+      p_nutritionist_id: nId,
+      p_rating: rating,
+      p_comment: comment ?? null,
+    })
+
+  if (rpc.error) {
+    console.error('RPC create_direct_consultation_review error', {
+      nutritionistId,
+      rating,
+      comment,
+      error: rpc.error,
+    })
+    const insert = await sb
+      .from('consultation_reviews')
+      .insert({
+        consultation_id: null,
+        patient_id: pId,
+        nutritionist_id: nId,
+        rating,
+        comment,
+        is_direct_rating: true,
+      })
+    if (insert.error) {
+      console.error('Insert consultation_reviews error', {
+        nutritionistId,
+        rating,
+        comment,
+        error: insert.error,
+      })
+      throw insert.error
+    }
+  }
+
+  }
+
+  await updateNutritionistRating(nId)
+
+  let patientName: string | undefined
+  try {
+    const { data: patientData } = await sb
+      .from('patient_profiles')
+      .select('full_name')
+      .eq('user_id', pId)
+      .single()
+    patientName = patientData?.full_name
+  } catch {}
+
+  try {
+    await createRatingReceivedNotification(
+      nId,
+      '',
+      rating,
+      patientName
+    )
+    console.log('Rating notification created', {
+      nutritionistId: nId,
+      rating,
+      patientName,
+    })
+  } catch {}
+}
+
+export async function updateOwnReview(
+  reviewId: string,
+  rating: number,
+  comment?: string
+): Promise<void> {
+  const { data, error } = await supabase
+    .from('consultation_reviews')
+    .update({ rating, comment })
+    .eq('id', reviewId)
+    .select('nutritionist_id')
+    .single()
+
+  if (error) {
+    throw error
+  }
+
+  if (data?.nutritionist_id) {
+    await updateNutritionistRating(data.nutritionist_id)
+  }
+}
+
+export async function deleteOwnReview(reviewId: string): Promise<void> {
+  const { data } = await supabase
+    .from('consultation_reviews')
+    .select('nutritionist_id')
+    .eq('id', reviewId)
+    .single()
+
+  const { error } = await supabase
+    .from('consultation_reviews')
+    .delete()
+    .eq('id', reviewId)
+
+  if (error) {
+    throw error
+  }
+
+  if (data?.nutritionist_id) {
+    await updateNutritionistRating(data.nutritionist_id)
+  }
 }
 
 // Buscar avaliação de uma consulta específica
@@ -138,7 +287,7 @@ export async function getNutritionistRatingStats(
 
   if (!data || data.length === 0) {
     return {
-      averageRating: 5.0,
+      averageRating: 0.0,
       totalReviews: 0,
       ratingDistribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
     }

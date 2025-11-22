@@ -41,6 +41,8 @@ import { useAuth } from '../../contexts/auth-context'
 import { normalizeText } from '../../lib/utils/normalize'
 import type { BRCity } from '@/lib/geo'
 import { getCitiesByUF } from '@/lib/geo'
+import { createSupabaseClient } from '@/lib/supabase'
+import { getNutritionistRatingStats } from '@/lib/rating-service'
 
 const states = [
   'Todas',
@@ -159,7 +161,31 @@ export default function NutricionistasPage() {
       try {
         setLoading(true)
         const data = await getAllNutritionists()
-        setNutritionists(data)
+
+        // Backfill de avaliações para perfis com rating/total_reviews ausentes
+        try {
+          const withStats = await Promise.all(
+            (data || []).map(async (n) => {
+              const ratingVal = Number(n.rating || 0)
+              const reviewsVal = Number(n.total_reviews || 0)
+              if (ratingVal > 0 || reviewsVal > 0) return n
+              if (!n.user_id) return n
+              try {
+                const stats = await getNutritionistRatingStats(n.user_id)
+                return {
+                  ...n,
+                  rating: stats.averageRating,
+                  total_reviews: stats.totalReviews,
+                }
+              } catch {
+                return n
+              }
+            })
+          )
+          setNutritionists(withStats)
+        } catch {
+          setNutritionists(data)
+        }
 
         // Fetch main addresses in batch and store as formatted location strings
         try {
@@ -185,6 +211,29 @@ export default function NutricionistasPage() {
     }
 
     loadNutritionists()
+  }, [])
+
+  useEffect(() => {
+    const sb = createSupabaseClient()
+    const channel = sb
+      .channel('nutricionistas_list_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'nutritionist_profiles' }, async () => {
+        try {
+          const data = await getAllNutritionists()
+          setNutritionists(data)
+        } catch {}
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'consultation_reviews' }, async () => {
+        try {
+          const data = await getAllNutritionists()
+          setNutritionists(data)
+        } catch {}
+      })
+      .subscribe()
+
+    return () => {
+      sb.removeChannel(channel)
+    }
   }, [])
 
   useEffect(() => {

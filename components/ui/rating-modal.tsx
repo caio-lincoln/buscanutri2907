@@ -17,7 +17,7 @@ import { Label } from '@/components/ui/label'
 interface RatingModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  consultationId: string
+  consultationId?: string
   nutritionistName: string
   onSubmit: (rating: number, comment: string) => Promise<void>
 }
@@ -71,7 +71,7 @@ export function RatingModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Avaliar Consulta</DialogTitle>
+          <DialogTitle>{consultationId ? 'Avaliar Consulta' : 'Avaliar Nutricionista'}</DialogTitle>
           <DialogDescription>
             Como foi sua experiência com {nutritionistName}?
           </DialogDescription>

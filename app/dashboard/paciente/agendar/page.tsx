@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -29,6 +29,7 @@ import { ptBR } from 'date-fns/locale'
 import { toast } from 'sonner'
 import { formatNutritionistData } from '@/lib/nutritionist-service'
 import { loadStripe } from '@stripe/stripe-js'
+import { createSupabaseClient } from '@/lib/supabase'
 
 const stripePromise = loadStripe(
   process.env[ 'NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY' ] as string
@@ -77,6 +78,8 @@ export default function AgendarPage() {
   const [ sortBy, setSortBy ] = useState('rating')
   const [ viewMode, setViewMode ] = useState<'grid' | 'list'>('grid')
   const [ loading, setLoading ] = useState(false)
+  const [ searchLoading, setSearchLoading ] = useState(false)
+  const loadNutritionistsRef = useRef<() => Promise<void>>(() => Promise.resolve())
 
   const [ selectedNutritionist, setSelectedNutritionist ] = useState<NutritionistProfile | null>(null)
   const [ availableSlots, setAvailableSlots ] = useState<AvailableSlot[]>([])
@@ -129,7 +132,7 @@ export default function AgendarPage() {
 
   const loadNutritionists = async () => {
     try {
-      setLoading(true)
+      setSearchLoading(true)
       const params = new URLSearchParams({
         specialty: selectedSpecialty,
         state: selectedState,
@@ -159,9 +162,36 @@ export default function AgendarPage() {
       console.error('Erro ao carregar nutricionistas:', error)
       setNutritionists([])
     } finally {
-      setLoading(false)
+      setSearchLoading(false)
     }
   }
+
+  useEffect(() => {
+    loadNutritionistsRef.current = loadNutritionists
+  }, [ searchTerm, selectedSpecialty, selectedState, selectedPriceRange, onlineOnly, aceitaCupons, sortBy ])
+
+  useEffect(() => {
+    const sb = createSupabaseClient()
+    const channel = sb
+      .channel('agendar_nutritionist_profiles')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'nutritionist_profiles' }, payload => {
+        if (step === 'search') {
+          loadNutritionistsRef.current()
+        } else if (selectedNutritionist && (payload.new as any)?.id === selectedNutritionist.id) {
+          const newRow = payload.new as any
+          setSelectedNutritionist(prev => prev ? {
+            ...prev,
+            rating: typeof newRow.rating === 'number' ? newRow.rating : prev.rating,
+            total_reviews: typeof newRow.total_reviews === 'number' ? newRow.total_reviews : prev.total_reviews,
+          } : prev)
+        }
+      })
+      .subscribe()
+
+    return () => {
+      sb.removeChannel(channel)
+    }
+  }, [ step, selectedNutritionist?.id ])
 
   const loadAvailableSlots = async (nutritionistId: string) => {
     try {
@@ -385,7 +415,7 @@ export default function AgendarPage() {
     return acc
   }, {} as Record<string, AvailableSlot[]>)
 
-  if (loading && step === 'search') {
+  if (searchLoading && step === 'search') {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-green-600"></div>
@@ -588,8 +618,8 @@ export default function AgendarPage() {
                               </h3>
                               <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
                                 <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                                <span>{nutritionist.rating.toFixed(1)}</span>
-                                <span>({nutritionist.total_reviews} avaliações)</span>
+                                <span>{(nutritionist.rating ?? 0).toFixed(1)}</span>
+                                <span>({nutritionist.total_reviews ?? 0} avaliações)</span>
                               </div>
                               {nutritionist.city && nutritionist.state && (
                                 <div className="flex items-center gap-1 text-sm text-gray-600 mb-2">
@@ -704,8 +734,8 @@ export default function AgendarPage() {
                         <h3 className="font-semibold text-lg">{selectedNutritionist.full_name}</h3>
                         <div className="flex items-center gap-2 text-sm text-gray-600">
                           <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                          <span>{selectedNutritionist.rating.toFixed(1)}</span>
-                          <span>({selectedNutritionist.total_reviews} avaliações)</span>
+                          <span>{(selectedNutritionist.rating ?? 0).toFixed(1)}</span>
+                          <span>({selectedNutritionist.total_reviews ?? 0} avaliações)</span>
                         </div>
                         {selectedNutritionist.city && selectedNutritionist.state && (
                           <div className="flex items-center gap-1 text-sm text-gray-600">

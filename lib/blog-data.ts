@@ -13,6 +13,7 @@ export interface BlogPost {
   image: string // URL da imagem de capa
   author: string // Nome do autor
   authorId: string // ID do autor (para buscar insígnias)
+  authorProfileId?: string
   authorBio: string
   authorImage: string
   date: string // Formato YYYY-MM-DD
@@ -46,6 +47,7 @@ export async function getAllBlogPosts(): Promise<BlogPost[]> {
         `
         *,
         nutritionist_profiles!inner(
+          id,
           full_name,
           bio,
           profile_image_url
@@ -71,6 +73,7 @@ export async function getAllBlogPosts(): Promise<BlogPost[]> {
           image: post.image_url || '/placeholder.svg?height=400&width=800',
           author: post.nutritionist_profiles?.full_name || 'Autor Desconhecido',
           authorId: post.author_id,
+          authorProfileId: post.nutritionist_profiles?.id,
           authorBio: post.nutritionist_profiles?.bio || '',
           authorImage:
             post.nutritionist_profiles?.profile_image_url ||
@@ -110,6 +113,7 @@ export async function getBlogPostById(id: string): Promise<BlogPost | null> {
         `
         *,
         nutritionist_profiles!inner(
+          id,
           full_name,
           bio,
           profile_image_url
@@ -154,6 +158,7 @@ export async function getBlogPostById(id: string): Promise<BlogPost | null> {
       image: post.image_url || '/placeholder.svg?height=400&width=800',
       author: post.nutritionist_profiles?.full_name || 'Autor Desconhecido',
       authorId: post.author_id,
+      authorProfileId: post.nutritionist_profiles?.id,
       authorBio: post.nutritionist_profiles?.bio || '',
       authorImage:
         post.nutritionist_profiles?.profile_image_url ||
@@ -191,6 +196,7 @@ export async function getBlogPostsByAuthor(
         `
         *,
         nutritionist_profiles!inner(
+          id,
           full_name,
           bio,
           profile_image_url
@@ -216,6 +222,7 @@ export async function getBlogPostsByAuthor(
           image: post.image_url || '/placeholder.svg?height=400&width=800',
           author: post.nutritionist_profiles?.full_name || 'Autor Desconhecido',
           authorId: post.author_id,
+          authorProfileId: post.nutritionist_profiles?.id,
           authorBio: post.nutritionist_profiles?.bio || '',
           authorImage:
             post.nutritionist_profiles?.profile_image_url ||

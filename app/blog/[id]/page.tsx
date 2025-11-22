@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Image from 'next/image'
+import Link from 'next/link'
+import { formatNameProperCase } from '@/lib/utils/format-name'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -111,20 +113,22 @@ export default function BlogPostPage() {
 
           <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
             <div className="flex items-center gap-2">
-              <Avatar className="h-8 w-8">
-                <AvatarImage
-                  src={
-                    post.authorImage ||
-                    `/placeholder.svg?height=32&width=32&query=${post.author}`
-                  }
-                />
-                <AvatarFallback className="bg-gray-200 text-gray-600 text-xs font-semibold">
-                  {post.author.charAt(0).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <span className="font-semibold text-[#1E1D40]">
-                {post.author}
-              </span>
+              <Link href={`/nutricionistas/${post.authorProfileId || post.authorId}`} aria-label={`Ver perfil de ${post.author}`}>
+                <Avatar className="h-8 w-8">
+                  <AvatarImage
+                    src={
+                      post.authorImage ||
+                      `/placeholder.svg?height=32&width=32&query=${post.author}`
+                    }
+                  />
+                  <AvatarFallback className="bg-gray-200 text-gray-600 text-xs font-semibold">
+                    {post.author.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+              </Link>
+              <Link href={`/nutricionistas/${post.authorProfileId || post.authorId}`} aria-label={`Ver perfil de ${post.author}`} className="font-semibold text-[#1E1D40]">
+                {formatNameProperCase(post.author)}
+              </Link>
               {post.badges && post.badges.length > 0 && (
                 <div className="flex items-center gap-1">
                   {post.badges.slice(0, 3).map((badge: any, index: number) => (

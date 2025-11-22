@@ -25,6 +25,7 @@ CREATE OR REPLACE FUNCTION public.get_nutritionist_by_id(
 )
 RETURNS TABLE (
   id UUID,
+  user_id UUID,
   full_name TEXT,
   email TEXT,
   profile_image_url TEXT,
@@ -58,7 +59,7 @@ RETURNS TABLE (
   website TEXT,
   public_price_visible BOOLEAN,
   service_online_available BOOLEAN,
-  service_presential_available BOOLEAN
+  -- service_presential_available removed (not present in table)
 )
 LANGUAGE sql
 STABLE
@@ -190,6 +191,7 @@ certs as (
 )
 select
   np.id,
+  np.user_id,
   np.full_name,
   (select * from user_email) as email,
   np.profile_image_url,
@@ -223,7 +225,7 @@ select
   np.website,
   np.public_price_visible,
   np.service_online_available,
-  np.service_presential_available
+  -- removed: np.service_presential_available
 from public.nutritionist_profiles np
 left join specs on true
 left join week  on true
@@ -235,4 +237,3 @@ GRANT EXECUTE ON FUNCTION public.get_nutritionist_by_id(p_id UUID, p_tz TEXT, p_
 GRANT EXECUTE ON FUNCTION public.get_nutritionist_by_id(p_id UUID, p_tz TEXT, p_slot_minutes INTEGER, p_max_today INTEGER) TO anon;
 
 COMMENT ON FUNCTION public.get_nutritionist_by_id(p_id UUID, p_tz TEXT, p_slot_minutes INTEGER, p_max_today INTEGER) IS 'Unified RPC to fetch public nutritionist profile by profile UUID; includes service availability and price visibility.';
-

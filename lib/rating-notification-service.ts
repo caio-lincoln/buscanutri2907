@@ -7,7 +7,7 @@ export interface RatingNotification {
   nutritionist_id: string
   notification_type: 'rating_reminder' | 'rating_received'
   message: string
-  is_read: boolean
+  read: boolean
   created_at: string
   consultation?: {
     start_time: string
@@ -47,7 +47,7 @@ export async function createRatingReminderNotification(
       .from('realtime_notifications')
       .insert({
         user_id: patientId,
-        type: 'rating_reminder',
+        notification_type: 'rating_reminder',
         title: 'Avalie sua consulta',
         message,
         data: {
@@ -55,7 +55,7 @@ export async function createRatingReminderNotification(
           nutritionist_id: nutritionistId,
           nutritionist_name: nutritionistName
         },
-        is_read: false
+        read: false
       })
 
     if (error) {
@@ -77,25 +77,12 @@ export async function createRatingReceivedNotification(
   patientName?: string
 ): Promise<void> {
   try {
-    const ratingText = rating >= 4 ? 'positiva' : rating >= 3 ? 'neutra' : 'negativa'
-    const message = patientName
-      ? `Você recebeu uma avaliação ${ratingText} de ${patientName}`
-      : `Você recebeu uma nova avaliação ${ratingText}`
-
-    const { error } = await supabase
-      .from('realtime_notifications')
-      .insert({
-        user_id: nutritionistId,
-        type: 'rating_received',
-        title: 'Nova avaliação recebida',
-        message,
-        data: {
-          consultation_id: consultationId,
-          rating,
-          patient_name: patientName
-        },
-        is_read: false
-      })
+    const { error } = await supabase.rpc('create_rating_received_notification', {
+      p_user_id: nutritionistId,
+      p_consultation_id: consultationId || null,
+      p_rating: rating,
+      p_patient_name: patientName ?? null,
+    })
 
     if (error) {
       throw error
@@ -118,7 +105,7 @@ export async function getRatingNotifications(
       .from('realtime_notifications')
       .select('*')
       .eq('user_id', userId)
-      .in('type', [ 'rating_reminder', 'rating_received' ])
+      .in('notification_type', [ 'rating_reminder', 'rating_received' ])
       .order('created_at', { ascending: false })
       .limit(limit)
 
@@ -142,7 +129,7 @@ export async function markRatingNotificationAsRead(
   try {
     const { error } = await supabase
       .from('realtime_notifications')
-      .update({ is_read: true })
+      .update({ read: true })
       .eq('id', notificationId)
 
     if (error) {
@@ -191,7 +178,7 @@ export async function checkForRatingReminders(): Promise<void> {
           .from('realtime_notifications')
           .select('id')
           .eq('user_id', consultation.patient_id)
-          .eq('type', 'rating_reminder')
+          .eq('notification_type', 'rating_reminder')
           .eq('data->consultation_id', consultation.id)
           .single()
 
