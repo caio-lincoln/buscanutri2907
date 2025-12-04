@@ -24,7 +24,7 @@ export default function ForgotPasswordPage() {
         (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000')
       const redirectTo = new URL('/redefinir-senha', origin).toString()
 
-      const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo })
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), { redirectTo })
       if (error) throw error
 
       toast({

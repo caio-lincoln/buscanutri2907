@@ -16,23 +16,22 @@ export async function signUp(
   additionalData: any
 ) {
   try {
-    // Silent logging: Starting signup with auto-confirmation
-      console.log("🚀 ~ signUp ~ userType:", userType)
-
-    // 1. Verificar se o usuário já existe
-    const { data: existingUser } = await supabase
-      .from('users')
-      .select('email')
-      .eq('email', email)
-      .single()
-
-    if (existingUser) {
-      throw new Error('Este email já está cadastrado')
+    const normalizedEmail = email.trim().toLowerCase()
+    const precheckRes = await fetch('/api/auth/check-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: normalizedEmail })
+    })
+    if (precheckRes.ok) {
+      const pre = await precheckRes.json()
+      if (pre.exists) {
+        throw new Error('Este email já possui uma conta. Faça login ou recupere a senha.')
+      }
     }
 
     // 2. Cadastrar usuário no Supabase Auth (será auto-confirmado pelo trigger)
     const { data: authData, error: authError } = await supabase.auth.signUp({
-      email,
+      email: normalizedEmail,
       password,
       options: {
         data: {
