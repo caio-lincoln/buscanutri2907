@@ -64,6 +64,16 @@ export default function ResetPasswordPage() {
     handleRecoveryRedirect()
   }, [])
 
+  useEffect(() => {
+    const supabase = createSupabaseClient()
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setIsAuthenticated(true)
+      }
+    })
+    return () => subscription.unsubscribe()
+  }, [])
+
   const validatePassword = () => {
     if (password.length < 8) {
       setError('A senha deve ter no mínimo 8 caracteres')
