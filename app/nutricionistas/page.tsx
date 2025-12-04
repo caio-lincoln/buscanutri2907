@@ -301,7 +301,6 @@ export default function NutricionistasPage() {
     }
   }, [ mobileMenuOpen ])
 
-
   const handleLogout = useCallback(async () => {
     try {
       await signOut()
@@ -586,7 +585,6 @@ export default function NutricionistasPage() {
                   </Link>
                 </>
               )}
-
 
               {/* Mobile Menu Button */}
               <Button

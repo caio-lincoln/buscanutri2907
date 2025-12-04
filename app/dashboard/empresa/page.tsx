@@ -629,7 +629,6 @@ export default function CompanyDashboard() {
         )}
       </div>
 
-
     </DashboardSidebar>
   )
 }

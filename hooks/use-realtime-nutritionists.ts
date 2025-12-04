@@ -200,7 +200,6 @@ export function useRealtimeNutritionists(filters: UseRealtimeNutritionistsProps 
     filters.specialty
   ])
 
-
   // mantém o ref apontando para a versão atual do loader
   useEffect(() => {
     latestLoadRef.current = loadNutritionists

@@ -111,7 +111,6 @@ export default function ConsultationPricingConfig({
   }
 
   // Componente para input de preço
- 
 
   // Remover estado local redundante; usar sempre o estado do pai
 

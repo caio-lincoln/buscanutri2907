@@ -15,7 +15,6 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
 
   const { session_id, user_id, role } = await request.json()
 
-
   if (!session_id || !user_id || !role) {
     throw new ValidationError('session_id, user_id e role são obrigatórios')
   }
@@ -47,7 +46,6 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     user:user_id(id, email)
     `)
     .single()
-
 
   if (insertError) {
     throw new Error('Erro ao adicionar participante')

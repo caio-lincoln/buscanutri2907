@@ -26,7 +26,6 @@ const CRN_REGIONS = {
 
 const CRN_REGEX = /^CRN[\s-]?(\d{1,2})[\s-]?(\d{4,6})$/i
 
-
 export function validateCRNFormat(crn: string): CRNValidationResult {
   if (!crn || typeof crn !== 'string') {
     return { isValid: false, message: 'CRN é obrigatório' }

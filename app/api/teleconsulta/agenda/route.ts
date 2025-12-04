@@ -3,7 +3,6 @@ import { withErrorHandling, validateAuth, ValidationError, ForbiddenError } from
 import { availabilitySlotSchema } from '@/src/lib/validations/teleconsulta'
 import { createClient } from '../../../../lib/supabase/server'
 
-
 // GET /api/teleconsulta/agenda - Listar agenda do nutricionista
 export const GET = withErrorHandling(async (request: NextRequest) => {
   const supabase = await createClient()

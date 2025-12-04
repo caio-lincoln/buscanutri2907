@@ -881,6 +881,7 @@ export default function CadastroPage() {
                           className="h-11"
                           required
                         />
+                        <p className="text-xs text-gray-500">Se já possui conta, use Esqueci minha senha</p>
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="phone">Telefone</Label>
@@ -918,6 +919,7 @@ export default function CadastroPage() {
                           className="h-11"
                           required
                         />
+                        <p className="text-xs text-gray-500">Se já possui conta, use Esqueci minha senha</p>
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="phone">Telefone</Label>
@@ -1152,6 +1154,7 @@ export default function CadastroPage() {
                           className="h-11"
                           required
                         />
+                        <p className="text-xs text-gray-500">Se já possui conta, use Esqueci minha senha</p>
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="phone">Telefone</Label>

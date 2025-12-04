@@ -515,7 +515,6 @@ const formattedPrice = (nutritionist as any)?.public_price_visible === false
                 )
               }
 
-
               {/* Mobile Menu Button */}
               <Button
                 variant="ghost"

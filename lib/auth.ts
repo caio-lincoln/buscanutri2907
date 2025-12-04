@@ -63,7 +63,7 @@ export async function signUp(
     // 4. Fazer login automático (agora deve funcionar pois o usuário está confirmado)
     const { data: signInData, error: signInError } =
       await supabase.auth.signInWithPassword({
-        email,
+        email: normalizedEmail,
         password,
       })
 
@@ -88,7 +88,7 @@ export async function signUp(
       // Tentar login novamente
       const { data: retrySignIn, error: retryError } =
         await supabase.auth.signInWithPassword({
-          email,
+          email: normalizedEmail,
           password,
         })
 
@@ -222,10 +222,21 @@ export async function signUp(
 
 export async function signIn(email: string, password: string) {
   try {
-    // Silent logging: Attempting login
+    const normalizedEmail = email.trim().toLowerCase()
+    const precheckRes = await fetch('/api/auth/check-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: normalizedEmail })
+    })
+    if (precheckRes.ok) {
+      const pre = await precheckRes.json()
+      if (!pre.exists) {
+        throw new Error('Não encontramos uma conta com este e-mail. Cadastre-se ou recupere a senha.')
+      }
+    }
 
     const { data, error } = await supabase.auth.signInWithPassword({
-      email,
+      email: normalizedEmail,
       password,
     })
 

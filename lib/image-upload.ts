@@ -61,7 +61,6 @@ export async function uploadBlogImage(
       }
     }
 
-
     const formData = new FormData()
     formData.append('file', file)
     formData.append('userId', userId)

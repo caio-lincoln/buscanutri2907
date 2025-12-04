@@ -21,6 +21,7 @@ export const POST = withErrorHandling(async (req: NextRequest, { params }: { par
     return createApiResponse({ success: false, error: 'Payload inválido' })
   }
   const { email, user_type, name, is_verified } = parsed.data
+  const newEmail = email ? email.trim().toLowerCase() : undefined
 
   // Buscar tipo atual do usuário
   const { data: userRow } = await admin
@@ -33,12 +34,21 @@ export const POST = withErrorHandling(async (req: NextRequest, { params }: { par
   const effectiveType = (user_type as any) || currentType
 
   // Atualizar email no Auth e tabela users
-  if (email && email !== userRow?.email) {
-    const { error: authErr } = await admin.auth.admin.updateUserById(params.id, { email })
+  if (newEmail && newEmail !== userRow?.email) {
+    const { data: existingAuthUser } = await admin
+      .schema('auth')
+      .from('users')
+      .select('id')
+      .eq('email', newEmail)
+      .maybeSingle()
+    if (existingAuthUser && existingAuthUser.id !== params.id) {
+      return createApiResponse({ success: false, error: 'E-mail já está em uso por outra conta' })
+    }
+    const { error: authErr } = await admin.auth.admin.updateUserById(params.id, { email: newEmail })
     if (authErr) {
       return createApiResponse({ success: false, error: `Falha ao atualizar email (auth): ${authErr.message}` })
     }
-    await admin.from('users').update({ email }).eq('id', params.id)
+    await admin.from('users').update({ email: newEmail }).eq('id', params.id)
   }
 
   // Atualizar tipo do usuário na tabela users (não migra perfis)

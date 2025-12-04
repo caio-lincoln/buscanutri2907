@@ -433,7 +433,6 @@ export default function AnalyticsTab() {
         </CardContent>
       </Card>
 
-
     </div>
   )
 }

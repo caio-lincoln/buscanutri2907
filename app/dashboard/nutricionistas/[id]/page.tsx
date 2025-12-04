@@ -90,7 +90,6 @@ export default function NutritionistProfilePage() {
     router.push(`${DASH_BASE}?${sp.toString()}`, { scroll: false });
   }, [ router ]);
 
-
   const handleBackToDashboard = () => {
     router.push('/dashboard/nutricionistas')
   }

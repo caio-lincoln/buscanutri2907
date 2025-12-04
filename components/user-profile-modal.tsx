@@ -792,7 +792,7 @@ export function UserProfileModal({
     if (!raw) return '';
 
     // mantém apenas dígitos e ponto
-    let v = raw.replace(/[^\d.]/g, '');
+    const v = raw.replace(/[^\d.]/g, '');
 
     // Se o usuário já tem ponto, respeite o que vem depois dele
     if (v.includes('.')) {
@@ -2216,7 +2216,6 @@ export function UserProfileModal({
           </div>
         </CardContent>
       </Card>
-
 
                       <Card className="mt-6">
                         <CardHeader>

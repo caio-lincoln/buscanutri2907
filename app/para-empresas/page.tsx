@@ -243,7 +243,6 @@ Aguardo retorno para mais informações sobre os planos corporativos!`
     const encodedMessage = encodeURIComponent(whatsappMessage)
     const whatsappUrl = `https://wa.me/5579998134938?text=${encodedMessage}`
     
-    
     // Tentar abrir em nova aba
     const newWindow = window.open(whatsappUrl, '_blank')
     
@@ -515,8 +514,6 @@ Aguardo retorno para mais informações sobre os planos corporativos!`
             <CalculadoraCorporativa />
           </div>
         </section>
-
-
 
         {/* Contact Form Section */}
         <section className="py-20 bg-slate-50/30">

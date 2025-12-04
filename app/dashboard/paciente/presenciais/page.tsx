@@ -122,7 +122,7 @@ export default function PresenciaisPage() {
       console.debug('[Presenciais] patientProfile.id:', patientProfile.id, 'rows:', Array.isArray(data) ? data.length : 0)
 
       // Mapear consultas sem endereço principal, será preenchido depois
-      let mapped = ((data as any[]) || []).map((row: any) => ({
+      const mapped = ((data as any[]) || []).map((row: any) => ({
         id: row.id,
         appointment_date: row.scheduled_at,
         duration_minutes: row.duration_minutes,

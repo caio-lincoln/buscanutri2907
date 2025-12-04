@@ -214,7 +214,6 @@ export default function NutritionistDashboard() {
         )}
       </div>
 
-
     </DashboardSidebar>
   )
 }

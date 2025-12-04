@@ -54,7 +54,6 @@ export default function NutritionistBlogPostPage() {
   const {user: currentUser, nutritionistProfile} = useAuth()
   const [hasLiked, setHasLiked] = useState<boolean>(false)
   const [likesCount, setLikesCount] = useState<number>(0)
-  
 
   // Dashboard stats
   const { stats } = useDashboardStats({

@@ -74,9 +74,7 @@ export function useStorage() {
   
   // Inicializar se ainda não foi inicializado
   if (typeof window !== 'undefined') {
-    storageService.initialize().catch(error => {
-      console.warn('Erro ao inicializar storage:', error)
-    })
+    storageService.initialize().catch(() => {})
   }
   
   return storageService
@@ -107,16 +105,11 @@ export const migrationUtils = {
             const newKey = keyMappings[oldKey] || oldKey
             const parsedValue = JSON.parse(value)
             
-            await storageService.set(newKey, parsedValue)
-            console.log(`Migrado: ${oldKey} -> ${newKey}`)
-          }
-        } catch (error) {
-          console.warn(`Erro ao migrar chave ${oldKey}:`, error)
+          await storageService.set(newKey, parsedValue)
         }
+      } catch {}
       }
-    } catch (error) {
-      console.warn('Erro durante migração do localStorage:', error)
-    }
+    } catch {}
   },
 
   /**
@@ -133,11 +126,8 @@ export const migrationUtils = {
       for (const key of allKeys) {
         if (!keysToKeep.includes(key)) {
           window.localStorage.removeItem(key)
-          console.log(`Removida chave legada: ${key}`)
         }
       }
-    } catch (error) {
-      console.warn('Erro ao limpar localStorage legado:', error)
-    }
+    } catch {}
   }
 }

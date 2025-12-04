@@ -286,7 +286,6 @@ export default function TeleconsultaRoom() {
       }
     })
 
-
     await new Promise<void>((resolve) => {
       ch.subscribe((status) => status === 'SUBSCRIBED' && resolve())
     })
@@ -310,8 +309,6 @@ export default function TeleconsultaRoom() {
   //     const peers = Object.keys(state)
   //     isPoliteRef.current = peers.length > 1
   //   })
-
-
 
   //   await new Promise<void>((resolve, reject) => {
   //     ch.subscribe((status) => status === 'SUBSCRIBED' && resolve())

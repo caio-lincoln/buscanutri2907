@@ -46,7 +46,7 @@ export class BlogViewsService {
 
         // Montar payload inicial usando nomenclatura mais comum
         const now = new Date().toISOString()
-        let payload: Record<string, any> = {
+        const payload: Record<string, any> = {
           post_id: blogPostId,
           user_id: viewerId ?? null,
           viewed_at: now,

@@ -74,7 +74,6 @@ export function AddressCard({ userType, open }: Props) {
     if (uf) await loadCitiesForUF(uf)
   }
 
-
   const loadAddresses = async () => {
     if (userType !== 'nutricionista' || !nutritionistProfile?.id) return
 

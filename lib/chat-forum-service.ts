@@ -136,7 +136,6 @@ export async function getNutritionistChatConversations(
   }))
 }
 
-
 export async function openConversationWithNutritionist(nutritionistId: string): Promise<string> {
   const { data, error } = await supabase.rpc('chat_start', { nutritionist: nutritionistId });
   if (error) throw error;

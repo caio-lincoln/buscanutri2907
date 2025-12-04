@@ -403,7 +403,6 @@ export default function BuscarTab() {
               </SelectContent>
             </Select>
 
-
             <Select
               value={selectedNutritionistPriceRange?.label as string}
               onValueChange={value => {
