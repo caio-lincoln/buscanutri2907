@@ -21,7 +21,7 @@ if (typeof window !== 'undefined' && (!supabaseUrl || !supabaseAnonKey)) {
 // Cliente antigo para compatibilidade com sessionStorage
 export const supabase = createClient(finalUrl, finalKey, {
   auth: {
-    storage: typeof window !== 'undefined' ? window.sessionStorage : undefined,
+    storage: typeof window !== 'undefined' ? window.localStorage : undefined,
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: true
@@ -32,7 +32,7 @@ export const supabase = createClient(finalUrl, finalKey, {
 export const createSupabaseClient = () =>
   createBrowserClient<Database>(finalUrl, finalKey, {
     auth: {
-      storage: typeof window !== 'undefined' ? window.sessionStorage : undefined,
+      storage: typeof window !== 'undefined' ? window.localStorage : undefined,
       autoRefreshToken: true,
       persistSession: true,
       detectSessionInUrl: false, // Desabilita detecção de sessão na URL
