@@ -615,6 +615,18 @@ export default function CadastroPage() {
         }
       }
 
+      const precheck = await fetch('/api/auth/check-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      })
+      if (precheck.ok) {
+        const j = await precheck.json()
+        if (j.exists) {
+          throw new Error('Este email já possui uma conta. Faça login ou recupere a senha.')
+        }
+      }
+
       const { data, profileData, error: signUpError } = await signUp(
         email,
         password,
