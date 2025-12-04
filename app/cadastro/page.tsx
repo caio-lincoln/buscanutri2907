@@ -406,7 +406,7 @@ export default function CadastroPage() {
 
     try {
       const formData = new FormData(e.currentTarget)
-      const email = formData.get('email') as string
+      const email = (formData.get('email') as string).trim().toLowerCase()
       const password = formData.get('password') as string
 
       // Validações básicas

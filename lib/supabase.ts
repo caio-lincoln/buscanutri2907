@@ -36,7 +36,7 @@ export const createSupabaseClient = () =>
       autoRefreshToken: true,
       persistSession: true,
       detectSessionInUrl: false, // Desabilita detecção de sessão na URL
-      flowType: 'pkce'
+      flowType: 'implicit'
     },
     global: {
       headers: {
