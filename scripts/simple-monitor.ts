@@ -4,19 +4,25 @@ import { createClient } from '@supabase/supabase-js'
 // Carregar variáveis de ambiente
 config({ path: '.env.local' })
 
+const out = (s: string) => process.stdout.write(`${s}\n`)
+const err = (s: string) => process.stderr.write(`${s}\n`)
+
 async function simpleHealthCheck() {
-  console.log('🔍 Executando verificação simples de saúde dos dados...')
+  out('🔍 Executando verificação simples de saúde dos dados...')
 
-  const supabase = createClient(
-    process.env['NEXT_PUBLIC_SUPABASE_URL']!,
-    process.env['SUPABASE_SERVICE_ROLE_KEY']!
-  )
+  const url = process.env['NEXT_PUBLIC_SUPABASE_URL'] ?? ''
+  const key = process.env['SUPABASE_SERVICE_ROLE_KEY'] ?? ''
+  if (!url || !key) {
+    throw new Error('Supabase env vars missing')
+  }
+  const supabase = createClient(url, key)
 
-  const issues: any[] = []
+  interface Issue { table: string; field: string; id: string; issue: string }
+  const issues: Issue[] = []
 
   try {
     // Verificar nutritionist_profiles
-    console.log('📋 Verificando nutritionist_profiles...')
+    out('📋 Verificando nutritionist_profiles...')
     const { data: nutritionists, error: nutError } = await supabase
       .from('nutritionist_profiles')
       .select('id, specialties, languages')
@@ -24,11 +30,9 @@ async function simpleHealthCheck() {
       .limit(10)
 
     if (nutError) {
-      console.error('❌ Erro ao consultar nutritionist_profiles:', nutError)
+      err(`❌ Erro ao consultar nutritionist_profiles: ${String(nutError)}`)
     } else {
-      console.log(
-        `✅ Encontrados ${nutritionists?.length || 0} perfis de nutricionistas`
-      )
+      out(`✅ Encontrados ${nutritionists?.length || 0} perfis de nutricionistas`)
 
       // Verificar problemas nos dados
       for (const profile of nutritionists || []) {
@@ -82,7 +86,7 @@ async function simpleHealthCheck() {
     }
 
     // Verificar user_profiles
-    console.log('👤 Verificando user_profiles...')
+    out('👤 Verificando user_profiles...')
     const { data: users, error: userError } = await supabase
       .from('user_profiles')
       .select('id, preferences')
@@ -90,28 +94,26 @@ async function simpleHealthCheck() {
       .limit(10)
 
     if (userError) {
-      console.error('❌ Erro ao consultar user_profiles:', userError)
+      err(`❌ Erro ao consultar user_profiles: ${String(userError)}`)
     } else {
-      console.log(`✅ Encontrados ${users?.length || 0} perfis de usuários`)
+      out(`✅ Encontrados ${users?.length || 0} perfis de usuários`)
     }
 
     // Relatório final
-    console.log('\n📊 RELATÓRIO FINAL:')
-    console.log(`🔍 Problemas encontrados: ${issues.length}`)
+    out('\n📊 RELATÓRIO FINAL:')
+    out(`🔍 Problemas encontrados: ${issues.length}`)
 
     if (issues.length > 0) {
-      console.log('\n🚨 Problemas detectados:')
+      out('\n🚨 Problemas detectados:')
       issues.forEach((issue, index) => {
-        console.log(
-          `  ${index + 1}. ${issue.table}.${issue.field} (ID: ${issue.id}) - ${issue.issue}`
-        )
+        out(`  ${index + 1}. ${issue.table}.${issue.field} (ID: ${issue.id}) - ${issue.issue}`)
       })
     } else {
-      console.log('✅ Nenhum problema detectado!')
+      out('✅ Nenhum problema detectado!')
     }
   } catch (error) {
-    console.error('❌ Erro durante verificação:', error)
+    err(`❌ Erro durante verificação: ${String(error)}`)
   }
 }
 
-simpleHealthCheck().catch(console.error)
+simpleHealthCheck().catch(e => err(String(e)))

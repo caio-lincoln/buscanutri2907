@@ -1,4 +1,4 @@
-import { Server as SocketIOServer } from 'socket.io'
+import { Server as SocketIOServer, Socket } from 'socket.io'
 import { Server as HTTPServer } from 'http'
 import { NextApiRequest, NextApiResponse } from 'next'
 import { WebRTCSignal } from './services/webrtc-service'
@@ -45,16 +45,13 @@ class SocketManager {
     })
 
     this.setupEventHandlers()
-    
-    console.log('Socket.IO server initialized')
     return this.io
   }
 
   private setupEventHandlers(): void {
     if (!this.io) return
 
-    this.io.on('connection', (socket) => {
-      console.log(`Socket connected: ${socket.id}`)
+    this.io.on('connection', (socket: Socket) => {
 
       // Join session
       socket.on('join-session', (data: { sessionId: string, userId: string }) => {
@@ -93,12 +90,10 @@ class SocketManager {
     })
   }
 
-  private handleJoinSession(socket: any, data: { sessionId: string, userId: string }): void {
+  private handleJoinSession(socket: Socket, data: { sessionId: string, userId: string }): void {
     try {
       const { sessionId, userId } = data
       
-      console.log(`User ${userId} joining session ${sessionId}`)
-
       // Join socket room
       socket.join(sessionId)
       socket.userId = userId
@@ -146,20 +141,15 @@ class SocketManager {
         participantCount: session.participants.size
       })
 
-      console.log(`Session ${sessionId} now has ${session.participants.size} participants`)
-
-    } catch (error) {
-      console.error('Error handling join session:', error)
+    } catch {
       socket.emit('error', { message: 'Failed to join session' })
     }
   }
 
-  private handleLeaveSession(socket: any, data: { sessionId: string, userId: string }): void {
+  private handleLeaveSession(socket: Socket, data: { sessionId: string, userId: string }): void {
     try {
       const { sessionId, userId } = data
       
-      console.log(`User ${userId} leaving session ${sessionId}`)
-
       // Leave socket room
       socket.leave(sessionId)
 
@@ -181,21 +171,16 @@ class SocketManager {
         // Clean up empty sessions
         if (session.participants.size === 0) {
           this.sessions.delete(sessionId)
-          console.log(`Session ${sessionId} cleaned up (no participants)`)
         }
       }
 
-    } catch (error) {
-      console.error('Error handling leave session:', error)
-    }
+    } catch {}
   }
 
-  private handleWebRTCSignal(socket: any, signal: WebRTCSignal): void {
+  private handleWebRTCSignal(socket: Socket, signal: WebRTCSignal): void {
     try {
       const { session_id, to_user_id, from_user_id } = signal
       
-      console.log(`WebRTC signal from ${from_user_id} to ${to_user_id} in session ${session_id}`)
-
       // If to_user_id is specified, send to specific user
       if (to_user_id) {
         const targetSocketId = this.userSockets.get(to_user_id)
@@ -207,13 +192,12 @@ class SocketManager {
         socket.to(session_id).emit('webrtc-signal', signal)
       }
 
-    } catch (error) {
-      console.error('Error handling WebRTC signal:', error)
+    } catch {
       socket.emit('error', { message: 'Failed to relay WebRTC signal' })
     }
   }
 
-  private handleChatMessage(socket: any, data: { sessionId: string, userId: string, message: string }): void {
+  private handleChatMessage(socket: Socket, data: { sessionId: string, userId: string, message: string }): void {
     try {
       const { sessionId, userId, message } = data
       
@@ -228,16 +212,12 @@ class SocketManager {
 
       // Broadcast message to all participants in the session
       this.io?.to(sessionId).emit('chat-message', chatMessage)
-
-      console.log(`Chat message in session ${sessionId} from ${userId}`)
-
-    } catch (error) {
-      console.error('Error handling chat message:', error)
+    } catch {
       socket.emit('error', { message: 'Failed to send chat message' })
     }
   }
 
-  private handleSessionStatusUpdate(socket: any, data: { sessionId: string, status: string, userId: string }): void {
+  private handleSessionStatusUpdate(socket: Socket, data: { sessionId: string, status: string, userId: string }): void {
     try {
       const { sessionId, status, userId } = data
       
@@ -248,18 +228,11 @@ class SocketManager {
         userId,
         timestamp: new Date()
       })
-
-      console.log(`Session ${sessionId} status updated to ${status} by ${userId}`)
-
-    } catch (error) {
-      console.error('Error handling session status update:', error)
-    }
+    } catch {}
   }
 
-  private handleDisconnect(socket: any): void {
+  private handleDisconnect(socket: Socket): void {
     try {
-      console.log(`Socket disconnected: ${socket.id}`)
-
       const userId = socket.userId
       const sessionId = socket.sessionId
 
@@ -273,9 +246,7 @@ class SocketManager {
         this.userSockets.delete(userId)
       }
 
-    } catch (error) {
-      console.error('Error handling disconnect:', error)
-    }
+    } catch {}
   }
 
   // Utility methods
@@ -299,7 +270,7 @@ class SocketManager {
     return this.userSockets.has(userId)
   }
 
-  sendToUser(userId: string, event: string, data: any): boolean {
+  sendToUser(userId: string, event: string, data: unknown): boolean {
     const socketId = this.userSockets.get(userId)
     if (socketId && this.io) {
       this.io.to(socketId).emit(event, data)
@@ -308,7 +279,7 @@ class SocketManager {
     return false
   }
 
-  sendToSession(sessionId: string, event: string, data: any): boolean {
+  sendToSession(sessionId: string, event: string, data: unknown): boolean {
     if (this.io) {
       this.io.to(sessionId).emit(event, data)
       return true
@@ -325,7 +296,6 @@ class SocketManager {
       const age = now.getTime() - session.createdAt.getTime()
       if (age > maxAge && session.participants.size === 0) {
         this.sessions.delete(sessionId)
-        console.log(`Cleaned up old session: ${sessionId}`)
       }
     })
   }

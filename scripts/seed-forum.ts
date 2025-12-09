@@ -5,14 +5,16 @@ import { config } from 'dotenv'
 config({ path: '.env.local' })
 
 // Configuração do Supabase
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY! // Chave de serviço para bypass do RLS
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? ''
+const out = (s: string) => process.stdout.write(`${s}\n`)
+const err = (s: string) => process.stderr.write(`${s}\n`)
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 async function seedForumData() {
   try {
-    console.log('🌱 Iniciando seed do fórum...')
+    out('🌱 Iniciando seed do fórum...')
 
     // Usar IDs de usuários existentes
     const userIds = {
@@ -50,9 +52,9 @@ async function seedForumData() {
       const { error } = await supabase.from('user_profiles').upsert(user)
 
       if (error) {
-        console.error('Erro ao inserir usuário:', error)
+        err(`Erro ao inserir usuário: ${String(error)}`)
       } else {
-        console.log(`✅ Usuário ${user.full_name} inserido`)
+        out(`✅ Usuário ${user.full_name} inserido`)
       }
     }
 
@@ -122,9 +124,9 @@ async function seedForumData() {
       const { error } = await supabase.from('forum_questions').upsert(question)
 
       if (error) {
-        console.error('Erro ao inserir pergunta:', error)
+        err(`Erro ao inserir pergunta: ${String(error)}`)
       } else {
-        console.log(`✅ Pergunta "${question.title}" inserida`)
+        out(`✅ Pergunta "${question.title}" inserida`)
       }
     }
 
@@ -187,9 +189,9 @@ async function seedForumData() {
       const { error } = await supabase.from('forum_answers').upsert(answer)
 
       if (error) {
-        console.error('Erro ao inserir resposta:', error)
+        err(`Erro ao inserir resposta: ${String(error)}`)
       } else {
-        console.log(`✅ Resposta inserida`)
+        out('✅ Resposta inserida')
       }
     }
 
@@ -204,9 +206,9 @@ async function seedForumData() {
       .update({ best_answer_id: '12345678-1234-1234-1234-123456789abc' })
       .eq('id', 'cccccccc-cccc-cccc-cccc-cccccccccccc')
 
-    console.log('🎉 Seed do fórum concluído com sucesso!')
+    out('🎉 Seed do fórum concluído com sucesso!')
   } catch (error) {
-    console.error('❌ Erro durante o seed:', error)
+    err(`❌ Erro durante o seed: ${String(error)}`)
   }
 }
 

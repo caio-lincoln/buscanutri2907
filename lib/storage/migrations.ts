@@ -9,9 +9,8 @@ export const migrations: MigrationStep[] = [
     fromVersion: 0,
     toVersion: 1,
     migrate: async (storage: StorageAdapter) => {
+      void storage
       // Migração inicial - limpar dados legados do localStorage se existirem
-      console.log('Executando migração 0 -> 1: Limpeza inicial')
-      
       // Remover chaves legadas conhecidas
       const legacyKeys = [
         'admin_session',
@@ -28,25 +27,21 @@ export const migrations: MigrationStep[] = [
             // Remover chaves que começam com prefixos legados
             if (legacyKeys.some(prefix => key.startsWith(prefix))) {
               window.localStorage.removeItem(key)
-              console.log(`Removida chave legada: ${key}`)
             }
           }
-        } catch (error) {
-          console.warn('Erro ao limpar localStorage legado:', error)
-        }
+        } catch {}
       }
     },
     rollback: async (storage: StorageAdapter) => {
+      void storage
       // Não há rollback para limpeza inicial
-      console.log('Rollback 1 -> 0: Nenhuma ação necessária')
     }
   },
   {
     fromVersion: 1,
     toVersion: 2,
     migrate: async (storage: StorageAdapter) => {
-      console.log('Executando migração 1 -> 2: Estruturação de dados')
-      
+      void storage
       // Migrar dados existentes para nova estrutura se necessário
       try {
         // Verificar se há dados de usuário para migrar
@@ -55,7 +50,6 @@ export const migrations: MigrationStep[] = [
           // Reestruturar dados se necessário
           await storage.set('user_profile', userData)
           await storage.remove('user_data')
-          console.log('Dados de usuário migrados para nova estrutura')
         }
 
         // Migrar configurações de cache
@@ -63,16 +57,13 @@ export const migrations: MigrationStep[] = [
         if (cacheData) {
           await storage.set('app_cache', cacheData)
           await storage.remove('cache_data')
-          console.log('Dados de cache migrados')
         }
       } catch (error) {
-        console.warn('Erro durante migração 1 -> 2:', error)
         throw error
       }
     },
     rollback: async (storage: StorageAdapter) => {
-      console.log('Executando rollback 2 -> 1: Reverter estruturação')
-      
+      void storage
       try {
         // Reverter mudanças da migração
         const userProfile = await storage.get('user_profile')
@@ -87,7 +78,6 @@ export const migrations: MigrationStep[] = [
           await storage.remove('app_cache')
         }
       } catch (error) {
-        console.warn('Erro durante rollback 2 -> 1:', error)
         throw error
       }
     }
@@ -102,10 +92,8 @@ export async function runMigrations(
   fromVersion: number,
   toVersion: number
 ): Promise<void> {
-  console.log(`Iniciando migração de versão ${fromVersion} para ${toVersion}`)
-
+  
   if (fromVersion === toVersion) {
-    console.log('Versões iguais, nenhuma migração necessária')
     return
   }
 
@@ -117,7 +105,6 @@ export async function runMigrations(
 
     for (const migration of rollbackMigrations) {
       if (migration.rollback) {
-        console.log(`Executando rollback ${migration.toVersion} -> ${migration.fromVersion}`)
         await migration.rollback(storage)
       }
     }
@@ -128,12 +115,9 @@ export async function runMigrations(
       .sort((a, b) => a.toVersion - b.toVersion) // Ordem crescente
 
     for (const migration of applicableMigrations) {
-      console.log(`Executando migração ${migration.fromVersion} -> ${migration.toVersion}`)
       await migration.migrate(storage)
     }
   }
-
-  console.log(`Migração concluída: ${fromVersion} -> ${toVersion}`)
 }
 
 /**

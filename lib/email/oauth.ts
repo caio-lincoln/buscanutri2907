@@ -13,7 +13,7 @@ const {
 // Only throw error in production or when actually using the OAuth functionality
 if (typeof window === 'undefined' && process.env.NODE_ENV === 'production') {
   if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
-    console.warn('Google OAuth2 environment variables missing. Gmail functionality will be disabled.')
+    // missing env, gmail disabled
   }
 }
 
@@ -80,7 +80,6 @@ export async function getCurrentGmailConfig() {
     .single()
 
   if (error) {
-    console.error('Erro ao obter refresh token:', error)
     return null
   }
 
@@ -98,7 +97,6 @@ export async function getAccessToken(refreshToken: string, client?: OAuth2Client
     const { credentials } = await clientToUse.refreshAccessToken()
     return credentials.access_token
   } catch (error) {
-    console.error('Erro ao obter access token:', error)
     throw error
   }
 }

@@ -27,7 +27,6 @@ export default function handler(
   try {
     // Check if Socket.IO server is already initialized
     if (res.socket.server.io) {
-      console.log('Socket.IO server already initialized')
       return res.status(200).json({
         success: true,
         message: 'Socket.IO server already running',
@@ -35,13 +34,9 @@ export default function handler(
       })
     }
 
-    console.log('Initializing Socket.IO server...')
-    
     // Initialize Socket.IO server
     const io = initializeSocketServer(res.socket.server)
     res.socket.server.io = io
-
-    console.log('Socket.IO server initialized successfully')
 
     res.status(200).json({
       success: true,
@@ -50,7 +45,6 @@ export default function handler(
     })
 
   } catch (error) {
-    console.error('Error initializing Socket.IO server:', error)
     res.status(500).json({
       success: false,
       error: 'Failed to initialize Socket.IO server',

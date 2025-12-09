@@ -31,7 +31,7 @@ export const validators = {
     return validatedItems
   },
 
-  object: <T extends Record<string, any>>(
+  object: <T extends Record<string, unknown>>(
     schema: { [K in keyof T]: (value: unknown) => T[K] | null | undefined }
   ) => (value: unknown): T | null => {
     if (!value || typeof value !== 'object' || Array.isArray(value)) return null
@@ -72,9 +72,11 @@ export const schemas = {
       created_at: validators.string,
       updated_at: validators.optional(validators.string)
     }),
-    sanitize: (data: any) => {
-      // Remove campos sensíveis que não devem ser armazenados
-      const { password, access_token, refresh_token, ...sanitized } = data
+    sanitize: (data: Record<string, unknown>) => {
+      const sanitized: Record<string, unknown> = { ...data }
+      delete sanitized.password
+      delete sanitized.access_token
+      delete sanitized.refresh_token
       return sanitized
     }
   } as ValidationSchema,
@@ -94,8 +96,7 @@ export const schemas = {
       timestamp: validators.number,
       ttl: validators.optional(validators.number)
     }),
-    sanitize: (data: any) => {
-      // Remove dados expirados
+    sanitize: (data: { data: unknown; timestamp: number; ttl?: number }) => {
       const now = Date.now()
       if (data.ttl && data.timestamp + data.ttl < now) {
         return null
@@ -111,10 +112,9 @@ export const schemas = {
       lastActivity: validators.number,
       data: validators.optional((value: unknown) => value)
     }),
-    sanitize: (data: any) => {
-      // Remove sessões expiradas (mais de 24 horas)
+    sanitize: (data: { sessionId: string; userId?: string; lastActivity: number; data?: unknown }) => {
       const now = Date.now()
-      const maxAge = 24 * 60 * 60 * 1000 // 24 horas
+      const maxAge = 24 * 60 * 60 * 1000
       if (data.lastActivity + maxAge < now) {
         return null
       }
@@ -146,8 +146,7 @@ export function validateData<T>(
     }
 
     return validated
-  } catch (error) {
-    console.warn('Erro durante validação:', error)
+  } catch {
     return null
   }
 }
@@ -155,7 +154,7 @@ export function validateData<T>(
 /**
  * Verifica se um valor contém dados sensíveis que não devem ser armazenados
  */
-export function containsSensitiveData(value: any): boolean {
+export function containsSensitiveData(value: unknown): boolean {
   if (!value || typeof value !== 'object') {
     return false
   }
@@ -185,20 +184,19 @@ export function containsSensitiveData(value: any): boolean {
     'security_code'
   ]
 
-  const checkObject = (obj: any, path: string = ''): boolean => {
+  const checkObject = (obj: Record<string, unknown>, path: string = ''): boolean => {
     for (const [key, val] of Object.entries(obj)) {
       const fullPath = path ? `${path}.${key}` : key
       const lowerKey = key.toLowerCase()
       
       // Verificar se a chave contém termos sensíveis
       if (sensitiveKeys.some(sensitive => lowerKey.includes(sensitive))) {
-        console.warn(`Dados sensíveis detectados em: ${fullPath}`)
         return true
       }
 
       // Verificar recursivamente objetos aninhados
       if (val && typeof val === 'object' && !Array.isArray(val)) {
-        if (checkObject(val, fullPath)) {
+        if (checkObject(val as Record<string, unknown>, fullPath)) {
           return true
         }
       }
@@ -206,13 +204,13 @@ export function containsSensitiveData(value: any): boolean {
     return false
   }
 
-  return checkObject(value)
+  return checkObject(value as Record<string, unknown>)
 }
 
 /**
  * Remove dados sensíveis de um objeto
  */
-export function removeSensitiveData(value: any): any {
+export function removeSensitiveData(value: unknown): unknown {
   if (!value || typeof value !== 'object') {
     return value
   }
@@ -234,14 +232,15 @@ export function removeSensitiveData(value: any): any {
     'credential'
   ]
 
-  const cleanObject = (obj: any): any => {
+  const cleanObject = (obj: unknown): unknown => {
     if (Array.isArray(obj)) {
-      return obj.map(cleanObject)
+      return (obj as unknown[]).map(cleanObject)
     }
 
     if (obj && typeof obj === 'object') {
-      const cleaned: any = {}
-      for (const [key, val] of Object.entries(obj)) {
+      const entries = Object.entries(obj as Record<string, unknown>)
+      const cleaned: Record<string, unknown> = {}
+      for (const [key, val] of entries) {
         const lowerKey = key.toLowerCase()
         
         // Pular chaves sensíveis

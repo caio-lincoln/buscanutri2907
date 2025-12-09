@@ -3,12 +3,14 @@ import dotenv from 'dotenv'
 
 dotenv.config()
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? ''
+const out = (s: string) => process.stdout.write(`${s}\n`)
+const err = (s: string) => process.stderr.write(`${s}\n`)
 const supabase = createClient(supabaseUrl, supabaseKey)
 
 async function seedRealForumData() {
-  console.log('🌱 Iniciando seed de dados reais do fórum...')
+  out('🌱 Iniciando seed de dados reais do fórum...')
 
   // Perguntas reais com IDs de usuários existentes
   const questions = [
@@ -161,37 +163,35 @@ async function seedRealForumData() {
 
   try {
     // Inserir perguntas
-    console.log('📝 Inserindo perguntas...')
+    out('📝 Inserindo perguntas...')
     for (const question of questions) {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('forum_questions')
         .upsert(question)
-        .select()
 
       if (error) {
-        console.error(`Erro ao inserir pergunta "${question.title}":`, error)
+        err(`Erro ao inserir pergunta "${question.title}": ${String(error)}`)
       } else {
-        console.log(`✅ Pergunta "${question.title}" inserida`)
+        out(`✅ Pergunta "${question.title}" inserida`)
       }
     }
 
     // Inserir respostas
-    console.log('\n💬 Inserindo respostas...')
+    out('\n💬 Inserindo respostas...')
     for (const answer of answers) {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('forum_answers')
         .upsert(answer)
-        .select()
 
       if (error) {
-        console.error('Erro ao inserir resposta:', error)
+        err(`Erro ao inserir resposta: ${String(error)}`)
       } else {
-        console.log('✅ Resposta inserida')
+        out('✅ Resposta inserida')
       }
     }
 
     // Atualizar best_answer_id nas perguntas
-    console.log('\n🏆 Atualizando melhores respostas...')
+    out('\n🏆 Atualizando melhores respostas...')
     const bestAnswers = [
       {
         questionId: '7d28cc92-0694-419d-b9e1-0c04e840515c',
@@ -222,15 +222,15 @@ async function seedRealForumData() {
         .eq('id', questionId)
 
       if (error) {
-        console.error('Erro ao atualizar melhor resposta:', error)
+        err(`Erro ao atualizar melhor resposta: ${String(error)}`)
       } else {
-        console.log('✅ Melhor resposta atualizada')
+        out('✅ Melhor resposta atualizada')
       }
     }
 
-    console.log('\n🎉 Seed de dados reais do fórum concluído com sucesso!')
+    out('\n🎉 Seed de dados reais do fórum concluído com sucesso!')
   } catch (error) {
-    console.error('❌ Erro durante o seed:', error)
+    err(`❌ Erro durante o seed: ${String(error)}`)
   }
 }
 

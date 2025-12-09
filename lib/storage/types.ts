@@ -39,7 +39,7 @@ export interface StorageConfig {
   fallbackToSession: boolean
 }
 
-export interface ValidationSchema<T = any> {
+export interface ValidationSchema<T = unknown> {
   validate: (data: unknown) => T | null
   sanitize?: (data: T) => T
 }

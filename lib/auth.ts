@@ -68,7 +68,6 @@ export async function signUp(
       })
 
     if (signInError) {
-      console.log("🚀 ~ signUp ~ signInError:", signInError)
       // Silent error handling: Error in automatic login
       // Se o login falhar, pode ser que o usuário ainda não esteja confirmado
       // Vamos tentar confirmar manualmente
@@ -194,7 +193,6 @@ export async function signUp(
         }
       }
     } catch (profileError) {
-      console.log("🚀 ~ signUp ~ profileError:", profileError)
       // Silent error handling: General error creating profile
     }
 

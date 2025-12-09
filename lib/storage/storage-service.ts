@@ -27,7 +27,7 @@ export class BuscaNutriStorageService implements StorageService {
       appVersion: APP_DATA_VERSION,
       prefix: STORAGE_PREFIX,
       enableValidation: true,
-      enableLogging: true,
+      enableLogging: false,
       fallbackToSession: true,
       ...config
     }
@@ -82,15 +82,7 @@ export class BuscaNutriStorageService implements StorageService {
     }
   }
 
-  private log(message: string, error?: any): void {
-    if (this.config.enableLogging) {
-      if (error) {
-        console.warn(`[StorageService] ${message}`, error)
-      } else {
-        console.log(`[StorageService] ${message}`)
-      }
-    }
-  }
+  private log(): void {}
 
   private validateKey(key: string): void {
     if (!key || typeof key !== 'string') {
@@ -323,8 +315,10 @@ export class BuscaNutriStorageService implements StorageService {
           // Verificar se é um item de cache expirado
           if (key.includes('cache_')) {
             const item = await this.get(key)
-            if (item && typeof item === 'object' && 'timestamp' in item && 'ttl' in item) {
-              const { timestamp, ttl } = item as any
+            if (item && typeof item === 'object' && 'timestamp' in item) {
+              const meta = item as { timestamp: number; ttl?: number }
+              const timestamp = meta.timestamp
+              const ttl = meta.ttl
               if (ttl && timestamp + ttl < now) {
                 await this.remove(key)
                 this.log(`Cache expirado removido: ${key}`)

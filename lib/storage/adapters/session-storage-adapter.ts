@@ -42,8 +42,7 @@ export class SessionStorageAdapter implements StorageAdapter {
         return null
       }
       return JSON.parse(item) as T
-    } catch (error) {
-      console.warn(`Erro ao ler sessionStorage para a chave "${key}":`, error)
+    } catch {
       return null
     }
   }
@@ -71,9 +70,7 @@ export class SessionStorageAdapter implements StorageAdapter {
 
     try {
       window.sessionStorage.removeItem(this.getKey(key))
-    } catch (error) {
-      console.warn(`Erro ao remover chave ${key} do sessionStorage:`, error)
-    }
+    } catch {}
   }
 
   async clear(): Promise<void> {
@@ -87,9 +84,7 @@ export class SessionStorageAdapter implements StorageAdapter {
       for (const key of keys) {
         await this.remove(key.replace(this.prefix, ''))
       }
-    } catch (error) {
-      console.warn('Erro ao limpar sessionStorage:', error)
-    }
+    } catch {}
   }
 
   async keys(): Promise<string[]> {
@@ -102,8 +97,7 @@ export class SessionStorageAdapter implements StorageAdapter {
       return allKeys
         .filter(key => key.startsWith(this.prefix))
         .map(key => key.replace(this.prefix, ''))
-    } catch (error) {
-      console.warn('Erro ao obter chaves do sessionStorage:', error)
+    } catch {
       return []
     }
   }

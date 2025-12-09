@@ -84,8 +84,7 @@ export class IndexedDBAdapter implements StorageAdapter {
           resolve(result ? result.value : null)
         }
       })
-    } catch (error) {
-      console.warn(`Erro ao ler IndexedDB para a chave "${key}":`, error)
+    } catch {
       return null
     }
   }
@@ -129,9 +128,7 @@ export class IndexedDBAdapter implements StorageAdapter {
           resolve()
         }
       })
-    } catch (error) {
-      console.warn(`Erro ao remover chave ${key} do IndexedDB:`, error)
-    }
+    } catch {}
   }
 
   async clear(): Promise<void> {
@@ -149,9 +146,7 @@ export class IndexedDBAdapter implements StorageAdapter {
           resolve()
         }
       })
-    } catch (error) {
-      console.warn('Erro ao limpar IndexedDB:', error)
-    }
+    } catch {}
   }
 
   async keys(): Promise<string[]> {
@@ -169,8 +164,7 @@ export class IndexedDBAdapter implements StorageAdapter {
           resolve(request.result as string[])
         }
       })
-    } catch (error) {
-      console.warn('Erro ao obter chaves do IndexedDB:', error)
+    } catch {
       return []
     }
   }
@@ -190,8 +184,7 @@ export class IndexedDBAdapter implements StorageAdapter {
           resolve(request.result)
         }
       })
-    } catch (error) {
-      console.warn('Erro ao contar itens do IndexedDB:', error)
+    } catch {
       return 0
     }
   }

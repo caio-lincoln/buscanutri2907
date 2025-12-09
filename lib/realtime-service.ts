@@ -40,7 +40,7 @@ export interface RealtimeNotification {
   notification_type: string
   title: string
   message: string
-  data?: any
+  data?: Record<string, unknown>
   read: boolean
   created_at: string
 }
@@ -193,12 +193,12 @@ export class RealtimeService {
   }
 
   async sendMessage(
-    consultationId: string,
-    message: string,
-    messageType: RealtimeMessage['message_type'] = 'text',
-    fileUrl?: string,
-    fileName?: string,
-    fileSize?: number
+    _consultationId: string,
+    _message: string,
+    _messageType: RealtimeMessage['message_type'] = 'text',
+    _fileUrl?: string,
+    _fileName?: string,
+    _fileSize?: number
   ): Promise<RealtimeMessage | null> {
     // TELEMEDICINA TEMPORARIAMENTE DESABILITADA
     // Silent logging: Funcionalidade de telemedicina temporariamente desabilitada
@@ -230,11 +230,11 @@ export class RealtimeService {
   }
 
   async addNote(
-    consultationId: string,
-    title: string,
-    content: string,
-    category: RealtimeNote['category'] = 'general',
-    isPrivate = false
+    _consultationId: string,
+    _title: string,
+    _content: string,
+    _category: RealtimeNote['category'] = 'general',
+    _isPrivate = false
   ): Promise<RealtimeNote | null> {
     // TELEMEDICINA TEMPORARIAMENTE DESABILITADA
     // Silent logging: Funcionalidade de telemedicina temporariamente desabilitada
@@ -265,9 +265,9 @@ export class RealtimeService {
   }
 
   async updateNote(
-    noteId: string,
-    title: string,
-    content: string
+    _noteId: string,
+    _title: string,
+    _content: string
   ): Promise<RealtimeNote | null> {
     // TELEMEDICINA TEMPORARIAMENTE DESABILITADA
     // Silent logging: Funcionalidade de telemedicina temporariamente desabilitada
@@ -296,7 +296,7 @@ export class RealtimeService {
     // }
   }
 
-  async markMessageAsRead(messageId: string): Promise<void> {
+  async markMessageAsRead(_messageId: string): Promise<void> {
     // TELEMEDICINA TEMPORARIAMENTE DESABILITADA
     // Silent logging: Funcionalidade de telemedicina temporariamente desabilitada
     return
@@ -348,7 +348,7 @@ export class RealtimeService {
     }
   }
 
-  async loadMessages(consultationId: string): Promise<RealtimeMessage[]> {
+  async loadMessages(_consultationId: string): Promise<RealtimeMessage[]> {
     // TELEMEDICINA TEMPORARIAMENTE DESABILITADA
     // Silent logging: Funcionalidade de telemedicina temporariamente desabilitada
     return []
@@ -369,7 +369,7 @@ export class RealtimeService {
     // }
   }
 
-  async loadNotes(consultationId: string): Promise<RealtimeNote[]> {
+  async loadNotes(_consultationId: string): Promise<RealtimeNote[]> {
     // TELEMEDICINA TEMPORARIAMENTE DESABILITADA
     // Silent logging: Funcionalidade de telemedicina temporariamente desabilitada
     return []
@@ -438,7 +438,7 @@ export class RealtimeService {
     try {
       // Silent logging: Limpando RealtimeService
 
-      for (const [key, channel] of this.channels) {
+      for (const channel of this.channels.values()) {
         await channel.unsubscribe()
         // Silent logging: Canal desinscrito
       }
@@ -457,7 +457,7 @@ export class RealtimeService {
     title: string,
     message: string,
     notificationType: string,
-    data?: any
+    data?: Record<string, unknown>
   ): Promise<RealtimeNotification | null> {
     try {
       const { data: notification, error } = await supabase
@@ -468,7 +468,7 @@ export class RealtimeService {
           title,
           message,
           notification_type: notificationType,
-          data: data || {},
+          data: data ?? {},
           read: false,
         })
         .select()

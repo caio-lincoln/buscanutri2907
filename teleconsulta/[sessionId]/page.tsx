@@ -1,15 +1,11 @@
 'use client'
 
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+ 
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { LiveKitRoom, VideoConference, RoomAudioRenderer } from '@livekit/components-react'
-import '@livekit/components-styles'
-
 import { Input } from '@/components/ui/input'
 import {
   Video, VideoOff, Mic, MicOff, PhoneOff, MessageSquare, Maximize, Minimize, Clock, Camera, User
@@ -29,20 +25,8 @@ interface TeleconsultaSession {
   status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled'
   join_url: string
   price: number
-  nutritionist: { id: string; full_name: string; profile_image_url: string | null; specialty: string }
-  patient: { id: string; full_name: string; profile_image_url: string | null }
-}
-
-interface Participant {
-  id: string
-  session_id: string
-  user_id: string
-  user_type: 'nutritionist' | 'patient'
-  joined_at: string
-  left_at: string | null
-  audio_enabled: boolean
-  video_enabled: boolean
-  user: { id: string; full_name: string; profile_image_url: string | null }
+  nutritionist: { id: string; user_id: string; full_name: string; profile_image_url: string | null; specialty: string }
+  patient: { id: string; user_id: string; full_name: string; profile_image_url: string | null }
 }
 
 interface ChatMessage {
@@ -55,7 +39,7 @@ interface ChatMessage {
 
 interface WebRTCSignal {
   type: 'offer' | 'answer' | 'ice-candidate'
-  data: any
+  data: RTCSessionDescriptionInit | RTCIceCandidateInit
   from_user_id: string
   to_user_id: string
 }
@@ -83,7 +67,6 @@ export default function TeleconsultaRoom() {
 
   // Session state
   const [ session, setSession ] = useState<TeleconsultaSession | null>(null)
-  const [ participants, setParticipants ] = useState<Participant[]>([])
   const [ loading, setLoading ] = useState(true)
   const [ sessionStartTime, setSessionStartTime ] = useState<Date | null>(null)
   const [ sessionDuration, setSessionDuration ] = useState(0)
@@ -95,9 +78,6 @@ export default function TeleconsultaRoom() {
   const [ isAudioEnabled, setIsAudioEnabled ] = useState(true)
   const [ isConnected, setIsConnected ] = useState(false)
   const [ isFullscreen, setIsFullscreen ] = useState(false)
-  const [ audioBloqueado, setAudioBloqueado ] = useState(false)
-  const [ token, setToken ] = useState<string>()
-  const [ roomName, setRoomName ] = useState<string>()
 
   // Chat state
   const [ chatMessages, setChatMessages ] = useState<ChatMessage[]>([])
@@ -146,7 +126,35 @@ export default function TeleconsultaRoom() {
   }, [ sessionStartTime, session?.status ])
 
   // Load session data
-  useEffect(() => { if (sessionToken) loadSessionData() }, [ sessionToken ])
+  const loadSessionData = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('teleconsulta_sessions')
+        .select(`
+          id, session_token, scheduled_at, duration_minutes, price, status,
+          nutritionist_id, patient_id,
+          nutritionist:nutritionist_profiles!teleconsulta_sessions_nutritionist_id_fkey (
+            id, user_id, full_name, profile_image_url, specialty
+          ),
+          patient:patient_profiles!teleconsulta_sessions_patient_id_fkey (
+            id, user_id, full_name, profile_image_url
+          )
+        `)
+        .eq('session_token', sessionToken)
+        .maybeSingle()
+
+      if (error) throw error
+      if (data) {
+        setSession(data as unknown as TeleconsultaSession)
+        if (data.status === 'in_progress') setSessionStartTime(new Date())
+      }
+    } catch {}
+    finally {
+      setLoading(false)
+    }
+  }, [ supabase, sessionToken ])
+
+  useEffect(() => { if (sessionToken) loadSessionData() }, [ sessionToken, loadSessionData ])
 
   // Update video elements
   useEffect(() => {
@@ -183,53 +191,14 @@ export default function TeleconsultaRoom() {
     }
   }, [])
 
-  // async function loadSessionData() {
-  //   try {
-  //     const res = await fetch(`/api/teleconsulta/sessions/${sessionToken}`)
-  //     if (!res.ok) throw new Error('Sessão não encontrada')
-  //     const data = await res.json()
-  //     setSession(data.session)
-  //     setParticipants(data.participants || [])
-  //     if (data.session.status === 'in_progress') setSessionStartTime(new Date())
-  //   } catch (e) {
-  //     console.error('Erro ao carregar sessão:', e)
-  //     // toast.error('Erro ao carregar dados da sessão')
-  //      const routePath = user?.user_metadata['user_type'] === 'nutricionista' ? '/dashboard/nutricionistas' : '/dashboard/paciente'
-  //     router.push(routePath)
-  //   } finally {
-  //     setLoading(false)
-  //   }
-  // }
-  async function loadSessionData() {
-    try {
-      const res = await fetch(`/api/teleconsulta/livekit-token?sessionId=${sessionToken}`)
-      const data = await res.json()
-      setToken(data.token)
-      setRoomName(data.roomName)
-      // setSession(data.session)
-      // setParticipants(data.participants || [])
-      if (data.session.status === 'in_progress') setSessionStartTime(new Date())
-    } catch (e) {
-      console.log("🚀 ~ loadSessionData ~ e:", e)
-      // toast.error('Erro ao carregar dados da sessão')
-      const routePath = user?.user_metadata[ 'user_type' ] === 'nutricionista' ? '/dashboard/nutricionistas' : '/dashboard/paciente'
-      // router.push(routePath)
-    } finally {
-      setLoading(false)
-    }
-  }
-
   async function tocarAudioRemoto() {
     if (!remoteAudioRef.current) return
     try {
       remoteAudioRef.current.muted = false
       remoteAudioRef.current.volume = 1
       await remoteAudioRef.current.play()
-      setAudioBloqueado(false)
-    } catch (e) {
+    } catch {
       // NotAllowedError: precisa de gesto do usuário
-      setAudioBloqueado(true)
-      console.log('Autoplay bloqueado, peça clique do usuário.', e)
     }
   }
   async function ensureChannel() {
@@ -270,9 +239,7 @@ export default function TeleconsultaRoom() {
         } else if (payload.type === 'ice-candidate') {
           try { await pc.addIceCandidate(payload.data) } catch { }
         }
-      } catch (err) {
-        console.error('Erro manipulando sinal WebRTC:', err)
-      }
+      } catch {}
     })
 
     ch.on('broadcast', { event: 'chatMessage' }, async ({ payload }) => {
@@ -281,9 +248,7 @@ export default function TeleconsultaRoom() {
         setChatMessages(prev =>
           prev.some(m => m.id === payload.id) ? prev : [ ...prev, payload ]
         )
-      } catch (err) {
-        console.error('Erro manipulando sinal WebRTC:', err)
-      }
+      } catch {}
     })
 
     await new Promise<void>((resolve) => {
@@ -293,7 +258,7 @@ export default function TeleconsultaRoom() {
 
     channelRef.current = ch
     hasSubscribedRef.current = true
-    console.log('[RTC] canal SUBSCRIBED:', channelName)
+    
     return ch
   }
 
@@ -376,21 +341,13 @@ export default function TeleconsultaRoom() {
         }
       }
 
-      pc.oniceconnectionstatechange = () => {
-        console.log('[ICE]', pc.iceConnectionState)
-      }
-      pc.onconnectionstatechange = () => {
-        console.log('[PC]', pc.connectionState)
-        setIsConnected(pc.connectionState === 'connected')
-      }
-
+      pc.oniceconnectionstatechange = () => {}
       pc.onconnectionstatechange = () => setIsConnected(pc.connectionState === 'connected')
 
-      // 2) cria e envia a offer (o "polite peer" evita glare)
+  // 2) cria e envia a offer (o "polite peer" evita glare)
       await makeOffer()
 
-    } catch (error) {
-      console.error('Erro ao inicializar WebRTC:', error)
+    } catch {
       // toast.error('Erro ao acessar câmera e microfone')
     }
   }
@@ -408,9 +365,7 @@ export default function TeleconsultaRoom() {
         from_user_id: myId,
         to_user_id: otherId,
       })
-    } catch (e) {
-      console.log(e)
-    }
+    } catch {}
     finally {
       makingOfferRef.current = false
     }
@@ -422,12 +377,8 @@ export default function TeleconsultaRoom() {
       const sent = await ch.send(
         { type: 'broadcast', event: 'webrtc', payload: signal }
       )
-      if (!sent) console.log('[RTC] broadcast não confirmado')
-
-    } catch (error) {
-      console.log("🚀 ~ sendWebRTCSignal ~ error:", error)
-
-    }
+      if (!sent) {}
+    } catch {}
   }
 
   const toggleVideo = () => {
@@ -476,15 +427,16 @@ export default function TeleconsultaRoom() {
       const data = await res.json()
       setSession(data.session)
       if (status === 'in_progress') setSessionStartTime(new Date())
-    } catch (e) { console.error('Erro ao atualizar status:', e) }
+    } catch {}
   }
 
   const sendChatMessage = () => {
     if (!newMessage.trim() || !user) return
+    const senderName = ((user?.user_metadata as { full_name?: string })?.full_name) || user?.email || 'Usuário'
     const message: ChatMessage = {
       id: Date.now().toString(),
       sender_id: myId,
-      sender_name: (user as any)?.full_name || 'Usuário',
+      sender_name: senderName,
       message: newMessage.trim(),
       timestamp: new Date().toISOString(),
     }
@@ -513,37 +465,18 @@ export default function TeleconsultaRoom() {
     )
   }
 
-  // if (!session) {
-  //   return (
-  //     <div className="flex items-center justify-center min-h-screen bg-gray-900">
-  //       <div className="text-center">
-  //         <h1 className="text-2xl font-bold text-white mb-4">Sessão não encontrada</h1>
-  //         <Button onClick={() => router.push('/')}>Voltar ao Dashboard</Button>
-  //       </div>
-  //     </div>
-  //   )
-  // }
+  if (!session) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-900">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-white mb-4">Sessão não encontrada</h1>
+          <Button onClick={() => router.push('/')}>Voltar ao Dashboard</Button>
+        </div>
+      </div>
+    )
+  }
 
-  // const otherParticipant = myId === session.nutritionist.user_id ? session.patient : session.nutritionist
-
-  return (
-    <LiveKitRoom
-      serverUrl={process.env["NEXT_PUBLIC_LIVEKIT_URL"]}
-      token={token}
-      connect
-      video
-      audio
-      data-lk-theme="default"
-      className='bg-red-500'
-      // onConnected={(room) => ...}
-      // onDisconnected={() => ...}
-    >
-      {/* UI pronta do LiveKit */}
-      <VideoConference />
-      {/* Renderiza o áudio remoto globalmente */}
-      <RoomAudioRenderer />
-    </LiveKitRoom>
-  )
+  const otherParticipant = myId === session.nutritionist.user_id ? session.patient : session.nutritionist
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">

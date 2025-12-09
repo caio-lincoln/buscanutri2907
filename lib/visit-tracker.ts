@@ -23,9 +23,7 @@ export class VisitTracker {
         })
 
       this.isRecorded = true
-    } catch (error) {
-      console.error('Erro ao registrar visita:', error)
-    }
+    } catch {}
   }
 }
 

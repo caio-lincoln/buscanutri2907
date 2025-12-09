@@ -5,7 +5,7 @@ import { StorageAdapter } from '../types'
  * Dados são perdidos ao recarregar a página
  */
 export class MemoryAdapter implements StorageAdapter {
-  private storage: Map<string, any> = new Map()
+  private storage: Map<string, unknown> = new Map()
 
   isAvailable(): boolean {
     return true // Memory adapter is always available

@@ -41,7 +41,7 @@ export async function getPlatformStats(): Promise<PlatformStats> {
     }
 
     return stats
-  } catch (error) {
+  } catch {
     // Silent error handling: Error fetching platform statistics
 
     // Retornar valores padrão em caso de erro

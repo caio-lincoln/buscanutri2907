@@ -4,14 +4,13 @@ import { config } from 'dotenv'
 // Carregar variáveis de ambiente
 config({ path: '.env.local' })
 
-const supabaseUrl =
-  process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+const out = (s: string) => process.stdout.write(`${s}\n`)
+const err = (s: string) => process.stderr.write(`${s}\n`)
 
 if (!supabaseUrl || !supabaseServiceKey) {
-  console.error(
-    '❌ Variáveis de ambiente SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY são obrigatórias'
-  )
+  err('❌ Variáveis de ambiente SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY são obrigatórias')
   process.exit(1)
 }
 
@@ -25,10 +24,10 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey, {
 
 async function recreateForumTables() {
   try {
-    console.log('🔧 Recriando tabelas do fórum completamente...')
+    out('🔧 Recriando tabelas do fórum completamente...')
 
     // 1. Primeiro, vamos dropar as tabelas existentes para recriar corretamente
-    console.log('\n🗑️  Removendo tabelas existentes...')
+    out('\n🗑️  Removendo tabelas existentes...')
 
     const dropCommands = [
       'DROP TABLE IF EXISTS public.forum_question_likes CASCADE;',
@@ -41,15 +40,15 @@ async function recreateForumTables() {
       try {
         const { error } = await supabase.rpc('exec_sql', { sql: command })
         if (error && !error.message.includes('exec_sql')) {
-          console.log(`❌ Erro ao executar: ${command}`, error.message)
+          err(`❌ Erro ao executar: ${command} ${String(error.message)}`)
         }
-      } catch (e) {
-        console.log(`⚠️  Comando alternativo: ${command}`)
+      } catch {
+        out(`⚠️  Comando alternativo: ${command}`)
       }
     }
 
     // 2. Recriar todas as tabelas com a estrutura correta
-    console.log('\n🏗️  Criando tabelas com estrutura correta...')
+    out('\n🏗️  Criando tabelas com estrutura correta...')
 
     const createTablesSQL = `
       -- Criar tabela forum_questions
@@ -126,16 +125,16 @@ async function recreateForumTables() {
     try {
       const { error } = await supabase.rpc('exec_sql', { sql: createTablesSQL })
       if (error && !error.message.includes('exec_sql')) {
-        console.log('❌ Erro ao criar tabelas:', error.message)
+        err(`❌ Erro ao criar tabelas: ${String(error.message)}`)
       } else {
-        console.log('✅ Tabelas criadas com sucesso')
+        out('✅ Tabelas criadas com sucesso')
       }
-    } catch (e) {
-      console.log('⚠️  Erro ao executar SQL de criação')
+    } catch {
+      out('⚠️  Erro ao executar SQL de criação')
     }
 
     // 3. Verificar se as tabelas foram criadas corretamente
-    console.log('\n🔍 Verificando tabelas criadas...')
+    out('\n🔍 Verificando tabelas criadas...')
 
     const tables = [
       'forum_questions',
@@ -146,21 +145,20 @@ async function recreateForumTables() {
 
     for (const table of tables) {
       try {
-        const { data, error } = await supabase.from(table).select('*').limit(1)
-
+        const { error } = await supabase.from(table).select('*').limit(1)
         if (error) {
-          console.log(`❌ ${table}: ${error.message}`)
+          err(`❌ ${table}: ${String(error.message)}`)
         } else {
-          console.log(`✅ ${table}: OK`)
+          out(`✅ ${table}: OK`)
         }
-      } catch (e) {
-        console.log(`❌ ${table}: Erro na verificação`)
+      } catch {
+        out(`❌ ${table}: Erro na verificação`)
       }
     }
 
-    console.log('\n🎉 Recriação das tabelas concluída!')
+    out('\n🎉 Recriação das tabelas concluída!')
   } catch (error) {
-    console.error('❌ Erro durante a recriação:', error)
+    err(`❌ Erro durante a recriação: ${String(error)}`)
   }
 }
 

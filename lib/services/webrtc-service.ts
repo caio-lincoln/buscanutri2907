@@ -1,12 +1,30 @@
 import { io, Socket } from 'socket.io-client'
 
-export interface WebRTCSignal {
-  type: 'offer' | 'answer' | 'ice-candidate'
-  data: any
+type OfferSignal = {
+  type: 'offer'
+  data: RTCSessionDescriptionInit
   from_user_id: string
   to_user_id: string
   session_id: string
 }
+
+type AnswerSignal = {
+  type: 'answer'
+  data: RTCSessionDescriptionInit
+  from_user_id: string
+  to_user_id: string
+  session_id: string
+}
+
+type IceCandidateSignal = {
+  type: 'ice-candidate'
+  data: RTCIceCandidateInit
+  from_user_id: string
+  to_user_id: string
+  session_id: string
+}
+
+export type WebRTCSignal = OfferSignal | AnswerSignal | IceCandidateSignal
 
 export interface MediaConstraints {
   video: boolean | MediaTrackConstraints
@@ -24,7 +42,7 @@ export class WebRTCService {
 
   // Event callbacks
   public onLocalStream?: (stream: MediaStream) => void
-  public onRemoteStream?: (stream: MediaStream) => void
+  public onRemoteStream?: (stream: MediaStream | null) => void
   public onConnectionStateChange?: (state: RTCPeerConnectionState) => void
   public onIceConnectionStateChange?: (state: RTCIceConnectionState) => void
   public onError?: (error: Error) => void
@@ -50,11 +68,9 @@ export class WebRTCService {
       })
 
       this.socket.on('connect', () => {
-        console.log('Socket connected:', this.socket?.id)
       })
 
       this.socket.on('disconnect', () => {
-        console.log('Socket disconnected')
       })
 
       this.socket.on('webrtc-signal', (signal: WebRTCSignal) => {
@@ -62,19 +78,16 @@ export class WebRTCService {
       })
 
       this.socket.on('user-joined', (data: { userId: string, sessionId: string }) => {
-        console.log('User joined:', data)
         if (this.isInitiator && data.userId !== this.userId) {
           this.createOffer()
         }
       })
 
       this.socket.on('user-left', (data: { userId: string, sessionId: string }) => {
-        console.log('User left:', data)
         this.handleUserLeft()
       })
 
     } catch (error) {
-      console.error('Error initializing socket:', error)
       this.onError?.(error as Error)
     }
   }
@@ -92,7 +105,6 @@ export class WebRTCService {
       await this.initializePeerConnection()
 
     } catch (error) {
-      console.error('Error initializing WebRTC service:', error)
       this.onError?.(error as Error)
       throw error
     }
@@ -105,7 +117,6 @@ export class WebRTCService {
       // Handle connection state changes
       this.peerConnection.onconnectionstatechange = () => {
         const state = this.peerConnection?.connectionState
-        console.log('Connection state changed:', state)
         if (state) {
           this.onConnectionStateChange?.(state)
         }
@@ -114,7 +125,6 @@ export class WebRTCService {
       // Handle ICE connection state changes
       this.peerConnection.oniceconnectionstatechange = () => {
         const state = this.peerConnection?.iceConnectionState
-        console.log('ICE connection state changed:', state)
         if (state) {
           this.onIceConnectionStateChange?.(state)
         }
@@ -135,14 +145,12 @@ export class WebRTCService {
 
       // Handle remote stream
       this.peerConnection.ontrack = (event) => {
-        console.log('Received remote track:', event)
         const [remoteStream] = event.streams
         this.remoteStream = remoteStream
         this.onRemoteStream?.(remoteStream)
       }
 
     } catch (error) {
-      console.error('Error initializing peer connection:', error)
       this.onError?.(error as Error)
       throw error
     }
@@ -164,7 +172,6 @@ export class WebRTCService {
       return stream
 
     } catch (error) {
-      console.error('Error getting user media:', error)
       this.onError?.(error as Error)
       throw error
     }
@@ -192,7 +199,6 @@ export class WebRTCService {
       })
 
     } catch (error) {
-      console.error('Error creating offer:', error)
       this.onError?.(error as Error)
       throw error
     }
@@ -218,7 +224,6 @@ export class WebRTCService {
       })
 
     } catch (error) {
-      console.error('Error creating answer:', error)
       this.onError?.(error as Error)
       throw error
     }
@@ -233,7 +238,6 @@ export class WebRTCService {
       await this.peerConnection.setRemoteDescription(answer)
 
     } catch (error) {
-      console.error('Error handling answer:', error)
       this.onError?.(error as Error)
       throw error
     }
@@ -248,7 +252,6 @@ export class WebRTCService {
       await this.peerConnection.addIceCandidate(candidate)
 
     } catch (error) {
-      console.error('Error adding ICE candidate:', error)
       this.onError?.(error as Error)
     }
   }
@@ -270,11 +273,10 @@ export class WebRTCService {
           await this.addIceCandidate(signal.data)
           break
         default:
-          console.warn('Unknown signal type:', signal.type)
+          // ignore unknown signal type
       }
 
     } catch (error) {
-      console.error('Error handling WebRTC signal:', error)
       this.onError?.(error as Error)
     }
   }
@@ -283,7 +285,6 @@ export class WebRTCService {
     try {
       this.socket?.emit('webrtc-signal', signal)
     } catch (error) {
-      console.error('Error sending signal:', error)
       this.onError?.(error as Error)
     }
   }
@@ -319,7 +320,7 @@ export class WebRTCService {
   isAudioEnabled(): boolean {
     if (!this.localStream) return false
     const audioTrack = this.localStream.getAudioTracks()[0]
-    return videoTrack ? audioTrack.enabled : false
+    return audioTrack ? audioTrack.enabled : false
   }
 
   getConnectionState(): RTCPeerConnectionState | null {
@@ -333,7 +334,7 @@ export class WebRTCService {
   private handleUserLeft(): void {
     // Handle when the other user leaves
     this.remoteStream = null
-    this.onRemoteStream?.(null as any)
+    this.onRemoteStream?.(null)
   }
 
   async switchCamera(): Promise<void> {
@@ -382,7 +383,6 @@ export class WebRTCService {
       this.onLocalStream?.(this.localStream)
 
     } catch (error) {
-      console.error('Error switching camera:', error)
       this.onError?.(error as Error)
     }
   }
@@ -411,7 +411,6 @@ export class WebRTCService {
       }
 
     } catch (error) {
-      console.error('Error starting screen share:', error)
       this.onError?.(error as Error)
     }
   }
@@ -448,7 +447,6 @@ export class WebRTCService {
       this.onLocalStream?.(this.localStream)
 
     } catch (error) {
-      console.error('Error stopping screen share:', error)
       this.onError?.(error as Error)
     }
   }
@@ -483,7 +481,6 @@ export class WebRTCService {
       this.isInitiator = false
 
     } catch (error) {
-      console.error('Error disconnecting:', error)
       this.onError?.(error as Error)
     }
   }

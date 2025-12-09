@@ -107,7 +107,6 @@ export async function createDirectRating(
   }
 
   const sb = createSupabaseClient()
-  const { data: userData } = await sb.auth.getUser()
 
   const { data: existing } = await sb
     .from('consultation_reviews')
@@ -131,12 +130,6 @@ export async function createDirectRating(
     })
 
   if (rpc.error) {
-    console.error('RPC create_direct_consultation_review error', {
-      nutritionistId,
-      rating,
-      comment,
-      error: rpc.error,
-    })
     const insert = await sb
       .from('consultation_reviews')
       .insert({
@@ -148,12 +141,6 @@ export async function createDirectRating(
         is_direct_rating: true,
       })
     if (insert.error) {
-      console.error('Insert consultation_reviews error', {
-        nutritionistId,
-        rating,
-        comment,
-        error: insert.error,
-      })
       throw insert.error
     }
   }
@@ -179,11 +166,6 @@ export async function createDirectRating(
       rating,
       patientName
     )
-    console.log('Rating notification created', {
-      nutritionistId: nId,
-      rating,
-      patientName,
-    })
   } catch {}
 }
 
@@ -374,7 +356,7 @@ export async function canRateConsultation(
 // Buscar consultas que podem ser avaliadas por um paciente
 export async function getConsultationsToRate(
   patientId: string
-): Promise<any[]> {
+): Promise<unknown[]> {
   try {
     const { data: consultations, error } = await supabase
       .from('consultations')

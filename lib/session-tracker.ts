@@ -41,7 +41,6 @@ class SessionTracker {
       const { data: { user }, error: authError } = await this.supabase.auth.getUser()
       
       if (authError || !user || user.id !== userId) {
-        console.log('Usuário não autenticado, pulando rastreamento de sessão')
         return
       }
 
@@ -63,11 +62,6 @@ class SessionTracker {
         .single()
 
       if (error) {
-        if (this.isAbortLikeError(error)) {
-          console.debug('Sessão: insert abortado/ignorado')
-        } else {
-          console.error('Erro ao iniciar sessão:', error)
-        }
         return
       }
 
@@ -75,13 +69,7 @@ class SessionTracker {
       this.startHeartbeat()
       this.setupActivityListeners()
 
-    } catch (error) {
-      if (this.isAbortLikeError(error)) {
-        console.debug('Sessão: início abortado/ignorado')
-      } else {
-        console.error('Erro ao iniciar rastreamento de sessão:', error)
-      }
-    }
+    } catch {}
   }
 
   // Finalizar sessão
@@ -95,7 +83,6 @@ class SessionTracker {
       const { data: { user }, error: authError } = await this.supabase.auth.getUser()
       
       if (authError || !user) {
-        console.log('Usuário não autenticado, pulando finalização de sessão')
         this.cleanup()
         return
       }
@@ -115,12 +102,7 @@ class SessionTracker {
 
       this.cleanup()
 
-    } catch (error) {
-      if (this.isAbortLikeError(error)) {
-        console.debug('Sessão: finalização abortada/ignorada')
-      } else {
-        console.error('Erro ao finalizar sessão:', error)
-      }
+    } catch {
     } finally {
       this.isEnding = false
     }
@@ -146,7 +128,6 @@ class SessionTracker {
       const { data: { user }, error: authError } = await this.supabase.auth.getUser()
       
       if (authError || !user) {
-        console.log('Usuário não autenticado, pulando atualização de page views')
         return
       }
 
@@ -154,13 +135,7 @@ class SessionTracker {
         .from('user_sessions')
         .update({ page_views: this.pageViews })
         .eq('id', this.sessionId)
-    } catch (error) {
-      if (this.isAbortLikeError(error)) {
-        console.debug('Sessão: atualização de page views abortada/ignorada')
-      } else {
-        console.error('Erro ao atualizar visualizações de página:', error)
-      }
-    }
+    } catch {}
   }
 
   // Configurar heartbeat para manter sessão ativa
