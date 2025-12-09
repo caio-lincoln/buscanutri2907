@@ -221,15 +221,18 @@ export async function signUp(
 export async function signIn(email: string, password: string) {
   try {
     const normalizedEmail = email.trim().toLowerCase()
-    const precheckRes = await fetch('/api/auth/check-email', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: normalizedEmail })
-    })
-    if (precheckRes.ok) {
-      const pre = await precheckRes.json()
-      if (!pre.exists) {
-        throw new Error('Não encontramos uma conta com este e-mail. Cadastre-se ou recupere a senha.')
+    const precheckEnabled = (process.env.NODE_ENV === 'production') || (process.env.NEXT_PUBLIC_AUTH_PRECHECK === 'true')
+    if (precheckEnabled) {
+      const precheckRes = await fetch('/api/auth/check-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: normalizedEmail })
+      })
+      if (precheckRes.ok) {
+        const pre = await precheckRes.json()
+        if (!pre.exists) {
+          throw new Error('Não encontramos uma conta com este e-mail. Cadastre-se ou recupere a senha.')
+        }
       }
     }
 
