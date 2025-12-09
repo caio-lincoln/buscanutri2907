@@ -1,10 +1,13 @@
 {
   "compilerOptions": {
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "allowJs": true,
     "target": "ES2022",
     "skipLibCheck": true,
-
     // Strict mode settings
     "strict": true,
     "noImplicitAny": true,
@@ -14,7 +17,6 @@
     "strictPropertyInitialization": true,
     "noImplicitThis": true,
     "alwaysStrict": true,
-
     // Additional strict checks
     "noUnusedLocals": true,
     "noUnusedParameters": true,
@@ -24,7 +26,6 @@
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
     "noPropertyAccessFromIndexSignature": true,
-
     // Module resolution
     "noEmit": true,
     "esModuleInterop": true,
@@ -33,27 +34,37 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "allowSyntheticDefaultImports": true,
-
     // JSX
-    "jsx": "preserve",
+    "jsx": "react-jsx",
     "jsxImportSource": "react",
-
     // Performance
     "incremental": true,
     "tsBuildInfoFile": ".next/cache/tsbuildinfo",
-
     // Interop
     "forceConsistentCasingInFileNames": true,
-
     "plugins": [
       {
         "name": "next"
       }
     ],
     "paths": {
-      "@/*": ["./*"]
+      "@/*": [
+        "./*"
+      ]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules", ".next", "out", "dist", "build"]
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    ".next",
+    "out",
+    "dist",
+    "build"
+  ]
 }
