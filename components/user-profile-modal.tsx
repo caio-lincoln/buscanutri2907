@@ -1090,13 +1090,21 @@ export function UserProfileModal({
             await supabase.from('anamnese_nutricional').insert(anamneseToSave)
           }
 
-          // Sincronizar preferências alimentares com o perfil do paciente
+          // Sincronizar campos resumidos no perfil do paciente
+          const updates: Record<string, any> = {}
           if (anamneseData.preferencias_alimentares) {
+            updates.dietary_preferences = anamneseData.preferencias_alimentares
+          }
+          if (anamneseData.comorbidades) {
+            updates.health_conditions = anamneseData.comorbidades
+          }
+          if (anamneseData.alergias_alimentares) {
+            updates.allergies = anamneseData.alergias_alimentares
+          }
+          if (Object.keys(updates).length > 0) {
             await supabase
               .from('patient_profiles')
-              .update({
-                dietary_preferences: anamneseData.preferencias_alimentares,
-              })
+              .update(updates)
               .eq('user_id', userId)
           }
         } catch (anamneseError) {

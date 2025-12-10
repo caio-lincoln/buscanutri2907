@@ -234,7 +234,7 @@ function SidebarShell({
       case 'nutricionista':
         return `/dashboard/nutricionistas/perfil`
       case 'paciente':
-        return `/dashboard/paciente/perfil`
+        return `/dashboard/paciente?activeTab=perfil`
       case 'empresa':
         return `/dashboard/empresa/perfil`
       case 'admin':

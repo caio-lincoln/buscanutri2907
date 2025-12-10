@@ -12,6 +12,7 @@ import {
   Pill,
   Dumbbell,
   Droplets,
+  Edit,
 } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import { Button } from '../../../../components/ui/button';
@@ -37,6 +38,16 @@ export default function PerfilTab({ anamneseData }: { anamneseData: any }) {
   return (
     <>
       <div className="space-y-8">
+        <div className="flex items-center justify-end">
+          <Button
+            variant="outline"
+            className="h-10 px-4 rounded-lg border-gray-200 hover:border-gray-300 hover:bg-gray-50 shadow-sm"
+            onClick={() => setIsProfileModalOpen(true)}
+          >
+            <Edit className="h-4 w-4 mr-2" />
+            Editar Perfil
+          </Button>
+        </div>
         {/* Cabeçalho removido conforme solicitado: manter apenas o módulo de perfil */}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
