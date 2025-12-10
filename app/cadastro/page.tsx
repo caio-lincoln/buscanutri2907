@@ -2,7 +2,7 @@
 
 import type React from 'react'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -200,6 +200,41 @@ export default function CadastroPage() {
     message: string
     companyData?: any
   }>({ status: 'idle', message: '' })
+
+  const formRef = useRef<HTMLFormElement>(null)
+  const [ canSubmit, setCanSubmit ] = useState(false)
+
+  const updateCanSubmit = () => {
+    const base = formRef.current ? formRef.current.checkValidity() : false
+    const extra = acceptTerms && !!password && passwordValidation.strength !== 'weak' && !loading && !documentsUploading
+    const byType = userType === 'nutricionista'
+      ? (crnValidation.status === 'valid' && !!crnProofFile)
+      : userType === 'empresa'
+        ? (cnpjValidation.status === 'valid')
+        : true
+    setCanSubmit(Boolean(base && extra && byType))
+  }
+
+  useEffect(() => {
+    updateCanSubmit()
+  }, [ acceptTerms, password, passwordValidation.strength, loading, documentsUploading, userType, crnValidation.status, crnProofFile, cnpjValidation.status ])
+
+  const getPendingReasons = (): string[] => {
+    const reasons: string[] = []
+    const baseInvalid = formRef.current ? !formRef.current.checkValidity() : false
+    if (baseInvalid) reasons.push('Preencha todos os campos obrigatórios')
+    if (!acceptTerms) reasons.push('Aceite os Termos de Uso e Política de Privacidade')
+    if (!password) reasons.push('Informe a senha')
+    if (passwordValidation.strength === 'weak') reasons.push('Use uma senha mais forte')
+    if (userType === 'nutricionista') {
+      if (crnValidation.status !== 'valid') reasons.push('Valide o CRN')
+      if (!crnProofFile) reasons.push('Envie o comprovante de CRN')
+    }
+    if (userType === 'empresa') {
+      if (cnpjValidation.status !== 'valid') reasons.push('Valide o CNPJ')
+    }
+    return reasons
+  }
 
   const router = useRouter()
 
@@ -615,17 +650,7 @@ export default function CadastroPage() {
         }
       }
 
-      const precheck = await fetch('/api/auth/check-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
-      })
-      if (precheck.ok) {
-        const j = await precheck.json()
-        if (j.exists) {
-          throw new Error('Já existe uma conta iniciada com este e-mail. Enviamos um link para concluir e definir a senha.')
-        }
-      }
+      
 
       const { data, profileData, error: signUpError } = await signUp(
         email,
@@ -856,7 +881,7 @@ export default function CadastroPage() {
                 </TabsTrigger>
               </TabsList>
 
-              <form onSubmit={handleSubmit} className="space-y-4" aria-busy={submitting}>
+              <form ref={formRef} onInput={updateCanSubmit} onSubmit={handleSubmit} className="space-y-4" aria-busy={submitting}>
                 <fieldset disabled={submitting} className="contents">
                   <TabsContent value="paciente" className="space-y-4 mt-0">
                     <div className="grid grid-cols-2 gap-4">
@@ -1315,18 +1340,7 @@ export default function CadastroPage() {
                         ? 'bg-[#D90D32] hover:bg-[#D90D32]/90'
                         : 'bg-[#1E1D40] hover:bg-[#1E1D40]/90'
                       } text-white`}
-                    disabled={
-                      !acceptTerms ||
-                      loading ||
-                      documentsUploading ||
-                      (userType === 'nutricionista' &&
-                        crnValidation.status !== 'valid') ||
-                      (userType === 'nutricionista' && !crnProofFile) ||
-                      (userType === 'empresa' &&
-                        cnpjValidation.status !== 'valid') ||
-                      passwordValidation.strength === 'weak' ||
-                      !password
-                    }
+                    disabled={!canSubmit}
                   >
                     {loading || documentsUploading ? (
                       <>
@@ -1337,6 +1351,19 @@ export default function CadastroPage() {
                       `Cadastrar como ${userType === 'nutricionista' ? 'Nutricionista' : userType === 'paciente' ? 'Paciente' : 'Empresa'}`
                     )}
                   </Button>
+                  {!canSubmit && (
+                    <div className="mt-2 p-3 border rounded-lg bg-yellow-50">
+                      <div className="flex items-center gap-2 text-yellow-700 font-medium">
+                        <AlertCircle className="h-4 w-4" />
+                        Motivos para habilitar o cadastro
+                      </div>
+                      <ul className="mt-2 text-sm text-yellow-800 list-disc pl-5">
+                        {getPendingReasons().map((r, i) => (
+                          <li key={i}>{r}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </fieldset >
               </form>
             </Tabs>

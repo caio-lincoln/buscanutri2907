@@ -17,29 +17,7 @@ export async function signUp(
 ) {
   try {
     const normalizedEmail = email.trim().toLowerCase()
-    const precheckRes = await fetch('/api/auth/check-email', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: normalizedEmail })
-    })
-    if (precheckRes.ok) {
-      const pre = await precheckRes.json()
-      if (pre.exists) {
-        try {
-          const origin =
-            process.env.NEXT_PUBLIC_SITE_URL ||
-            (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000')
-          const redirectTo = new URL('/redefinir-senha', origin).toString()
-          const { error: resetErr } = await supabase.auth.resetPasswordForEmail(normalizedEmail, { redirectTo })
-          if (resetErr) {
-            throw resetErr
-          }
-          throw new Error('Já existe uma conta iniciada com este e-mail. Enviamos um link para concluir e definir a senha.')
-        } catch (e: any) {
-          throw new Error(e?.message || 'Este email já possui uma conta. Faça login ou recupere a senha.')
-        }
-      }
-    }
+    
 
     // 2. Cadastrar usuário no Supabase Auth (será auto-confirmado pelo trigger)
     const { data: authData, error: authError } = await supabase.auth.signUp({
