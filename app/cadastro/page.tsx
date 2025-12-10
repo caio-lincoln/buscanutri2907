@@ -623,7 +623,7 @@ export default function CadastroPage() {
       if (precheck.ok) {
         const j = await precheck.json()
         if (j.exists) {
-          throw new Error('Este email já possui uma conta. Faça login ou recupere a senha.')
+          throw new Error('Já existe uma conta iniciada com este e-mail. Enviamos um link para concluir e definir a senha.')
         }
       }
 
@@ -733,15 +733,25 @@ export default function CadastroPage() {
         refreshUser()
       }, 2000)
     } catch (error: any) {
-      // Registration error
-      const errorMessage =
-        error.message || 'Erro desconhecido. Tente novamente.'
+      const errorMessage = error?.message || 'Erro desconhecido. Tente novamente.'
       setError(errorMessage)
-      toast({
-        title: '❌ Erro no cadastro',
-        description: errorMessage,
-        variant: 'destructive',
-      })
+      if (
+        errorMessage.includes('Este email já possui uma conta') ||
+        errorMessage.includes('Já existe uma conta iniciada')
+      ) {
+        toast({
+          title: 'Verifique seu e-mail',
+          description:
+            'Já existe uma conta iniciada com este e-mail. Enviamos um link para concluir e definir a senha.',
+          variant: 'default',
+        })
+      } else {
+        toast({
+          title: '❌ Erro no cadastro',
+          description: errorMessage,
+          variant: 'destructive',
+        })
+      }
     } finally {
       setLoading(false)
     }
