@@ -271,7 +271,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } else if (event === 'SIGNED_OUT') {
         if (handledSignOutRef.current) return;
         handledSignOutRef.current = true;
-        console.log("Usuário deslogado")
         setUser(null);
         setUserProfile(null);
         setNutritionistProfile(null);
@@ -279,7 +278,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setCompanyProfile(null);
       } else if (event === 'TOKEN_REFRESHED') {
         // Não recarrega dados no refresh do token
-        console.log("Token refreshed - mantendo dados atuais")
       }
     });
 

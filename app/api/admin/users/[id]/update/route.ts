@@ -22,8 +22,8 @@ export const POST = withErrorHandling(async (req: NextRequest, { params }: { par
   }
   const { email, user_type, name, is_verified } = parsed.data
   const newEmail = email ? email.trim().toLowerCase() : undefined
-
-  const rawId = params.id
+ 
+  const rawId = (await params).id
   let userRowQuery = admin.from('users').select('id, user_type, email')
   let userRowResp
   if (/^\\d+$/.test(rawId)) {

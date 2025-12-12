@@ -123,8 +123,6 @@ export function UsersTab() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ filterType, filterStatus, currentPage, searchTerm ])
 
-  
-
   const totalPages = Math.ceil(totalUsersCount / usersPerPage)
   const currentUsers = users
 
@@ -207,6 +205,7 @@ export function UsersTab() {
   }
 
   const handleAction = (action: string, user: UserData) => {
+    console.log("🚀 ~ handleAction ~ user:", user)
     if (action === 'verify' && user.type === 'nutricionista' && user.nutritionist_profiles?.id) {
       setSelectedUser({
         id: user.id,
@@ -218,11 +217,7 @@ export function UsersTab() {
     } else {
       if (action === 'edit') {
         const base = {
-          id: (() => {
-            const numeric = (user as any)?.numericId
-            if (typeof numeric === 'number' && Number.isFinite(numeric)) return String(numeric)
-            return String(user.id)
-          })(),
+          id: user.id,
           email: user.email,
           name: user.name,
           type: user.type,
@@ -237,11 +232,7 @@ export function UsersTab() {
       }
       if (action === 'view') {
         setViewUser({
-          id: (() => {
-            const numeric = (user as any)?.numericId
-            if (typeof numeric === 'number' && Number.isFinite(numeric)) return String(numeric)
-            return String(user.id)
-          })(),
+          id: user.id,
           email: user.email,
           name: user.name,
           type: user.type as ViewUserProfileData['type'],
