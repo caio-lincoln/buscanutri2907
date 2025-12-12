@@ -187,12 +187,12 @@ export function DashboardSidebar({
 
 function SidebarShell({
   userType,
-  userName,
-  userAvatar,
-  menuItems,
-  activeItem,
-  onItemClick,
-  onSignOut,
+  userName = '',
+  userAvatar = '',
+  menuItems = [],
+  activeItem = '',
+  onItemClick = () => {},
+  onSignOut = () => {},
 }: DashboardSidebarProps) {
   const router = useRouter()
   
@@ -267,8 +267,8 @@ function SidebarShell({
 
       <SidebarContent className="px-4 py-6 custom-scrollbar bg-white">
         <SidebarMenu className="space-y-2">
-          {menuItems.length > 0 &&
-            menuItems.map((item, index) => {
+          {(menuItems ?? []).length > 0 &&
+            (menuItems ?? []).map((item, index) => {
               const Icon = item.icon
               const isActive = activeItem === item.id
               return (
@@ -279,7 +279,7 @@ function SidebarShell({
                 >
                   <SidebarMenuButton
                     onClick={() => {
-                      onItemClick(item.id)
+                      (onItemClick ?? (() => {}))(item.id)
                       if (isMobile) {
                         setOpenMobile(false)
                         setOpen(false)
@@ -413,14 +413,8 @@ function SidebarShell({
   )
 }
 
-type DashboardMenuItem = {
-  id: string
-  label: string
-  href?: string
-  icon: any
-  badge?: { count: number; variant: 'default' | 'outline' | 'destructive' }
-  requiresSubscription?: boolean  // << NOVO
-}
+// requiresSubscription é controlado internamente no builder, não faz parte da interface pública
+type InternalMenuItem = DashboardMenuItem & { requiresSubscription?: boolean }
 
 // Itens que exigem assinatura por tipo de usuário
 const SUBS_GATE_BY_ROLE: Record<string, Set<string>> = {
@@ -441,7 +435,7 @@ const SUBS_GATE_BY_ROLE: Record<string, Set<string>> = {
 
 // Aplica o "gate" de assinatura
 function applySubscriptionGate(
-  items: DashboardMenuItem[],
+  items: InternalMenuItem[],
   userType: string,
   hasActiveSubscription?: boolean
 ) {
@@ -479,14 +473,14 @@ export const getMenuItems = (
 
   switch (userType) {
     case 'paciente': {
-      const items: DashboardMenuItem[] = [
+      const items: InternalMenuItem[] = [
         { id: 'overview', label: 'Início', href: '/dashboard/paciente', icon: Home },
         {
           id: 'teleconsultas',
           label: 'Teleconsultas',
           icon: Video,
           href: '/dashboard/paciente/teleconsultas',
-          badge: upcomingAppointments > 0 ? { count: upcomingAppointments, variant: 'default' } : undefined,
+          ...(upcomingAppointments > 0 ? { badge: { count: upcomingAppointments, variant: 'default' } } : {}),
         },
         { id: 'presenciais', label: 'Presenciais', icon: MapPin, href: '/dashboard/paciente/presenciais' },
         { id: 'buscar', label: 'Buscar', icon: Search },
@@ -497,7 +491,7 @@ export const getMenuItems = (
           id: 'notificacoes',
           label: 'Notificações',
           icon: Bell,
-          badge: unreadNotifications > 0 ? { count: unreadNotifications, variant: 'destructive' } : undefined,
+          ...(unreadNotifications > 0 ? { badge: { count: unreadNotifications, variant: 'destructive' } } : {}),
         },
         { id: 'perfil', label: 'Meu Perfil', icon: User },
       ]
@@ -505,7 +499,7 @@ export const getMenuItems = (
     }
 
     case 'nutricionista': {
-      const items: DashboardMenuItem[] = [
+      const items: InternalMenuItem[] = [
         { id: 'overview', label: 'Visão Geral', icon: Home, href: '/dashboard/nutricionistas' },
         {
           id: 'teleconsultas',
@@ -521,7 +515,7 @@ export const getMenuItems = (
           id: 'vagas',
           label: 'Vagas',
           icon: Briefcase,
-          badge: availableJobs > 0 ? { count: availableJobs, variant: 'outline' } : undefined,
+          ...(availableJobs > 0 ? { badge: { count: availableJobs, variant: 'outline' } } : {}),
         },
         { id: 'candidaturas', label: 'Candidaturas', icon: FileText },
         { id: 'cursos', label: 'Cursos', icon: Users },
@@ -531,7 +525,7 @@ export const getMenuItems = (
           id: 'notificacoes',
           label: 'Notificações',
           icon: Bell,
-          badge: unreadNotifications > 0 ? { count: unreadNotifications, variant: 'destructive' } : undefined,
+          ...(unreadNotifications > 0 ? { badge: { count: unreadNotifications, variant: 'destructive' } } : {}),
         },
         { id: 'assinatura', label: 'Assinatura', icon: CreditCard, href: '/dashboard/nutricionistas/assinatura' },
         { id: 'perfil', label: 'Meu Perfil', icon: User, href: '/dashboard/nutricionistas/perfil' },
@@ -540,13 +534,13 @@ export const getMenuItems = (
     }
 
     case 'empresa': {
-      const items: DashboardMenuItem[] = [
+      const items: InternalMenuItem[] = [
         { id: 'overview', label: 'Visão Geral', icon: Home },
         {
           id: 'vagas',
           label: 'Vagas',
           icon: Briefcase,
-          badge: availableJobs > 0 ? { count: availableJobs, variant: 'default' } : undefined,
+          ...(availableJobs > 0 ? { badge: { count: availableJobs, variant: 'default' } } : {}),
         },
         { id: 'candidatos', label: 'Candidatos', icon: Users },
         { id: 'processos', label: 'Processos', icon: FileText },
@@ -555,7 +549,7 @@ export const getMenuItems = (
           id: 'notificacoes',
           label: 'Notificações',
           icon: Bell,
-          badge: unreadNotifications > 0 ? { count: unreadNotifications, variant: 'destructive' } : undefined,
+          ...(unreadNotifications > 0 ? { badge: { count: unreadNotifications, variant: 'destructive' } } : {}),
         },
         { id: 'perfil', label: 'Perfil', icon: Building },
       ]
@@ -563,7 +557,7 @@ export const getMenuItems = (
     }
 
     case 'admin': {
-      const items: DashboardMenuItem[] = [
+      const items: InternalMenuItem[] = [
         { id: 'overview', label: 'Visão Geral', icon: Home },
         { id: 'usuarios', label: 'Usuários', icon: Users },
         { id: 'vagas', label: 'Vagas', icon: Briefcase },

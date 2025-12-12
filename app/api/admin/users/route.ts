@@ -7,19 +7,19 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
   // Verificar se o usuário é admin
   await requireAdmin()
   
-  // Buscar todos os usuários (dados públicos) e enriquecer com status real
-  const supabase = await createClient()
+  // Buscar todos os usuários com cliente administrativo (contorna RLS)
   const admin = createAdminClient()
 
-  const { data, error } = await supabase
+  const { data, error } = await admin
     .from('users')
     .select(`
       id,
+      "ID",
       email,
       user_type,
       created_at,
-      patient_profiles:patient_profiles!patient_profiles_user_id_fkey(full_name),
-      nutritionist_profiles:nutritionist_profiles!nutritionist_profiles_user_id_fkey(id, full_name, is_verified),
+      patient_profiles:patient_profiles!patient_profiles_user_id_fkey(full_name, phone, birth_date, gender),
+      nutritionist_profiles:nutritionist_profiles!nutritionist_profiles_user_id_fkey(id, full_name, is_verified, crn, phone),
       company_profiles:company_profiles!company_profiles_user_id_fkey(company_name)
     `)
     .order('created_at', { ascending: false })
@@ -54,6 +54,7 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
 
       return {
         id: u.id,
+        numericId: (u as any)?.ID,
         name:
           u.patient_profiles?.full_name ||
           u.nutritionist_profiles?.full_name ||

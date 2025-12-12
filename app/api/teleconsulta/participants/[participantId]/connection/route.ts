@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { cookies } from 'next/headers'
 import { withErrorHandling, validateAuth, ValidationError, NotFoundError, ForbiddenError } from '@/src/lib/middleware/error-handler'
 import { idParamSchema } from '@/src/lib/validations/teleconsulta'
 import { createNotification } from '@/lib/notifications-service'
@@ -16,8 +15,7 @@ export const PATCH = withErrorHandling(async (
   request: NextRequest,
   { params }: { params: { participantId: string } }
 ) => {
-  const cookieStore = cookies()
-  const supabase = createClient(cookieStore)
+  const supabase = await createClient()
   
   // Verificar autenticação
   const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -97,7 +95,7 @@ export const PATCH = withErrorHandling(async (
       const participantsToNotify = [session.patient_id, session.nutritionist_id]
         .filter(id => id !== userId) // Não notificar quem mudou o status
       
-      const notificationType = is_connected 
+      const kind = is_connected 
         ? 'teleconsulta_participant_connected' 
         : 'teleconsulta_participant_disconnected'
       
@@ -114,9 +112,10 @@ export const PATCH = withErrorHandling(async (
           userId: participantToNotify,
           title,
           message,
-          notificationType,
-          consultationId: session.id,
-          data: {
+          type: 'info',
+          actionUrl: undefined,
+          metadata: {
+            kind,
             session_id: session.id,
             participant_id: participantId,
             user_id: userId,

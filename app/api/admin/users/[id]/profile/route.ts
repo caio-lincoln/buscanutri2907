@@ -12,13 +12,27 @@ export const GET = withErrorHandling(async (req: NextRequest, { params }: { para
   const url = new URL(req.url)
   const typeParam = url.searchParams.get('type') as UserType | null
 
+  const rawId = params.id
+  let targetUuid = rawId
+  if (/^\\d+$/.test(rawId)) {
+    const { data: row } = await admin
+      .from('users')
+      .select('id')
+      .eq('ID', Number(rawId))
+      .maybeSingle()
+    if (!row?.id) {
+      return createApiResponse({ profile: null, type: null, error: 'Usuário não encontrado' })
+    }
+    targetUuid = row.id as string
+  }
+
   // Resolver tipo do usuário quando não fornecido
   let userType: UserType | null = typeParam
   if (!userType) {
     const { data: userRow } = await admin
       .from('users')
       .select('user_type')
-      .eq('id', params.id)
+      .eq('id', targetUuid)
       .single()
     userType = (userRow?.user_type as UserType) ?? null
   }
@@ -34,11 +48,22 @@ export const GET = withErrorHandling(async (req: NextRequest, { params }: { para
   }
   const table = tableMap[userType]
 
-  const { data, error } = await admin
+  let { data, error } = await admin
     .from(table)
     .select('*')
-    .eq('user_id', params.id)
+    .eq('user_id', targetUuid)
     .maybeSingle()
+
+  // Fallback: alguns registros podem referenciar o próprio id do perfil
+  if ((!data || error?.code === 'PGRST116')) {
+    const alt = await admin
+      .from(table)
+      .select('*')
+      .eq('id', targetUuid)
+      .maybeSingle()
+    if (!data && alt.data) data = alt.data
+    if (!error && alt.error) error = alt.error
+  }
 
   if (error) {
     return createApiResponse({ profile: null, type: userType, error: error.message })

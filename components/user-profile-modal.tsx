@@ -72,6 +72,42 @@ interface Option {
   label: string
 }
 
+type EditableFormData = {
+  id?: string
+  user_id?: string
+  full_name?: string
+  email?: string
+  phone?: string | null
+  profile_image_url?: string | null
+  logo_url?: string | null
+  company_name?: string | null
+  birth_date?: string | null
+  cpf?: string | null
+  rg?: string | null
+  health_conditions?: string[] | null
+  allergies?: string[] | null
+  dietary_preferences?: string[] | null
+  crn?: string | null
+  crn_number?: string | null
+  cnpj?: string | null
+  cover_image_url?: string | null
+  specialties?: string[] | string | null
+  languages?: string | null
+  certifications?: string | null
+  achievements?: string | null
+  services_offered?: Record<string, any> | string | null
+  consultation_languages?: string | null
+  payment_methods?: string | null
+  cancellation_policy?: string | null
+  available_times?: string | null
+  service_consultation_price?: number | null
+  service_followup_price?: number | null
+  service_meal_plan_price?: number | null
+  enable_uan_consulting?: boolean | null
+  crn_document_url?: string | null
+  identity_document_url?: string | null
+}
+
 // Payment method options
 const PAYMENT_METHOD_OPTIONS: Option[] = [
   { label: 'PIX', value: 'pix' },
@@ -230,26 +266,37 @@ const PREFERENCIAS_ALIMENTARES_OPTIONS: Option[] = [
   { value: 'sem_restricoes', label: 'Sem restrições' },
 ]
 
-interface UserProfileModalProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  userType: UserType
-  initialData: PatientProfile | NutritionistProfile | CompanyProfile
-  userId: string
-  onProfileUpdate?: () => void
-}
+type UserProfileModalProps =
+  | {
+      open: boolean
+      onOpenChange: (open: boolean) => void
+      userType: 'paciente'
+      initialData: PatientProfile
+      userId: string
+      onProfileUpdate?: () => void
+    }
+  | {
+      open: boolean
+      onOpenChange: (open: boolean) => void
+      userType: 'nutricionista'
+      initialData: NutritionistProfile
+      userId: string
+      onProfileUpdate?: () => void
+    }
+  | {
+      open: boolean
+      onOpenChange: (open: boolean) => void
+      userType: 'empresa'
+      initialData: CompanyProfile
+      userId: string
+      onProfileUpdate?: () => void
+    }
 
-export function UserProfileModal({
-  open,
-  onOpenChange,
-  userType,
-  initialData,
-  userId,
-  onProfileUpdate,
-}: UserProfileModalProps) {
+export function UserProfileModal(props: UserProfileModalProps) {
+  const { open, onOpenChange, userType, initialData, userId, onProfileUpdate } = props
   const supabase = useMemo(() => createSupabaseClient(), [])
   const { refreshUser, nutritionistProfile } = useAuth()
-  const [ formData, setFormData ] = useState<any>(initialData)
+  const [ formData, setFormData ] = useState<EditableFormData>(initialData as EditableFormData)
   const [ loading, setLoading ] = useState(false)
   const [ error, setError ] = useState<string | null>(null)
   const [ crnValue, setCrnValue ] = useState('')
@@ -328,36 +375,32 @@ export function UserProfileModal({
       setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' })
 
       // Garantir que formData sempre tenha as propriedades necessárias
-      const safeFormData = {
-        ...initialData,
-      }
+      const safeFormData: EditableFormData = { ...initialData }
 
-      // Adicionar profile_image_url apenas para pacientes e nutricionistas
+      // Adicionar profile_image_url e full_name apenas para pacientes e nutricionistas
       if (userType !== 'empresa') {
-        safeFormData.profile_image_url = initialData?.profile_image_url || ''
-      }
-
-      // Adicionar full_name apenas para pacientes e nutricionistas
-      if (userType !== 'empresa') {
-        safeFormData.full_name = initialData?.full_name || ''
+        const person = initialData as PatientProfile | NutritionistProfile
+        safeFormData.profile_image_url = person?.profile_image_url || ''
+        safeFormData.full_name = person?.full_name || ''
       }
 
       // Adicionar logo_url apenas para empresas
       if (userType === 'empresa') {
-        safeFormData.logo_url = initialData?.logo_url || ''
-        safeFormData.company_name = initialData?.company_name || ''
+        const company = initialData as CompanyProfile
+        safeFormData.logo_url = company?.logo_url || ''
+        safeFormData.company_name = company?.company_name || ''
       }
       // Inicialização específica para pacientes foi removida pois os dados
       // de condições de saúde, alergias e preferências alimentares agora
       // são coletados através da anamnese nutricional
 
       if (userType === 'nutricionista') {
-        safeFormData.cover_image_url = initialData?.cover_image_url || ''
-        safeFormData.specialties = Array.isArray(initialData?.specialties)
-          ? initialData.specialties.join(', ')
-          : initialData?.specialties || ''
-        // Garantir que o estado do checkbox de UAN seja preservado
-        safeFormData.enable_uan_consulting = initialData?.service_meal_plan_price > 0 ? true : initialData?.enable_uan_consulting || false
+        const nutri = initialData as NutritionistProfile
+        safeFormData.cover_image_url = nutri?.cover_image_url || ''
+        safeFormData.specialties = Array.isArray(nutri?.specialties)
+          ? (nutri.specialties as any).join(', ')
+          : (nutri?.specialties as any) || ''
+        safeFormData.enable_uan_consulting = (nutri?.service_meal_plan_price as any) > 0 ? true : (nutri as any)?.enable_uan_consulting || false
         // Para horários disponíveis, convertemos array do banco em objeto para o ScheduleSelector
         // safeFormData.available_times = Array.isArray(
         //   initialData?.available_times
@@ -373,31 +416,29 @@ export function UserProfileModal({
         //     : typeof initialData?.available_times === 'object'
         //       ? JSON.stringify(initialData.available_times)
         //       : '{}'
-        safeFormData.languages = Array.isArray(initialData?.languages)
-          ? initialData.languages.join(', ')
-          : initialData?.languages || ''
-        safeFormData.certifications = Array.isArray(initialData?.certifications)
-          ? initialData.certifications.join(', ')
-          : initialData?.certifications || ''
-        safeFormData.achievements = Array.isArray(initialData?.achievements)
-          ? initialData.achievements.join(', ')
-          : initialData?.achievements || ''
+        safeFormData.languages = Array.isArray((nutri as any)?.languages)
+          ? ((nutri as any).languages).join(', ')
+          : (nutri as any)?.languages || ''
+        safeFormData.certifications = Array.isArray((nutri as any)?.certifications)
+          ? ((nutri as any).certifications).join(', ')
+          : (nutri as any)?.certifications || ''
+        safeFormData.achievements = Array.isArray((nutri as any)?.achievements)
+          ? ((nutri as any).achievements).join(', ')
+          : (nutri as any)?.achievements || ''
 
         safeFormData.services_offered =
-          initialData?.services_offered &&
-            typeof initialData.services_offered === 'object'
-            ? JSON.stringify(initialData.services_offered)
-            : initialData?.services_offered || ''
+          (nutri as any)?.services_offered &&
+            typeof (nutri as any).services_offered === 'object'
+            ? JSON.stringify((nutri as any).services_offered)
+            : (nutri as any)?.services_offered || ''
 
-        safeFormData.crn_document_url = initialData?.crn_document_url || ''
+        safeFormData.crn_document_url = (nutri as any)?.crn_document_url || ''
         safeFormData.identity_document_url =
-          initialData?.identity_document_url || ''
+          (nutri as any)?.identity_document_url || ''
 
-        safeFormData.consultation_languages =
-          initialData?.consultation_languages || ''
-        safeFormData.payment_methods = initialData?.payment_methods || ''
-        safeFormData.cancellation_policy =
-          initialData?.cancellation_policy || ''
+        safeFormData.consultation_languages = (nutri as any)?.consultation_languages || ''
+        safeFormData.payment_methods = (nutri as any)?.payment_methods || ''
+        safeFormData.cancellation_policy = (nutri as any)?.cancellation_policy || ''
       }
 
       // Definir formData apenas uma vez após processar todos os campos
@@ -626,11 +667,15 @@ export function UserProfileModal({
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
-    const { id, value, type } = e.target
-    const checked = (e.target as HTMLInputElement).checked
+    const target = e.target
+    const id = target.id as keyof EditableFormData
+    const isCheckbox = (target as HTMLInputElement).type === 'checkbox'
+    const nextValue = isCheckbox
+      ? (target as HTMLInputElement).checked
+      : (target as HTMLInputElement | HTMLTextAreaElement).value
     setFormData(prev => ({
       ...prev,
-      [ id ]: type === 'checkbox' ? checked : value,
+      [ id ]: nextValue as any,
     }))
   }
 

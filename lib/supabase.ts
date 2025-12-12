@@ -2,8 +2,8 @@ import { createClient } from '@supabase/supabase-js'
 import { createBrowserClient } from '@supabase/ssr'
 
 // Certifique-se de que estas variáveis de ambiente estão configuradas no seu projeto Vercel
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+const supabaseUrl = process.env['NEXT_PUBLIC_SUPABASE_URL']
+const supabaseAnonKey = process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']
 
 // Durante o build, use valores padrão para evitar erros
 const defaultUrl = 'https://placeholder.supabase.co'
@@ -107,6 +107,12 @@ export interface NutritionistProfile extends UserProfile {
   profile_image_url?: string | null // URL da imagem de perfil
   cover_image_url?: string | null // URL da imagem de capa
   badges?: any[] | null // Badges/insígnias do nutricionista
+  // Campos estruturados adicionais
+  languages?: string[] | null
+  certifications?: string[] | null
+  achievements?: string[] | null
+  services_offered?: Record<string, any> | string | null
+  available_times?: string[] | Record<string, any> | string | null
 
   // Redes sociais (campos individuais)
   instagram_username?: string | null
@@ -123,6 +129,7 @@ export interface NutritionistProfile extends UserProfile {
   service_group_consultation?: boolean | null
   service_online_available?: boolean | null
   service_presential_available?: boolean | null
+  enable_uan_consulting?: boolean | null
 
   // Horários de trabalho (campos individuais)
   monday_hours?: string | null
@@ -142,6 +149,7 @@ export interface NutritionistProfile extends UserProfile {
   public_price_visible?: boolean | null // controla exibição pública do preço
   max_patients_per_day?: number | null
   aceita_cupons?: boolean | null // Consentimento para participar de campanhas com cupons de desconto
+  accepts_corporate_plans?: boolean | null
 
   // Estatísticas de visualização
   totalViews?: number | null // Total de visualizações do perfil

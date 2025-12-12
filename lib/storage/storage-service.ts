@@ -82,7 +82,14 @@ export class BuscaNutriStorageService implements StorageService {
     }
   }
 
-  private log(): void {}
+  private log(...args: unknown[]): void {
+    if (this.config.enableLogging) {
+      try {
+        // eslint-disable-next-line no-console
+        console.log(...args)
+      } catch {}
+    }
+  }
 
   private validateKey(key: string): void {
     if (!key || typeof key !== 'string') {
@@ -95,7 +102,7 @@ export class BuscaNutriStorageService implements StorageService {
       // Verificar dados sensíveis
       if (containsSensitiveData(value)) {
         this.log(`AVISO: Tentativa de armazenar dados sensíveis na chave "${key}"`)
-        return removeSensitiveData(value)
+        return removeSensitiveData(value) as T
       }
 
       // Aplicar validação específica baseada na chave

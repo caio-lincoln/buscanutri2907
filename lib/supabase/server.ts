@@ -1,27 +1,42 @@
 import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
+import { createClient as createSupabaseAdminClient } from '@supabase/supabase-js'
+import { cookies, headers } from 'next/headers'
 
 export const createClient = async () => {
-  const cookieStore = await cookies()
-
   return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    process.env['NEXT_PUBLIC_SUPABASE_URL']!,
+    process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!,
     {
       cookies: {
-        getAll() {
-          return cookieStore.getAll()
-        },
-        setAll(cookiesToSet) {
+        async getAll() {
           try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            )
+            const cookieStore = await cookies()
+            const anyStore = cookieStore as unknown as { getAll?: () => Array<{ name: string; value: string }> }
+            if (typeof anyStore.getAll === 'function') {
+              return anyStore.getAll()
+            }
+            const headersList = await headers()
+            const cookieHeader: string = headersList.get('cookie') ?? ''
+            const pairs: string[] = cookieHeader.split(';').map((s: string) => s.trim()).filter(Boolean)
+            return pairs.map((p: string) => {
+              const i = p.indexOf('=')
+              const name = i >= 0 ? p.slice(0, i) : p
+              const value = i >= 0 ? p.slice(i + 1) : ''
+              return { name, value }
+            })
           } catch {
-            // The `setAll` method was called from a Server Component.
-            // This can be ignored if you have middleware refreshing
-            // user sessions.
+            return []
           }
+        },
+        async setAll(cookiesToSet) {
+          try {
+            const cookieStore = await cookies()
+            cookiesToSet.forEach(({ name, value, options }) => {
+              try {
+                ;(cookieStore as any).set(name, value, options)
+              } catch {}
+            })
+          } catch {}
         },
       },
     }
@@ -30,18 +45,8 @@ export const createClient = async () => {
 
 // Cliente para uso administrativo com service role key
 export const createAdminClient = () => {
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return []
-        },
-        setAll() {
-          // No-op for admin client
-        },
-      },
-    }
+  return createSupabaseAdminClient(
+    process.env['NEXT_PUBLIC_SUPABASE_URL']!,
+    process.env['SUPABASE_SERVICE_ROLE_KEY']!
   )
 }

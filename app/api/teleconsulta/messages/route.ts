@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { cookies } from 'next/headers'
 import { withErrorHandling, validateAuth, ValidationError, NotFoundError, ForbiddenError } from '@/src/lib/middleware/error-handler'
 import { createNotification } from '@/lib/notifications-service'
 import { z } from 'zod'
@@ -19,8 +18,7 @@ const getMessagesQuerySchema = z.object({
 
 // GET /api/teleconsulta/messages - Buscar mensagens de uma sessão
 export const GET = withErrorHandling(async (request: NextRequest) => {
-  const cookieStore = cookies()
-  const supabase = createClient(cookieStore)
+  const supabase = await createClient()
   
   // Verificar autenticação
   const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -49,7 +47,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
 
   // Buscar mensagens
   const { data: messages, error: messagesError } = await supabase
-    .from('e')
+    .from('teleconsulta_messages')
     .select(`
       *,
       sender:profiles!sender_id(id, full_name, avatar_url)
@@ -67,8 +65,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
 
 // POST /api/teleconsulta/messages - Enviar mensagem
 export const POST = withErrorHandling(async (request: NextRequest) => {
-  const cookieStore = cookies()
-  const supabase = createClient(cookieStore)
+  const supabase = await createClient()
   
   // Verificar autenticação
   const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -139,9 +136,10 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
         userId: recipientId,
         title: 'Nova Mensagem na Teleconsulta',
         message: `${senderName}: ${message.length > 50 ? message.substring(0, 50) + '...' : message}`,
-        notificationType: 'teleconsulta_message',
-        consultationId: session_id,
-        data: {
+        type: 'info',
+        actionUrl: undefined,
+        metadata: {
+          kind: 'teleconsulta_message',
           session_id,
           message_id: newMessage.id,
           sender_id: userId,

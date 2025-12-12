@@ -74,9 +74,9 @@ export const schemas = {
     }),
     sanitize: (data: Record<string, unknown>) => {
       const sanitized: Record<string, unknown> = { ...data }
-      delete sanitized.password
-      delete sanitized.access_token
-      delete sanitized.refresh_token
+      delete sanitized['password']
+      delete sanitized['access_token']
+      delete sanitized['refresh_token']
       return sanitized
     }
   } as ValidationSchema,

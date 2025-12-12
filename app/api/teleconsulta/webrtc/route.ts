@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 export const runtime = 'nodejs'
 
-import { cookies } from 'next/headers'
+// cookies() não é necessário após adaptação em createClient
 import { withErrorHandling, validateAuth, ValidationError, NotFoundError } from '@/src/lib/middleware/error-handler'
 import { idParamSchema } from '@/src/lib/validations/teleconsulta'
 import { createClient } from '../../../../lib/supabase/server'
@@ -45,8 +45,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
 
 // PUT /api/teleconsulta/webrtc - Responder à oferta WebRTC
 export const PUT = withErrorHandling(async (request: NextRequest) => {
-  const cookieStore = cookies()
-  const supabase = createClient(cookieStore)
+  const supabase = await createClient()
 
   // Verificar autenticação
   const { data: { user }, error: authError } = await supabase.auth.getUser()

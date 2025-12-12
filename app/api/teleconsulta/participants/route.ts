@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
 import { withErrorHandling, validateAuth, ValidationError } from '@/src/lib/middleware/error-handler'
 import { createNotification } from '@/lib/notifications-service'
 import { createAdminClient, createClient } from '../../../../lib/supabase/server'
@@ -78,9 +77,10 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
           userId: participantId,
           title: 'Participante Entrou',
           message: `${userName} entrou na teleconsulta`,
-          notificationType: 'teleconsulta_participant_joined',
-          consultationId: session_id,
-          data: {
+          type: 'info',
+          actionUrl: undefined,
+          metadata: {
+            kind: 'teleconsulta_participant_joined',
             session_id,
             joined_user_id: user_id,
             joined_user_name: userName
@@ -97,8 +97,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
 
 // GET /api/teleconsulta/participants - Listar participantes de uma sessão
 export const GET = withErrorHandling(async (request: NextRequest) => {
-  const cookieStore = cookies()
-  const supabase = createClient(cookieStore)
+  const supabase = await createClient()
 
   // Verificar autenticação
   const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -129,8 +128,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
 
 // DELETE /api/teleconsulta/participants - Remover participante da sessão
 export const DELETE = withErrorHandling(async (request: NextRequest) => {
-  const cookieStore = cookies()
-  const supabase = createClient(cookieStore)
+  const supabase = await createClient()
 
   // Verificar autenticação
   const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -187,9 +185,10 @@ export const DELETE = withErrorHandling(async (request: NextRequest) => {
           userId: participantId,
           title: 'Participante Saiu',
           message: `${userName} saiu da teleconsulta`,
-          notificationType: 'teleconsulta_participant_left',
-          consultationId: session_id,
-          data: {
+          type: 'info',
+          actionUrl: undefined,
+          metadata: {
+            kind: 'teleconsulta_participant_left',
             session_id,
             left_user_id: user_id,
             left_user_name: userName

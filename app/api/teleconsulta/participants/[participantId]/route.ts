@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { cookies } from 'next/headers'
+// cookies() não é necessário após adaptação em createClient
 import { withErrorHandling, validateAuth, ValidationError, NotFoundError, ForbiddenError } from '@/src/lib/middleware/error-handler'
 import { idParamSchema } from '@/src/lib/validations/teleconsulta'
 
@@ -9,8 +9,7 @@ export const GET = withErrorHandling(async (
   request: NextRequest,
   { params }: { params: { participantId: string } }
 ) => {
-  const cookieStore = cookies()
-  const supabase = createClient(cookieStore)
+  const supabase = await createClient()
   
   // Verificar autenticação
   const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -49,8 +48,7 @@ export const PUT = withErrorHandling(async (
   request: NextRequest,
   { params }: { params: { participantId: string } }
 ) => {
-  const cookieStore = cookies()
-  const supabase = createClient(cookieStore)
+  const supabase = await createClient()
   
   // Verificar autenticação
   const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -105,8 +103,7 @@ export const DELETE = withErrorHandling(async (
   request: NextRequest,
   { params }: { params: { participantId: string } }
 ) => {
-  const cookieStore = cookies()
-  const supabase = createClient(cookieStore)
+  const supabase = await createClient()
   
   // Verificar autenticação
   const { data: { user }, error: authError } = await supabase.auth.getUser()

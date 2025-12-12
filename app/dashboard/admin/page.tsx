@@ -6,11 +6,10 @@ export default async function AdminPage() {
 
   const supabase = await createClient()
 
-  const { data, error } = await supabase.auth.getSession()
-  const user = data?.session?.user ?? null
+  const { data: { user }, error } = await supabase.auth.getUser()
 
   // Dev-only bypass to ease local testing of admin UI
-  const devBypass = process.env.DEV_ADMIN_BYPASS === 'true'
+  const devBypass = process.env['DEV_ADMIN_BYPASS'] === 'true'
 
   // Sem sessão → manda pro login (com next param opcional)
   if (!user && !devBypass) {

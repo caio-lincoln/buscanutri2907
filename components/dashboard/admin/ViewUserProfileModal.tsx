@@ -9,6 +9,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Loader2, FileText, Image, ExternalLink } from 'lucide-react'
 import type { NutritionistProfile, PatientProfile, CompanyProfile } from '@/lib/supabase'
 import { getNutritionistDocuments, type NutritionistDocument } from '@/lib/admin-data-service'
+import { createSupabaseClient } from '@/lib/supabase'
 import { isImageFile, getDocumentTypeLabel } from '@/lib/storage'
 
 type UserType = 'paciente' | 'nutricionista' | 'empresa' | 'admin'
@@ -47,7 +48,28 @@ export default function ViewUserProfileModal({ open, onOpenChange, user }: Props
           throw new Error(text || 'Falha ao carregar perfil')
         }
         const { data } = await res.json()
-        setProfile((data?.profile ?? null) as any)
+        const apiProfile = (data?.profile ?? null) as any
+        if (apiProfile) {
+          setProfile(apiProfile)
+        } else {
+          const sb = createSupabaseClient()
+          if (user.type === 'nutricionista') {
+            let { data: p } = await (await sb).from('nutritionist_profiles').select('*').eq('user_id', user.id).maybeSingle()
+            if (!p) {
+              const alt = await (await sb).from('nutritionist_profiles').select('*').eq('id', user.id).maybeSingle()
+              p = alt.data || null
+            }
+            setProfile((p ?? null) as any)
+          } else if (user.type === 'paciente') {
+            const { data: p } = await (await sb).from('patient_profiles').select('*').eq('user_id', user.id).maybeSingle()
+            setProfile((p ?? null) as any)
+          } else if (user.type === 'empresa') {
+            const { data: p } = await (await sb).from('company_profiles').select('*').eq('user_id', user.id).maybeSingle()
+            setProfile((p ?? null) as any)
+          } else {
+            setProfile(null)
+          }
+        }
       } catch (err: any) {
         setError(err?.message || 'Falha ao carregar perfil')
       } finally {

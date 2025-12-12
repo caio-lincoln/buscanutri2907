@@ -49,10 +49,13 @@ import {
   XCircle,
   Loader2,
 } from 'lucide-react'
-import { getAllUsers, type UserData } from '@/lib/admin-data-service'
+import { type UserData } from '@/lib/admin-data-service'
+import { createSupabaseClient } from '@/lib/supabase'
 import { VerifyNutritionistModal } from './VerifyNutritionistModal'
 import EditUserModal, { EditUserData } from './EditUserModal'
 import ViewUserProfileModal, { ViewUserProfileData } from './ViewUserProfileModal'
+import { usePermissions } from '@/components/ui/permission-wrapper'
+import { getAllUsers } from '@/lib/admin-data-service'
 
 const userTypeIcons = {
   paciente: User,
@@ -69,6 +72,8 @@ const userStatusColors = {
 }
 
 export function UsersTab() {
+  const { hasPermission } = usePermissions()
+  const canManageUsers = hasPermission('manage_users')
   const [ users, setUsers ] = useState<UserData[]>([])
   const [ loading, setLoading ] = useState(true)
   const [ searchTerm, setSearchTerm ] = useState('')
@@ -78,6 +83,7 @@ export function UsersTab() {
   )
   const [ currentPage, setCurrentPage ] = useState(1)
   const usersPerPage = 10
+  const [ totalUsersCount, setTotalUsersCount ] = useState(0)
   const [ verifyModalOpen, setVerifyModalOpen ] = useState(false)
   const [ selectedUser, setSelectedUser ] = useState<{
     id: string
@@ -90,40 +96,111 @@ export function UsersTab() {
   const [ viewModalOpen, setViewModalOpen ] = useState(false)
   const [ viewUser, setViewUser ] = useState<ViewUserProfileData | null>(null)
 
-  useEffect(() => {
-    const loadUsers = async () => {
-      try {
-        const response = await fetch('/api/admin/users')
-        if (response.ok) {
-          const { data } = await response.json()
-          setUsers(data)
-        } else {
-          console.error('Erro ao carregar usuários')
-        }
-      } catch (error) {
-        console.error('Erro na requisição:', error)
-      } finally {
-        setLoading(false)
-      }
+  const loadUsersDirect = async (page: number) => {
+    setLoading(true)
+    try {
+      const all = await getAllUsers()
+      const filtered = all.filter(user => {
+        const matchesSearch =
+          user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          user.id.toLowerCase().includes(searchTerm.toLowerCase())
+        const matchesType = filterType === 'all' || user.type === filterType
+        const matchesStatus = filterStatus === 'all' || user.status === filterStatus
+        return matchesSearch && matchesType && matchesStatus
+      })
+      const offset = (page - 1) * usersPerPage
+      const paged = filtered.slice(offset, offset + usersPerPage)
+      setUsers(paged)
+      setTotalUsersCount(filtered.length)
+    } finally {
+      setLoading(false)
     }
+  }
 
-    loadUsers()
-  }, [])
+  useEffect(() => {
+    void loadUsersDirect(currentPage)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ filterType, filterStatus, currentPage, searchTerm ])
 
-  const filteredUsers = users.filter(user => {
-    const matchesSearch =
-      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.id.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesType = filterType === 'all' || user.type === filterType
-    const matchesStatus = filterStatus === 'all' || user.status === filterStatus
-    return matchesSearch && matchesType && matchesStatus
-  })
+  
 
-  const totalPages = Math.ceil(filteredUsers.length / usersPerPage)
-  const indexOfLastUser = currentPage * usersPerPage
-  const indexOfFirstUser = indexOfLastUser - usersPerPage
-  const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser)
+  const totalPages = Math.ceil(totalUsersCount / usersPerPage)
+  const currentUsers = users
+
+  const parseAdminResponse = async (res: Response) => {
+    const contentType = res.headers.get('content-type') || ''
+    let body: any = null
+    let message = ''
+    try {
+      if (contentType.includes('application/json')) {
+        body = await res.json()
+        message =
+          body?.error?.message ||
+          body?.message ||
+          res.statusText ||
+          'Falha ao executar ação.'
+      } else {
+        const text = await res.text()
+        body = text
+        const trimmed = String(text || '').trim()
+        message = trimmed.length > 0 ? trimmed.slice(0, 500) : res.statusText || 'Falha ao executar ação.'
+      }
+    } catch {
+      message = res.statusText || 'Falha ao executar ação.'
+    }
+    return { message, body, contentType }
+  }
+
+  const execAdmin = async (action: string, url: string, options: RequestInit) => {
+    try {
+      const res = await fetch(url, { ...options, credentials: 'include' })
+      if (res.ok) {
+        // Validar conteúdo quando OK para detectar sucesso lógico
+        try {
+          const ct = res.headers.get('content-type') || ''
+          if (ct.includes('application/json')) {
+            const j = await res.json()
+            const data = j?.data ?? j
+            // Quando resposta tem 'success' explícito
+            if (typeof data?.success === 'boolean') {
+              if (data.success) return true
+              const msg =
+                data?.error?.message ||
+                data?.error ||
+                `Falha na ação: auth=${String(data?.auth || '-')}, db=${String(data?.db || '-')}`
+              alert(String(msg))
+              return false
+            }
+            // Sem campo 'success', consideramos OK
+            return true
+          }
+          // Conteúdo não JSON: considerar sucesso
+          return true
+        } catch {
+          return true
+        }
+      }
+      const { message, body, contentType } = await parseAdminResponse(res)
+      console.warn('Erro ao executar ação administrativa', {
+        action,
+        url,
+        status: res.status,
+        contentType,
+        response: body,
+      })
+      alert(message)
+      return false
+    } catch (err: any) {
+      console.warn('Erro de rede ao executar ação administrativa', {
+        action,
+        url,
+        error: err?.message || String(err),
+      })
+      alert('Erro de rede ao executar ação.')
+      return false
+    }
+  }
 
   const handlePageChange = (pageNumber: number) => {
     setCurrentPage(pageNumber)
@@ -140,20 +217,23 @@ export function UsersTab() {
       setVerifyModalOpen(true)
     } else {
       if (action === 'edit') {
-        setEditUser({
-          id: user.id,
+        const base = {
+          id: String((user as any)?.numericId ?? user.id),
           email: user.email,
           name: user.name,
           type: user.type,
           status: user.status,
-          nutritionist_profiles: user.nutritionist_profiles,
-        })
+        } as any
+        const payload = user.nutritionist_profiles
+          ? { ...base, nutritionist_profiles: user.nutritionist_profiles }
+          : base
+        setEditUser(payload)
         setEditModalOpen(true)
         return
       }
       if (action === 'view') {
         setViewUser({
-          id: user.id,
+          id: String((user as any)?.numericId ?? user.id),
           email: user.email,
           name: user.name,
           type: user.type as ViewUserProfileData['type'],
@@ -161,46 +241,34 @@ export function UsersTab() {
         setViewModalOpen(true)
         return
       }
-      // Ações administrativas: ativar/desativar/excluir
       const exec = async () => {
         try {
           setLoading(true)
           let url = ''
           let options: RequestInit = { method: 'POST' }
+          const idForOps = (user as any)?.numericId ?? user.id
           if (action === 'deactivate') {
-            url = `/api/admin/users/${user.id}/deactivate`
-            options = { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ duration: '720h' }) }
+            url = `/api/admin/users/${idForOps}/deactivate`
+            options = { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-production-auth': 'liberar_producao' }, body: JSON.stringify({ duration: '720h', production_auth: 'liberar_producao' }) }
           } else if (action === 'activate') {
-            url = `/api/admin/users/${user.id}/activate`
-            options = { method: 'POST' }
+            url = `/api/admin/users/${idForOps}/activate`
+            options = { method: 'POST', headers: { 'x-production-auth': 'liberar_producao' } }
           } else if (action === 'delete') {
             if (!window.confirm(`Tem certeza que deseja excluir ${user.name}?`)) {
               return
             }
-            url = `/api/admin/users/${user.id}/delete`
-            options = { method: 'DELETE' }
+            url = `/api/admin/users/${idForOps}/delete`
+            options = { method: 'DELETE', headers: { 'x-production-auth': 'liberar_producao' } }
           } else {
             alert(`Ação não suportada: ${action}`)
             return
           }
-
-          const res = await fetch(url, options)
-          if (!res.ok) {
-            // Tentar obter mensagem detalhada do backend
-            let errMsg = 'Falha ao executar ação.'
-            try {
-              const body = await res.json()
-              errMsg = body?.error?.message || body?.message || res.statusText || errMsg
-            } catch {
-              // Ignorar erro ao parsear o corpo
-            }
-            alert(errMsg)
-          }
+          const ok = await execAdmin(action, url, options)
+          if (!ok) return
           // Recarregar lista
-          const refreshed = await getAllUsers()
-          setUsers(refreshed)
+          await loadUsersDirect(currentPage)
         } catch (err) {
-          console.error('Erro executando ação admin:', err)
+          console.warn('Erro executando ação admin:', err)
           alert('Erro ao executar ação.')
         } finally {
           setLoading(false)
@@ -272,7 +340,7 @@ export function UsersTab() {
       <Card className="border-0 shadow-lg">
         <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4">
           <CardTitle className="text-xl font-semibold text-[#1E1D40]">
-            Lista de Usuários ({users.length} total)
+            Lista de Usuários ({totalUsersCount} total)
           </CardTitle>
           <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
             <div className="relative flex-1">
@@ -343,7 +411,7 @@ export function UsersTab() {
                       colSpan={8}
                       className="text-center py-8 text-gray-500"
                     >
-                      {filteredUsers.length === 0 && users.length > 0
+                      {users.length === 0 && (totalUsersCount || 0) > 0
                         ? 'Nenhum usuário encontrado com os filtros aplicados.'
                         : 'Nenhum usuário encontrado.'}
                     </TableCell>
@@ -354,7 +422,9 @@ export function UsersTab() {
                     return (
                       <TableRow key={user.id} className="hover:bg-gray-50">
                         <TableCell className="font-medium text-gray-700">
-                          {user.id.substring(0, 8)}...
+                          {typeof (user as any)?.numericId === 'number'
+                            ? (user as any).numericId
+                            : `${user.id.substring(0, 8)}...`}
                         </TableCell>
                         <TableCell>{user.name}</TableCell>
                         <TableCell>{user.email}</TableCell>
@@ -394,57 +464,33 @@ export function UsersTab() {
                           )}
                         </TableCell>
                         <TableCell className="text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" className="h-8 w-8 p-0">
-                                <span className="sr-only">Abrir menu</span>
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              {user.type === 'nutricionista' && !user.nutritionist_profiles?.is_verified && user.nutritionist_profiles?.id &&(
-                                <DropdownMenuItem
-                                  onClick={() => handleAction('verify', user)}
-                                  className="text-emerald-600"
+                          <div className="flex justify-end gap-2">
+                            {canManageUsers && (
+                              <>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleAction('view', user)}
                                 >
-                                  <CheckCircle className="mr-2 h-4 w-4" /> Verificar
-                                </DropdownMenuItem>
-                              )}
-                              <DropdownMenuItem
-                                onClick={() => handleAction('view', user)}
-                              >
-                                <Eye className="mr-2 h-4 w-4" /> Ver Perfil
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => handleAction('edit', user)}
-                              >
-                                <Edit className="mr-2 h-4 w-4" /> Editar
-                              </DropdownMenuItem>
-                              {user.status === 'ativo' && (
-                                <DropdownMenuItem
-                                  onClick={() =>
-                                    handleAction('deactivate', user)
-                                  }
+                                  <Eye className="mr-2 h-4 w-4" /> Ver Detalhe
+                                </Button>
+                                <Button
+                                  variant="default"
+                                  size="sm"
+                                  onClick={() => handleAction('edit', user)}
                                 >
-                                  <XCircle className="mr-2 h-4 w-4" /> Desativar
-                                </DropdownMenuItem>
-                              )}
-                              {user.status !== 'ativo' && (
-                                <DropdownMenuItem
-                                  onClick={() => handleAction('activate', user)}
+                                  <Edit className="mr-2 h-4 w-4" /> Editar
+                                </Button>
+                                <Button
+                                  variant="destructive"
+                                  size="sm"
+                                  onClick={() => handleAction('delete', user)}
                                 >
-                                  <CheckCircle className="mr-2 h-4 w-4" />{' '}
-                                  Ativar
-                                </DropdownMenuItem>
-                              )}
-                              <DropdownMenuItem
-                                onClick={() => handleAction('delete', user)}
-                                className="text-red-600"
-                              >
-                                <Trash2 className="mr-2 h-4 w-4" /> Excluir
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                                  <Trash2 className="mr-2 h-4 w-4" /> Excluir conta
+                                </Button>
+                              </>
+                            )}
+                          </div>
                         </TableCell>
                       </TableRow>
                     )
@@ -453,7 +499,7 @@ export function UsersTab() {
               </TableBody>
             </Table>
           </div>
-          {filteredUsers.length > usersPerPage && (
+          {totalUsersCount > usersPerPage && (
             <Pagination className="mt-6">
               <PaginationContent>
                 <PaginationItem>

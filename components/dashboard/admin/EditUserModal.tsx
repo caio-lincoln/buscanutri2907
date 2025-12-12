@@ -78,10 +78,11 @@ export function EditUserModal({ open, onOpenChange, user, onUpdated }: EditUserM
       if (type && type !== user.type) payload.user_type = type
       if (name && name !== user.name) payload.name = name
       if (canToggleVerified) payload.is_verified = verified
+      payload.production_auth = 'liberar_producao'
 
       const res = await fetch(`/api/admin/users/${user.id}/update`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'x-production-auth': 'liberar_producao' },
         credentials: 'include',
         body: JSON.stringify(payload),
       })

@@ -44,6 +44,7 @@ export async function getAllUsers(): Promise<UserData[]> {
       .from('users')
       .select(`
         id,
+        "ID",
         email,
         user_type,
         created_at,
@@ -59,6 +60,7 @@ export async function getAllUsers(): Promise<UserData[]> {
 
     return users.map(user => ({
       id: user.id,
+      numericId: (user as any)?.ID,
       name:
         user.patient_profiles?.full_name ||
         user.nutritionist_profiles?.full_name ||

@@ -70,9 +70,13 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     userId: validatedData.user_id,
     title: validatedData.title,
     message: validatedData.message,
-    notificationType: validatedData.notification_type,
-    consultationId: validatedData.consultation_id,
-    data: validatedData.data || {}
+    type: 'info',
+    actionUrl: undefined,
+    metadata: {
+      kind: validatedData.notification_type,
+      consultation_id: validatedData.consultation_id,
+      ...(validatedData.data || {})
+    }
   })
 
   if (!success) {

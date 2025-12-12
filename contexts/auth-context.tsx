@@ -174,7 +174,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       setUser(sessionUser.data.user)
-      setUserProfile(sessionUser.data.user as User)
       
       // Iniciar rastreamento de sessão para usuário logado
       await sessionTracker.startSession(sessionUser.data.user.id)
@@ -185,6 +184,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .eq('id', sessionUser.data.user.id)
       .maybeSingle()
       
+      // Atualizar perfil básico do usuário a partir da tabela users
+      setUserProfile(row as unknown as UserProfile)
       const utype = row?.user_type
       if (utype) {
         const table = PROFILE_TABLE_BY_TYPE[ utype as UserType ]

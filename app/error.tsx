@@ -3,7 +3,7 @@ import { useEffect } from "react"
 
 export default function Error({ error, reset }: { error: Error; reset: () => void }) {
   useEffect(() => {
-    console.error("App error boundary:", error)
+    console.warn("App error boundary:", error)
   }, [error])
 
   return (

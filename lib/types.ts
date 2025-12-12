@@ -2,6 +2,7 @@
 
 export interface UserData {
   id: string
+  numericId?: number
   name: string
   email: string
   type: 'paciente' | 'nutricionista' | 'empresa'
