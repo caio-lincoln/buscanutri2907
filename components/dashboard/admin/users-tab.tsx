@@ -474,33 +474,26 @@ export function UsersTab() {
                           )}
                         </TableCell>
                         <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            {canManageUsers && (
-                              <>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleAction('view', user)}
-                                >
-                                  <Eye className="mr-2 h-4 w-4" /> Ver Detalhe
+                          {canManageUsers && (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon">
+                                  <MoreHorizontal className="h-4 w-4" />
                                 </Button>
-                                <Button
-                                  variant="default"
-                                  size="sm"
-                                  onClick={() => handleAction('edit', user)}
-                                >
-                                  <Edit className="mr-2 h-4 w-4" /> Editar
-                                </Button>
-                                <Button
-                                  variant="destructive"
-                                  size="sm"
-                                  onClick={() => handleAction('delete', user)}
-                                >
-                                  <Trash2 className="mr-2 h-4 w-4" /> Excluir conta
-                                </Button>
-                              </>
-                            )}
-                          </div>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handleAction('view', user)}>
+                                  <Eye className="h-4 w-4 mr-2" /> Ver Detalhe
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleAction('edit', user)}>
+                                  <Edit className="h-4 w-4 mr-2" /> Editar
+                                </DropdownMenuItem>
+                                <DropdownMenuItem className="text-red-600" onClick={() => handleAction('delete', user)}>
+                                  <Trash2 className="h-4 w-4 mr-2" /> Excluir conta
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          )}
                         </TableCell>
                       </TableRow>
                     )
