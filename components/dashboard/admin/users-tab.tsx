@@ -218,7 +218,11 @@ export function UsersTab() {
     } else {
       if (action === 'edit') {
         const base = {
-          id: String((user as any)?.numericId ?? user.id),
+          id: (() => {
+            const numeric = (user as any)?.numericId
+            if (typeof numeric === 'number' && Number.isFinite(numeric)) return String(numeric)
+            return String(user.id)
+          })(),
           email: user.email,
           name: user.name,
           type: user.type,
@@ -233,7 +237,11 @@ export function UsersTab() {
       }
       if (action === 'view') {
         setViewUser({
-          id: String((user as any)?.numericId ?? user.id),
+          id: (() => {
+            const numeric = (user as any)?.numericId
+            if (typeof numeric === 'number' && Number.isFinite(numeric)) return String(numeric)
+            return String(user.id)
+          })(),
           email: user.email,
           name: user.name,
           type: user.type as ViewUserProfileData['type'],
@@ -246,7 +254,18 @@ export function UsersTab() {
           setLoading(true)
           let url = ''
           let options: RequestInit = { method: 'POST' }
-          const idForOps = (user as any)?.numericId ?? user.id
+          const idForOps = (() => {
+            const numeric = (user as any)?.numericId
+            if (typeof numeric === 'number' && Number.isFinite(numeric)) return String(numeric)
+            if (typeof user.id === 'string' && user.id.trim().toLowerCase() !== 'undefined' && user.id.trim().toLowerCase() !== 'null') {
+              return user.id.trim()
+            }
+            return ''
+          })()
+          if (!idForOps) {
+            alert('ID do usuário inválido. Recarregue a página e tente novamente.')
+            return
+          }
           if (action === 'deactivate') {
             url = `/api/admin/users/${idForOps}/deactivate`
             options = { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-production-auth': 'liberar_producao' }, body: JSON.stringify({ duration: '720h', production_auth: 'liberar_producao' }) }
