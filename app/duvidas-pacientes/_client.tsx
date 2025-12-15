@@ -21,6 +21,7 @@ import { createSupabaseClient } from '@/lib/supabase'
 import { formatDistanceToNow } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import type { ForumQuestion } from '@/lib/forum-data'
+import { getAllForumQuestions } from '@/lib/forum-data'
 
 type Props = { initialQuestions: ForumQuestion[] }
 
@@ -33,6 +34,51 @@ export default function DuvidasPacientesClient({ initialQuestions }: Props) {
   useEffect(() => {
     setFilteredQuestions(initialQuestions)
   }, [initialQuestions])
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        setLoading(true)
+        const fetched = await getAllForumQuestions()
+        if (fetched.length > 0) {
+          setQuestions(fetched)
+          setFilteredQuestions(fetched)
+        } else {
+          const supabase = createSupabaseClient()
+          const { data } = await supabase
+            .from('forum_questions')
+            .select('id, title, content, created_at, likes_count, answers_count, views, tags, category, is_resolved, patient_id')
+            .not('patient_id', 'is', null)
+            .order('created_at', { ascending: false })
+          const fallback: ForumQuestion[] = (data || []).map((row: any) => ({
+            id: row.id,
+            title: row.title,
+            content: row.content,
+            author: {
+              id: row.patient_id,
+              name: 'Usuário Anônimo',
+              userType: 'paciente',
+              avatar: '/placeholder.svg?height=40&width=40',
+              isVerified: false,
+            },
+            timestamp: new Date(row.created_at).toLocaleString('pt-BR'),
+            likes: row.likes_count || 0,
+            repliesCount: row.answers_count || 0,
+            views: row.views || 0,
+            tags: row.tags || [],
+            category: row.category || '',
+            replies: [],
+            isBestAnswerSelected: row.is_resolved || false,
+          }))
+          setQuestions(fallback)
+          setFilteredQuestions(fallback)
+        }
+      } finally {
+        setLoading(false)
+      }
+    }
+    load()
+  }, [])
 
   useEffect(() => {
     if (searchTerm.trim() === '') {
