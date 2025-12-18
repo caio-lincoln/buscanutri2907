@@ -6,13 +6,27 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Loader2, FileText, Image, ExternalLink, CheckCircle, XCircle } from 'lucide-react'
+import { 
+  Loader2, 
+  FileText, 
+  Image, 
+  ExternalLink, 
+  CheckCircle, 
+  XCircle,
+  ShieldCheck,
+  User,
+  MapPin,
+  Phone,
+  GraduationCap
+} from 'lucide-react'
 import {
   getNutritionistDocuments,
+  getNutritionistDetails,
   approveNutritionist,
   rejectNutritionist,
   type NutritionistDocument
 } from '@/lib/admin-data-service'
+import { validateCRNWithAPI } from '@/lib/crn-validator'
 import { isImageFile, getDocumentTypeLabel } from '@/lib/storage'
 import { toast } from '../../ui/use-toast'
 
@@ -34,17 +48,26 @@ export function VerifyNutritionistModal({
   user,
   onApproved
 }: VerifyNutritionistModalProps) {
-  const [loadingDocs, setLoadingDocs] = useState(false)
+  const [loadingData, setLoadingData] = useState(false)
   const [docs, setDocs] = useState<NutritionistDocument[]>([])
+  const [details, setDetails] = useState<any>(null)
   const [rejecting, setRejecting] = useState(false)
   const [reason, setReason] = useState('')
   const [processing, setProcessing] = useState(false)
+  const [crnValidation, setCrnValidation] = useState<{
+    isValid: boolean
+    message: string
+    region?: string
+    number?: string
+    checked: boolean
+  } | null>(null)
+  const [validatingCRN, setValidatingCRN] = useState(false)
 
-  // Carrega docs quando abrir
+  // Carrega dados quando abrir
   useEffect(() => {
-    if (open && user?.id) void loadDocuments()
+    if (open && user?.nutritionistProfileId) void loadData()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, user?.id])
+  }, [open, user?.nutritionistProfileId])
 
   // Bloqueia scroll e adiciona ESC para fechar
   useEffect(() => {
@@ -61,19 +84,48 @@ export function VerifyNutritionistModal({
     }
   }, [open, onOpenChange])
 
-  const loadDocuments = async () => {
+  const loadData = async () => {
     try {
-      setLoadingDocs(true)
-      const documents = await getNutritionistDocuments(user.id)
+      setLoadingData(true)
+      const [documents, profileDetails] = await Promise.all([
+        getNutritionistDocuments(user.id),
+        getNutritionistDetails(user.nutritionistProfileId, user.id)
+      ])
+      
       setDocs(documents)
+      setDetails(profileDetails)
+      setCrnValidation(null) // Reset validation state
     } catch {
       toast({
         title: 'Erro',
-        description: 'Não foi possível carregar os documentos',
+        description: 'Não foi possível carregar os dados do nutricionista',
         variant: 'destructive'
       })
     } finally {
-      setLoadingDocs(false)
+      setLoadingData(false)
+    }
+  }
+
+  const handleValidateCRN = async () => {
+    if (!details?.crn) {
+      toast({ title: 'Erro', description: 'CRN não disponível para validação', variant: 'destructive' })
+      return
+    }
+
+    try {
+      setValidatingCRN(true)
+      const result = await validateCRNWithAPI(details.crn)
+      setCrnValidation({ ...result, checked: true })
+      
+      if (result.isValid) {
+        toast({ title: 'Sucesso', description: result.message })
+      } else {
+        toast({ title: 'Atenção', description: result.message, variant: 'destructive' })
+      }
+    } catch {
+      toast({ title: 'Erro', description: 'Falha ao validar CRN', variant: 'destructive' })
+    } finally {
+      setValidatingCRN(false)
     }
   }
 
@@ -139,157 +191,300 @@ export function VerifyNutritionistModal({
             role="dialog"
             aria-modal="true"
             aria-label="Verificação de Nutricionista"
-            className="w-full max-w-4xl bg-white dark:bg-neutral-900 rounded-2xl shadow-xl border border-black/5"
+            className="w-full max-w-5xl bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl border border-black/5 flex flex-col max-h-[90vh]"
           >
             {/* Header */}
-            <div className="px-6 py-4 border-b border-black/10 dark:border-white/10 sticky top-0 bg-white/80 dark:bg-neutral-900/80 backdrop-blur">
-              <h2 className="text-xl font-semibold text-[#1E1D40] dark:text-white">
-                Verificação de Nutricionista
-              </h2>
-              <div className="mt-1 text-sm text-gray-600 dark:text-gray-300">
-                <p><strong>Nome:</strong> {user.name || 'Não informado'}</p>
-                <p><strong>Email:</strong> {user.email}</p>
+            <div className="px-6 py-4 border-b border-black/10 dark:border-white/10 sticky top-0 bg-white/95 dark:bg-neutral-900/95 backdrop-blur z-10 flex justify-between items-center">
+              <div>
+                <h2 className="text-2xl font-bold text-[#1E1D40] dark:text-white flex items-center gap-2">
+                  <ShieldCheck className="h-6 w-6 text-emerald-600" />
+                  Verificação de Profissional
+                </h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  Analise os dados e documentos antes de aprovar o cadastro
+                </p>
               </div>
+              <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)}>
+                <XCircle className="h-6 w-6 text-gray-400 hover:text-gray-600" />
+              </Button>
             </div>
 
-            {/* Content */}
-            <div className="p-6 space-y-6">
-              {loadingDocs ? (
-                <div className="flex items-center justify-center py-8">
-                  <div className="flex items-center gap-2 text-gray-500">
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                    Carregando documentos...
-                  </div>
-                </div>
-              ) : docs.length === 0 ? (
-                <div className="text-center py-8">
-                  <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500">Nenhum documento enviado</p>
+            {/* Content - Scrollable */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-8">
+              {loadingData ? (
+                <div className="flex flex-col items-center justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-emerald-600 mb-4" />
+                  <p className="text-gray-500">Carregando dados do profissional...</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {docs.map((doc) => (
-                    <Card
-                      key={doc.id}
-                      className="group hover:shadow-lg transition-all duration-200 hover:scale-[1.01] bg-white/5 backdrop-blur border-white/10"
-                    >
-                      <CardContent className="p-4">
-                        <div className="space-y-3">
-                          <div className="flex items-center justify-between">
-                            <Badge variant="outline" className="text-xs">
-                              {getDocumentTypeLabel(doc.document_type)}
-                            </Badge>
-                            {doc.title && (
-                              <span className="text-xs text-gray-500 truncate max-w-[120px]">
-                                {doc.title}
-                              </span>
-                            )}
+                <>
+                  {/* Seção de Dados do Profissional */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* Coluna Principal - Info Pessoal */}
+                    <div className="md:col-span-1 space-y-6">
+                      <div className="bg-gray-50 dark:bg-neutral-800/50 rounded-xl p-6 border border-gray-100 dark:border-neutral-800">
+                        <h3 className="text-lg font-semibold text-[#1E1D40] dark:text-white mb-4 flex items-center gap-2">
+                          <User className="h-5 w-5" />
+                          Dados Pessoais
+                        </h3>
+                        
+                        <div className="space-y-4">
+                          <div>
+                            <label className="text-xs font-medium text-gray-500 uppercase">Nome Completo</label>
+                            <p className="font-medium text-gray-900 dark:text-gray-100">{details?.full_name || user.name || 'Não informado'}</p>
+                          </div>
+                          
+                          <div>
+                            <label className="text-xs font-medium text-gray-500 uppercase">Email</label>
+                            <p className="text-gray-900 dark:text-gray-100 break-all">{user.email}</p>
                           </div>
 
-                          {isImageFile(doc.file_name) ? (
-                            <div className="relative">
-                              <img
-                                src={doc.public_url}
-                                alt={doc.title || doc.document_type}
-                                className="w-full h-32 object-cover rounded-lg border border-gray-200"
-                                onError={(e) => {
-                                  const target = e.target as HTMLImageElement
-                                  target.style.display = 'none'
-                                  const fallback = target.nextElementSibling as HTMLElement
-                                  if (fallback) fallback.classList.remove('hidden')
-                                }}
-                              />
-                              <div className="hidden w-full h-32 bg-gray-100 rounded-lg items-center justify-center">
-                                <Image className="h-8 w-8 text-gray-400" />
-                              </div>
+                          <div>
+                            <label className="text-xs font-medium text-gray-500 uppercase">Telefone</label>
+                            <div className="flex items-center gap-2">
+                              <Phone className="h-3 w-3 text-gray-400" />
+                              <p className="text-gray-900 dark:text-gray-100">{details?.phone || 'Não informado'}</p>
                             </div>
-                          ) : (
-                            <div className="w-full h-32 bg-gray-100 rounded-lg flex items-center justify-center">
-                              <FileText className="h-8 w-8 text-gray-400" />
+                          </div>
+
+                          <div>
+                            <label className="text-xs font-medium text-gray-500 uppercase">Localização</label>
+                            <div className="flex items-center gap-2">
+                              <MapPin className="h-3 w-3 text-gray-400" />
+                              <p className="text-gray-900 dark:text-gray-100">{details?.location || 'Não informado'}</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="bg-emerald-50/50 dark:bg-emerald-900/10 rounded-xl p-6 border border-emerald-100 dark:border-emerald-800/30">
+                         <h3 className="text-lg font-semibold text-emerald-800 dark:text-emerald-400 mb-4 flex items-center gap-2">
+                          <GraduationCap className="h-5 w-5" />
+                          Registro Profissional
+                        </h3>
+                        
+                        <div className="space-y-4">
+                          <div>
+                            <label className="text-xs font-medium text-emerald-600/70 uppercase">CRN</label>
+                            <div className="flex items-center gap-2">
+                              <p className="text-xl font-bold text-emerald-900 dark:text-emerald-100">
+                                {details?.crn || 'Não informado'}
+                              </p>
+                              {crnValidation?.checked && (
+                                <Badge variant={crnValidation.isValid ? 'default' : 'destructive'} className={crnValidation.isValid ? 'bg-emerald-600' : ''}>
+                                  {crnValidation.isValid ? 'Válido' : 'Inválido'}
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+
+                          {details?.crn && (
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="w-full bg-white dark:bg-neutral-800 border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+                              onClick={handleValidateCRN}
+                              disabled={validatingCRN}
+                            >
+                              {validatingCRN ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <ShieldCheck className="h-4 w-4 mr-2" />}
+                              Verificar CRN no CFN
+                            </Button>
+                          )}
+                          
+                          {crnValidation?.checked && (
+                            <div className={`text-xs p-3 rounded-lg ${crnValidation.isValid ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}`}>
+                              {crnValidation.message}
                             </div>
                           )}
+                        </div>
+                      </div>
+                    </div>
 
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="w-full"
-                            onClick={() => openDocument(doc.public_url)}
+                    {/* Coluna Secundária - Documentos e Detalhes */}
+                    <div className="md:col-span-2 space-y-6">
+                      <div>
+                        <h3 className="text-lg font-semibold text-[#1E1D40] dark:text-white mb-4 flex items-center gap-2">
+                          <FileText className="h-5 w-5" />
+                          Documentação Enviada
+                        </h3>
+
+                        {docs.length === 0 ? (
+                          <div className="text-center py-12 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                            <FileText className="h-10 w-10 text-gray-300 mx-auto mb-3" />
+                            <p className="text-gray-500">Nenhum documento enviado pelo profissional</p>
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {docs.map((doc) => (
+                              <Card
+                                key={doc.id}
+                                className="group hover:shadow-md transition-all duration-200 border-gray-200 overflow-hidden"
+                              >
+                                <CardContent className="p-0">
+                                  <div className="flex h-full">
+                                    <div className="w-24 bg-gray-100 flex items-center justify-center border-r border-gray-100">
+                                      {isImageFile(doc.file_name) ? (
+                                        <img
+                                          src={doc.public_url}
+                                          alt={doc.title}
+                                          className="w-full h-24 object-cover"
+                                        />
+                                      ) : (
+                                        <FileText className="h-8 w-8 text-gray-400" />
+                                      )}
+                                    </div>
+                                    <div className="flex-1 p-3 flex flex-col justify-between">
+                                      <div>
+                                        <div className="flex justify-between items-start mb-1">
+                                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5">
+                                            {getDocumentTypeLabel(doc.document_type)}
+                                          </Badge>
+                                        </div>
+                                        <p className="text-sm font-medium text-gray-900 truncate" title={doc.title || ''}>
+                                          {doc.title || 'Sem título'}
+                                        </p>
+                                        <p className="text-xs text-gray-500 mt-1">
+                                          Enviado em {new Date(doc.created_at).toLocaleDateString()}
+                                        </p>
+                                      </div>
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="h-7 w-full mt-2 text-xs hover:bg-emerald-50 hover:text-emerald-600 justify-start px-0"
+                                        onClick={() => openDocument(doc.public_url)}
+                                      >
+                                        <ExternalLink className="h-3 w-3 mr-1.5" />
+                                        Visualizar Documento
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Info Adicional */}
+                      {details && (
+                        <div>
+                          <h3 className="text-lg font-semibold text-[#1E1D40] dark:text-white mb-4">Informações Adicionais</h3>
+                          <div className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm space-y-4">
+                            <div>
+                              <label className="text-xs font-medium text-gray-500 uppercase">Especialidades</label>
+                              <div className="flex flex-wrap gap-2 mt-2">
+                                {(() => {
+                                  const specs = Array.isArray(details.specialties) 
+                                    ? details.specialties 
+                                    : typeof details.specialties === 'string' && details.specialties.startsWith('[') 
+                                      ? JSON.parse(details.specialties) 
+                                      : details.specialties 
+                                        ? [details.specialties] 
+                                        : [];
+                                  
+                                  if (specs.length > 0) {
+                                    return specs.map((spec: any, i: number) => (
+                                      <Badge key={i} variant="secondary" className="bg-gray-100 text-gray-700">
+                                        {typeof spec === 'string' ? spec : spec?.label || JSON.stringify(spec)}
+                                      </Badge>
+                                    ))
+                                  } else {
+                                    return <span className="text-sm text-gray-400">Nenhuma especialidade listada</span>
+                                  }
+                                })()}
+                              </div>
+                            </div>
+                            
+                            {details.academic_background && (
+                              <div>
+                                <label className="text-xs font-medium text-gray-500 uppercase">Formação Acadêmica</label>
+                                <p className="text-sm text-gray-700 mt-1 whitespace-pre-line">{details.academic_background}</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Área de Rejeição */}
+                  {rejecting && (
+                    <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
+                      <div className="p-6 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-xl">
+                        <h4 className="font-semibold text-red-800 dark:text-red-300 mb-2 flex items-center gap-2">
+                          <XCircle className="h-5 w-5" />
+                          Reprovar Cadastro
+                        </h4>
+                        <p className="text-sm text-red-600 dark:text-red-400 mb-4">
+                          Por favor, descreva o motivo da reprovação. O profissional receberá esta mensagem por email.
+                        </p>
+                        <Textarea
+                          placeholder="Ex: Documento ilegível, CRN inválido, falta comprovante de especialidade..."
+                          value={reason}
+                          onChange={(e) => setReason(e.target.value)}
+                          className="min-h-[100px] bg-white border-red-200 focus:border-red-400 focus:ring-red-400"
+                        />
+                        <div className="flex justify-end gap-3 mt-4">
+                           <Button
+                            variant="ghost"
+                            onClick={() => {
+                              setRejecting(false)
+                              setReason('')
+                            }}
+                            disabled={processing}
+                            className="text-red-700 hover:text-red-900 hover:bg-red-100"
                           >
-                            <ExternalLink className="h-4 w-4 mr-2" />
-                            Abrir
+                            Cancelar
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            onClick={handleReject}
+                            disabled={processing}
+                            className="bg-red-600 hover:bg-red-700"
+                          >
+                            {processing ? (
+                              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                            ) : (
+                              <XCircle className="h-4 w-4 mr-2" />
+                            )}
+                            Confirmar Reprovação
                           </Button>
                         </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              )}
-
-              {rejecting && (
-                <div className="space-y-4 p-4 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg">
-                  <h4 className="font-medium text-red-800 dark:text-red-300">Motivo da Rejeição</h4>
-                  <Textarea
-                    placeholder="Descreva o motivo da rejeição..."
-                    value={reason}
-                    onChange={(e) => setReason(e.target.value)}
-                    className="min-h-[100px]"
-                  />
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={handleReject}
-                      disabled={processing}
-                    >
-                      {processing ? (
-                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                      ) : (
-                        <XCircle className="h-4 w-4 mr-2" />
-                      )}
-                      Confirmar Rejeição
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setRejecting(false)
-                        setReason('')
-                      }}
-                      disabled={processing}
-                    >
-                      Cancelar
-                    </Button>
-                  </div>
-                </div>
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
             </div>
 
-            {/* Footer */}
+            {/* Footer - Fixed */}
             {!rejecting && (
-              <div className="flex justify-end gap-3 px-6 py-4 border-t border-black/10 dark:border-white/10">
-                <Button
-                  variant="outline"
-                  onClick={() => setRejecting(true)}
-                  disabled={processing}
-                >
-                  <XCircle className="h-4 w-4 mr-2" />
-                  Rejeitar
-                </Button>
-                <Button
-                  onClick={handleApprove}
-                  disabled={processing || docs.length === 0}
-                  className="bg-emerald-600 hover:bg-emerald-700"
-                >
-                  {processing ? (
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  ) : (
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                  )}
-                  Aprovar
-                </Button>
-                <Button variant="ghost" onClick={() => onOpenChange(false)}>
-                  Fechar
-                </Button>
+              <div className="flex justify-between items-center px-6 py-4 border-t border-black/10 dark:border-white/10 bg-gray-50/50 dark:bg-neutral-900/50 backdrop-blur rounded-b-2xl">
+                <div className="text-sm text-gray-500">
+                  {docs.length} documento(s) carregado(s)
+                </div>
+                <div className="flex gap-3">
+                  <Button
+                    variant="outline"
+                    onClick={() => setRejecting(true)}
+                    disabled={processing || loadingData}
+                    className="border-red-200 text-red-700 hover:bg-red-50 hover:text-red-800"
+                  >
+                    Reprovar
+                  </Button>
+                  <Button
+                    onClick={handleApprove}
+                    disabled={processing || loadingData}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 shadow-lg shadow-emerald-600/20"
+                  >
+                    {processing ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    ) : (
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                    )}
+                    Aprovar Profissional
+                  </Button>
+                </div>
               </div>
             )}
           </div>

@@ -24,6 +24,8 @@ export function isImageFile(fileName: string): boolean {
  */
 export function getDocumentTypeLabel(documentType: string): string {
   const labels: Record<string, string> = {
+    'crn_proof': 'Comprovante CRN',
+    'certificate': 'Certificado',
     'crm_proof': 'Comprovante CRM',
     'diploma': 'Diploma',
     'identity': 'Documento de Identidade',

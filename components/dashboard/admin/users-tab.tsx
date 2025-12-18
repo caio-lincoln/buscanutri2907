@@ -55,7 +55,7 @@ import { VerifyNutritionistModal } from './VerifyNutritionistModal'
 import EditUserModal, { EditUserData } from './EditUserModal'
 import ViewUserProfileModal, { ViewUserProfileData } from './ViewUserProfileModal'
 import { usePermissions } from '@/components/ui/permission-wrapper'
-import { getAllUsers } from '@/lib/admin-data-service'
+import { getAllUsers, unverifyNutritionist } from '@/lib/admin-data-service'
 
 const userTypeIcons = {
   paciente: User,
@@ -206,16 +206,52 @@ export function UsersTab() {
 
   const handleAction = (action: string, user: UserData) => {
     console.log("🚀 ~ handleAction ~ user:", user)
-    if (action === 'verify' && user.type === 'nutricionista' && user.nutritionist_profiles?.id) {
+    if (action === 'verify') {
+      if (user.type !== 'nutricionista') return
+      
+      if (!user.nutritionist_profiles?.id) {
+        alert('Perfil de nutricionista não encontrado para este usuário.')
+        return
+      }
+
       setSelectedUser({
         id: user.id,
         email: user.email,
         name: user.name,
-        nutritionistProfileId: user?.nutritionist_profiles?.id
+        nutritionistProfileId: user.nutritionist_profiles.id
       })
       setVerifyModalOpen(true)
-    } else {
-      if (action === 'edit') {
+      return
+    }
+
+    if (action === 'unverify') {
+      if (!user.nutritionist_profiles?.id) return
+      
+      if (!window.confirm(`Tem certeza que deseja remover a verificação de ${user.name}? O status voltará para pendente.`)) {
+        return
+      }
+
+      const exec = async () => {
+        setLoading(true)
+        try {
+          const ok = await unverifyNutritionist(user.nutritionist_profiles!.id)
+          if (ok) {
+            await loadUsersDirect(currentPage)
+          } else {
+            alert('Falha ao remover verificação.')
+          }
+        } catch (err) {
+          console.error(err)
+          alert('Erro ao processar solicitação.')
+        } finally {
+          setLoading(false)
+        }
+      }
+      exec()
+      return
+    }
+
+    if (action === 'edit') {
         const base = {
           id: user.id,
           email: user.email,
@@ -285,7 +321,6 @@ export function UsersTab() {
         }
       }
       exec()
-    }
   }
 
   const handleVerifyModalClose = () => {
@@ -482,6 +517,17 @@ export function UsersTab() {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
+                                {user.type === 'nutricionista' && (
+                                  user.nutritionist_profiles?.is_verified ? (
+                                    <DropdownMenuItem onClick={() => handleAction('unverify', user)}>
+                                      <XCircle className="h-4 w-4 mr-2" /> Desverificar
+                                    </DropdownMenuItem>
+                                  ) : (
+                                    <DropdownMenuItem onClick={() => handleAction('verify', user)}>
+                                      <CheckCircle className="h-4 w-4 mr-2" /> Verificar
+                                    </DropdownMenuItem>
+                                  )
+                                )}
                                 <DropdownMenuItem onClick={() => handleAction('view', user)}>
                                   <Eye className="h-4 w-4 mr-2" /> Ver Detalhe
                                 </DropdownMenuItem>

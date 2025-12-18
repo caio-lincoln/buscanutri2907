@@ -265,12 +265,12 @@ export async function getModerationReports(): Promise<ReportData[]> {
 /**
  * Buscar documentos de um nutricionista
  */
-export async function getNutritionistDocuments(nutritionistProfileId: string): Promise<NutritionistDocument[]> {
+export async function getNutritionistDocuments(userId: string): Promise<NutritionistDocument[]> {
   try {
     const { data: documents, error } = await supabase
     .from('nutritionist_documents')
     .select('id, nutritionist_id, document_type, title, file_url, file_name, storage_path, created_at')
-      .eq('nutritionist_id', nutritionistProfileId)
+      .eq('nutritionist_id', userId)
       .order('created_at', { ascending: true })
       
       console.log("🚀 ~ getNutritionistDocuments ~ documents:", documents)
@@ -362,5 +362,102 @@ export async function rejectNutritionist(nutritionistProfileId: string, reason: 
   } catch {
     // Silent error handling: Error in rejectNutritionist
     return false
+  }
+}
+
+/**
+ * Desverificar nutricionista (voltar para pendente)
+ */
+export async function unverifyNutritionist(nutritionistProfileId: string): Promise<boolean> {
+  try {
+    const res = await fetch('/api/admin/nutritionists/unverify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nutritionistProfileId }),
+    })
+    if (!res.ok) return false
+    const j = await res.json()
+    return !!j?.ok
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Buscar detalhes completos do nutricionista para verificação
+ */
+export async function getNutritionistDetails(nutritionistProfileId: string, userId?: string) {
+  try {
+    const { data, error } = await supabase
+      .from('nutritionist_profiles')
+      .select(`
+        id,
+        user_id,
+        full_name,
+        crn,
+        phone,
+        specialties,
+        location,
+        academic_background,
+        crn_document_url,
+        identity_document_url
+      `)
+      .eq('id', nutritionistProfileId)
+      .single()
+
+    if (error) return null
+
+    // Se tiver userId, buscar endereço principal e especialidades
+    // Nota: As tabelas relacionais usam o ID do perfil de nutricionista, não o ID do usuário
+    if (nutritionistProfileId) {
+      // Buscar endereço principal
+      const { data: addressData } = await supabase
+        .from('nutritionist_addresses')
+        .select('*')
+        .eq('nutritionist_id', nutritionistProfileId)
+        .eq('is_main', true)
+        .single()
+      
+      if (addressData) {
+        // Formatar endereço completo
+        const fullAddress = [
+          addressData.street,
+          addressData.number,
+          addressData.neighborhood,
+          addressData.city,
+          addressData.state
+        ].filter(Boolean).join(', ')
+        
+        if (fullAddress) {
+          data.location = fullAddress
+        }
+      }
+
+      // Buscar especialidades da tabela relacional
+      const { data: specialtiesData } = await supabase
+        .from('nutritionist_specialties')
+        .select('specialties(name)')
+        .eq('nutritionist_id', nutritionistProfileId)
+      
+      if (specialtiesData && specialtiesData.length > 0) {
+        data.specialties = specialtiesData.map((s: any) => s.specialties?.name).filter(Boolean)
+      } else {
+        // Fallback: tentar buscar do campo JSON se a tabela relacional estiver vazia
+        // e converter para array se for string
+        if (typeof data.specialties === 'string') {
+          try {
+            data.specialties = JSON.parse(data.specialties)
+          } catch {
+            data.specialties = [data.specialties]
+          }
+        } else if (!data.specialties) {
+          data.specialties = []
+        }
+      }
+    }
+
+    return data
+  } catch {
+    return null
   }
 }
