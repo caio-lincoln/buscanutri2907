@@ -617,7 +617,7 @@ export default function Home({ initialStats }: Props) {
                   </div>
                   <div className="text-center">
                     <div className="text-xl md:text-2xl font-bold text-[#1E1D40]">
-                      {stats ? formatRating(stats.averageRating) : '98%'}
+                      10
                     </div>
                     <div className="text-xs md:text-sm text-[#1E1D40]/60">
                       Satisfação
