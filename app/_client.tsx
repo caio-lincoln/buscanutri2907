@@ -597,7 +597,7 @@ export default function Home({ initialStats }: Props) {
                     </Button>
                   </Link>
                 </div>
-                <div className="flex items-center justify-center sm:justify-start gap-4 sm:gap-6 md:gap-8 pt-2 md:pt-4">
+                <div className="hidden flex items-center justify-center sm:justify-start gap-4 sm:gap-6 md:gap-8 pt-2 md:pt-4">
                   <div className="text-center">
                     <div className="text-xl md:text-2xl font-bold text-[#1E1D40]">
                       {stats ? formatNumber(stats.totalNutricionistas) : '500+'}
