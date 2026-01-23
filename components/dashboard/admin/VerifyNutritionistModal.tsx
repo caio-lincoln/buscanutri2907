@@ -174,7 +174,7 @@ export function VerifyNutritionistModal({
     window.open(url, '_blank', 'noopener,noreferrer')
   }
 
-  if (!open) return null
+  if (!open || !mounted) return null
 
   return createPortal(
     <div className="fixed inset-0 z-[70] pointer-events-none">

@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
-import { Settings, Mail, Key, Save, RefreshCw, Info, Code, FileText } from 'lucide-react'
+import { Settings, Mail, Key, Save, RefreshCw, Info, Code, FileText, Package } from 'lucide-react'
 import { toast } from '../../ui/use-toast'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
@@ -36,6 +36,7 @@ export function SettingsTab() {
   const [ apiKey, setApiKey ] = useState('sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')
   const [ isConnectingGmail, setIsConnectingGmail ] = useState(true)
   const [ gmailConnected, setGmailConnected ] = useState(false)
+  const [ isCheckingUpdates, setIsCheckingUpdates ] = useState(false)
 
   // Placeholders permitidos
   const placeholders = [ 'name', 'role', 'dashboard_url', 'app_name', 'support_email' ]
@@ -419,6 +420,38 @@ export function SettingsTab() {
           >
             <Save className="h-4 w-4 mr-2" /> Gerar Nova Chave
           </Button>
+        </CardContent>
+      </Card>
+
+      <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-xl font-semibold text-[#1E1D40] flex items-center gap-2">
+            <Package className="h-5 w-5 text-gray-600" /> Manutenção do Sistema
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="grid gap-2">
+            <Label>Atualizações de Dependências</Label>
+            <p className="text-sm text-gray-500">
+              Verifique se há novas versões das bibliotecas (Next.js, React, etc). 
+              Se houver atualizações, um relatório será enviado por email para os administradores.
+            </p>
+            <Button
+              onClick={handleCheckUpdates}
+              disabled={isCheckingUpdates}
+              className="mt-2 bg-indigo-600 hover:bg-indigo-700 text-white"
+            >
+              {isCheckingUpdates ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" /> Verificando...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2" /> Verificar Agora
+                </>
+              )}
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>
