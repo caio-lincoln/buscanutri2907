@@ -43,7 +43,6 @@ import {
 import type { UserType } from '@/lib/supabase'
 import {
   formatNumber,
-  formatRating,
   type PlatformStats,
 } from '@/lib/stats'
 import { useAuth } from '@/contexts/auth-context'
