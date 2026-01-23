@@ -39,15 +39,11 @@ import { NutritionistDocumentsUpload } from '@/components/ui/nutritionist-docume
 import { SpecialtySelector } from '@/components/ui/specialty-selector'
 
 import {
-  validateCRNFormat,
-  validateCRNWithAPI,
-  formatCRN,
-} from '@/lib/crn-validator'
-import {
   validateCNPJFormat,
   validateCNPJWithAPI,
   formatCNPJ,
 } from '@/lib/cnpj-validator'
+import { formatCRN } from '@/lib/crn-validator'
 import {
   saveNutritionistAddresses,
   type AddressData,
@@ -315,42 +311,34 @@ export default function CadastroPage() {
   }
 
   // Função para validar CRN em tempo real
-  const handleCRNChange = async (value: string) => {
-    const formatted = formatCRN(value)
-    // const formatted = value
-    setCrnValue(formatted)
+  const handleCRNChange = (value: string) => {
+    // Mini máscara: Aplica formatação de CRN se o input parecer um CRN padrão
+    // Caso contrário, aceita texto livre (ex: "Provisório") e converte para maiúsculas
+    let finalValue = value.toUpperCase()
+    
+    // Verifica se começa com dígitos ou CRN (ignorando espaços iniciais)
+    const startsWithCRNOrDigit = /^(CRN|\d)/.test(finalValue.trimStart())
+    
+    // Verifica se contém APENAS caracteres de CRN padrão (C, R, N, dígitos, hífen, espaço)
+    // Isso evita que a máscara altere inputs como "CRN Provisório" ou outros formatos
+    const isStandardCRNFormat = /^[CRN\d\-\s]*$/i.test(finalValue)
 
-    if (!formatted || formatted.length < 6) {
+    if (startsWithCRNOrDigit && isStandardCRNFormat) {
+      finalValue = formatCRN(finalValue)
+    }
+
+    setCrnValue(finalValue)
+
+    if (!finalValue || finalValue.trim().length === 0) {
       setCrnValidation({ status: 'idle', message: '' })
       return
     }
 
-    // Validação de formato primeiro
-    const formatValidation = validateCRNFormat(formatted)
-
-    if (!formatValidation.isValid) {
-      setCrnValidation({
-        status: 'invalid',
-        message: formatValidation.message,
-      })
-      return
-    }
-
-    // Se formato está correto, valida via API
-    setCrnValidation({ status: 'validating', message: 'Validando CRN...' })
-
-    try {
-      const apiValidation = await validateCRNWithAPI(formatted)
-      setCrnValidation({
-        status: 'valid',
-        message: apiValidation.message,
-      })
-    } catch (error) {
-      setCrnValidation({
-        status: 'valid',
-        message: 'Erro ao validar CRN. Tente novamente.',
-      })
-    }
+    // Marca como válido imediatamente, sem validação de formato ou API
+    setCrnValidation({
+      status: 'valid',
+      message: '',
+    })
   }
 
   // Função para validar CNPJ em tempo real

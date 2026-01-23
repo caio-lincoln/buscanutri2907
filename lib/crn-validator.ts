@@ -115,12 +115,21 @@ export async function validateCRNWithAPI(
 }
 
 export function formatCRN(value: string): string {
-  if (!value || value === "CRN") return ''
+  if (!value) return ''
   // Remove não alfanuméricos e padroniza
   const clean = value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase()
 
+  if (!clean) return ''
+
   // Garante prefixo CRN
-  const withPrefix = clean.startsWith('CRN') ? clean : `CRN${clean}`
+  let withPrefix = clean
+  if (!clean.startsWith('CRN')) {
+    if (clean === 'C' || clean === 'CR') {
+      withPrefix = 'CRN'
+    } else {
+      withPrefix = `CRN${clean}`
+    }
+  }
 
   // Se tiver região+numero completos, formata; senão retorna como está
   const m = withPrefix.match(/^CRN(\d{1,2})(\d{4,6})$/)
