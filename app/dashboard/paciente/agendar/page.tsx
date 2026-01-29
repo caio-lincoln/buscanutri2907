@@ -31,9 +31,8 @@ import { formatNutritionistData } from '@/lib/nutritionist-service'
 import { loadStripe } from '@stripe/stripe-js'
 import { createSupabaseClient } from '@/lib/supabase'
 
-const stripePromise = loadStripe(
-  process.env[ 'NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY' ] as string
-)
+const stripeKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+const stripePromise = stripeKey ? loadStripe(stripeKey) : null
 
 interface NutritionistProfile {
   id: string
@@ -274,8 +273,18 @@ export default function AgendarPage() {
       const { sessionId } = await res.json()
 
       // Redireciona para a Stripe
+      if (!stripePromise) {
+        toast.error('Erro de configuração: Chave pública do Stripe não encontrada.')
+        return
+      }
+      
       const stripe = await stripePromise
-      await stripe?.redirectToCheckout({ sessionId })
+      if (!stripe) {
+        toast.error('Erro ao inicializar o Stripe.')
+        return
+      }
+      
+      await stripe.redirectToCheckout({ sessionId })
     } catch (err) {
       console.error(err)
       toast.error('Não foi possível iniciar o pagamento')

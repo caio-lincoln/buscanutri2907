@@ -36,6 +36,11 @@ export async function POST(req: NextRequest) {
     if (!np.stripe_onboarding_complete) {
       return NextResponse.json({ message: 'Nutricionista não concluiu o onboarding do Stripe' }, { status: 400 })
     }
+    
+    if (!stripe) {
+      console.error('Stripe não inicializado (STRIPE_SECRET_KEY ausente)')
+      return NextResponse.json({ message: 'Erro de configuração do servidor de pagamentos' }, { status: 500 })
+    }
 
     const connectedAccountId = np.stripe_account_id
 
