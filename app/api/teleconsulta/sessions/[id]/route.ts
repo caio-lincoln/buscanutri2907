@@ -8,8 +8,9 @@ import { createClient } from '../../../../../lib/supabase/server'
 // PUT /api/teleconsulta/sessions/[id] - Atualizar status da sessão
 export const PUT = withErrorHandling(async (
   request: NextRequest,
-  { params }: { params: { id: string } }
+  props: { params: Promise<{ id: string }> }
 ) => {
+  const params = await props.params;
 
   const supabase = await createClient()
   
@@ -18,7 +19,7 @@ export const PUT = withErrorHandling(async (
   const userId = validateAuth(authError ? null : user?.id || null)
 
   // Validar parâmetros
-  const { id: sessionId } = idParamSchema.parse(await params)
+  const { id: sessionId } = idParamSchema.parse(params)
   
   // Validar dados do corpo da requisição
   const body = await request.json()

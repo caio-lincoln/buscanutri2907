@@ -6,8 +6,9 @@ import { createClient } from '../../../../../lib/supabase/server'
 // DELETE /api/teleconsulta/agenda/[id] - Deletar horário de disponibilidade
 export const DELETE = withErrorHandling(async (
   request: NextRequest,
-  { params }: { params: { id: string } }
+  props: { params: Promise<{ id: string }> }
 ) => {
+  const params = await props.params;
   const supabase = await createClient()
 
   // Verificar autenticação
@@ -15,7 +16,7 @@ export const DELETE = withErrorHandling(async (
   const userId = validateAuth(authError ? null : user?.id || null)
 
   // Validar parâmetros
-  const { id: availabilityId } = idParamSchema.parse(await params)
+  const { id: availabilityId } = idParamSchema.parse(params)
   // const availabilityId = await params.id
 
   const { data: nutritionistProfile } = await supabase.from('nutritionist_profiles').select("id").eq("user_id", userId).maybeSingle()
@@ -66,8 +67,9 @@ export const DELETE = withErrorHandling(async (
 // PUT /api/teleconsulta/agenda/[id] - Atualizar horário de disponibilidade
 export const PUT = withErrorHandling(async (
   request: NextRequest,
-  { params }: { params: { id: string } }
+  props: { params: Promise<{ id: string }> }
 ) => {
+  const params = await props.params;
   const supabase = await createClient()
 
   // Verificar autenticação
@@ -75,7 +77,7 @@ export const PUT = withErrorHandling(async (
   const userId = validateAuth(authError ? null : user?.id || null)
 
   // Validar parâmetros
-  const { id: availabilityId } = idParamSchema.parse(await params)
+  const { id: availabilityId } = idParamSchema.parse(params)
 
   const { data: nutritionistProfile } = await supabase.from('nutritionist_profiles').select("id").eq("user_id", userId).maybeSingle()
   const toHHmm = (t: string) => t.replace(/^(\d{1,2}):(\d{2}).*$/, '$1:$2')

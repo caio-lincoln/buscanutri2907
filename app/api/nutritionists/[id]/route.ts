@@ -4,8 +4,9 @@ import { createClient } from '../../../../lib/supabase/server'
 // GET - Buscar dados de um nutricionista específico
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  props: { params: Promise<{ id: string }> }
 ) {
+  const params = await props.params;
   try {
     const supabase = await createClient()
     const nutritionistId = params.id

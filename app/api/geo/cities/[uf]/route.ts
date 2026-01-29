@@ -6,7 +6,7 @@ type IBGECity = { id: number; nome: string }
 
 export async function GET(
   _req: Request,
-  ctx: { params: { uf: string } }
+  ctx: { params: Promise<{ uf: string }> }
 ) {
   const paramsAwaited = await ctx.params
   const uf = (paramsAwaited.uf || '').toUpperCase()

@@ -13,8 +13,9 @@ const connectionStatusSchema = z.object({
 // PATCH /api/teleconsulta/participants/[participantId]/connection - Atualizar status de conexão
 export const PATCH = withErrorHandling(async (
   request: NextRequest,
-  { params }: { params: { participantId: string } }
+  props: { params: Promise<{ participantId: string }> }
 ) => {
+  const params = await props.params;
   const supabase = await createClient()
   
   // Verificar autenticação

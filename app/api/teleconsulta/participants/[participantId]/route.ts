@@ -7,8 +7,9 @@ import { idParamSchema } from '@/src/lib/validations/teleconsulta'
 // GET /api/teleconsulta/participants/[participantId] - Buscar participante específico
 export const GET = withErrorHandling(async (
   request: NextRequest,
-  { params }: { params: { participantId: string } }
+  props: { params: Promise<{ participantId: string }> }
 ) => {
+  const params = await props.params;
   const supabase = await createClient()
   
   // Verificar autenticação
@@ -46,8 +47,9 @@ export const GET = withErrorHandling(async (
 // PUT /api/teleconsulta/participants/[participantId] - Atualizar status do participante
 export const PUT = withErrorHandling(async (
   request: NextRequest,
-  { params }: { params: { participantId: string } }
+  props: { params: Promise<{ participantId: string }> }
 ) => {
+  const params = await props.params;
   const supabase = await createClient()
   
   // Verificar autenticação

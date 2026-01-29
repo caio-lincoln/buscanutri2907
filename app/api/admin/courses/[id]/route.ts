@@ -21,8 +21,9 @@ const updateSchema = z.object({
 })
 
 // PATCH - atualizar curso
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, props: { params: Promise<{ id: string }> }) {
   try {
+    const params = await props.params;
     const user = await requireAdmin()
     const supabase = createAdminClient()
 
@@ -63,8 +64,9 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
 }
 
 // DELETE - excluir curso
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, props: { params: Promise<{ id: string }> }) {
   try {
+    const params = await props.params;
     const user = await requireAdmin()
     const supabase = createAdminClient()
 

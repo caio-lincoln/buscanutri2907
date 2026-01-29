@@ -5,9 +5,10 @@ import { requireAdmin } from '@/lib/auth-utils'
 // GET - Buscar badges de um nutricionista específico
 export async function GET(
   request: NextRequest,
-  { params }: { params: { nutritionistId: string } }
+  props: { params: Promise<{ nutritionistId: string }> }
 ) {
   try {
+    const params = await props.params;
     await requireAdmin()
     const supabase = createAdminClient()
     
