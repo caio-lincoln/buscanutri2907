@@ -7,6 +7,31 @@ export async function GET(request: NextRequest) {
     const supabase = await createClient()
     const { searchParams } = new URL(request.url)
 
+    // Verificação de Admin e Usuários de Teste
+    const { data: { user: authUser } } = await supabase.auth.getUser()
+    let isAdmin = false
+    if (authUser) {
+      const { data: userProfile } = await supabase
+        .from('users')
+        .select('user_type')
+        .eq('id', authUser.id)
+        .single()
+      if (userProfile?.user_type === 'admin') isAdmin = true
+    }
+
+    let blockedIds: string[] = []
+    if (!isAdmin) {
+      const TEST_EMAILS = [ 'nutricionista@buscanutri.com', 'paciente@buscanutri.com', 'empresa@buscanutri.com' ]
+      const { data: blockedUsers } = await supabase
+        .from('users')
+        .select('id')
+        .in('email', TEST_EMAILS)
+
+      if (blockedUsers) {
+        blockedIds = blockedUsers.map(u => u.id)
+      }
+    }
+
     // Parâmetros de filtro
     const searchTerm = searchParams.get('search') || ''
     const specialty = searchParams.get('specialty') || ''
@@ -57,6 +82,11 @@ export async function GET(request: NextRequest) {
       // Se quiser filtrar por estado aqui (caso exista coluna state):
       if (state && state !== 'Todas') {
         // q = q.eq('state', state)
+      }
+
+      // Filtra usuários de teste para não-admins
+      if (blockedIds.length > 0) {
+        q = q.not('user_id', 'in', `(${blockedIds.join(',')})`)
       }
 
       return q

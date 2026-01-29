@@ -39,6 +39,30 @@ export async function GET(
       )
     }
 
+    // Verificar se é usuário de teste e se quem solicita é admin
+    const TEST_EMAILS = [ 'nutricionista@buscanutri.com', 'paciente@buscanutri.com', 'empresa@buscanutri.com' ]
+    const userEmail = nutritionist?.user?.email
+
+    if (userEmail && TEST_EMAILS.includes(userEmail)) {
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      let isAdmin = false
+      if (authUser) {
+        const { data: userProfile } = await supabase
+          .from('users')
+          .select('user_type')
+          .eq('id', authUser.id)
+          .single()
+        if (userProfile?.user_type === 'admin') isAdmin = true
+      }
+
+      if (!isAdmin) {
+        return NextResponse.json(
+          { error: 'Nutricionista não encontrado' },
+          { status: 404 }
+        )
+      }
+    }
+
     // Buscar estatísticas de avaliações
     const { data: reviewStats } = await supabase
       .from('reviews')
