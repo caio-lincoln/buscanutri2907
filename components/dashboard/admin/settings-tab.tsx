@@ -149,6 +149,33 @@ export function SettingsTab() {
     }
   }
 
+  const handleCheckUpdates = async () => {
+    try {
+      setIsCheckingUpdates(true)
+      const response = await fetch('/api/admin/system/check-updates')
+      const data = await response.json()
+
+      if (response.ok && data.ok) {
+        toast({
+          title: 'Verificação concluída',
+          description: data.message,
+          variant: 'default',
+        })
+      } else {
+        throw new Error(data.message || data.error || 'Erro desconhecido')
+      }
+    } catch (error) {
+      console.error('Erro ao verificar atualizações:', error)
+      toast({
+        title: 'Erro na verificação',
+        description: String(error),
+        variant: 'destructive',
+      })
+    } finally {
+      setIsCheckingUpdates(false)
+    }
+  }
+
   // Adicionar useEffect para carregar as configurações
   useEffect(() => {
     // Função para carregar as configurações
