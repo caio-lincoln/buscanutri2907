@@ -33,21 +33,24 @@ import {
   assignBadgeToNutritionist,
   removeBadgeFromNutritionist,
   getNutritionistBadges,
+  type Badge,
+  type NutritionistBadge
 } from '@/lib/badge-api'
 import { getAllNutritionists } from '@/lib/nutritionist-service'
 import { getCurrentUser } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
 import type { User } from '@supabase/supabase-js'
+import type { NutritionistProfile } from '@/lib/supabase'
 
 type Props = {
   initialUser: Pick<User, 'id' | 'email' | 'user_metadata' | 'app_metadata'>
 }
 
 export function BadgesTab({ initialUser }: Props) {
-  const [badges, setBadges] = useState([])
-  const [nutritionists, setNutritionists] = useState([])
-  const [selectedNutritionist, setSelectedNutritionist] = useState(null)
-  const [nutritionistBadges, setNutritionistBadges] = useState([])
+  const [badges, setBadges] = useState<Badge[]>([])
+  const [nutritionists, setNutritionists] = useState<NutritionistProfile[]>([])
+  const [selectedNutritionist, setSelectedNutritionist] = useState<NutritionistProfile | null>(null)
+  const [nutritionistBadges, setNutritionistBadges] = useState<NutritionistBadge[]>([])
   const [loading, setLoading] = useState(true)
   const [isBadgeModalOpen, setIsBadgeModalOpen] = useState(false)
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false)

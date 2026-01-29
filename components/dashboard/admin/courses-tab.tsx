@@ -365,7 +365,7 @@ export function AdminCoursesTab() {
               <Label>Thumbnail do Curso</Label>
               <AdvancedImageUpload
                 userId={user?.id || ''}
-                currentImageUrl={form.thumbnail_url}
+                currentImageUrl={form.thumbnail_url || ''}
                 onImageUploaded={(url) => setForm({ ...form, thumbnail_url: url })}
                 onImageRemoved={() => setForm({ ...form, thumbnail_url: undefined })}
               />
@@ -450,7 +450,7 @@ export function AdminCoursesTab() {
               <Label>Thumbnail do Curso</Label>
               <AdvancedImageUpload
                 userId={user?.id || ''}
-                currentImageUrl={form.thumbnail_url}
+                currentImageUrl={form.thumbnail_url || ''}
                 onImageUploaded={(url) => setForm({ ...form, thumbnail_url: url })}
                 onImageRemoved={() => setForm({ ...form, thumbnail_url: undefined })}
               />

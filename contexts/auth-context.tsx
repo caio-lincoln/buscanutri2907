@@ -48,7 +48,7 @@ const NUTRI_PUBLIC_COLS = `
   academic_background,experience,curriculum_pdf_url,lattes_url,services_offered,service_locations,
   availability,price_range,certifications,website,instagram,linkedin,online_consultation,achievements,
   available_times,total_views,unique_views,last_view_at,is_verified,cancellation_policy,
-  default_consultation_duration,identity_document_url,min_time_between_appointments,online_only_consultation,
+  default_consultation_duration,identity_document_url,min_time_between_appointments,
   instagram_username,linkedin_username,facebook_username,youtube_channel,tiktok_username,website_url,
   service_consultation_price,service_followup_price,service_meal_plan_price,service_group_consultation,
   service_online_available,service_home_visit,monday_hours,tuesday_hours,wednesday_hours,thursday_hours,

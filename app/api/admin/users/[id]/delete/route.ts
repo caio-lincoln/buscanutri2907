@@ -4,7 +4,7 @@ import { requireAdmin } from '@/lib/auth-utils'
 import { createAdminClient } from '@/lib/supabase/server'
 import { requireProductionAuth } from '@/lib/production-auth'
 
-export const DELETE = withErrorHandling(async (req: NextRequest, { params }: { params: { id: string } }) => {
+export const DELETE = withErrorHandling(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   if (!process.env['NEXT_PUBLIC_SUPABASE_URL']) {
     return createErrorResponse('Supabase URL não configurada no ambiente', 500)
   }
@@ -25,7 +25,7 @@ export const DELETE = withErrorHandling(async (req: NextRequest, { params }: { p
     return createErrorResponse(e?.message || 'Operação não autorizada em produção', 403)
   }
   const admin = createAdminClient()
-  const rawId = params.id
+  const rawId = (await params).id
   let targetUuid = rawId
   let targetNumeric: number | null = null
   let existedInUsers = false

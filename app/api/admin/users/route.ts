@@ -1,5 +1,8 @@
 import { NextRequest } from 'next/server'
 import { withErrorHandling, createApiResponse } from '@/lib/api-middleware'
+
+export const dynamic = 'force-dynamic'
+
 import { requireAdmin } from '@/lib/auth-utils'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 
@@ -52,14 +55,20 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
         // Ignorar erros ao buscar auth user
       }
 
+      let displayName = 'Nome não disponível'
+      
+      if (u.user_type === 'nutricionista') {
+        displayName = u.nutritionist_profiles?.full_name || u.patient_profiles?.full_name || u.company_profiles?.company_name || 'Nome não disponível'
+      } else if (u.user_type === 'empresa') {
+        displayName = u.company_profiles?.company_name || u.patient_profiles?.full_name || u.nutritionist_profiles?.full_name || 'Nome não disponível'
+      } else {
+        displayName = u.patient_profiles?.full_name || u.nutritionist_profiles?.full_name || u.company_profiles?.company_name || 'Nome não disponível'
+      }
+
       return {
         id: u.id,
         numericId: (u as any)?.ID,
-        name:
-          u.patient_profiles?.full_name ||
-          u.nutritionist_profiles?.full_name ||
-          u.company_profiles?.company_name ||
-          'Nome não disponível',
+        name: displayName,
         email: u.email,
         type: u.user_type as 'paciente' | 'nutricionista' | 'empresa',
         status,

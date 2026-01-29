@@ -58,21 +58,30 @@ export async function getAllUsers(): Promise<UserData[]> {
       return []
     }
 
-    return users.map(user => ({
-      id: user.id,
-      numericId: (user as any)?.ID,
-      name:
-        user.patient_profiles?.full_name ||
-        user.nutritionist_profiles?.full_name ||
-        user.company_profiles?.company_name ||
-        'Nome não disponível',
-      email: user.email,
-      type: user.user_type as 'paciente' | 'nutricionista' | 'empresa',
-      status: user.nutritionist_profiles?.is_verified === false && user.user_type === 'nutricionista' ? 'pendente' : 'ativo',
-      createdAt: user.created_at,
-      is_verified: user.nutritionist_profiles?.is_verified,
-      nutritionist_profiles: user.nutritionist_profiles,
-    }))
+    return users.map(user => {
+      let displayName = 'Nome não disponível'
+      const userType = user.user_type as 'paciente' | 'nutricionista' | 'empresa'
+
+      if (userType === 'nutricionista') {
+        displayName = user.nutritionist_profiles?.full_name || user.patient_profiles?.full_name || user.company_profiles?.company_name || 'Nome não disponível'
+      } else if (userType === 'empresa') {
+        displayName = user.company_profiles?.company_name || user.patient_profiles?.full_name || user.nutritionist_profiles?.full_name || 'Nome não disponível'
+      } else {
+        displayName = user.patient_profiles?.full_name || user.nutritionist_profiles?.full_name || user.company_profiles?.company_name || 'Nome não disponível'
+      }
+
+      return {
+        id: user.id,
+        numericId: (user as any)?.ID,
+        name: displayName,
+        email: user.email,
+        type: userType,
+        status: user.nutritionist_profiles?.is_verified === false && userType === 'nutricionista' ? 'pendente' : 'ativo',
+        createdAt: user.created_at,
+        is_verified: user.nutritionist_profiles?.is_verified,
+        nutritionist_profiles: user.nutritionist_profiles,
+      }
+    })
   } catch {
     return []
   }

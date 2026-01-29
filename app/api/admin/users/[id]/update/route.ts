@@ -11,7 +11,7 @@ const schema = z.object({
   is_verified: z.boolean().optional(),
 })
 
-export const POST = withErrorHandling(async (req: NextRequest, { params }: { params: { id: string } }) => {
+export const POST = withErrorHandling(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   await requireAdmin()
   const admin = createAdminClient()
 
@@ -65,7 +65,7 @@ export const POST = withErrorHandling(async (req: NextRequest, { params }: { par
     didUpdateEmail = !!updatedUserEmail
   }
 
-  // Atualizar tipo do usuário na tabela users (não migra perfis)
+  // Atualizar tipo do usuário na tabela users e migrar perfil
   if (user_type && user_type !== currentType) {
     const { data: updatedUserType } = await admin
       .from('users')
@@ -74,6 +74,81 @@ export const POST = withErrorHandling(async (req: NextRequest, { params }: { par
       .select('id')
       .maybeSingle()
     didUpdateType = !!updatedUserType
+
+    // Lógica de migração de perfil
+    if (didUpdateType) {
+      try {
+        // 1. Buscar dados do perfil de origem
+        let sourceData: any = null
+        if (currentType === 'paciente') {
+          const { data } = await admin.from('patient_profiles').select('*').eq('user_id', userRow!.id).maybeSingle()
+          sourceData = data
+        } else if (currentType === 'nutricionista') {
+          const { data } = await admin.from('nutritionist_profiles').select('*').eq('user_id', userRow!.id).maybeSingle()
+          sourceData = data
+        } else if (currentType === 'empresa') {
+          const { data } = await admin.from('company_profiles').select('*').eq('user_id', userRow!.id).maybeSingle()
+          sourceData = data
+        }
+
+        if (sourceData) {
+          // Mapear campos comuns
+          const phone = sourceData.phone || null
+          // Mapear nome e imagem (normalizando campos diferentes entre tabelas)
+          const name = sourceData.full_name || sourceData.company_name || userRow!.email?.split('@')[0] || 'Usuário Migrado'
+          const image = sourceData.profile_image_url || sourceData.logo_url || null
+
+          // 2. Criar perfil de destino se não existir
+          if (user_type === 'paciente') {
+            const { data: exists } = await admin.from('patient_profiles').select('id').eq('user_id', userRow!.id).maybeSingle()
+            if (!exists) {
+              await admin.from('patient_profiles').insert({
+                user_id: userRow!.id,
+                full_name: name,
+                phone: phone,
+                profile_image_url: image
+              })
+            }
+          } else if (user_type === 'nutricionista') {
+            const { data: exists } = await admin.from('nutritionist_profiles').select('id').eq('user_id', userRow!.id).maybeSingle()
+            if (!exists) {
+              await admin.from('nutritionist_profiles').insert({
+                user_id: userRow!.id,
+                full_name: name,
+                phone: phone,
+                profile_image_url: image,
+                is_verified: false // Padrão como não verificado ao migrar
+              })
+            }
+          } else if (user_type === 'empresa') {
+            const { data: exists } = await admin.from('company_profiles').select('id').eq('user_id', userRow!.id).maybeSingle()
+            if (!exists) {
+              await admin.from('company_profiles').insert({
+                user_id: userRow!.id,
+                company_name: name,
+                phone: phone,
+                logo_url: image,
+                is_verified: false
+              })
+            }
+          }
+        } else {
+            // Se não houver perfil de origem, criar um perfil básico vazio
+            const basicName = userRow!.email?.split('@')[0] || 'Novo Usuário'
+            
+            if (user_type === 'paciente') {
+                await admin.from('patient_profiles').insert({ user_id: userRow!.id, full_name: basicName }).select('id').maybeSingle()
+            } else if (user_type === 'nutricionista') {
+                await admin.from('nutritionist_profiles').insert({ user_id: userRow!.id, full_name: basicName, is_verified: false }).select('id').maybeSingle()
+            } else if (user_type === 'empresa') {
+                await admin.from('company_profiles').insert({ user_id: userRow!.id, company_name: basicName, is_verified: false }).select('id').maybeSingle()
+            }
+        }
+      } catch (err) {
+        console.error('Erro ao migrar perfil:', err)
+        // Não falhar a requisição se a migração der erro, mas logar
+      }
+    }
   }
 
   // Atualizar nome conforme tipo

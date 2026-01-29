@@ -5,14 +5,14 @@ import { createAdminClient } from '@/lib/supabase/server'
 
 type UserType = 'paciente' | 'nutricionista' | 'empresa' | 'admin'
 
-export const GET = withErrorHandling(async (req: NextRequest, { params }: { params: { id: string } }) => {
+export const GET = withErrorHandling(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   await requireAdmin()
   const admin = createAdminClient()
 
   const url = new URL(req.url)
   const typeParam = url.searchParams.get('type') as UserType | null
 
-  const rawId = params.id
+  const rawId = (await params).id
   let targetUuid = rawId
   if (/^\\d+$/.test(rawId)) {
     const { data: row } = await admin

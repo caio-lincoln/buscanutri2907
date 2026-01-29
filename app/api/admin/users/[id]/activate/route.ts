@@ -3,7 +3,7 @@ import { withErrorHandling, createApiResponse, createErrorResponse } from '@/lib
 import { requireAdmin } from '@/lib/auth-utils'
 import { createAdminClient } from '@/lib/supabase/server'
 
-export const POST = withErrorHandling(async (_req: NextRequest, { params }: { params: { id: string } }) => {
+export const POST = withErrorHandling(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   if (!process.env['NEXT_PUBLIC_SUPABASE_URL']) {
     return createErrorResponse('Supabase URL não configurada no ambiente', 500)
   }
@@ -21,7 +21,7 @@ export const POST = withErrorHandling(async (_req: NextRequest, { params }: { pa
   }
 
   const admin = createAdminClient()
-  const rawId = params.id
+  const rawId = (await params).id
   let targetUuid = rawId
   if (/^\\d+$/.test(rawId)) {
     const { data: row } = await admin

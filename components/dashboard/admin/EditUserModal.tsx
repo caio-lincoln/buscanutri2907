@@ -74,11 +74,11 @@ export function EditUserModal({ open, onOpenChange, user, onUpdated }: EditUserM
     setSaving(true)
     try {
       const payload: Record<string, any> = {}
-      if (email && email !== user.email) payload.email = email
-      if (type && type !== user.type) payload.user_type = type
-      if (name && name !== user.name) payload.name = name
-      if (canToggleVerified) payload.is_verified = verified
-      payload.production_auth = 'liberar_producao'
+      if (email && email !== user.email) payload['email'] = email
+      if (type && type !== user.type) payload['user_type'] = type
+      if (name && name !== user.name) payload['name'] = name
+      if (canToggleVerified) payload['is_verified'] = verified
+      payload['production_auth'] = 'liberar_producao'
 
       const res = await fetch(`/api/admin/users/${user.id}/update`, {
         method: 'POST',

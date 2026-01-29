@@ -183,7 +183,7 @@ export function ReportsTab() {
                     mode="range"
                     defaultMonth={dateRange?.from}
                     selected={dateRange}
-                    onSelect={setDateRange}
+                    onSelect={(range) => setDateRange(range)}
                     numberOfMonths={2}
                   />
                 </PopoverContent>

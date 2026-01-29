@@ -74,16 +74,19 @@ const userStatusColors = {
 export function UsersTab() {
   const { hasPermission } = usePermissions()
   const canManageUsers = hasPermission('manage_users')
-  const [ users, setUsers ] = useState<UserData[]>([])
+  
+  // Estado para todos os usuários (cache local)
+  const [ allUsers, setAllUsers ] = useState<UserData[]>([])
+  // Estado para usuários filtrados
+  const [ filteredUsers, setFilteredUsers ] = useState<UserData[]>([])
+  
   const [ loading, setLoading ] = useState(true)
   const [ searchTerm, setSearchTerm ] = useState('')
   const [ filterType, setFilterType ] = useState<UserData[ 'type' ] | 'all'>('all')
-  const [ filterStatus, setFilterStatus ] = useState<UserData[ 'status' ] | 'all'>(
-    'all'
-  )
+  const [ filterStatus, setFilterStatus ] = useState<UserData[ 'status' ] | 'all'>('all')
   const [ currentPage, setCurrentPage ] = useState(1)
   const usersPerPage = 10
-  const [ totalUsersCount, setTotalUsersCount ] = useState(0)
+  
   const [ verifyModalOpen, setVerifyModalOpen ] = useState(false)
   const [ selectedUser, setSelectedUser ] = useState<{
     id: string
@@ -96,35 +99,67 @@ export function UsersTab() {
   const [ viewModalOpen, setViewModalOpen ] = useState(false)
   const [ viewUser, setViewUser ] = useState<ViewUserProfileData | null>(null)
 
-  const loadUsersDirect = async (page: number) => {
+  // Carregar todos os usuários uma única vez (ou ao forçar refresh)
+  const fetchUsers = async () => {
     setLoading(true)
     try {
-      const all = await getAllUsers()
-      const filtered = all.filter(user => {
-        const matchesSearch =
-          user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          user.id.toLowerCase().includes(searchTerm.toLowerCase())
-        const matchesType = filterType === 'all' || user.type === filterType
-        const matchesStatus = filterStatus === 'all' || user.status === filterStatus
-        return matchesSearch && matchesType && matchesStatus
-      })
-      const offset = (page - 1) * usersPerPage
-      const paged = filtered.slice(offset, offset + usersPerPage)
-      setUsers(paged)
-      setTotalUsersCount(filtered.length)
+      const users = await getAllUsers()
+      setAllUsers(users)
     } finally {
       setLoading(false)
     }
   }
 
   useEffect(() => {
-    void loadUsersDirect(currentPage)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ filterType, filterStatus, currentPage, searchTerm ])
+    void fetchUsers()
+  }, [])
 
+  // Filtragem local eficiente
+  useEffect(() => {
+    let result = allUsers
+
+    // Filtro de texto (nome, email, id)
+    if (searchTerm.trim()) {
+      const lowerTerm = searchTerm.toLowerCase().trim()
+      result = result.filter(user => 
+        user.name.toLowerCase().includes(lowerTerm) ||
+        user.email.toLowerCase().includes(lowerTerm) ||
+        user.id.toLowerCase().includes(lowerTerm) ||
+        (user as any)?.numericId?.toString().includes(lowerTerm)
+      )
+    }
+
+    // Filtro de tipo
+    if (filterType !== 'all') {
+      result = result.filter(user => user.type === filterType)
+    }
+
+    // Filtro de status
+    if (filterStatus !== 'all') {
+      result = result.filter(user => user.status === filterStatus)
+    }
+
+    setFilteredUsers(result)
+  }, [allUsers, searchTerm, filterType, filterStatus])
+
+  // Resetar página quando filtros mudam
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchTerm, filterType, filterStatus])
+
+  // Ajustar página se os dados mudarem e a página atual ficar vazia
+  useEffect(() => {
+    const totalPages = Math.ceil(filteredUsers.length / usersPerPage) || 1
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages)
+    }
+  }, [filteredUsers, usersPerPage])
+
+  // Paginação dos usuários filtrados
+  const totalUsersCount = filteredUsers.length
   const totalPages = Math.ceil(totalUsersCount / usersPerPage)
-  const currentUsers = users
+  const offset = (currentPage - 1) * usersPerPage
+  const currentUsers = filteredUsers.slice(offset, offset + usersPerPage)
 
   const parseAdminResponse = async (res: Response) => {
     const contentType = res.headers.get('content-type') || ''
@@ -236,7 +271,7 @@ export function UsersTab() {
         try {
           const ok = await unverifyNutritionist(user.nutritionist_profiles!.id)
           if (ok) {
-            await loadUsersDirect(currentPage)
+            await fetchUsers()
           } else {
             alert('Falha ao remover verificação.')
           }
@@ -282,11 +317,11 @@ export function UsersTab() {
           let url = ''
           let options: RequestInit = { method: 'POST' }
           const idForOps = (() => {
-            const numeric = (user as any)?.numericId
-            if (typeof numeric === 'number' && Number.isFinite(numeric)) return String(numeric)
             if (typeof user.id === 'string' && user.id.trim().toLowerCase() !== 'undefined' && user.id.trim().toLowerCase() !== 'null') {
               return user.id.trim()
             }
+            const numeric = (user as any)?.numericId
+            if (typeof numeric === 'number' && Number.isFinite(numeric)) return String(numeric)
             return ''
           })()
           if (!idForOps) {
@@ -312,7 +347,7 @@ export function UsersTab() {
           const ok = await execAdmin(action, url, options)
           if (!ok) return
           // Recarregar lista
-          await loadUsersDirect(currentPage)
+          await fetchUsers()
         } catch (err) {
           console.warn('Erro executando ação admin:', err)
           alert('Erro ao executar ação.')
@@ -330,28 +365,12 @@ export function UsersTab() {
 
   const handleUserApproved = async () => {
     // Recarregar dados após aprovação
-    try {
-      setLoading(true)
-      const refreshed = await getAllUsers()
-      setUsers(refreshed)
-    } catch {
-      // Silent error handling: Error reloading users
-    } finally {
-      setLoading(false)
-    }
+    await fetchUsers()
   }
 
   const handleUserUpdated = async () => {
     // Recarregar dados após atualização via modal de edição
-    try {
-      setLoading(true)
-      const refreshed = await getAllUsers()
-      setUsers(refreshed)
-    } catch {
-      // Silent error handling: Error reloading users
-    } finally {
-      setLoading(false)
-    }
+    await fetchUsers()
   }
 
   const formatDate = (dateString: string) => {
@@ -456,7 +475,7 @@ export function UsersTab() {
                       colSpan={8}
                       className="text-center py-8 text-gray-500"
                     >
-                      {users.length === 0 && (totalUsersCount || 0) > 0
+                      {allUsers.length > 0
                         ? 'Nenhum usuário encontrado com os filtros aplicados.'
                         : 'Nenhum usuário encontrado.'}
                     </TableCell>

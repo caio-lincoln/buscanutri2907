@@ -13,6 +13,7 @@ export interface ForumAuthor {
   isVerified?: boolean
   id: string // Adicionar ID do autor para buscar insígnias
   badges?: NutritionistBadge[] // Adicionar badges ao tipo
+  specialties?: string[] // Especialidades do nutricionista
 }
 
 export interface ForumReply {
