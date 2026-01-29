@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '../../../../lib/supabase/server'
+import { createClient, createAdminClient } from '../../../../lib/supabase/server'
 
 // GET - Buscar dados de um nutricionista específico
 export async function GET(
@@ -16,6 +16,38 @@ export async function GET(
         { error: 'ID do nutricionista é obrigatório' },
         { status: 400 }
       )
+    }
+
+    // Verificar se é usuário de teste e se quem solicita é admin
+    // Usamos admin client para garantir acesso ao email, pois RLS pode bloquear para usuários anonimos
+    const TEST_EMAILS = [ 'nutricionista@buscanutri.com', 'paciente@buscanutri.com', 'empresa@buscanutri.com' ]
+    const adminSupabase = createAdminClient()
+    const { data: userData } = await adminSupabase
+      .from('users')
+      .select('email')
+      .eq('id', nutritionistId)
+      .single()
+    
+    const userEmail = userData?.email
+
+    if (userEmail && TEST_EMAILS.includes(userEmail)) {
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      let isAdmin = false
+      if (authUser) {
+        const { data: userProfile } = await supabase
+          .from('users')
+          .select('user_type')
+          .eq('id', authUser.id)
+          .single()
+        if (userProfile?.user_type === 'admin') isAdmin = true
+      }
+
+      if (!isAdmin) {
+        return NextResponse.json(
+          { error: 'Nutricionista não encontrado' },
+          { status: 404 }
+        )
+      }
     }
 
     // Buscar dados do nutricionista
@@ -37,30 +69,6 @@ export async function GET(
         { error: 'Nutricionista não encontrado' },
         { status: 404 }
       )
-    }
-
-    // Verificar se é usuário de teste e se quem solicita é admin
-    const TEST_EMAILS = [ 'nutricionista@buscanutri.com', 'paciente@buscanutri.com', 'empresa@buscanutri.com' ]
-    const userEmail = nutritionist?.user?.email
-
-    if (userEmail && TEST_EMAILS.includes(userEmail)) {
-      const { data: { user: authUser } } = await supabase.auth.getUser()
-      let isAdmin = false
-      if (authUser) {
-        const { data: userProfile } = await supabase
-          .from('users')
-          .select('user_type')
-          .eq('id', authUser.id)
-          .single()
-        if (userProfile?.user_type === 'admin') isAdmin = true
-      }
-
-      if (!isAdmin) {
-        return NextResponse.json(
-          { error: 'Nutricionista não encontrado' },
-          { status: 404 }
-        )
-      }
     }
 
     // Buscar estatísticas de avaliações

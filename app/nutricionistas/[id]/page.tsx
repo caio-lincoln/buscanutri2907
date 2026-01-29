@@ -3,6 +3,7 @@ import NutritionistProfilePageClient from './NutritionistProfileClient'
 import { notFound } from 'next/navigation'
 import { generateImageVariants } from '@/lib/image-variants'
 import { formatNameProperCase } from '@/lib/utils/format-name'
+import { createClient } from '@/lib/supabase/server'
 
 interface PageProps {
   params: {
@@ -72,6 +73,26 @@ export default async function NutritionistProfilePage({ params }: PageProps) {
 
   if (!nutritionist) {
     notFound()
+  }
+
+  // Verificação de segurança: Ocultar usuários de teste para não-admins
+  const TEST_EMAILS = [ 'nutricionista@buscanutri.com', 'paciente@buscanutri.com', 'empresa@buscanutri.com' ]
+  if (nutritionist.email && TEST_EMAILS.includes(nutritionist.email)) {
+    const supabase = await createClient()
+    const { data: { user: authUser } } = await supabase.auth.getUser()
+    let isAdmin = false
+    if (authUser) {
+      const { data: userProfile } = await supabase
+        .from('users')
+        .select('user_type')
+        .eq('id', authUser.id)
+        .single()
+      if (userProfile?.user_type === 'admin') isAdmin = true
+    }
+    
+    if (!isAdmin) {
+      notFound()
+    }
   }
 
   // Generate structured data on the server to avoid hydration mismatch

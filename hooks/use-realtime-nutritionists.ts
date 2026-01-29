@@ -103,6 +103,16 @@ export function useRealtimeNutritionists(filters: UseRealtimeNutritionistsProps 
       `)
         .eq('is_listed', true)
 
+      // Exclude test users
+      const TEST_USER_IDS = [
+        'db607821-762e-4cb0-b6b4-727d1cdc60e7', // nutricionista@buscanutri.com
+        'e69b468d-185a-44ca-aaea-75bfd99d95a7', // paciente@buscanutri.com
+        '2343be01-adc8-4087-b8d1-0c0913b182da'  // empresa@buscanutri.com
+      ]
+      // Use filter with not.in format for UUIDs: '("uuid1","uuid2")'
+      const idsString = `(${TEST_USER_IDS.map(id => `"${id}"`).join(',')})`
+      query = query.filter('user_id', 'not.in', idsString)
+
       // busca por texto
       if (filters.searchTerm) {
         query = query.or(

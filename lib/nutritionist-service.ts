@@ -154,7 +154,7 @@ export async function getNutritionistById(id: string): Promise<
   }
 }
 
-export async function getAllNutritionists(): Promise<
+export async function getAllNutritionists(includeTestUsers: boolean = false): Promise<
   (NutritionistProfile & {
     badges?: any[]
     viewStats?: ProfileViewStats
@@ -175,15 +175,27 @@ export async function getAllNutritionists(): Promise<
       return []
     }
 
+    // Filter out test users if not requested
+    let resultData = data
+    if (!includeTestUsers) {
+      // IDs dos usuários de teste (nutricionista@, paciente@, empresa@)
+      const TEST_USER_IDS = [
+        'db607821-762e-4cb0-b6b4-727d1cdc60e7', // nutricionista@buscanutri.com
+        'e69b468d-185a-44ca-aaea-75bfd99d95a7', // paciente@buscanutri.com
+        '2343be01-adc8-4087-b8d1-0c0913b182da'  // empresa@buscanutri.com
+      ]
+      resultData = data.filter((n: any) => !TEST_USER_IDS.includes(n.user_id))
+    }
+
     // Diagnóstico: contabiliza quantos vieram com aceita_cupons=true antes do mapeamento
     try {
-      const rawCouponTrue = (data || []).filter((n: any) => n?.aceita_cupons === true).length
+      const rawCouponTrue = (resultData || []).filter((n: any) => n?.aceita_cupons === true).length
       // eslint-disable-next-line no-console
       console.debug('[getAllNutritionists] Raw aceita_cupons count:', rawCouponTrue)
     } catch {}
 
     // Mapeia os dados para incluir o email e garantir a tipagem correta
-    const nutritionistsWithEmail = data.map((n: any) => ({
+    const nutritionistsWithEmail = resultData.map((n: any) => ({
       ...n,
       email: n.email || null,
       aceita_cupons: typeof n.aceita_cupons === 'boolean' ? n.aceita_cupons : false,

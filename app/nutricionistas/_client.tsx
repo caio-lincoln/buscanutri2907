@@ -135,9 +135,10 @@ type Props = {
   initialNutritionists: NutritionistProfile[]
   initialSpecialties: Specialty[]
   initialMainAddresses: Record<string, string>
+  blockedIds?: string[]
 }
 
-export default function NutricionistasClient({ initialNutritionists, initialSpecialties, initialMainAddresses }: Props) {
+export default function NutricionistasClient({ initialNutritionists, initialSpecialties, initialMainAddresses, blockedIds = [] }: Props) {
   const [ nutritionists, setNutritionists ] = useState<NutritionistProfile[]>(initialNutritionists)
   const [ loading, setLoading ] = useState(false)
   const [ mainAddresses, setMainAddresses ] = useState<Record<string, string>>(initialMainAddresses || {})
@@ -163,18 +164,26 @@ export default function NutricionistasClient({ initialNutritionists, initialSpec
       .on('postgres_changes', { event: '*', schema: 'public', table: 'nutritionist_profiles' }, async () => {
         try {
           const data = await getAllNutritionists()
-          setNutritionists(data)
+          // Filter blocked users if any
+          const filteredData = blockedIds.length > 0 
+            ? data.filter(n => !blockedIds.includes(n.user_id))
+            : data
+          setNutritionists(filteredData)
         } catch {}
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'consultation_reviews' }, async () => {
         try {
           const data = await getAllNutritionists()
-          setNutritionists(data)
+          // Filter blocked users if any
+          const filteredData = blockedIds.length > 0 
+            ? data.filter(n => !blockedIds.includes(n.user_id))
+            : data
+          setNutritionists(filteredData)
         } catch {}
       })
       .subscribe()
     return () => { sb.removeChannel(channel) }
-  }, [])
+  }, [blockedIds])
 
   useEffect(() => {
     (async () => {

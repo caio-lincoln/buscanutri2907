@@ -101,7 +101,7 @@ export function BadgesTab({ initialUser }: Props) {
     setLoading(true)
     const fetchedBadges = await getAllBadges()
     setBadges(fetchedBadges)
-    const fetchedNutritionists = await getAllNutritionists()
+    const fetchedNutritionists = await getAllNutritionists(true)
     setNutritionists(fetchedNutritionists)
     setLoading(false)
   }
