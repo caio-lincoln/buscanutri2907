@@ -71,24 +71,42 @@ export const DELETE = withErrorHandling(async (req: NextRequest, { params }: { p
   try {
     const { error } = await admin.auth.admin.deleteUser(targetUuid)
     if (error) {
-        console.error('[AUTH DELETE ERROR]', error)
-        // Soft delete succeeded, but auth delete failed.
-        // We return error 500 but with details that DB is cleaned.
+        // If user not found, it means it's already deleted from Auth, which is fine for our goal.
+        if (error.code === 'user_not_found' || error.message?.includes('User not found') || error.status === 404) {
+             console.log('[AUTH DELETE INFO] User already deleted from Auth. Continuing...')
+        } else {
+            console.error('[AUTH DELETE ERROR]', error)
+            // Soft delete succeeded, but auth delete failed.
+            // We return error 500 but with details that DB is cleaned.
+            return createApiResponse({ 
+                success: false, 
+                auth: 'error', 
+                db: 'deleted', 
+                details: { auth: error.message, db: 'Soft deleted successfully' } 
+            }, 500)
+        }
+    }
+  } catch (e: any) {
+    // If user not found, it means it's already deleted from Auth.
+    // Check various properties where the error code might be
+    const isUserNotFound = 
+        e.code === 'user_not_found' || 
+        e.message?.includes('User not found') || 
+        e.status === 404 ||
+        e.code === 404 ||
+        (e.error && e.error.code === 'user_not_found');
+
+    if (isUserNotFound) {
+        console.log('[AUTH DELETE INFO] User already deleted from Auth (exception). Continuing...')
+    } else {
+        console.error('[AUTH DELETE EXCEPTION]', e)
         return createApiResponse({ 
             success: false, 
             auth: 'error', 
             db: 'deleted', 
-            details: { auth: error.message, db: 'Soft deleted successfully' } 
+            details: { auth: e.message } 
         }, 500)
     }
-  } catch (e: any) {
-    console.error('[AUTH DELETE EXCEPTION]', e)
-    return createApiResponse({ 
-        success: false, 
-        auth: 'error', 
-        db: 'deleted', 
-        details: { auth: e.message } 
-    }, 500)
   }
 
   // 4. Audit Log

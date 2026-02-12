@@ -21,10 +21,12 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
       email,
       user_type,
       created_at,
+      is_deleted,
       patient_profiles:patient_profiles!patient_profiles_user_id_fkey(full_name, phone, birth_date, gender),
       nutritionist_profiles:nutritionist_profiles!nutritionist_profiles_user_id_fkey(id, full_name, is_verified, crn, phone),
       company_profiles:company_profiles!company_profiles_user_id_fkey(company_name)
     `)
+    .eq('is_deleted', false) // Filter out soft deleted users
     .order('created_at', { ascending: false })
 
   if (error || !data) {
