@@ -95,10 +95,11 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   const body = await request.json()
   const { nutritionist_id, scheduled_for, duration_minutes, price, notes } = createTeleconsultaSessionSchema.parse(body)
 
-  // Validar se a data é futura
+  // Validar se a data é futura (comparação em UTC)
   const scheduledDate = new Date(scheduled_for)
+  const nowUtcMs = Date.now()
 
-  if (scheduledDate <= new Date()) {
+  if (Number.isNaN(scheduledDate.getTime()) || scheduledDate.getTime() <= nowUtcMs) {
     throw new ValidationError('Data deve ser futura')
   }
 

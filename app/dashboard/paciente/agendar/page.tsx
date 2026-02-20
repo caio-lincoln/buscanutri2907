@@ -61,6 +61,23 @@ interface AvailableSlot {
   available: boolean
 }
 
+function buildLocalIsoWithOffset(slot: AvailableSlot) {
+  const [year, month, day] = slot.date.split('-').map(Number)
+  const [hour, minute] = slot.time.split(':').map(Number)
+  const localDate = new Date(year, month - 1, day, hour, minute, 0, 0)
+  const offsetMinutes = localDate.getTimezoneOffset()
+  const sign = offsetMinutes > 0 ? '-' : '+'
+  const abs = Math.abs(offsetMinutes)
+  const offsetHours = String(Math.floor(abs / 60)).padStart(2, '0')
+  const offsetMins = String(abs % 60).padStart(2, '0')
+  const yyyy = String(year).padStart(4, '0')
+  const mm = String(month).padStart(2, '0')
+  const dd = String(day).padStart(2, '0')
+  const hh = String(hour).padStart(2, '0')
+  const min = String(minute).padStart(2, '0')
+  return `${yyyy}-${mm}-${dd}T${hh}:${min}:00${sign}${offsetHours}:${offsetMins}`
+}
+
 type PaymentMethod = 'card' | 'boleto'
 
 const BASE_PAYMENT_METHODS: { value: PaymentMethod; label: string; description: string }[] = [
@@ -310,6 +327,8 @@ export default function AgendarPage() {
     try {
       setBooking(true)
 
+      const scheduledFor = buildLocalIsoWithOffset(selectedSlot)
+
       const response = await fetch('/api/teleconsulta/sessions', {
         method: 'POST',
         headers: {
@@ -317,7 +336,7 @@ export default function AgendarPage() {
         },
         body: JSON.stringify({
           nutritionist_id: selectedNutritionist.id,
-          scheduled_for: selectedSlot.datetime,
+          scheduled_for: scheduledFor,
           duration_minutes: selectedSlot.duration,
           price: selectedNutritionist.consultation_price,
         }),
@@ -337,7 +356,7 @@ export default function AgendarPage() {
           patient_email: patientProfile?.email ?? user?.email,
           nutritionist_id: selectedNutritionist.id,
           nutritionist_name: selectedNutritionist.full_name,
-          scheduled_for: selectedSlot.datetime,
+          scheduled_for: scheduledFor,
           duration_minutes: selectedSlot.duration,
           price_brl: selectedNutritionist.consultation_price,
           teleconsulta_session_id: sessionData.session.id,

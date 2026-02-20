@@ -5,11 +5,10 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Calendar, Clock, Video, User, Copy, ExternalLink } from 'lucide-react'
-import { format } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
 import { toast } from 'sonner'
 import { useState } from 'react'
 import AnamneseViewModal from '@/components/anamnese-view-modal'
+import { formatDateOnlyBR, formatTimeOnlyBR, isSameDayBR } from '@/lib/utils/format-date'
 
 export interface TeleconsultaSession {
   id: string
@@ -82,11 +81,12 @@ export function TeleconsultaCard({
  
   const [isAnamnesisOpen, setIsAnamnesisOpen] = useState(false)
   const scheduledDate = new Date(session.scheduled_at)
-
-  const now = new Date()
-  const isToday = format(scheduledDate, 'yyyy-MM-dd') === format(now, 'yyyy-MM-dd')
-  const canJoin = session.status === 'scheduled' && 
-    Math.abs(scheduledDate.getTime() - now.getTime()) <= 15 * 60 * 1000 
+  const nowUtcMs = Date.now()
+  const scheduledUtcMs = scheduledDate.getTime()
+  const allowJoinMinutesBefore = 5
+  const canJoinFromMs = scheduledUtcMs - allowJoinMinutesBefore * 60 * 1000
+  const canJoin = session.status === 'scheduled' && nowUtcMs >= canJoinFromMs
+  const isToday = isSameDayBR(session.scheduled_at)
   
   const otherUser = userRole === 'nutricionista' ? session.patient : session.nutritionist
   const statusInfo = statusConfig[session.status]
@@ -143,14 +143,14 @@ export function TeleconsultaCard({
           <div className="flex items-center space-x-2">
             <Calendar className="h-4 w-4 text-muted-foreground" />
             <span>
-              {format(scheduledDate, "dd 'de' MMMM", { locale: ptBR })}
+              {formatDateOnlyBR(session.scheduled_at)}
               {isToday && <Badge variant="outline" className="ml-2">Hoje</Badge>}
             </span>
           </div>
           <div className="flex items-center space-x-2">
             <Clock className="h-4 w-4 text-muted-foreground" />
             <span>
-              {scheduledDate.toISOString().substring(11, 16)} ({session.duration_minutes}min)
+              {formatTimeOnlyBR(session.scheduled_at)} ({session.duration_minutes}min)
             </span>
           </div>
         </div>
