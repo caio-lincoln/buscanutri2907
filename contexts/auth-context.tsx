@@ -203,6 +203,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
     } catch (error) {
+      const err = error as any
+      const msg: string = err?.message || ''
+      const code: string | number | undefined = err?.code ?? err?.status
+      const isRefreshTokenError =
+        msg.includes('Refresh Token Not Found') ||
+        msg.includes('Invalid Refresh Token') ||
+        code === 'refresh_token_not_found' ||
+        code === 400
+
+      if (isRefreshTokenError) {
+        try {
+          await sessionTracker.endSession()
+          // Limpa apenas o estado local; cookies de servidor serão atualizados pelo próximo request
+          await supabase.auth.signOut({ scope: 'local' } as any)
+          setUser(null)
+          setUserProfile(null)
+          resetSubProfiles()
+          if (typeof window !== 'undefined') {
+            const next = encodeURIComponent(window.location.pathname + window.location.search)
+            // Redireciona para reautenticação
+            router.replace(`/login?next=${next}`)
+          }
+          return
+        } catch (e) {
+          // Fallback silencioso
+        }
+      }
       console.error('Erro ao carregar usuário:', error)
     } finally {
       setLoading(false)

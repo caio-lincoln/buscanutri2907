@@ -51,6 +51,7 @@ export function VerifyNutritionistModal({
   const [loadingData, setLoadingData] = useState(false)
   const [docs, setDocs] = useState<NutritionistDocument[]>([])
   const [details, setDetails] = useState<any>(null)
+  const [mounted, setMounted] = useState(false)
   const [rejecting, setRejecting] = useState(false)
   const [reason, setReason] = useState('')
   const [processing, setProcessing] = useState(false)
@@ -62,6 +63,10 @@ export function VerifyNutritionistModal({
     checked: boolean
   } | null>(null)
   const [validatingCRN, setValidatingCRN] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // Carrega dados quando abrir
   useEffect(() => {
