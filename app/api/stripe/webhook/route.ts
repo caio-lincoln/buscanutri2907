@@ -43,6 +43,10 @@ export async function POST(req: NextRequest) {
           const duration_minutes = Number(metadata.duration_minutes || 60)
           const price_brl = Number(metadata.price_brl || 0)
           const stripe_payment_intent_id = String(session.payment_intent || '')
+          const payment_method =
+            Array.isArray(session.payment_method_types) && session.payment_method_types.length > 0
+              ? session.payment_method_types[ 0 ]
+              : null
 
           const { error: upErr } = await supabaseAdmin
             .from('teleconsulta_sessions')
@@ -50,6 +54,9 @@ export async function POST(req: NextRequest) {
               scheduled_at: scheduled_for,
               duration_minutes,
               status: 'scheduled',
+              payment_intent_id: stripe_payment_intent_id || null,
+              payment_status: 'paid',
+              payment_method,
               updated_at: new Date().toISOString(),
             })
             .eq('id', teleconsulta_session_id)
@@ -66,9 +73,64 @@ export async function POST(req: NextRequest) {
             status: 'succeeded',
             stripe_session_id: session.id,
             stripe_payment_intent_id,
+            teleconsulta_session_id,
             raw: session as any,
           })
           if (payErr) console.error('Erro ao inserir payment:', payErr)
+        }
+
+        break
+      }
+
+      case 'payment_intent.processing':
+      case 'payment_intent.succeeded':
+      case 'payment_intent.payment_failed': {
+        const intent = event.data.object as Stripe.PaymentIntent
+        const metadata = intent.metadata || {}
+
+        if (metadata[ 'type' ] !== 'teleconsulta') {
+          break
+        }
+
+        const teleconsulta_session_id = metadata.teleconsulta_session_id
+        const patient_id = metadata.patient_id
+        const nutritionist_id = metadata.nutritionist_id
+
+        if (!teleconsulta_session_id || !patient_id || !nutritionist_id) {
+          break
+        }
+
+        let payment_status: 'pending' | 'paid' | 'failed' = 'pending'
+        switch (event.type) {
+          case 'payment_intent.succeeded':
+            payment_status = 'paid'
+            break
+          case 'payment_intent.payment_failed':
+            payment_status = 'failed'
+            break
+          default:
+            payment_status = 'pending'
+        }
+
+        const primaryMethod =
+          Array.isArray(intent.payment_method_types) && intent.payment_method_types.length > 0
+            ? intent.payment_method_types[ 0 ]
+            : null
+
+        const { error: upErr } = await supabaseAdmin
+          .from('teleconsulta_sessions')
+          .update({
+            payment_intent_id: intent.id,
+            payment_status,
+            payment_method: primaryMethod,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', teleconsulta_session_id)
+          .eq('patient_id', patient_id)
+          .eq('nutritionist_id', nutritionist_id)
+
+        if (upErr) {
+          console.error('Erro ao atualizar pagamento da teleconsulta (PI):', upErr)
         }
 
         break

@@ -30,6 +30,7 @@ import { toast } from 'sonner'
 import { formatNutritionistData } from '@/lib/nutritionist-service'
 import { loadStripe } from '@stripe/stripe-js'
 import { createSupabaseClient } from '@/lib/supabase'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 
 const stripeKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
 const stripePromise = stripeKey ? loadStripe(stripeKey) : null
@@ -60,6 +61,23 @@ interface AvailableSlot {
   available: boolean
 }
 
+type PaymentMethod = 'card' | 'boleto'
+
+const BASE_PAYMENT_METHODS: { value: PaymentMethod; label: string; description: string }[] = [
+  {
+    value: 'card',
+    label: 'Cartão de crédito',
+    description: 'Pagamento instantâneo, confirmação imediata da consulta.',
+  },
+  {
+    value: 'boleto',
+    label: 'Boleto bancário',
+    description: 'Consulta confirmada após compensação do boleto.',
+  },
+]
+
+const PAYMENT_METHODS = BASE_PAYMENT_METHODS
+
 export default function AgendarPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -87,6 +105,7 @@ export default function AgendarPage() {
   const [ booking, setBooking ] = useState(false)
   const [ step, setStep ] = useState<'search' | 'schedule'>('search')
   const [ consultationType, setConsultationType ] = useState<'online' | 'presential'>('online')
+  const [ paymentMethod, setPaymentMethod ] = useState<PaymentMethod>('card')
 
   useEffect(() => {
     if (nutritionistId && nutritionists.length > 0) {
@@ -261,7 +280,8 @@ export default function AgendarPage() {
           scheduled_for: selectedSlot.datetime,
           duration_minutes: selectedSlot.duration,
           price_brl: selectedNutritionist.consultation_price,
-          teleconsulta_session_id: sessionData.session.id
+          teleconsulta_session_id: sessionData.session.id,
+          payment_method: paymentMethod,
         }),
       })
 
@@ -795,47 +815,76 @@ export default function AgendarPage() {
                     </div>
 
                     {selectedSlot && (
-                      <div className="border-t pt-4">
-                        <h4 className="font-medium mb-2">Horário Selecionado</h4>
-                        <div className="bg-green-50 p-3 rounded-lg">
-                          <div className="flex items-center gap-2 text-green-800">
-                            <Calendar className="h-4 w-4" />
-                            <span className="font-medium">
-                              {format(parseISO(selectedSlot.date), "dd 'de' MMMM 'de' yyyy", {
-                                locale: ptBR,
-                              })}
-                            </span>
+                      <>
+                        <div className="border-t pt-4">
+                          <h4 className="font-medium mb-2">Horário Selecionado</h4>
+                          <div className="bg-green-50 p-3 rounded-lg">
+                            <div className="flex items-center gap-2 text-green-800">
+                              <Calendar className="h-4 w-4" />
+                              <span className="font-medium">
+                                {format(parseISO(selectedSlot.date), "dd 'de' MMMM 'de' yyyy", {
+                                  locale: ptBR,
+                                })}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2 text-green-800 mt-1">
+                              <Clock className="h-4 w-4" />
+                              <span className="font-medium">
+                                {selectedSlot.time}
+                              </span>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-2 text-green-800 mt-1">
-                            <Clock className="h-4 w-4" />
-                            <span className="font-medium">
-                              {selectedSlot.time}
-                            </span>
-                          </div>
-                        </div>
-                        {consultationType === 'online' ? (
-                          (selectedNutritionist.online_consultation_available || selectedNutritionist.service_online_available) ? (
+                          {consultationType === 'online' ? (
+                            (selectedNutritionist.online_consultation_available || selectedNutritionist.service_online_available) ? (
+                              <Button
+                                onClick={handleBooking}
+                                disabled={booking}
+                                className="w-full mt-4"
+                              >
+                                {booking ? 'Agendando...' : 'Confirmar Teleconsulta'}
+                              </Button>
+                            ) : (
+                              <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-800">
+                                Teleconsulta indisponível para este nutricionista.
+                              </div>
+                            )
+                          ) : (
                             <Button
-                              onClick={handleBooking}
-                              disabled={booking}
+                              onClick={handlePresentialConfirm}
                               className="w-full mt-4"
                             >
-                              {booking ? 'Agendando...' : 'Confirmar Teleconsulta'}
+                              Confirmar Consulta Presencial
                             </Button>
-                          ) : (
-                            <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-800">
-                              Teleconsulta indisponível para este nutricionista.
-                            </div>
-                          )
-                        ) : (
-                          <Button
-                            onClick={handlePresentialConfirm}
-                            className="w-full mt-4"
+                          )}
+                        </div>
+
+                        <div className="border-t pt-4 mt-4">
+                          <h4 className="font-medium mb-2">Forma de pagamento</h4>
+                          <RadioGroup
+                            value={paymentMethod}
+                            onValueChange={value => setPaymentMethod(value as PaymentMethod)}
+                            className="grid grid-cols-1 md:grid-cols-3 gap-3"
                           >
-                            Confirmar Consulta Presencial
-                          </Button>
-                        )}
-                      </div>
+                            {PAYMENT_METHODS.map(method => (
+                              <label
+                                key={method.value}
+                                className="flex cursor-pointer items-start gap-2 rounded-lg border p-3 text-sm hover:border-green-500"
+                              >
+                                <RadioGroupItem value={method.value} className="mt-1" />
+                                <div>
+                                  <div className="font-medium">{method.label}</div>
+                                  <div className="text-xs text-gray-600">
+                                    {method.description}
+                                  </div>
+                                </div>
+                              </label>
+                            ))}
+                          </RadioGroup>
+                          <p className="mt-2 text-xs text-gray-500">
+                            Cartão é sempre aceito. Boleto depende da disponibilidade da Stripe no Brasil.
+                          </p>
+                        </div>
+                      </>
                     )}
                   </>
                 )}
