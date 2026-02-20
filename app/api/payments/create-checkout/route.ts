@@ -17,6 +17,7 @@ interface CreateConsultPaymentParams {
   scheduledFor: string
   durationMinutes?: number
   paymentMethod?: ConsultPaymentMethod
+  couponCode?: string | null
   connectedAccountId: string
   successUrl: string
   cancelUrl: string
@@ -27,6 +28,10 @@ interface ConsultPaymentResult {
   payment_intent_id: string | null
   session_id: string
   available_methods: ConsultPaymentMethod[]
+  amount_original: number
+  amount_final: number
+  discount_applied: boolean
+  discount_value: number
 }
 
 function getAvailablePaymentMethodsForCurrency(currency: string): ConsultPaymentMethod[] {
@@ -37,6 +42,56 @@ function getAvailablePaymentMethodsForCurrency(currency: string): ConsultPayment
   }
 
   return [ 'card' ]
+}
+
+async function validatePromotionCode(
+  couponCode: string,
+  amountInCents: number,
+  currency: string,
+): Promise<{
+  promotionCode: Stripe.PromotionCode
+  coupon: Stripe.Coupon
+  discountAmountInCents: number
+  finalAmountInCents: number
+}> {
+  if (!stripe) {
+    throw new Error('Stripe não inicializado')
+  }
+
+  const list = await stripe.promotionCodes.list({
+    code: couponCode,
+    active: true,
+    limit: 1,
+    expand: [ 'data.coupon' ],
+  })
+
+  const promotionCode = list.data[ 0 ]
+  if (!promotionCode) {
+    throw new Error('Cupom inválido ou expirado')
+  }
+
+  const coupon = promotionCode.coupon as Stripe.Coupon
+
+  if (coupon.valid === false) {
+    throw new Error('Cupom inválido ou expirado')
+  }
+
+  let discountAmountInCents = 0
+
+  if (coupon.percent_off) {
+    discountAmountInCents = Math.round(amountInCents * (coupon.percent_off / 100))
+  } else if (coupon.amount_off && coupon.currency?.toLowerCase() === currency.toLowerCase()) {
+    discountAmountInCents = coupon.amount_off
+  }
+
+  const finalAmountInCents = Math.max(amountInCents - discountAmountInCents, 0)
+
+  return {
+    promotionCode,
+    coupon,
+    discountAmountInCents,
+    finalAmountInCents,
+  }
 }
 
 async function createConsultPayment(params: CreateConsultPaymentParams): Promise<ConsultPaymentResult> {
@@ -54,6 +109,7 @@ async function createConsultPayment(params: CreateConsultPaymentParams): Promise
     scheduledFor,
     durationMinutes,
     paymentMethod,
+    couponCode,
     connectedAccountId,
     successUrl,
     cancelUrl,
@@ -68,6 +124,17 @@ async function createConsultPayment(params: CreateConsultPaymentParams): Promise
 
   const paymentMethodTypes = normalizedSelected ? [ normalizedSelected ] : availableMethods
 
+  let promotionCodeId: string | undefined
+  let discountAmountInCents = 0
+  let finalAmountInCents = amount
+
+  if (couponCode && couponCode.trim()) {
+    const validation = await validatePromotionCode(couponCode.trim(), amount, currency)
+    promotionCodeId = validation.promotionCode.id
+    discountAmountInCents = validation.discountAmountInCents
+    finalAmountInCents = validation.finalAmountInCents
+  }
+
   const metadata = {
     teleconsulta_session_id: teleconsultaSessionId,
     patient_id: patientId,
@@ -76,6 +143,10 @@ async function createConsultPayment(params: CreateConsultPaymentParams): Promise
     duration_minutes: String(durationMinutes || 60),
     type: 'teleconsulta',
     price_brl: String(amountBrl),
+    coupon_code: couponCode?.trim() || '',
+    discount_value_cents: String(discountAmountInCents),
+    amount_original_cents: String(amount),
+    amount_final_cents: String(finalAmountInCents),
   }
 
   const session = await stripe.checkout.sessions.create({
@@ -103,6 +174,7 @@ async function createConsultPayment(params: CreateConsultPaymentParams): Promise
       metadata,
     },
     metadata,
+    discounts: promotionCodeId ? [ { promotion_code: promotionCodeId } ] : undefined,
     success_url: successUrl,
     cancel_url: cancelUrl,
     billing_address_collection: 'auto',
@@ -121,6 +193,10 @@ async function createConsultPayment(params: CreateConsultPaymentParams): Promise
     payment_intent_id: paymentIntentId,
     session_id: session.id,
     available_methods: availableMethods,
+    amount_original: amount / 100,
+    amount_final: finalAmountInCents / 100,
+    discount_applied: discountAmountInCents > 0,
+    discount_value: discountAmountInCents / 100,
   }
 }
 
@@ -137,6 +213,7 @@ export async function POST(req: NextRequest) {
       price_brl,
       teleconsulta_session_id,
       payment_method,
+      coupon_code,
     } = await req.json()
 
     if (!patient_id || !nutritionist_id || !scheduled_for || !price_brl || !teleconsulta_session_id) {
@@ -169,6 +246,7 @@ export async function POST(req: NextRequest) {
       scheduledFor: scheduled_for,
       durationMinutes: duration_minutes,
       paymentMethod: payment_method as ConsultPaymentMethod | undefined,
+      couponCode: coupon_code as string | undefined,
       connectedAccountId,
       successUrl: `${origin}/dashboard/paciente?activeTab=teleconsultas&sucesso=true`,
       cancelUrl: `${origin}/pagamento/cancelado`,
@@ -179,6 +257,10 @@ export async function POST(req: NextRequest) {
       client_secret: result.client_secret,
       payment_intent_id: result.payment_intent_id,
       available_methods: result.available_methods,
+      amount_original: result.amount_original,
+      amount_final: result.amount_final,
+      discount_applied: result.discount_applied,
+      discount_value: result.discount_value,
     })
   } catch (err: any) {
     console.error(err)

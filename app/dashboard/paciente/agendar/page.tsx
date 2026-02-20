@@ -106,6 +106,13 @@ export default function AgendarPage() {
   const [ step, setStep ] = useState<'search' | 'schedule'>('search')
   const [ consultationType, setConsultationType ] = useState<'online' | 'presential'>('online')
   const [ paymentMethod, setPaymentMethod ] = useState<PaymentMethod>('card')
+  const [ couponCode, setCouponCode ] = useState('')
+  const [ couponStatus, setCouponStatus ] = useState<'idle' | 'validating' | 'valid' | 'invalid'>('idle')
+  const [ couponSummary, setCouponSummary ] = useState<{
+    amountOriginal: number
+    amountFinal: number
+    discountValue: number
+  } | null>(null)
 
   useEffect(() => {
     if (nutritionistId && nutritionists.length > 0) {
@@ -124,6 +131,59 @@ export default function AgendarPage() {
       }
     }
   }, [ searchParams, nutritionists ])
+
+  const handleApplyCoupon = async () => {
+    if (!selectedNutritionist || !selectedNutritionist.consultation_price) {
+      toast.error('Selecione um nutricionista com preço definido antes de aplicar o cupom')
+      return
+    }
+
+    const trimmed = couponCode.trim()
+    if (!trimmed) {
+      toast.error('Digite um código de cupom')
+      return
+    }
+
+    try {
+      setCouponStatus('validating')
+
+      const res = await fetch('/api/payments/validate-coupon', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          coupon_code: trimmed,
+          base_amount_brl: selectedNutritionist.consultation_price,
+          currency: 'brl',
+        }),
+      })
+
+      if (!res.ok) {
+        const e = await res.json().catch(() => ({}))
+        throw new Error(e?.message || 'Cupom inválido ou expirado')
+      }
+
+      const data = await res.json()
+
+      setCouponSummary({
+        amountOriginal: data.amount_original,
+        amountFinal: data.amount_final,
+        discountValue: data.discount_value,
+      })
+      setCouponStatus('valid')
+      toast.success('Cupom aplicado com sucesso')
+    } catch (err: any) {
+      console.error(err)
+      setCouponSummary(null)
+      setCouponStatus('invalid')
+      toast.error(err.message || 'Cupom inválido ou expirado')
+    }
+  }
+
+  const handleRemoveCoupon = () => {
+    setCouponCode('')
+    setCouponSummary(null)
+    setCouponStatus('idle')
+  }
 
   useEffect(() => {
     if ((!authLoading && !user)) {
@@ -282,6 +342,7 @@ export default function AgendarPage() {
           price_brl: selectedNutritionist.consultation_price,
           teleconsulta_session_id: sessionData.session.id,
           payment_method: paymentMethod,
+          coupon_code: couponStatus === 'valid' && couponCode.trim() ? couponCode.trim() : undefined,
         }),
       })
 
@@ -798,9 +859,29 @@ export default function AgendarPage() {
                     <div className="border-t pt-4">
                       <div className="flex items-center justify-between">
                         <span className="text-sm text-gray-600">Valor da consulta:</span>
-                        <div className="flex items-center gap-1 font-semibold text-lg text-green-600">
-                          <DollarSign className="h-4 w-4" />
-                          R$ {selectedNutritionist.consultation_price.toFixed(2)}
+                        <div className="flex flex-col items-end gap-1">
+                          <div className="flex items-center gap-1 font-semibold text-lg text-green-600">
+                            <DollarSign className="h-4 w-4" />
+                            {couponSummary && couponStatus === 'valid' ? (
+                              <>
+                                <span className="text-sm text-gray-500 line-through">
+                                  R$ {selectedNutritionist.consultation_price.toFixed(2)}
+                                </span>
+                                <span>
+                                  R$ {couponSummary.amountFinal.toFixed(2)}
+                                </span>
+                              </>
+                            ) : (
+                              <span>
+                                R$ {selectedNutritionist.consultation_price.toFixed(2)}
+                              </span>
+                            )}
+                          </div>
+                          {couponSummary && couponStatus === 'valid' && (
+                            <span className="text-xs text-green-700">
+                              Desconto de R$ {couponSummary.discountValue.toFixed(2)}
+                            </span>
+                          )}
                         </div>
                       </div>
                       <div className="flex items-center justify-between mt-2">
@@ -858,31 +939,80 @@ export default function AgendarPage() {
                           )}
                         </div>
 
-                        <div className="border-t pt-4 mt-4">
-                          <h4 className="font-medium mb-2">Forma de pagamento</h4>
-                          <RadioGroup
-                            value={paymentMethod}
-                            onValueChange={value => setPaymentMethod(value as PaymentMethod)}
-                            className="grid grid-cols-1 md:grid-cols-3 gap-3"
-                          >
-                            {PAYMENT_METHODS.map(method => (
-                              <label
-                                key={method.value}
-                                className="flex cursor-pointer items-start gap-2 rounded-lg border p-3 text-sm hover:border-green-500"
-                              >
-                                <RadioGroupItem value={method.value} className="mt-1" />
-                                <div>
-                                  <div className="font-medium">{method.label}</div>
-                                  <div className="text-xs text-gray-600">
-                                    {method.description}
+                        <div className="border-t pt-4 mt-4 space-y-4">
+                          <div>
+                            <h4 className="font-medium mb-2">Forma de pagamento</h4>
+                            <RadioGroup
+                              value={paymentMethod}
+                              onValueChange={value => setPaymentMethod(value as PaymentMethod)}
+                              className="grid grid-cols-1 md:grid-cols-3 gap-3"
+                            >
+                              {PAYMENT_METHODS.map(method => (
+                                <label
+                                  key={method.value}
+                                  className="flex cursor-pointer items-start gap-2 rounded-lg border p-3 text-sm hover:border-green-500"
+                                >
+                                  <RadioGroupItem value={method.value} className="mt-1" />
+                                  <div>
+                                    <div className="font-medium">{method.label}</div>
+                                    <div className="text-xs text-gray-600">
+                                      {method.description}
+                                    </div>
                                   </div>
-                                </div>
-                              </label>
-                            ))}
-                          </RadioGroup>
-                          <p className="mt-2 text-xs text-gray-500">
-                            Cartão é sempre aceito. Boleto depende da disponibilidade da Stripe no Brasil.
-                          </p>
+                                </label>
+                              ))}
+                            </RadioGroup>
+                            <p className="mt-2 text-xs text-gray-500">
+                              Cartão é sempre aceito. Boleto depende da disponibilidade da Stripe no Brasil.
+                            </p>
+                          </div>
+
+                          <div className="space-y-2">
+                            <h4 className="font-medium text-sm">Adicionar cupom</h4>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <Input
+                                value={couponCode}
+                                onChange={e => {
+                                  setCouponCode(e.target.value)
+                                  if (!e.target.value) {
+                                    setCouponStatus('idle')
+                                    setCouponSummary(null)
+                                  }
+                                }}
+                                placeholder="Digite seu cupom"
+                                className="w-full max-w-xs"
+                              />
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={handleApplyCoupon}
+                                disabled={!couponCode.trim() || couponStatus === 'validating'}
+                              >
+                                {couponStatus === 'validating' ? 'Validando...' : 'Aplicar'}
+                              </Button>
+                              {couponSummary && (
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={handleRemoveCoupon}
+                                >
+                                  Remover
+                                </Button>
+                              )}
+                            </div>
+                            {couponStatus === 'valid' && couponSummary && (
+                              <p className="text-xs text-green-700">
+                                Cupom aplicado: desconto de R$ {couponSummary.discountValue.toFixed(2)}.
+                              </p>
+                            )}
+                            {couponStatus === 'invalid' && (
+                              <p className="text-xs text-red-600">
+                                Cupom inválido ou expirado.
+                              </p>
+                            )}
+                          </div>
                         </div>
                       </>
                     )}

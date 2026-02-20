@@ -48,6 +48,15 @@ export async function POST(req: NextRequest) {
               ? session.payment_method_types[ 0 ]
               : null
 
+          const amount_subtotal = typeof session.amount_subtotal === 'number' ? session.amount_subtotal / 100 : price_brl
+          const amount_total = typeof session.amount_total === 'number' ? session.amount_total / 100 : price_brl
+          const discount_brl = session.total_details?.amount_discount
+            ? session.total_details.amount_discount / 100
+            : Math.max(0, amount_subtotal - amount_total)
+          const coupon_code_meta = metadata.coupon_code && metadata.coupon_code.length > 0
+            ? metadata.coupon_code
+            : null
+
           const { error: upErr } = await supabaseAdmin
             .from('teleconsulta_sessions')
             .update({
@@ -57,6 +66,10 @@ export async function POST(req: NextRequest) {
               payment_intent_id: stripe_payment_intent_id || null,
               payment_status: 'paid',
               payment_method,
+              coupon_code: coupon_code_meta,
+              discount_value: discount_brl || null,
+              amount_original: amount_subtotal,
+              amount_paid: amount_total,
               updated_at: new Date().toISOString(),
             })
             .eq('id', teleconsulta_session_id)

@@ -51,6 +51,7 @@ import {
   Bot,
   CreditCard,
   MapPin,
+  Ticket,
 } from 'lucide-react'
 import Image from 'next/image'
 import { useMediaQuery } from '../hooks/use-media-query'
@@ -562,6 +563,7 @@ export const getMenuItems = (
         { id: 'usuarios', label: 'Usuários', icon: Users },
         { id: 'vagas', label: 'Vagas', icon: Briefcase },
         { id: 'financeiro', label: 'Financeiro', icon: DollarSign },
+        { id: 'cupons', label: 'Cupons', icon: Ticket },
         { id: 'analytics', label: 'Analytics', icon: TrendingUp },
         { id: 'configuracoes', label: 'Configurações', icon: Settings },
         { id: 'perfil', label: 'Perfil', icon: User },
