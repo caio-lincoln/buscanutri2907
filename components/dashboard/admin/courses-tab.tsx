@@ -203,14 +203,14 @@ export function AdminCoursesTab() {
 
   const handleArchive = async (course: Course) => {
     try {
-      await AdminCoursesService.archive(course.id)
+      await AdminCoursesService.archive(course.id, { productionAuth: 'liberar_producao' })
       await loadCourses()
     } catch {}
   }
 
   const handleDelete = async (course: Course) => {
     try {
-      await AdminCoursesService.delete(course.id)
+      await AdminCoursesService.delete(course.id, { productionAuth: 'liberar_producao' })
       await loadCourses()
     } catch {}
   }

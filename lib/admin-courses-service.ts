@@ -98,6 +98,7 @@ export const AdminCoursesService = {
     const res = await fetch(`/api/admin/courses/${id}`, {
       method: 'DELETE',
       headers: {
+        'Content-Type': 'application/json',
         ...(opts?.productionAuth ? { 'x-production-auth': opts.productionAuth } : {}),
       },
       body: JSON.stringify({ production_auth: opts?.productionAuth })
