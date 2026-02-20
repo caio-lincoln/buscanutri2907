@@ -11,6 +11,7 @@ import Loading from '@/components/ui/loading'
 import Script from 'next/script'
 import MetaPixelRouteChange from './MetaPixelRouteChange'
 import { FloatingWhatsApp } from '@/components/FloatingWhatsApp'
+import { Analytics } from '@vercel/analytics/next'
 
 const inter = Inter({ subsets: [ 'latin' ] })
 
@@ -90,6 +91,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Toaster />
               <Sonner />
               <FloatingWhatsApp />
+              <Analytics />
             </Suspense>
           </SessionTrackerProvider>
           </VisitTrackerProvider>
