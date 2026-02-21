@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { formatDateBR } from '@/lib/utils/format-date'
 import { stripe } from '@/lib/stripe'
-import { createAdminClient } from '@/lib/supabase/server'
+import { createAdminClient, createClient } from '@/lib/supabase/server'
 
 type ConsultPaymentMethod = 'card' | 'boleto'
 
@@ -200,9 +200,40 @@ async function createConsultPayment(params: CreateConsultPaymentParams): Promise
   }
 }
 
+function buildErrorResponse(requestId: string, code: string, message: string, status: number, details?: Record<string, unknown>) {
+  return NextResponse.json(
+    {
+      ok: false,
+      error: {
+        code,
+        message,
+        details: {
+          requestId,
+          ...details,
+        },
+      },
+    },
+    { status },
+  )
+}
+
+function buildSuccessResponse(requestId: string, data: Record<string, unknown>, status: number = 200) {
+  return NextResponse.json(
+    {
+      ok: true,
+      data,
+      requestId,
+    },
+    { status },
+  )
+}
+
 export async function POST(req: NextRequest) {
+  const requestId = crypto.randomUUID()
+
   try {
     const origin = process.env[ 'APP_BASE_URL' ] || new URL(req.url).origin
+
     const {
       patient_id,
       patient_email,
@@ -217,10 +248,96 @@ export async function POST(req: NextRequest) {
     } = await req.json()
 
     if (!patient_id || !nutritionist_id || !scheduled_for || !price_brl || !teleconsulta_session_id) {
-      return NextResponse.json({ message: 'Dados incompletos' }, { status: 400 })
+      console.error('payments/create-checkout POST invalid payload', {
+        requestId,
+        patient_id,
+        nutritionist_id,
+        scheduled_for,
+        price_brl,
+        teleconsulta_session_id,
+      })
+      return buildErrorResponse(requestId, 'INVALID_DATETIME', 'Dados incompletos para iniciar o pagamento', 400)
+    }
+
+    if (!stripe) {
+      console.error('payments/create-checkout POST stripe not initialized', { requestId })
+      return buildErrorResponse(
+        requestId,
+        'ENV_MISCONFIG',
+        'Pagamento indisponível no momento.',
+        500,
+      )
+    }
+
+    const supabase = await createClient()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+    if (authError || !user?.id) {
+      console.error('payments/create-checkout POST auth error', { requestId, authError })
+      return buildErrorResponse(requestId, 'AUTH_REQUIRED', 'Usuário não autenticado', 401)
+    }
+
+    const userId = user.id
+
+    const { data: patientProfile, error: patientError } = await supabase
+      .from('patient_profiles')
+      .select('id, user_id')
+      .eq('id', patient_id)
+      .eq('user_id', userId)
+      .single()
+
+    if (patientError || !patientProfile) {
+      console.error('payments/create-checkout POST patient profile mismatch', {
+        requestId,
+        userId,
+        patient_id,
+        patientError,
+      })
+      return buildErrorResponse(
+        requestId,
+        'RLS_DENIED',
+        'Permissão insuficiente. Faça login novamente.',
+        403,
+      )
     }
 
     const supabaseAdmin = createAdminClient()
+
+    const { data: session, error: sessionError } = await supabaseAdmin
+      .from('teleconsulta_sessions')
+      .select('id, patient_id, status, price')
+      .eq('id', teleconsulta_session_id)
+      .single()
+
+    if (sessionError || !session || session.patient_id !== patientProfile.id) {
+      console.error('payments/create-checkout POST session not found or not owned by patient', {
+        requestId,
+        teleconsulta_session_id,
+        patient_id,
+        sessionError,
+      })
+      return buildErrorResponse(
+        requestId,
+        'SESSION_NOT_FOUND',
+        'Sessão de teleconsulta não encontrada.',
+        404,
+      )
+    }
+
+    if (session.status !== 'pending_payment') {
+      console.error('payments/create-checkout POST invalid session state', {
+        requestId,
+        teleconsulta_session_id,
+        status: session.status,
+      })
+      return buildErrorResponse(
+        requestId,
+        'INVALID_SESSION_STATE',
+        'Esta sessão não está disponível para pagamento.',
+        409,
+      )
+    }
+
     const { data: np, error } = await supabaseAdmin
       .from('nutritionist_profiles')
       .select('stripe_account_id, stripe_onboarding_complete, full_name')
@@ -228,10 +345,29 @@ export async function POST(req: NextRequest) {
       .single()
 
     if (error || !np?.stripe_account_id) {
-      return NextResponse.json({ message: 'Nutricionista sem conta Stripe conectada' }, { status: 400 })
+      console.error('payments/create-checkout POST missing stripe account', {
+        requestId,
+        nutritionist_id,
+        error,
+      })
+      return buildErrorResponse(
+        requestId,
+        'ENV_MISCONFIG',
+        'Pagamento indisponível no momento.',
+        500,
+      )
     }
     if (!np.stripe_onboarding_complete) {
-      return NextResponse.json({ message: 'Nutricionista não concluiu o onboarding do Stripe' }, { status: 400 })
+      console.error('payments/create-checkout POST onboarding incomplete', {
+        requestId,
+        nutritionist_id,
+      })
+      return buildErrorResponse(
+        requestId,
+        'ENV_MISCONFIG',
+        'Pagamento indisponível no momento.',
+        500,
+      )
     }
 
     const connectedAccountId = np.stripe_account_id
@@ -252,7 +388,7 @@ export async function POST(req: NextRequest) {
       cancelUrl: `${origin}/pagamento/cancelado`,
     })
 
-    return NextResponse.json({
+    const data = {
       sessionId: result.session_id,
       client_secret: result.client_secret,
       payment_intent_id: result.payment_intent_id,
@@ -261,9 +397,26 @@ export async function POST(req: NextRequest) {
       amount_final: result.amount_final,
       discount_applied: result.discount_applied,
       discount_value: result.discount_value,
-    })
+    }
+
+    return buildSuccessResponse(requestId, data, 200)
   } catch (err: any) {
-    console.error(err)
-    return NextResponse.json({ message: err.message || 'Erro' }, { status: 500 })
+    console.error('payments/create-checkout POST unexpected error', { requestId, error: err })
+
+    if (err instanceof Error && err.message && err.message.toLowerCase().includes('stripe')) {
+      return buildErrorResponse(
+        requestId,
+        'STRIPE_ERROR',
+        'Erro ao processar pagamento.',
+        502,
+      )
+    }
+
+    return buildErrorResponse(
+      requestId,
+      'DB_ERROR',
+      'Erro interno ao iniciar pagamento.',
+      500,
+    )
   }
 }

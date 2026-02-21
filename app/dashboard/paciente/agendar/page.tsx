@@ -342,13 +342,29 @@ export default function AgendarPage() {
         }),
       })
 
-      if (!response.ok) {
-        throw new Error('Erro ao agendar teleconsulta')
+      const responseText = await response.text()
+      let responseJson: any = null
+      try {
+        responseJson = responseText ? JSON.parse(responseText) : null
+      } catch {
+        responseJson = null
       }
 
-      const sessionData = await response.json()
+      console.log('POST /api/teleconsulta/sessions', {
+        status: response.status,
+        body: responseJson,
+      })
 
-      const res = await fetch('/api/payments/create-checkout', {
+      if (!response.ok || !responseJson?.ok) {
+        const message =
+          responseJson?.error?.message || 'Erro ao agendar teleconsulta'
+        toast.error(message)
+        return
+      }
+
+      const sessionPayload = responseJson.data
+
+      const checkoutRes = await fetch('/api/payments/create-checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -359,20 +375,37 @@ export default function AgendarPage() {
           scheduled_for: scheduledFor,
           duration_minutes: selectedSlot.duration,
           price_brl: selectedNutritionist.consultation_price,
-          teleconsulta_session_id: sessionData.session.id,
+          teleconsulta_session_id: sessionPayload.sessionId,
           payment_method: paymentMethod,
-          coupon_code: couponStatus === 'valid' && couponCode.trim() ? couponCode.trim() : undefined,
+          coupon_code:
+            couponStatus === 'valid' && couponCode.trim()
+              ? couponCode.trim()
+              : undefined,
         }),
       })
 
-      if (!res.ok) {
-        const e = await res.json().catch(() => ({}))
-        throw new Error(e?.message || 'Falha ao iniciar pagamento')
+      const checkoutText = await checkoutRes.text()
+      let checkoutJson: any = null
+      try {
+        checkoutJson = checkoutText ? JSON.parse(checkoutText) : null
+      } catch {
+        checkoutJson = null
       }
 
-      const { sessionId } = await res.json()
+      console.log('POST /api/payments/create-checkout', {
+        status: checkoutRes.status,
+        body: checkoutJson,
+      })
 
-      // Redireciona para a Stripe
+      if (!checkoutRes.ok || !checkoutJson?.ok) {
+        const message =
+          checkoutJson?.error?.message || 'Falha ao iniciar pagamento'
+        toast.error(message)
+        return
+      }
+
+      const { sessionId } = checkoutJson.data
+
       if (!stripePromise) {
         toast.error('Erro de configuração: Chave pública do Stripe não encontrada.')
         return
