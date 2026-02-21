@@ -101,6 +101,11 @@ export function UsersTab() {
     }
   }
 
+  const refreshUsersAndUi = async () => {
+    await fetchUsers()
+    setUiRefreshKey(prev => prev + 1)
+  }
+
   useEffect(() => {
     void fetchUsers()
   }, [])
@@ -280,7 +285,7 @@ export function UsersTab() {
         }
         const ok = await execAdmin('delete', url, options)
         if (!ok) return
-        await fetchUsers()
+        await refreshUsersAndUi()
         setVerifyModalOpen(false)
         setSelectedUser(null)
         setUiRefreshKey(prev => prev + 1)
@@ -317,7 +322,7 @@ export function UsersTab() {
         }
         const ok = await execAdmin('deactivate', url, options)
         if (!ok) return
-        await fetchUsers()
+        await refreshUsersAndUi()
         setVerifyModalOpen(false)
         setSelectedUser(null)
         setUiRefreshKey(prev => prev + 1)
@@ -347,12 +352,12 @@ export function UsersTab() {
 
   const handleUserApproved = async () => {
     // Recarregar dados após aprovação
-    await fetchUsers()
+    await refreshUsersAndUi()
   }
 
   const handleUserUpdated = async () => {
     // Recarregar dados após atualização via modal de edição
-    await fetchUsers()
+    await refreshUsersAndUi()
   }
 
   const formatDate = (dateString: string) => {
