@@ -120,13 +120,19 @@ export const POST = async (request: NextRequest) => {
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
     if (authError || !user?.id) {
-      console.error('teleconsulta/sessions POST auth error', { requestId, authError })
+      console.error('[TELECONSULTA][CREATE_SESSION_AUTH_ERROR]', { requestId, authError })
       return buildErrorResponse(requestId, 'AUTH_REQUIRED', 'Usuário não autenticado', 401)
     }
 
     const userId = user.id
 
     const body = await request.json()
+
+    console.log('[TELECONSULTA][CREATE_SESSION_REQUEST]', {
+      requestId,
+      userId,
+      payload: body,
+    })
 
     let parsedBody: any
     try {
@@ -136,9 +142,10 @@ export const POST = async (request: NextRequest) => {
         const errorMessage = error.errors
           .map(err => `${err.path.join('.')}: ${err.message}`)
           .join(', ')
-        console.error('teleconsulta/sessions POST validation error', {
+        console.error('[TELECONSULTA][CREATE_SESSION_VALIDATION_ERROR]', {
           requestId,
           error: errorMessage,
+          fields: error.errors,
         })
         return buildErrorResponse(
           requestId,
@@ -164,18 +171,38 @@ export const POST = async (request: NextRequest) => {
     const minFutureMs = nowUtcMs + 5 * 60 * 1000
 
     if (Number.isNaN(scheduledDate.getTime())) {
-      console.error('teleconsulta/sessions POST invalid datetime', { requestId, scheduled_for })
+      console.error('[TELECONSULTA][CREATE_SESSION_INVALID_DATETIME]', { requestId, scheduled_for })
       return buildErrorResponse(requestId, 'INVALID_DATETIME', 'Data e horário inválidos', 400)
     }
 
     if (scheduledDate.getTime() <= minFutureMs) {
-      console.error('teleconsulta/sessions POST datetime not future', { requestId, scheduled_for, nowUtcMs })
+      console.error('[TELECONSULTA][CREATE_SESSION_NOT_FUTURE]', {
+        requestId,
+        scheduled_for,
+        nowUtcMs,
+      })
       return buildErrorResponse(requestId, 'DATETIME_MUST_BE_FUTURE', 'Data deve ser futura', 422)
+    }
+
+    if (price <= 0) {
+      console.error('[TELECONSULTA][CREATE_SESSION_INVALID_PRICE]', {
+        requestId,
+        price,
+      })
+      return buildErrorResponse(
+        requestId,
+        'INVALID_PRICE',
+        'Preço da teleconsulta deve ser maior que zero',
+        422,
+      )
     }
 
     const validDurations = [30, 45, 60, 90, 120]
     if (!validDurations.includes(duration_minutes)) {
-      console.error('teleconsulta/sessions POST invalid duration', { requestId, duration_minutes })
+      console.error('[TELECONSULTA][CREATE_SESSION_INVALID_DURATION]', {
+        requestId,
+        duration_minutes,
+      })
       return buildErrorResponse(requestId, 'INVALID_DATETIME', 'Duração inválida para teleconsulta', 400)
     }
 
@@ -186,7 +213,11 @@ export const POST = async (request: NextRequest) => {
       .single()
 
     if (nutritionistError || !nutritionist) {
-      console.error('teleconsulta/sessions POST nutritionist not found', { requestId, nutritionist_id, nutritionistError })
+      console.error('[TELECONSULTA][CREATE_SESSION_NUTRITIONIST_NOT_FOUND]', {
+        requestId,
+        nutritionist_id,
+        nutritionistError,
+      })
       return buildErrorResponse(requestId, 'NUTRITIONIST_NOT_FOUND', 'Nutricionista não encontrado', 404)
     }
 
@@ -197,7 +228,11 @@ export const POST = async (request: NextRequest) => {
       .single()
 
     if (patientError || !patient) {
-      console.error('teleconsulta/sessions POST patient profile not found', { requestId, userId, patientError })
+      console.error('[TELECONSULTA][CREATE_SESSION_PATIENT_NOT_FOUND]', {
+        requestId,
+        userId,
+        patientError,
+      })
       return buildErrorResponse(
         requestId,
         'PROFILE_NOT_FOUND',
@@ -206,22 +241,33 @@ export const POST = async (request: NextRequest) => {
       )
     }
 
-    const endTime = new Date(scheduledDate.getTime() + duration_minutes * 60000)
+    const scheduledUtc = new Date(scheduledDate.getTime())
+    const scheduledUtcIso = scheduledUtc.toISOString()
+    const endTime = new Date(scheduledUtc.getTime() + duration_minutes * 60000)
+    const endTimeUtcIso = endTime.toISOString()
+
     const { data: existingSessions, error: sessionError } = await supabase
       .from('teleconsulta_sessions')
       .select('id')
       .eq('nutritionist_id', nutritionist.id)
       .eq('status', 'scheduled')
-      .gte('scheduled_at', scheduled_for)
-      .lt('scheduled_at', endTime.toISOString())
+      .gte('scheduled_at', scheduledUtcIso)
+      .lt('scheduled_at', endTimeUtcIso)
 
     if (sessionError) {
-      console.error('teleconsulta/sessions POST availability check error', { requestId, sessionError })
+      console.error('[TELECONSULTA][CREATE_SESSION_AVAILABILITY_ERROR]', {
+        requestId,
+        sessionError,
+      })
       return buildErrorResponse(requestId, 'DB_ERROR', 'Erro ao verificar disponibilidade', 500)
     }
 
     if (existingSessions && existingSessions.length > 0) {
-      console.error('teleconsulta/sessions POST slot conflict', { requestId, nutritionist_id, scheduled_for })
+      console.error('[TELECONSULTA][CREATE_SESSION_SLOT_CONFLICT]', {
+        requestId,
+        nutritionist_id,
+        scheduled_for,
+      })
       return buildErrorResponse(
         requestId,
         'SLOT_CONFLICT',
@@ -240,7 +286,7 @@ export const POST = async (request: NextRequest) => {
         session_token: sessionToken,
         patient_id: patient.id,
         nutritionist_id: nutritionist.id,
-        scheduled_at: scheduled_for,
+        scheduled_at: scheduledUtcIso,
         duration_minutes,
         price,
         notes,
@@ -251,13 +297,32 @@ export const POST = async (request: NextRequest) => {
       .single()
 
     if (createError || !session) {
-      const code = createError?.code === '42501' ? 'RLS_DENIED' : 'DB_ERROR'
-      const message =
-        createError?.code === '42501'
-          ? 'Permissão insuficiente. Faça login novamente.'
-          : 'Erro ao criar sessão de teleconsulta'
-      console.error('teleconsulta/sessions POST create session error', { requestId, createError })
-      return buildErrorResponse(requestId, code, message, createError?.code === '42501' ? 403 : 500)
+      const isRlsError = createError?.code === '42501'
+      const code = isRlsError ? 'RLS_DENIED' : 'DB_ERROR'
+      const message = isRlsError
+        ? 'Permissão insuficiente. Faça login novamente.'
+        : 'Erro interno ao criar sessão de teleconsulta'
+
+      const extraDetails = createError
+        ? {
+            supabaseCode: createError.code,
+            supabaseMessage: createError.message,
+            supabaseDetails: (createError as any).details,
+            supabaseHint: (createError as any).hint,
+          }
+        : undefined
+
+      console.error('[TELECONSULTA][CREATE_SESSION_DB_ERROR]', {
+        requestId,
+        createError,
+      })
+      return buildErrorResponse(
+        requestId,
+        code,
+        message,
+        isRlsError ? 403 : 500,
+        extraDetails,
+      )
     }
 
     try {
@@ -291,7 +356,10 @@ export const POST = async (request: NextRequest) => {
         },
       })
     } catch (notificationError) {
-      console.error('teleconsulta/sessions POST notification error', { requestId, notificationError })
+      console.error('[TELECONSULTA][CREATE_SESSION_NOTIFICATION_ERROR]', {
+        requestId,
+        notificationError,
+      })
     }
 
     const responseData = {
@@ -301,9 +369,20 @@ export const POST = async (request: NextRequest) => {
       session,
     }
 
+    console.log('[TELECONSULTA][CREATE_SESSION_SUCCESS]', {
+      requestId,
+      sessionId: session.id,
+      patientId: patient.id,
+      nutritionistId: nutritionist.id,
+      scheduled_at: scheduledUtcIso,
+    })
+
     return buildSuccessResponse(requestId, responseData, 201)
   } catch (error) {
-    console.error('teleconsulta/sessions POST unexpected error', { requestId, error })
+    console.error('[TELECONSULTA][CREATE_SESSION_UNEXPECTED_ERROR]', {
+      requestId,
+      error,
+    })
     return buildErrorResponse(requestId, 'DB_ERROR', 'Erro interno ao criar sessão de teleconsulta', 500)
   }
 }
