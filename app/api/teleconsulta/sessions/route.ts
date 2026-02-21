@@ -1,104 +1,90 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { v4 as uuidv4 } from 'uuid'
+import { withErrorHandling } from '@/src/lib/middleware/error-handler'
+import { createTeleconsultaSessionSchema } from '@/src/lib/validations/teleconsulta'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
+
 export const runtime = 'nodejs'
 
-import { v4 as uuidv4 } from 'uuid'
-import { createAdminClient, createClient as createServerClient } from '../../../../lib/supabase/server'
+export const POST = withErrorHandling(async (request: NextRequest) => {
+  const supabaseUser = await createClient()
+  const supabaseAdmin = createAdminClient()
 
-export async function POST(req: Request): Promise<Response> {
-  try {
-    console.log('STAGE 1 - endpoint iniciou')
+  const { data: { user } } = await supabaseUser.auth.getUser()
+  if (!user?.id) {
+    return NextResponse.json({ ok: false, message: 'Não autenticado' }, { status: 401 })
+  }
 
-    const body = await req.json()
-    console.log('STAGE 2 - body recebido', body)
+  const body = await request.json()
+  const parsed = createTeleconsultaSessionSchema.parse(body)
 
-    const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
-    if (!supabaseUrl) {
-      throw new Error('ENV_MISSING_SUPABASE_URL')
-    }
+  const { nutritionist_id, scheduled_for, duration_minutes, price, notes } = parsed
 
-    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      throw new Error('ENV_MISSING_SERVICE_ROLE')
-    }
+  const scheduledAtUTC = new Date(scheduled_for).toISOString()
+  if (Number.isNaN(new Date(scheduledAtUTC).getTime())) {
+    return NextResponse.json({ ok: false, message: 'Data inválida' }, { status: 400 })
+  }
 
-    console.log('STAGE 3 - env ok')
+  const { data: nutritionist } = await supabaseAdmin
+    .from('nutritionist_profiles')
+    .select('id')
+    .eq('id', nutritionist_id)
+    .single()
 
-    const supabaseAdmin = createAdminClient()
-    const supabaseUser = await createServerClient()
+  if (!nutritionist) {
+    return NextResponse.json({ ok: false, message: 'Nutricionista não encontrado' }, { status: 404 })
+  }
 
-    const { data: authData, error: authError } = await (supabaseUser as any).auth.getUser()
+  const { data: patient } = await supabaseAdmin
+    .from('patient_profiles')
+    .select('id')
+    .eq('user_id', user.id)
+    .single()
 
-    console.log('STAGE 4 - auth', authData, authError)
+  if (!patient) {
+    return NextResponse.json({ ok: false, message: 'Perfil do paciente não encontrado' }, { status: 404 })
+  }
 
-    if (authError || !authData?.user) {
-      return Response.json(
-        { ok: false, stage: 'AUTH_FAIL', error: authError ?? null },
-        { status: 401 },
-      )
-    }
+  const sessionToken = uuidv4()
+  const siteUrl =
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    process.env.APP_BASE_URL ||
+    new URL(request.url).origin
 
-    const scheduledAtUTC = new Date(body.scheduled_for).toISOString()
-    console.log('STAGE 5 - date UTC', scheduledAtUTC)
+  const joinUrl = `${siteUrl}/teleconsulta/${sessionToken}`
 
-    if (Number.isNaN(new Date(scheduledAtUTC).getTime())) {
-      return Response.json(
-        { ok: false, stage: 'INVALID_DATE', message: 'Data de agendamento inválida' },
-        { status: 400 },
-      )
-    }
+  const { data: session, error } = await supabaseAdmin
+    .from('teleconsulta_sessions')
+    .insert({
+      session_token: sessionToken,
+      join_url: joinUrl,
+      scheduled_at: scheduledAtUTC,
+      duration_minutes,
+      price,
+      notes,
+      patient_id: patient.id,
+      nutritionist_id: nutritionist.id,
+      status: 'pending_payment',
+    })
+    .select()
+    .single()
 
-    const sessionToken = uuidv4()
-    const siteUrl =
-      process.env.NEXT_PUBLIC_SITE_URL ||
-      process.env.APP_BASE_URL ||
-      supabaseUrl
-    const joinUrl = `${siteUrl.replace(/\/$/, '')}/teleconsulta/${sessionToken}`
-    console.log('STAGE 5.1 - join url', joinUrl)
-
-    const { data, error } = await supabaseAdmin
-      .from('teleconsulta_sessions')
-      .insert({
-        session_token: sessionToken,
-        nutritionist_id: body.nutritionist_id,
-        patient_id: authData.user.id,
-        scheduled_at: scheduledAtUTC,
-        duration_minutes: body.duration_minutes,
-        price: body.price,
-        status: 'pending',
-        join_url: joinUrl,
-      })
-      .select()
-      .single()
-
-    console.log('STAGE 6 - insert result', data, error)
-
-    if (error) {
-      return Response.json(
-        {
-          ok: false,
-          stage: 'INSERT_FAIL',
-          error: error.message,
-          details: error,
-        },
-        { status: 400 },
-      )
-    }
-
-    return Response.json(
-      {
-        ok: true,
-        stage: 'SUCCESS',
-        session: data,
-      },
-      { status: 200 },
-    )
-  } catch (e: any) {
-    console.error('STAGE 500 - catch', e)
-    return Response.json(
-      {
-        ok: false,
-        stage: 'CATCH_ROOT',
-        message: String(e),
-      },
+  if (error) {
+    return NextResponse.json(
+      { ok: false, message: error.message, details: error },
       { status: 500 },
     )
   }
-}
+
+  return NextResponse.json(
+    {
+      ok: true,
+      sessionId: session.id,
+      session_token: session.session_token,
+      join_url: session.join_url,
+      amount: session.price,
+      currency: 'brl',
+    },
+    { status: 201 },
+  )
+})

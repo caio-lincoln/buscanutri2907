@@ -51,7 +51,18 @@ export function handleError(error: unknown): NextResponse {
 
   // Erro de validação do Zod
   if (error instanceof ZodError) {
-    const errorMessage = error.errors.map(err => `${err.path.join('.')}: ${err.message}`).join(', ')
+    const anyError = error as any
+    const issues = Array.isArray(anyError.issues)
+      ? anyError.issues
+      : Array.isArray(anyError.errors)
+        ? anyError.errors
+        : []
+
+    const errorMessage =
+      issues.length > 0
+        ? issues.map((err: any) => `${(err.path || []).join('.')}: ${err.message}`).join(', ')
+        : error.message || 'Dados inválidos'
+
     return NextResponse.json(
       { error: `Dados inválidos: ${errorMessage}` },
       { status: 400 }

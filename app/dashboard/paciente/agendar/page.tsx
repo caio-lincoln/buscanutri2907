@@ -357,12 +357,23 @@ export default function AgendarPage() {
 
       if (!response.ok || !responseJson?.ok) {
         const message =
-          responseJson?.error?.message || 'Erro ao agendar teleconsulta'
+          typeof responseJson?.error === 'string'
+            ? responseJson.error
+            : responseJson?.error?.message || 'Erro ao agendar teleconsulta'
         toast.error(message)
         return
       }
 
-      const sessionPayload = responseJson.data
+      const sessionIdFromResponse =
+        responseJson.sessionId ?? responseJson.data?.sessionId
+
+      if (!sessionIdFromResponse) {
+        console.error('Teleconsulta sessionId ausente na resposta da API', {
+          responseJson,
+        })
+        toast.error('Erro ao criar sessão de teleconsulta')
+        return
+      }
 
       const checkoutRes = await fetch('/api/payments/create-checkout', {
         method: 'POST',
@@ -375,7 +386,7 @@ export default function AgendarPage() {
           scheduled_for: scheduledFor,
           duration_minutes: selectedSlot.duration,
           price_brl: selectedNutritionist.consultation_price,
-          teleconsulta_session_id: sessionPayload.sessionId,
+          teleconsulta_session_id: sessionIdFromResponse,
           payment_method: paymentMethod,
           coupon_code:
             couponStatus === 'valid' && couponCode.trim()
@@ -399,7 +410,9 @@ export default function AgendarPage() {
 
       if (!checkoutRes.ok || !checkoutJson?.ok) {
         const message =
-          checkoutJson?.error?.message || 'Falha ao iniciar pagamento'
+          typeof checkoutJson?.error === 'string'
+            ? checkoutJson.error
+            : checkoutJson?.error?.message || 'Falha ao iniciar pagamento'
         toast.error(message)
         return
       }

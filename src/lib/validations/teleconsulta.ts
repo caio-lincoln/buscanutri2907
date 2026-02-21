@@ -3,7 +3,9 @@ import { z } from 'zod'
 // Schema para criação de sessão de teleconsulta
 export const createTeleconsultaSessionSchema = z.object({
   nutritionist_id: z.string().uuid('ID do nutricionista deve ser um UUID válido'),
-  scheduled_for: z.string().datetime('Data deve estar no formato ISO 8601'),
+  scheduled_for: z
+    .string()
+    .refine((value) => !Number.isNaN(Date.parse(value)), 'Data deve estar no formato ISO 8601'),
   duration_minutes: z.number().int().min(15, 'Duração mínima é 15 minutos').max(120, 'Duração máxima é 120 minutos').default(60),
   price: z.number().min(0, 'Preço deve ser maior ou igual a zero'),
   notes: z.string().optional(),
