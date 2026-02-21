@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { v4 as uuidv4 } from 'uuid'
-import { withErrorHandling, ValidationError, ConflictError } from '@/src/lib/middleware/error-handler'
+import { ZodError } from 'zod'
+import { withErrorHandling, ValidationError, ConflictError, validateAuth } from '@/src/lib/middleware/error-handler'
 import { createTeleconsultaSessionSchema } from '@/src/lib/validations/teleconsulta'
 import { createNotification } from '@/lib/notifications-service'
 import { createClient } from '../../../../lib/supabase/server'
@@ -131,12 +132,29 @@ export const POST = async (request: NextRequest) => {
     try {
       parsedBody = createTeleconsultaSessionSchema.parse(body)
     } catch (error) {
-      if (error instanceof ValidationError) {
-        console.error('teleconsulta/sessions POST validation error', { requestId, error: error.message })
-        return buildErrorResponse(requestId, 'INVALID_DATETIME', error.message, 422)
+      if (error instanceof ZodError) {
+        const errorMessage = error.errors
+          .map(err => `${err.path.join('.')}: ${err.message}`)
+          .join(', ')
+        console.error('teleconsulta/sessions POST validation error', {
+          requestId,
+          error: errorMessage,
+        })
+        return buildErrorResponse(
+          requestId,
+          'INVALID_DATETIME',
+          `Dados de agendamento inválidos: ${errorMessage}`,
+          422,
+          { fields: error.errors },
+        )
       }
       console.error('teleconsulta/sessions POST schema error', { requestId, error })
-      return buildErrorResponse(requestId, 'INVALID_DATETIME', 'Dados de agendamento inválidos', 422)
+      return buildErrorResponse(
+        requestId,
+        'INVALID_DATETIME',
+        'Dados de agendamento inválidos',
+        422,
+      )
     }
 
     const { nutritionist_id, scheduled_for, duration_minutes, price, notes } = parsedBody
