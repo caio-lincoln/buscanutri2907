@@ -99,6 +99,7 @@ export function UsersTab() {
   const [ isViewModalOpen, setIsViewModalOpen ] = useState(false)
   const [ selectedViewUserId, setSelectedViewUserId ] = useState<string | null>(null)
   const [ viewUser, setViewUser ] = useState<ViewUserProfileData | null>(null)
+  const [ uiRefreshKey, setUiRefreshKey ] = useState(0)
 
   // Carregar todos os usuários uma única vez (ou ao forçar refresh)
   const fetchUsers = async () => {
@@ -370,6 +371,15 @@ export function UsersTab() {
     if (!open) {
       setSelectedViewUserId(null)
       setViewUser(null)
+      setUiRefreshKey(prev => prev + 1)
+      document.body.classList.remove('overflow-hidden', 'modal-open')
+      document.body.style.pointerEvents = 'auto'
+      document.body.style.overflow = 'auto'
+      setTimeout(() => {
+        document.body.classList.remove('overflow-hidden', 'modal-open')
+        document.body.style.pointerEvents = 'auto'
+        document.body.style.overflow = 'auto'
+      }, 100)
     }
   }
 
@@ -411,7 +421,7 @@ export function UsersTab() {
         Gerenciamento de Usuários
       </h2>
 
-      <Card className="border-0 shadow-lg">
+      <Card key={uiRefreshKey} className="border-0 shadow-lg">
         <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4">
           <CardTitle className="text-xl font-semibold text-[#1E1D40]">
             Lista de Usuários ({totalUsersCount} total)

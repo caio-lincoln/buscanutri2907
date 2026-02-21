@@ -39,6 +39,11 @@ export default function ViewUserProfileModal({ open, onOpenChange, user }: Props
       document.body.classList.remove('overflow-hidden', 'modal-open')
       document.body.style.pointerEvents = 'auto'
       document.body.style.overflow = 'auto'
+      setTimeout(() => {
+        document.body.classList.remove('overflow-hidden', 'modal-open')
+        document.body.style.pointerEvents = 'auto'
+        document.body.style.overflow = 'auto'
+      }, 100)
     }
   }, [open])
 
