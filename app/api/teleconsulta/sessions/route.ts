@@ -45,16 +45,25 @@ export async function POST(req: Request): Promise<Response> {
       )
     }
 
+    const sessionToken = uuidv4()
+    const siteUrl =
+      process.env.NEXT_PUBLIC_SITE_URL ||
+      process.env.APP_BASE_URL ||
+      supabaseUrl
+    const joinUrl = `${siteUrl.replace(/\/$/, '')}/teleconsulta/${sessionToken}`
+    console.log('STAGE 5.1 - join url', joinUrl)
+
     const { data, error } = await supabaseAdmin
       .from('teleconsulta_sessions')
       .insert({
-        session_token: uuidv4(),
+        session_token: sessionToken,
         nutritionist_id: body.nutritionist_id,
         patient_id: authData.user.id,
         scheduled_at: scheduledAtUTC,
         duration_minutes: body.duration_minutes,
         price: body.price,
         status: 'pending',
+        join_url: joinUrl,
       })
       .select()
       .single()
