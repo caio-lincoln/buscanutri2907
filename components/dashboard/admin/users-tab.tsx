@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -50,7 +50,14 @@ import {
 } from 'lucide-react'
 import { type UserData } from '@/lib/admin-data-service'
 import { VerifyNutritionistModal } from './VerifyNutritionistModal'
-import EditUserModal, { EditUserData } from './EditUserModal'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog'
+import { toast } from '@/components/ui/use-toast'
 import { usePermissions } from '@/components/ui/permission-wrapper'
 import { getAllUsers } from '@/lib/admin-data-service'
 
@@ -67,6 +74,8 @@ const userStatusColors = {
   pendente: 'bg-yellow-100 text-yellow-700',
   suspenso: 'bg-red-100 text-red-700',
 }
+
+type ModalAction = 'edit' | 'ban' | 'delete' | null
 
 export function UsersTab() {
   const { hasPermission } = usePermissions()
@@ -86,9 +95,15 @@ export function UsersTab() {
   
   const [ verifyModalOpen, setVerifyModalOpen ] = useState(false)
   const [ selectedUser, setSelectedUser ] = useState<UserData | null>(null)
-  const [ editModalOpen, setEditModalOpen ] = useState(false)
-  const [ editUser, setEditUser ] = useState<EditUserData | null>(null)
+  const [ modalOpen, setModalOpen ] = useState(false)
+  const [ modalAction, setModalAction ] = useState<ModalAction>(null)
+  const [ modalSubmitting, setModalSubmitting ] = useState(false)
   const [ uiRefreshKey, setUiRefreshKey ] = useState(0)
+
+  const [ modalEmail, setModalEmail ] = useState('')
+  const [ modalName, setModalName ] = useState('')
+  const [ modalType, setModalType ] = useState<UserData['type']>('paciente')
+  const [ modalVerified, setModalVerified ] = useState(false)
 
   const fetchUsers = async () => {
     setLoading(true)
@@ -108,6 +123,32 @@ export function UsersTab() {
   useEffect(() => {
     void fetchUsers()
   }, [])
+
+  useEffect(() => {
+    if (modalOpen && modalAction === 'edit' && selectedUser) {
+      setModalEmail(selectedUser.email || '')
+      setModalName(selectedUser.name || '')
+      setModalType(selectedUser.type)
+      const initialVerified =
+        selectedUser.type === 'nutricionista'
+          ? !!selectedUser.nutritionist_profiles?.is_verified
+          : selectedUser.type === 'empresa'
+            ? !!(selectedUser as any).is_verified
+            : false
+      setModalVerified(initialVerified)
+    }
+  }, [modalOpen, modalAction, selectedUser])
+
+  const nameLabel = useMemo(() => {
+    switch (modalType) {
+      case 'empresa':
+        return 'Nome da empresa'
+      case 'nutricionista':
+        return 'Nome completo'
+      default:
+        return 'Nome completo'
+    }
+  }, [modalType])
 
   // Filtragem local eficiente
   useEffect(() => {
@@ -282,98 +323,36 @@ export function UsersTab() {
     return ''
   }
 
+  const openActionModal = (action: ModalAction, user: UserData) => {
+    setSelectedUser(user)
+    setModalAction(action)
+    setModalOpen(true)
+  }
+
+  const closeActionModal = () => {
+    setModalOpen(false)
+    setTimeout(() => {
+      setModalSubmitting(false)
+      setModalAction(null)
+      setSelectedUser(prev => (verifyModalOpen ? prev : null))
+    }, 0)
+  }
+
   const handleOpenVerify = (user: UserData) => {
     setSelectedUser(user)
     setVerifyModalOpen(true)
   }
 
   const handleEditUser = (user: UserData) => {
-    const payload: EditUserData = {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      type: user.type,
-      status: user.status,
-      nutritionist_profiles: user.nutritionist_profiles,
-    }
-    setEditUser(payload)
-    setEditModalOpen(true)
+    openActionModal('edit', user)
   }
 
   const handleDeleteUser = (user: UserData) => {
-    if (!window.confirm(`Tem certeza que deseja excluir ${user.name}? Essa ação é irreversível.`)) {
-      return
-    }
-    const exec = async () => {
-      try {
-        setLoading(true)
-        const idForOps = getUserIdForOps(user)
-        if (!idForOps) {
-          alert('ID do usuário inválido. Recarregue a página e tente novamente.')
-          return
-        }
-        const url = `/api/admin/users/${idForOps}/delete`
-        const options: RequestInit = {
-          method: 'DELETE',
-          headers: { 'x-production-auth': 'liberar_producao' },
-        }
-        const result = await execAdmin('delete', url, options)
-        if (!result.ok) return
-        if (result.edited) {
-          await refreshUsersAndUi()
-        } else {
-          alert('Nenhuma alteração aplicada. O usuário já estava excluído ou inativo.')
-        }
-        setVerifyModalOpen(false)
-        setSelectedUser(null)
-      } catch (err) {
-        console.warn('Erro executando exclusão de usuário:', err)
-        alert('Erro ao excluir usuário.')
-      } finally {
-        setLoading(false)
-      }
-    }
-    void exec()
+    openActionModal('delete', user)
   }
 
   const handleBanUser = (user: UserData) => {
-    if (!window.confirm(`Tem certeza que deseja banir ${user.name}? O usuário não poderá mais acessar a plataforma.`)) {
-      return
-    }
-    const exec = async () => {
-      try {
-        setLoading(true)
-        const idForOps = getUserIdForOps(user)
-        if (!idForOps) {
-          alert('ID do usuário inválido. Recarregue a página e tente novamente.')
-          return
-        }
-        const url = `/api/admin/users/${idForOps}/deactivate`
-        const options: RequestInit = {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-production-auth': 'liberar_producao',
-          },
-          body: JSON.stringify({ duration: '720h', production_auth: 'liberar_producao' }),
-        }
-        const result = await execAdmin('deactivate', url, options)
-        if (!result.ok) return
-        if (result.edited) {
-          await refreshUsersAndUi()
-        } else {
-          alert('Nenhuma alteração aplicada ao status de acesso do usuário.')
-        }
-        setVerifyModalOpen(false)
-        setSelectedUser(null)
-      } catch (err) {
-        console.warn('Erro executando banimento de usuário:', err)
-        alert('Erro ao banir usuário.')
-      } finally {
-        setLoading(false)
-      }
-    }
-    void exec()
+    openActionModal('ban', user)
   }
 
   const handleVerifyModalClose = () => {
@@ -396,6 +375,193 @@ export function UsersTab() {
 
   const handleUserUpdated = async () => {
     await refreshUsersAndUi()
+  }
+
+  const handleActionSuccess = async (edited: boolean) => {
+    if (edited) {
+      await refreshUsersAndUi()
+    }
+    closeActionModal()
+  }
+
+  const handleConfirmEdit = async () => {
+    if (!selectedUser) return
+
+    const hasChanges =
+      (modalEmail && modalEmail !== selectedUser.email) ||
+      (modalName && modalName !== selectedUser.name) ||
+      (modalType && modalType !== selectedUser.type) ||
+      (modalType === 'nutricionista' || modalType === 'empresa'
+        ? modalVerified !==
+          (modalType === 'nutricionista'
+            ? !!selectedUser.nutritionist_profiles?.is_verified
+            : !!(selectedUser as any).is_verified)
+        : false)
+
+    if (!hasChanges) {
+      toast({
+        title: 'Nenhuma alteração detectada',
+        description: 'Os dados do usuário já estavam iguais.',
+      })
+      closeActionModal()
+      return
+    }
+
+    setModalSubmitting(true)
+    try {
+      const payload: Record<string, any> = {}
+      if (modalEmail && modalEmail !== selectedUser.email) payload['email'] = modalEmail
+      if (modalType && modalType !== selectedUser.type) payload['user_type'] = modalType
+      if (modalName && modalName !== selectedUser.name) payload['name'] = modalName
+      if (modalType === 'nutricionista' || modalType === 'empresa') payload['is_verified'] = modalVerified
+      payload['production_auth'] = 'liberar_producao'
+
+      const res = await fetch(`/api/admin/users/${selectedUser.id}/update`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-production-auth': 'liberar_producao' },
+        credentials: 'include',
+        body: JSON.stringify(payload),
+      })
+
+      const j = await res.json().catch(() => ({}))
+      const data = j?.data ?? j
+
+      if (!res.ok) {
+        const msg =
+          (j?.error && (j?.error?.message || j?.error)) ||
+          j?.message ||
+          data?.error ||
+          'Falha ao atualizar usuário'
+        throw new Error(String(msg))
+      }
+
+      if (data && data.ok === false) {
+        const msg =
+          (data.error && (data.error.message || data.error)) ||
+          data.message ||
+          'Falha ao atualizar usuário'
+        throw new Error(String(msg))
+      }
+
+      const edited =
+        typeof data?.edited === 'boolean'
+          ? data.edited
+          : typeof data?.success === 'boolean'
+            ? data.success
+            : true
+
+      if (edited) {
+        toast({
+          title: 'Usuário atualizado',
+          description: 'As alterações foram salvas com sucesso.',
+        })
+      } else {
+        toast({
+          title: 'Nenhuma alteração detectada',
+          description: 'Os dados do usuário já estavam iguais.',
+        })
+      }
+
+      await handleActionSuccess(edited)
+    } catch (err: any) {
+      toast({
+        title: 'Erro ao salvar',
+        description: err?.message || 'Tente novamente.',
+        variant: 'destructive',
+      })
+    } finally {
+      setModalSubmitting(false)
+    }
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!selectedUser) return
+    setModalSubmitting(true)
+    try {
+      const idForOps = getUserIdForOps(selectedUser)
+      if (!idForOps) {
+        toast({
+          title: 'ID inválido',
+          description: 'ID do usuário inválido. Recarregue a página e tente novamente.',
+          variant: 'destructive',
+        })
+        return
+      }
+      const url = `/api/admin/users/${idForOps}/delete`
+      const options: RequestInit = {
+        method: 'DELETE',
+        headers: { 'x-production-auth': 'liberar_producao' },
+      }
+      const result = await execAdmin('delete', url, options)
+      if (!result.ok) return
+      if (result.edited) {
+        toast({
+          title: 'Usuário excluído',
+          description: 'O usuário foi removido com sucesso.',
+        })
+      } else {
+        toast({
+          title: 'Nenhuma alteração aplicada',
+          description: 'O usuário já estava excluído ou inativo.',
+        })
+      }
+      await handleActionSuccess(result.edited)
+    } catch (err: any) {
+      toast({
+        title: 'Erro ao excluir',
+        description: err?.message || 'Tente novamente.',
+        variant: 'destructive',
+      })
+    } finally {
+      setModalSubmitting(false)
+    }
+  }
+
+  const handleConfirmBan = async () => {
+    if (!selectedUser) return
+    setModalSubmitting(true)
+    try {
+      const idForOps = getUserIdForOps(selectedUser)
+      if (!idForOps) {
+        toast({
+          title: 'ID inválido',
+          description: 'ID do usuário inválido. Recarregue a página e tente novamente.',
+          variant: 'destructive',
+        })
+        return
+      }
+      const url = `/api/admin/users/${idForOps}/deactivate`
+      const options: RequestInit = {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-production-auth': 'liberar_producao',
+        },
+        body: JSON.stringify({ duration: '720h', production_auth: 'liberar_producao' }),
+      }
+      const result = await execAdmin('deactivate', url, options)
+      if (!result.ok) return
+      if (result.edited) {
+        toast({
+          title: 'Usuário banido',
+          description: 'O usuário foi desativado e não poderá mais acessar a plataforma.',
+        })
+      } else {
+        toast({
+          title: 'Nenhuma alteração aplicada',
+          description: 'O status de acesso do usuário já estava igual.',
+        })
+      }
+      await handleActionSuccess(result.edited)
+    } catch (err: any) {
+      toast({
+        title: 'Erro ao banir',
+        description: err?.message || 'Tente novamente.',
+        variant: 'destructive',
+      })
+    } finally {
+      setModalSubmitting(false)
+    }
   }
 
   const formatDate = (dateString: string) => {
@@ -643,13 +809,150 @@ export function UsersTab() {
         />
       )}
 
-      {editUser && editModalOpen && (
-        <EditUserModal
-          open={editModalOpen}
-          onOpenChange={setEditModalOpen}
-          user={editUser}
-          onUpdated={handleUserUpdated}
-        />
+      {modalOpen && selectedUser && modalAction && (
+        <Dialog
+          open={modalOpen}
+          onOpenChange={open => {
+            if (!open) closeActionModal()
+          }}
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>
+                {modalAction === 'edit'
+                  ? 'Editar Usuário'
+                  : modalAction === 'ban'
+                    ? 'Banir Usuário'
+                    : 'Excluir Usuário'}
+              </DialogTitle>
+              <DialogDescription>
+                {modalAction === 'edit' &&
+                  'Atualize informações básicas e status de verificação.'}
+                {modalAction === 'ban' &&
+                  'Confirme o banimento do usuário. Ele não poderá mais acessar a plataforma.'}
+                {modalAction === 'delete' &&
+                  'Confirme a exclusão do usuário. Esta ação é irreversível.'}
+              </DialogDescription>
+            </DialogHeader>
+
+            {modalAction === 'edit' && (
+              <div className="space-y-4 py-2">
+                <div className="grid gap-2">
+                  <label className="text-sm font-medium" htmlFor="admin-user-email">
+                    Email
+                  </label>
+                  <Input
+                    id="admin-user-email"
+                    value={modalEmail}
+                    onChange={e => setModalEmail(e.target.value)}
+                    placeholder="email@exemplo.com"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <label className="text-sm font-medium" htmlFor="admin-user-name">
+                    {nameLabel}
+                  </label>
+                  <Input
+                    id="admin-user-name"
+                    value={modalName}
+                    onChange={e => setModalName(e.target.value)}
+                    placeholder={nameLabel}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <span className="text-sm font-medium">Tipo de usuário</span>
+                  <Select value={modalType} onValueChange={v => setModalType(v as UserData['type'])}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Selecione o tipo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="paciente">Paciente</SelectItem>
+                      <SelectItem value="nutricionista">Nutricionista</SelectItem>
+                      <SelectItem value="empresa">Empresa</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {(modalType === 'nutricionista' || modalType === 'empresa') && (
+                  <div className="flex items-center justify-between pt-2">
+                    <div>
+                      <span className="text-sm font-medium">Verificado</span>
+                      <p className="text-xs text-muted-foreground">
+                        Controla a verificação de nutricionistas/empresas.
+                      </p>
+                    </div>
+                    <Switch checked={modalVerified} onCheckedChange={setModalVerified} />
+                  </div>
+                )}
+
+                <div className="flex justify-end gap-2 pt-4">
+                  <Button
+                    variant="outline"
+                    onClick={closeActionModal}
+                    disabled={modalSubmitting}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button onClick={handleConfirmEdit} disabled={modalSubmitting}>
+                    {modalSubmitting ? 'Salvando...' : 'Salvar alterações'}
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {modalAction === 'ban' && (
+              <div className="space-y-4 py-2">
+                <p className="text-sm text-muted-foreground">
+                  Tem certeza que deseja banir{' '}
+                  <span className="font-semibold">{selectedUser.name}</span>? O usuário
+                  não poderá mais acessar a plataforma.
+                </p>
+                <div className="flex justify-end gap-2 pt-4">
+                  <Button
+                    variant="outline"
+                    onClick={closeActionModal}
+                    disabled={modalSubmitting}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={handleConfirmBan}
+                    disabled={modalSubmitting}
+                  >
+                    {modalSubmitting ? 'Processando...' : 'Confirmar banimento'}
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {modalAction === 'delete' && (
+              <div className="space-y-4 py-2">
+                <p className="text-sm text-muted-foreground">
+                  Tem certeza que deseja excluir{' '}
+                  <span className="font-semibold">{selectedUser.name}</span>? Esta ação
+                  é irreversível.
+                </p>
+                <div className="flex justify-end gap-2 pt-4">
+                  <Button
+                    variant="outline"
+                    onClick={closeActionModal}
+                    disabled={modalSubmitting}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={handleConfirmDelete}
+                    disabled={modalSubmitting}
+                  >
+                    {modalSubmitting ? 'Excluindo...' : 'Confirmar exclusão'}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   )
