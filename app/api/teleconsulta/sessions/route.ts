@@ -1,393 +1,94 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { v4 as uuidv4 } from 'uuid'
-import { ZodError } from 'zod'
-import { withErrorHandling, ValidationError, ConflictError, validateAuth } from '@/src/lib/middleware/error-handler'
-import { createTeleconsultaSessionSchema } from '@/src/lib/validations/teleconsulta'
-import { createNotification } from '@/lib/notifications-service'
-import { createClient, createAdminClient } from '../../../../lib/supabase/server'
-import { format, parseISO } from 'date-fns'
-
 export const runtime = 'nodejs'
 
-// GET - Listar sessões de teleconsulta
-export const GET = withErrorHandling(async (request: NextRequest) => {
-  const supabase = await createClient()
+import { createAdminClient, createClient as createServerClient } from '../../../../lib/supabase/server'
 
-  // Verificar autenticação
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-  const userId = validateAuth(authError ? null : user?.id || null)
-
-  const { searchParams } = new URL(request.url)
-  const userType = searchParams.get('userType') || 'patient'
-  const status = searchParams.get('status')
-  const startDate = searchParams.get('startDate')
-  const endDate = searchParams.get('endDate')
-
-  // Buscar o ID do perfil baseado no tipo de usuário
-  let profileId: string
-  if (userType === 'nutritionist') {
-    const { data: nutritionist, error: nutritionistError } = await supabase
-      .from('nutritionist_profiles')
-      .select('id')
-      .eq('user_id', userId)
-      .single()
-
-    if (nutritionistError || !nutritionist) {
-      throw new Error('Perfil de nutricionista não encontrado')
-    }
-    profileId = nutritionist.id
-  } else {
-    const { data: patient, error: patientError } = await supabase
-      .from('patient_profiles')
-      .select('id')
-      .eq('user_id', userId)
-      .single()
-
-    if (patientError || !patient) {
-      throw new Error('Perfil de paciente não encontrado')
-    }
-    profileId = patient.id
-  }
-
-  // Construir query base
-  let query = supabase
-    .from('teleconsulta_sessions')
-    .select(`
-      *,
-      nutritionist:nutritionist_profiles!teleconsulta_sessions_nutritionist_id_fkey (
-            id, user_id, full_name, profile_image_url
-          ),
-          patient:patient_profiles!teleconsulta_sessions_patient_id_fkey (
-            id, user_id, full_name, phone, profile_image_url
-          )
-    `)
-    .eq(userType === 'nutritionist' ? 'nutritionist_id' : 'patient_id', profileId)
-    .order('scheduled_at', { ascending: true })
-
-  // Aplicar filtros
-  if (status) {
-    query = query.eq('status', status)
-  }
-
-  if (startDate) {
-    query = query.gte('scheduled_at', startDate)
-  }
-
-  if (endDate) {
-    query = query.lte('scheduled_at', endDate)
-  }
-
-  const { data: sessions, error: sessionsError } = await query
-
-  if (sessionsError) {
-    throw new Error('Erro ao buscar teleconsultas')
-  }
-
-  return NextResponse.json({ sessions })
-})
-
-function buildErrorResponse(requestId: string, code: string, message: string, status: number, details?: Record<string, unknown>) {
-  return NextResponse.json(
-    {
-      ok: false,
-      error: {
-        code,
-        message,
-        details: {
-          requestId,
-          ...details,
-        },
-      },
-    },
-    { status },
-  )
-}
-
-function buildSuccessResponse(requestId: string, data: Record<string, unknown>, status: number = 200) {
-  return NextResponse.json(
-    {
-      ok: true,
-      data,
-      requestId,
-    },
-    { status },
-  )
-}
-
-export const POST = async (request: NextRequest) => {
-  const requestId = uuidv4()
-  const supabaseUser = await createClient()
-  const supabaseAdmin = createAdminClient()
-
+export async function POST(req: Request): Promise<Response> {
   try {
-    const { data: { user }, error: authError } = await supabaseUser.auth.getUser()
+    console.log('STAGE 1 - endpoint iniciou')
 
-    if (authError || !user?.id) {
-      console.error('[TELECONSULTA][CREATE_SESSION_AUTH_ERROR]', { requestId, authError })
-      return buildErrorResponse(requestId, 'AUTH_REQUIRED', 'Usuário não autenticado', 401)
+    const body = await req.json()
+    console.log('STAGE 2 - body recebido', body)
+
+    const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
+    if (!supabaseUrl) {
+      throw new Error('ENV_MISSING_SUPABASE_URL')
     }
 
-    const userId = user.id
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      throw new Error('ENV_MISSING_SERVICE_ROLE')
+    }
 
-    const body = await request.json()
+    console.log('STAGE 3 - env ok')
 
-    console.log('[TELECONSULTA][CREATE_SESSION_REQUEST]', {
-      requestId,
-      userId,
-      payload: body,
-    })
+    const supabaseAdmin = createAdminClient()
+    const supabaseUser = await createServerClient()
 
-    let parsedBody: any
-    try {
-      parsedBody = createTeleconsultaSessionSchema.parse(body)
-    } catch (error) {
-      if (error instanceof ZodError) {
-        const errorMessage = error.errors
-          .map(err => `${err.path.join('.')}: ${err.message}`)
-          .join(', ')
-        console.error('[TELECONSULTA][CREATE_SESSION_VALIDATION_ERROR]', {
-          requestId,
-          error: errorMessage,
-          fields: error.errors,
-        })
-        return buildErrorResponse(
-          requestId,
-          'INVALID_DATETIME',
-          `Dados de agendamento inválidos: ${errorMessage}`,
-          422,
-          { fields: error.errors },
-        )
-      }
-      console.error('teleconsulta/sessions POST schema error', { requestId, error })
-      return buildErrorResponse(
-        requestId,
-        'INVALID_DATETIME',
-        'Dados de agendamento inválidos',
-        422,
+    const { data: authData, error: authError } = await (supabaseUser as any).auth.getUser()
+
+    console.log('STAGE 4 - auth', authData, authError)
+
+    if (authError || !authData?.user) {
+      return Response.json(
+        { ok: false, stage: 'AUTH_FAIL', error: authError ?? null },
+        { status: 401 },
       )
     }
 
-    const { nutritionist_id, scheduled_for, duration_minutes, price, notes } = parsedBody
+    const scheduledAtUTC = new Date(body.scheduled_for).toISOString()
+    console.log('STAGE 5 - date UTC', scheduledAtUTC)
 
-    const scheduledDate = new Date(scheduled_for)
-    const nowUtcMs = Date.now()
-    const minFutureMs = nowUtcMs + 5 * 60 * 1000
-
-    if (Number.isNaN(scheduledDate.getTime())) {
-      console.error('[TELECONSULTA][CREATE_SESSION_INVALID_DATETIME]', { requestId, scheduled_for })
-      return buildErrorResponse(requestId, 'INVALID_DATETIME', 'Data e horário inválidos', 400)
-    }
-
-    if (scheduledDate.getTime() <= minFutureMs) {
-      console.error('[TELECONSULTA][CREATE_SESSION_NOT_FUTURE]', {
-        requestId,
-        scheduled_for,
-        nowUtcMs,
-      })
-      return buildErrorResponse(requestId, 'DATETIME_MUST_BE_FUTURE', 'Data deve ser futura', 422)
-    }
-
-    if (price <= 0) {
-      console.error('[TELECONSULTA][CREATE_SESSION_INVALID_PRICE]', {
-        requestId,
-        price,
-      })
-      return buildErrorResponse(
-        requestId,
-        'INVALID_PRICE',
-        'Preço da teleconsulta deve ser maior que zero',
-        422,
+    if (Number.isNaN(new Date(scheduledAtUTC).getTime())) {
+      return Response.json(
+        { ok: false, stage: 'INVALID_DATE', message: 'Data de agendamento inválida' },
+        { status: 400 },
       )
     }
 
-    const validDurations = [30, 45, 60, 90, 120]
-    if (!validDurations.includes(duration_minutes)) {
-      console.error('[TELECONSULTA][CREATE_SESSION_INVALID_DURATION]', {
-        requestId,
-        duration_minutes,
-      })
-      return buildErrorResponse(requestId, 'INVALID_DATETIME', 'Duração inválida para teleconsulta', 400)
-    }
-
-    const { data: nutritionist, error: nutritionistError } = await supabaseAdmin
-      .from('nutritionist_profiles')
-      .select('id, user_id')
-      .eq('id', nutritionist_id)
-      .single()
-
-    if (nutritionistError || !nutritionist) {
-      console.error('[TELECONSULTA][CREATE_SESSION_NUTRITIONIST_NOT_FOUND]', {
-        requestId,
-        nutritionist_id,
-        nutritionistError,
-      })
-      return buildErrorResponse(requestId, 'NUTRITIONIST_NOT_FOUND', 'Nutricionista não encontrado', 404)
-    }
-
-    const { data: patient, error: patientError } = await supabaseAdmin
-      .from('patient_profiles')
-      .select('id, user_id')
-      .eq('user_id', userId)
-      .single()
-
-    if (patientError || !patient) {
-      console.error('[TELECONSULTA][CREATE_SESSION_PATIENT_NOT_FOUND]', {
-        requestId,
-        userId,
-        patientError,
-      })
-      return buildErrorResponse(
-        requestId,
-        'PROFILE_NOT_FOUND',
-        'Seu perfil não foi encontrado. Faça login novamente ou complete seu cadastro.',
-        404,
-      )
-    }
-
-    const scheduledUtc = new Date(scheduledDate.getTime())
-    const scheduledUtcIso = scheduledUtc.toISOString()
-    const endTime = new Date(scheduledUtc.getTime() + duration_minutes * 60000)
-    const endTimeUtcIso = endTime.toISOString()
-
-    const { data: existingSessions, error: sessionError } = await supabaseAdmin
-      .from('teleconsulta_sessions')
-      .select('id')
-      .eq('nutritionist_id', nutritionist.id)
-      .eq('status', 'scheduled')
-      .gte('scheduled_at', scheduledUtcIso)
-      .lt('scheduled_at', endTimeUtcIso)
-
-    if (sessionError) {
-      console.error('[TELECONSULTA][CREATE_SESSION_AVAILABILITY_ERROR]', {
-        requestId,
-        sessionError,
-      })
-      return buildErrorResponse(requestId, 'DB_ERROR', 'Erro ao verificar disponibilidade', 500)
-    }
-
-    if (existingSessions && existingSessions.length > 0) {
-      console.error('[TELECONSULTA][CREATE_SESSION_SLOT_CONFLICT]', {
-        requestId,
-        nutritionist_id,
-        scheduled_for,
-      })
-      return buildErrorResponse(
-        requestId,
-        'SLOT_CONFLICT',
-        'Horário indisponível. Escolha outro horário.',
-        409,
-      )
-    }
-
-    const sessionToken = uuidv4()
-    const siteUrl =
-      process.env.NEXT_PUBLIC_SITE_URL ||
-      process.env.APP_BASE_URL ||
-      new URL(request.url).origin
-    const joinUrl = `${siteUrl}/teleconsulta/${sessionToken}`
-
-    const { data: session, error: createError } = await supabaseAdmin
+    const { data, error } = await supabaseAdmin
       .from('teleconsulta_sessions')
       .insert({
-        session_token: sessionToken,
-        patient_id: patient.id,
-        nutritionist_id: nutritionist.id,
-        scheduled_at: scheduledUtcIso,
-        duration_minutes,
-        price,
-        notes,
-        status: 'pending_payment',
+        nutritionist_id: body.nutritionist_id,
+        patient_id: authData.user.id,
+        scheduled_at: scheduledAtUTC,
+        duration_minutes: body.duration_minutes,
+        price: body.price,
+        status: 'pending',
       })
       .select()
       .single()
 
-    if (createError || !session) {
-      const isRlsError = createError?.code === '42501'
-      const code = isRlsError ? 'RLS_DENIED' : 'DB_ERROR'
-      const message = isRlsError
-        ? 'Permissão insuficiente. Faça login novamente.'
-        : 'Erro interno ao criar sessão de teleconsulta'
+    console.log('STAGE 6 - insert result', data, error)
 
-      const extraDetails = createError
-        ? {
-            supabaseCode: createError.code,
-            supabaseMessage: createError.message,
-            supabaseDetails: (createError as any).details,
-            supabaseHint: (createError as any).hint,
-          }
-        : undefined
-
-      console.error('[TELECONSULTA][CREATE_SESSION_DB_ERROR]', {
-        requestId,
-        createError,
-      })
-      return buildErrorResponse(
-        requestId,
-        code,
-        message,
-        isRlsError ? 403 : 500,
-        extraDetails,
+    if (error) {
+      return Response.json(
+        {
+          ok: false,
+          stage: 'INSERT_FAIL',
+          error: error.message,
+          details: error,
+        },
+        { status: 400 },
       )
     }
 
-    try {
-      const scheduledDateTime = new Date(scheduled_for).toLocaleString('pt-BR')
-
-      await createNotification({
-        userId: userId,
-        title: 'Teleconsulta Agendada',
-        message: `Sua teleconsulta foi agendada para ${scheduledDateTime}`,
-        notificationType: 'teleconsulta_session_scheduled',
-        consultationId: session.id,
-        data: {
-          session_id: session.id,
-          scheduled_for,
-          nutritionist_id,
-          join_url: joinUrl,
-        },
-      })
-
-      await createNotification({
-        userId: nutritionist_id,
-        title: 'Nova Teleconsulta Agendada',
-        message: `Uma nova teleconsulta foi agendada para ${scheduledDateTime}`,
-        notificationType: 'teleconsulta_session_scheduled',
-        consultationId: session.id,
-        data: {
-          session_id: session.id,
-          scheduled_for,
-          patient_id: userId,
-          join_url: joinUrl,
-        },
-      })
-    } catch (notificationError) {
-      console.error('[TELECONSULTA][CREATE_SESSION_NOTIFICATION_ERROR]', {
-        requestId,
-        notificationError,
-      })
-    }
-
-    const responseData = {
-      sessionId: session.id,
-      amount: session.price,
-      currency: 'brl',
-      session,
-    }
-
-    console.log('[TELECONSULTA][CREATE_SESSION_SUCCESS]', {
-      requestId,
-      sessionId: session.id,
-      patientId: patient.id,
-      nutritionistId: nutritionist.id,
-      scheduled_at: scheduledUtcIso,
-    })
-
-    return buildSuccessResponse(requestId, responseData, 201)
-  } catch (error) {
-    console.error('[TELECONSULTA][CREATE_SESSION_UNEXPECTED_ERROR]', {
-      requestId,
-      error,
-    })
-    return buildErrorResponse(requestId, 'DB_ERROR', 'Erro interno ao criar sessão de teleconsulta', 500)
+    return Response.json(
+      {
+        ok: true,
+        stage: 'SUCCESS',
+        session: data,
+      },
+      { status: 200 },
+    )
+  } catch (e: any) {
+    console.error('STAGE 500 - catch', e)
+    return Response.json(
+      {
+        ok: false,
+        stage: 'CATCH_ROOT',
+        message: String(e),
+      },
+      { status: 500 },
+    )
   }
 }
+
