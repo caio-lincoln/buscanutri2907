@@ -101,9 +101,48 @@ export function UsersTab() {
     }
   }
 
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem('adminUsersState')
+      if (raw) {
+        const s = JSON.parse(raw)
+        if (typeof s.searchTerm === 'string') setSearchTerm(s.searchTerm)
+        if (typeof s.filterType === 'string') setFilterType(s.filterType)
+        if (typeof s.filterStatus === 'string') setFilterStatus(s.filterStatus)
+        if (typeof s.currentPage === 'number') setCurrentPage(s.currentPage)
+      }
+    } catch {}
+  }, [])
+
   const refreshUsersAndUi = async () => {
     await fetchUsers()
     setUiRefreshKey(prev => prev + 1)
+  }
+
+  const saveUiState = () => {
+    try {
+      const payload = {
+        searchTerm,
+        filterType,
+        filterStatus,
+        currentPage,
+      }
+      sessionStorage.setItem('adminUsersState', JSON.stringify(payload))
+      sessionStorage.setItem('adminActiveTab', 'usuarios')
+    } catch {}
+  }
+
+  const triggerFullReload = () => {
+    saveUiState()
+    try {
+      const url = new URL(window.location.href)
+      if (url.pathname.startsWith('/dashboard/admin')) {
+        url.searchParams.set('activeTab', 'usuarios')
+        window.location.href = url.toString()
+        return
+      }
+    } catch {}
+    window.location.reload()
   }
 
   useEffect(() => {
@@ -285,7 +324,7 @@ export function UsersTab() {
         }
         const ok = await execAdmin('delete', url, options)
         if (!ok) return
-        await refreshUsersAndUi()
+        triggerFullReload()
         setVerifyModalOpen(false)
         setSelectedUser(null)
         setUiRefreshKey(prev => prev + 1)
@@ -322,7 +361,7 @@ export function UsersTab() {
         }
         const ok = await execAdmin('deactivate', url, options)
         if (!ok) return
-        await refreshUsersAndUi()
+        triggerFullReload()
         setVerifyModalOpen(false)
         setSelectedUser(null)
         setUiRefreshKey(prev => prev + 1)
@@ -351,13 +390,11 @@ export function UsersTab() {
   }
 
   const handleUserApproved = async () => {
-    // Recarregar dados após aprovação
-    await refreshUsersAndUi()
+    triggerFullReload()
   }
 
   const handleUserUpdated = async () => {
-    // Recarregar dados após atualização via modal de edição
-    await refreshUsersAndUi()
+    triggerFullReload()
   }
 
   const formatDate = (dateString: string) => {
