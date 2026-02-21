@@ -35,6 +35,14 @@ export default function ViewUserProfileModal({ open, onOpenChange, user }: Props
   const [ docs, setDocs ] = useState<NutritionistDocument[]>([])
 
   useEffect(() => {
+    if (!open) {
+      document.body.classList.remove('overflow-hidden', 'modal-open')
+      document.body.style.pointerEvents = 'auto'
+      document.body.style.overflow = 'auto'
+    }
+  }, [open])
+
+  useEffect(() => {
     const loadProfile = async () => {
       if (!user?.id || !user?.type) return
       setLoading(true)

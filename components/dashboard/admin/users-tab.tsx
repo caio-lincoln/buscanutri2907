@@ -96,7 +96,8 @@ export function UsersTab() {
   } | null>(null)
   const [ editModalOpen, setEditModalOpen ] = useState(false)
   const [ editUser, setEditUser ] = useState<EditUserData | null>(null)
-  const [ viewModalOpen, setViewModalOpen ] = useState(false)
+  const [ isViewModalOpen, setIsViewModalOpen ] = useState(false)
+  const [ selectedViewUserId, setSelectedViewUserId ] = useState<string | null>(null)
   const [ viewUser, setViewUser ] = useState<ViewUserProfileData | null>(null)
 
   // Carregar todos os usuários uma única vez (ou ao forçar refresh)
@@ -302,13 +303,14 @@ export function UsersTab() {
         return
       }
       if (action === 'view') {
+        setSelectedViewUserId(user.id)
         setViewUser({
           id: user.id,
           email: user.email,
           name: user.name,
           type: user.type as ViewUserProfileData['type'],
         })
-        setViewModalOpen(true)
+        setIsViewModalOpen(true)
         return
       }
       const exec = async () => {
@@ -361,6 +363,14 @@ export function UsersTab() {
   const handleVerifyModalClose = () => {
     setVerifyModalOpen(false)
     setSelectedUser(null)
+  }
+
+  const handleViewModalOpenChange = (open: boolean) => {
+    setIsViewModalOpen(open)
+    if (!open) {
+      setSelectedViewUserId(null)
+      setViewUser(null)
+    }
   }
 
   const handleUserApproved = async () => {
@@ -625,8 +635,8 @@ export function UsersTab() {
       />
 
       <ViewUserProfileModal
-        open={viewModalOpen}
-        onOpenChange={setViewModalOpen}
+        open={isViewModalOpen}
+        onOpenChange={handleViewModalOpenChange}
         user={viewUser}
       />
     </div>
