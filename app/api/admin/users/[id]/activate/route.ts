@@ -47,5 +47,11 @@ export const POST = withErrorHandling(async (req: NextRequest, { params }: { par
     const status = isUnauthorized ? 403 : 500
     return createErrorResponse(msg, status)
   }
-  return createApiResponse({ success: true })
+
+  return createApiResponse({
+    ok: true,
+    edited: true,
+    rowsAffected: 1,
+    success: true,
+  })
 })

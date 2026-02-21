@@ -90,7 +90,6 @@ export function UsersTab() {
   const [ editUser, setEditUser ] = useState<EditUserData | null>(null)
   const [ uiRefreshKey, setUiRefreshKey ] = useState(0)
 
-  // Carregar todos os usuários uma única vez (ou ao forçar refresh)
   const fetchUsers = async () => {
     setLoading(true)
     try {
@@ -101,48 +100,9 @@ export function UsersTab() {
     }
   }
 
-  useEffect(() => {
-    try {
-      const raw = sessionStorage.getItem('adminUsersState')
-      if (raw) {
-        const s = JSON.parse(raw)
-        if (typeof s.searchTerm === 'string') setSearchTerm(s.searchTerm)
-        if (typeof s.filterType === 'string') setFilterType(s.filterType)
-        if (typeof s.filterStatus === 'string') setFilterStatus(s.filterStatus)
-        if (typeof s.currentPage === 'number') setCurrentPage(s.currentPage)
-      }
-    } catch {}
-  }, [])
-
   const refreshUsersAndUi = async () => {
     await fetchUsers()
     setUiRefreshKey(prev => prev + 1)
-  }
-
-  const saveUiState = () => {
-    try {
-      const payload = {
-        searchTerm,
-        filterType,
-        filterStatus,
-        currentPage,
-      }
-      sessionStorage.setItem('adminUsersState', JSON.stringify(payload))
-      sessionStorage.setItem('adminActiveTab', 'usuarios')
-    } catch {}
-  }
-
-  const triggerFullReload = () => {
-    saveUiState()
-    try {
-      const url = new URL(window.location.href)
-      if (url.pathname.startsWith('/dashboard/admin')) {
-        url.searchParams.set('activeTab', 'usuarios')
-        window.location.href = url.toString()
-        return
-      }
-    } catch {}
-    window.location.reload()
   }
 
   useEffect(() => {
@@ -220,35 +180,70 @@ export function UsersTab() {
     return { message, body, contentType }
   }
 
-  const execAdmin = async (action: string, url: string, options: RequestInit) => {
+  const execAdmin = async (
+    action: string,
+    url: string,
+    options: RequestInit
+  ): Promise<{ ok: boolean; edited: boolean; rowsAffected: number }> => {
     try {
       const res = await fetch(url, { ...options, credentials: 'include' })
+
       if (res.ok) {
-        // Validar conteúdo quando OK para detectar sucesso lógico
         try {
           const ct = res.headers.get('content-type') || ''
           if (ct.includes('application/json')) {
             const j = await res.json()
             const data = j?.data ?? j
-            // Quando resposta tem 'success' explícito
-            if (typeof data?.success === 'boolean') {
-              if (data.success) return true
-              const msg =
-                data?.error?.message ||
-                data?.error ||
-                `Falha na ação: auth=${String(data?.auth || '-')}, db=${String(data?.db || '-')}`
-              alert(String(msg))
-              return false
+
+            if (typeof data?.ok === 'boolean') {
+              if (!data.ok) {
+                const msg =
+                  (data.error && (data.error.message || data.error)) ||
+                  data.message ||
+                  `Falha na ação: auth=${String(data?.auth || '-')}, db=${String(
+                    data?.db || '-'
+                  )}`
+                alert(String(msg))
+                return { ok: false, edited: false, rowsAffected: 0 }
+              }
+              const edited =
+                typeof data.edited === 'boolean'
+                  ? data.edited
+                  : typeof data.success === 'boolean'
+                    ? data.success
+                    : true
+              const rowsAffected =
+                typeof data.rowsAffected === 'number'
+                  ? data.rowsAffected
+                  : edited
+                    ? 1
+                    : 0
+              return { ok: true, edited, rowsAffected }
             }
-            // Sem campo 'success', consideramos OK
-            return true
+
+            if (typeof data?.success === 'boolean') {
+              if (!data.success) {
+                const msg =
+                  data?.error?.message ||
+                  data?.error ||
+                  `Falha na ação: auth=${String(data?.auth || '-')}, db=${String(
+                    data?.db || '-'
+                  )}`
+                alert(String(msg))
+                return { ok: false, edited: false, rowsAffected: 0 }
+              }
+              return { ok: true, edited: true, rowsAffected: 1 }
+            }
+
+            return { ok: true, edited: true, rowsAffected: 1 }
           }
-          // Conteúdo não JSON: considerar sucesso
-          return true
+
+          return { ok: true, edited: true, rowsAffected: 1 }
         } catch {
-          return true
+          return { ok: true, edited: true, rowsAffected: 1 }
         }
       }
+
       const { message, body, contentType } = await parseAdminResponse(res)
       console.warn('Erro ao executar ação administrativa', {
         action,
@@ -258,7 +253,7 @@ export function UsersTab() {
         response: body,
       })
       alert(message)
-      return false
+      return { ok: false, edited: false, rowsAffected: 0 }
     } catch (err: any) {
       console.warn('Erro de rede ao executar ação administrativa', {
         action,
@@ -266,7 +261,7 @@ export function UsersTab() {
         error: err?.message || String(err),
       })
       alert('Erro de rede ao executar ação.')
-      return false
+      return { ok: false, edited: false, rowsAffected: 0 }
     }
   }
 
@@ -322,12 +317,15 @@ export function UsersTab() {
           method: 'DELETE',
           headers: { 'x-production-auth': 'liberar_producao' },
         }
-        const ok = await execAdmin('delete', url, options)
-        if (!ok) return
-        triggerFullReload()
+        const result = await execAdmin('delete', url, options)
+        if (!result.ok) return
+        if (result.edited) {
+          await refreshUsersAndUi()
+        } else {
+          alert('Nenhuma alteração aplicada. O usuário já estava excluído ou inativo.')
+        }
         setVerifyModalOpen(false)
         setSelectedUser(null)
-        setUiRefreshKey(prev => prev + 1)
       } catch (err) {
         console.warn('Erro executando exclusão de usuário:', err)
         alert('Erro ao excluir usuário.')
@@ -359,12 +357,15 @@ export function UsersTab() {
           },
           body: JSON.stringify({ duration: '720h', production_auth: 'liberar_producao' }),
         }
-        const ok = await execAdmin('deactivate', url, options)
-        if (!ok) return
-        triggerFullReload()
+        const result = await execAdmin('deactivate', url, options)
+        if (!result.ok) return
+        if (result.edited) {
+          await refreshUsersAndUi()
+        } else {
+          alert('Nenhuma alteração aplicada ao status de acesso do usuário.')
+        }
         setVerifyModalOpen(false)
         setSelectedUser(null)
-        setUiRefreshKey(prev => prev + 1)
       } catch (err) {
         console.warn('Erro executando banimento de usuário:', err)
         alert('Erro ao banir usuário.')
@@ -390,11 +391,11 @@ export function UsersTab() {
   }
 
   const handleUserApproved = async () => {
-    triggerFullReload()
+    await refreshUsersAndUi()
   }
 
   const handleUserUpdated = async () => {
-    triggerFullReload()
+    await refreshUsersAndUi()
   }
 
   const formatDate = (dateString: string) => {

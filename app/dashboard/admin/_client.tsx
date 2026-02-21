@@ -85,15 +85,6 @@ export default function AdminDashboard({ initialUser }: Props) {
   );
 
   useEffect(() => {
-    try {
-      const persisted = sessionStorage.getItem('adminActiveTab')
-      if (!searchParams.get('activeTab') && isTab(persisted) && persisted !== activeTab) {
-        setTab(persisted as Tab)
-      }
-    } catch {}
-  }, [ searchParams, activeTab, setTab ])
-
-  useEffect(() => {
     const param = searchParams.get('activeTab');
     if (isTab(param) && param !== activeTab) {
       setActiveTab(param);

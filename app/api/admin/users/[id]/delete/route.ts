@@ -28,43 +28,64 @@ export const DELETE = withErrorHandling(async (req: NextRequest, { params }: { p
 
   const timestamp = new Date().toISOString()
 
-  try {
-    // 2. Soft Delete Cascading
-    
-    // By User ID
-    await admin.from('users').update({ is_deleted: true, deleted_at: timestamp }).eq('id', targetUuid)
-    await admin.from('nutritionist_profiles').update({ is_deleted: true, deleted_at: timestamp }).eq('user_id', targetUuid)
-    await admin.from('patient_profiles').update({ is_deleted: true, deleted_at: timestamp }).eq('user_id', targetUuid)
-    await admin.from('user_subscriptions').update({ is_deleted: true, deleted_at: timestamp }).eq('user_id', targetUuid)
-    
-    await admin.from('anamnese_nutricional').update({ is_deleted: true, deleted_at: timestamp }).eq('patient_id', targetUuid)
-    await admin.from('payments').update({ is_deleted: true, deleted_at: timestamp }).eq('patient_id', targetUuid)
-    await admin.from('payments').update({ is_deleted: true, deleted_at: timestamp }).eq('nutritionist_id', targetUuid)
-    
-    await admin.from('chat_messages').update({ is_deleted: true, deleted_at: timestamp }).eq('sender_id', targetUuid)
-    await admin.from('consultation_messages').update({ is_deleted: true, deleted_at: timestamp }).eq('sender_id', targetUuid)
+  let rowsAffected = 0
 
-    // By Profile IDs
+  const markSoftDelete = async (table: string, column: string, value: string) => {
+    const { error, count } = await admin
+      .from(table)
+      .update({ is_deleted: true, deleted_at: timestamp })
+      .eq(column, value)
+      .select('id', { count: 'exact' })
+
+    if (error) {
+      throw error
+    }
+
+    return count || 0
+  }
+
+  try {
+    rowsAffected += await markSoftDelete('users', 'id', targetUuid)
+    rowsAffected += await markSoftDelete('nutritionist_profiles', 'user_id', targetUuid)
+    rowsAffected += await markSoftDelete('patient_profiles', 'user_id', targetUuid)
+    rowsAffected += await markSoftDelete('user_subscriptions', 'user_id', targetUuid)
+
+    rowsAffected += await markSoftDelete('anamnese_nutricional', 'patient_id', targetUuid)
+    rowsAffected += await markSoftDelete('payments', 'patient_id', targetUuid)
+    rowsAffected += await markSoftDelete('payments', 'nutritionist_id', targetUuid)
+
+    rowsAffected += await markSoftDelete('chat_messages', 'sender_id', targetUuid)
+    rowsAffected += await markSoftDelete('consultation_messages', 'sender_id', targetUuid)
+
     const { data: patProfile } = await admin.from('patient_profiles').select('id').eq('user_id', targetUuid).single()
     if (patProfile) {
-        await admin.from('appointments').update({ is_deleted: true, deleted_at: timestamp }).eq('patient_id', patProfile.id)
-        await admin.from('consultations').update({ is_deleted: true, deleted_at: timestamp }).eq('patient_id', patProfile.id)
-        await admin.from('consultation_reviews').update({ is_deleted: true, deleted_at: timestamp }).eq('patient_id', patProfile.id)
-        await admin.from('chat_conversations').update({ is_deleted: true, deleted_at: timestamp }).eq('patient_id', patProfile.id)
-    }
-    
-    const { data: nutProfile } = await admin.from('nutritionist_profiles').select('id').eq('user_id', targetUuid).single()
-    if (nutProfile) {
-        await admin.from('appointments').update({ is_deleted: true, deleted_at: timestamp }).eq('nutritionist_id', nutProfile.id)
-        await admin.from('consultations').update({ is_deleted: true, deleted_at: timestamp }).eq('nutritionist_id', nutProfile.id)
-        await admin.from('posts').update({ is_deleted: true, deleted_at: timestamp }).eq('nutritionist_id', nutProfile.id)
-        await admin.from('consultation_reviews').update({ is_deleted: true, deleted_at: timestamp }).eq('nutritionist_id', nutProfile.id)
-        await admin.from('chat_conversations').update({ is_deleted: true, deleted_at: timestamp }).eq('nutritionist_id', nutProfile.id)
+      rowsAffected += await markSoftDelete('appointments', 'patient_id', patProfile.id)
+      rowsAffected += await markSoftDelete('consultations', 'patient_id', patProfile.id)
+      rowsAffected += await markSoftDelete('consultation_reviews', 'patient_id', patProfile.id)
+      rowsAffected += await markSoftDelete('chat_conversations', 'patient_id', patProfile.id)
     }
 
+    const { data: nutProfile } = await admin.from('nutritionist_profiles').select('id').eq('user_id', targetUuid).single()
+    if (nutProfile) {
+      rowsAffected += await markSoftDelete('appointments', 'nutritionist_id', nutProfile.id)
+      rowsAffected += await markSoftDelete('consultations', 'nutritionist_id', nutProfile.id)
+      rowsAffected += await markSoftDelete('posts', 'nutritionist_id', nutProfile.id)
+      rowsAffected += await markSoftDelete('consultation_reviews', 'nutritionist_id', nutProfile.id)
+      rowsAffected += await markSoftDelete('chat_conversations', 'nutritionist_id', nutProfile.id)
+    }
   } catch (e: any) {
     console.error('[SOFT DELETE ERROR]', e)
-    return createApiResponse({ success: false, db: 'error', details: { db: e.message } }, 500)
+    return createApiResponse(
+      {
+        ok: false,
+        edited: false,
+        rowsAffected,
+        success: false,
+        db: 'error',
+        details: { db: e.message },
+      },
+      500
+    )
   }
 
   // 3. Auth Delete
@@ -78,12 +99,18 @@ export const DELETE = withErrorHandling(async (req: NextRequest, { params }: { p
             console.error('[AUTH DELETE ERROR]', error)
             // Soft delete succeeded, but auth delete failed.
             // We return error 500 but with details that DB is cleaned.
-            return createApiResponse({ 
-                success: false, 
-                auth: 'error', 
-                db: 'deleted', 
-                details: { auth: error.message, db: 'Soft deleted successfully' } 
-            }, 500)
+            return createApiResponse(
+              {
+                ok: false,
+                edited: rowsAffected > 0,
+                rowsAffected,
+                success: false,
+                auth: 'error',
+                db: 'deleted',
+                details: { auth: error.message, db: 'Soft deleted successfully' },
+              },
+              500
+            )
         }
     }
   } catch (e: any) {
@@ -100,12 +127,18 @@ export const DELETE = withErrorHandling(async (req: NextRequest, { params }: { p
         console.log('[AUTH DELETE INFO] User already deleted from Auth (exception). Continuing...')
     } else {
         console.error('[AUTH DELETE EXCEPTION]', e)
-        return createApiResponse({ 
-            success: false, 
-            auth: 'error', 
-            db: 'deleted', 
-            details: { auth: e.message } 
-        }, 500)
+        return createApiResponse(
+          {
+            ok: false,
+            edited: rowsAffected > 0,
+            rowsAffected,
+            success: false,
+            auth: 'error',
+            db: 'deleted',
+            details: { auth: e.message },
+          },
+          500
+        )
     }
   }
 
@@ -140,10 +173,13 @@ export const DELETE = withErrorHandling(async (req: NextRequest, { params }: { p
     }
   })
 
-  return createApiResponse({ 
-    success: true, 
-    auth: 'deleted', 
+  return createApiResponse({
+    ok: true,
+    edited: rowsAffected > 0,
+    rowsAffected,
+    success: true,
+    auth: 'deleted',
     db: 'deleted',
-    details: { message: 'User soft deleted and auth removed' }
+    details: { message: 'User soft deleted and auth removed' },
   })
 })

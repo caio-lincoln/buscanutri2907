@@ -71,6 +71,22 @@ export function EditUserModal({ open, onOpenChange, user, onUpdated }: EditUserM
 
   async function handleSave() {
     if (!user) return
+
+    const hasChanges =
+      (email && email !== user.email) ||
+      (name && name !== user.name) ||
+      (type && type !== user.type) ||
+      (canToggleVerified && verified !== (user as any).is_verified)
+
+    if (!hasChanges) {
+      toast({
+        title: 'Nenhuma alteração detectada',
+        description: 'Os dados do usuário já estavam iguais.',
+      })
+      onOpenChange(false)
+      return
+    }
+
     setSaving(true)
     try {
       const payload: Record<string, any> = {}
@@ -86,22 +102,54 @@ export function EditUserModal({ open, onOpenChange, user, onUpdated }: EditUserM
         credentials: 'include',
         body: JSON.stringify(payload),
       })
+
       const j = await res.json().catch(() => ({}))
-      if (!res.ok) {
-        const msg = (j?.error && (j?.error?.message || j?.error)) || j?.message || 'Falha ao atualizar usuário'
-        throw new Error(String(msg))
-      }
-      // Alguns endpoints retornam { data: { success: boolean, error?: string } }
       const data = j?.data ?? j
-      if (data && data.success === false) {
-        const msg = data.error || 'Falha ao atualizar usuário'
+
+      if (!res.ok) {
+        const msg =
+          (j?.error && (j?.error?.message || j?.error)) ||
+          j?.message ||
+          data?.error ||
+          'Falha ao atualizar usuário'
         throw new Error(String(msg))
       }
-      toast({ title: 'Usuário atualizado', description: 'As alterações foram salvas com sucesso.' })
-      onOpenChange(false)
-      onUpdated?.()
+
+      if (data && data.ok === false) {
+        const msg =
+          (data.error && (data.error.message || data.error)) ||
+          data.message ||
+          'Falha ao atualizar usuário'
+        throw new Error(String(msg))
+      }
+
+      const edited =
+        typeof data?.edited === 'boolean'
+          ? data.edited
+          : typeof data?.success === 'boolean'
+            ? data.success
+            : true
+
+      if (edited) {
+        toast({
+          title: 'Usuário atualizado',
+          description: 'As alterações foram salvas com sucesso.',
+        })
+        onOpenChange(false)
+        onUpdated?.()
+      } else {
+        toast({
+          title: 'Nenhuma alteração detectada',
+          description: 'Os dados do usuário já estavam iguais.',
+        })
+        onOpenChange(false)
+      }
     } catch (err: any) {
-      toast({ title: 'Erro ao salvar', description: err?.message || 'Tente novamente.', variant: 'destructive' })
+      toast({
+        title: 'Erro ao salvar',
+        description: err?.message || 'Tente novamente.',
+        variant: 'destructive',
+      })
     } finally {
       setSaving(false)
     }

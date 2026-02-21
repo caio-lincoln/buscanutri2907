@@ -52,5 +52,10 @@ export const POST = withErrorHandling(async (req: NextRequest, { params }: { par
     return createErrorResponse(msg, status)
   }
 
-  return createApiResponse({ success: true })
+  return createApiResponse({
+    ok: true,
+    edited: true,
+    rowsAffected: 1,
+    success: true,
+  })
 })

@@ -18,7 +18,16 @@ export const POST = withErrorHandling(async (req: NextRequest, { params }: { par
   const body = await req.json().catch(() => ({}))
   const parsed = schema.safeParse(body)
   if (!parsed.success) {
-    return createApiResponse({ success: false, error: 'Payload inválido' })
+    return createApiResponse(
+      {
+        ok: false,
+        edited: false,
+        rowsAffected: 0,
+        success: false,
+        error: 'Payload inválido',
+      },
+      400
+    )
   }
   const { email, user_type, name, is_verified } = parsed.data
   const newEmail = email ? email.trim().toLowerCase() : undefined
@@ -50,11 +59,29 @@ export const POST = withErrorHandling(async (req: NextRequest, { params }: { par
       .eq('email', newEmail)
       .maybeSingle()
     if (existingAuthUser && existingAuthUser.id !== userRow?.id) {
-      return createApiResponse({ success: false, error: 'E-mail já está em uso por outra conta' })
+      return createApiResponse(
+        {
+          ok: false,
+          edited: false,
+          rowsAffected: 0,
+          success: false,
+          error: 'E-mail já está em uso por outra conta',
+        },
+        409
+      )
     }
     const { error: authErr } = await admin.auth.admin.updateUserById(userRow!.id, { email: newEmail })
     if (authErr) {
-      return createApiResponse({ success: false, error: `Falha ao atualizar email (auth): ${authErr.message}` })
+      return createApiResponse(
+        {
+          ok: false,
+          edited: false,
+          rowsAffected: 0,
+          success: false,
+          error: `Falha ao atualizar email (auth): ${authErr.message}`,
+        },
+        500
+      )
     }
     const { data: updatedUserEmail } = await admin
       .from('users')
@@ -201,7 +228,16 @@ export const POST = withErrorHandling(async (req: NextRequest, { params }: { par
     }
 
     if (!updated) {
-      return createApiResponse({ success: false, error: 'Perfil não encontrado para atualizar nome' })
+      return createApiResponse(
+        {
+          ok: false,
+          edited: false,
+          rowsAffected: 0,
+          success: false,
+          error: 'Perfil não encontrado para atualizar nome',
+        },
+        404
+      )
     }
     didUpdateName = updated
   }
@@ -246,14 +282,26 @@ export const POST = withErrorHandling(async (req: NextRequest, { params }: { par
     }
   }
 
-  const success = didUpdateEmail || didUpdateType || didUpdateName || didUpdateVerified
+  const changes = {
+    email: didUpdateEmail,
+    user_type: didUpdateType,
+    name: didUpdateName,
+    is_verified: didUpdateVerified,
+  }
+
+  const rowsAffected =
+    (changes.email ? 1 : 0) +
+    (changes.user_type ? 1 : 0) +
+    (changes.name ? 1 : 0) +
+    (changes.is_verified ? 1 : 0)
+
+  const edited = rowsAffected > 0
+
   return createApiResponse({
-    success,
-    changed: {
-      email: didUpdateEmail,
-      user_type: didUpdateType,
-      name: didUpdateName,
-      is_verified: didUpdateVerified,
-    }
+    ok: true,
+    edited,
+    rowsAffected,
+    success: edited,
+    changed: changes,
   })
 })
