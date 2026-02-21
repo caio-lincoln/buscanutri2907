@@ -1,5 +1,6 @@
 export const runtime = 'nodejs'
 
+import { v4 as uuidv4 } from 'uuid'
 import { createAdminClient, createClient as createServerClient } from '../../../../lib/supabase/server'
 
 export async function POST(req: Request): Promise<Response> {
@@ -47,6 +48,7 @@ export async function POST(req: Request): Promise<Response> {
     const { data, error } = await supabaseAdmin
       .from('teleconsulta_sessions')
       .insert({
+        session_token: uuidv4(),
         nutritionist_id: body.nutritionist_id,
         patient_id: authData.user.id,
         scheduled_at: scheduledAtUTC,
@@ -91,4 +93,3 @@ export async function POST(req: Request): Promise<Response> {
     )
   }
 }
-
