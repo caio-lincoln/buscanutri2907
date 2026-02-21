@@ -4,8 +4,10 @@ import { ZodError } from 'zod'
 import { withErrorHandling, ValidationError, ConflictError, validateAuth } from '@/src/lib/middleware/error-handler'
 import { createTeleconsultaSessionSchema } from '@/src/lib/validations/teleconsulta'
 import { createNotification } from '@/lib/notifications-service'
-import { createClient } from '../../../../lib/supabase/server'
+import { createClient, createAdminClient } from '../../../../lib/supabase/server'
 import { format, parseISO } from 'date-fns'
+
+export const runtime = 'nodejs'
 
 // GET - Listar sessões de teleconsulta
 export const GET = withErrorHandling(async (request: NextRequest) => {
@@ -114,10 +116,11 @@ function buildSuccessResponse(requestId: string, data: Record<string, unknown>, 
 
 export const POST = async (request: NextRequest) => {
   const requestId = uuidv4()
-  const supabase = await createClient()
+  const supabaseUser = await createClient()
+  const supabaseAdmin = createAdminClient()
 
   try {
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const { data: { user }, error: authError } = await supabaseUser.auth.getUser()
 
     if (authError || !user?.id) {
       console.error('[TELECONSULTA][CREATE_SESSION_AUTH_ERROR]', { requestId, authError })
@@ -206,7 +209,7 @@ export const POST = async (request: NextRequest) => {
       return buildErrorResponse(requestId, 'INVALID_DATETIME', 'Duração inválida para teleconsulta', 400)
     }
 
-    const { data: nutritionist, error: nutritionistError } = await supabase
+    const { data: nutritionist, error: nutritionistError } = await supabaseAdmin
       .from('nutritionist_profiles')
       .select('id, user_id')
       .eq('id', nutritionist_id)
@@ -221,7 +224,7 @@ export const POST = async (request: NextRequest) => {
       return buildErrorResponse(requestId, 'NUTRITIONIST_NOT_FOUND', 'Nutricionista não encontrado', 404)
     }
 
-    const { data: patient, error: patientError } = await supabase
+    const { data: patient, error: patientError } = await supabaseAdmin
       .from('patient_profiles')
       .select('id, user_id')
       .eq('user_id', userId)
@@ -246,7 +249,7 @@ export const POST = async (request: NextRequest) => {
     const endTime = new Date(scheduledUtc.getTime() + duration_minutes * 60000)
     const endTimeUtcIso = endTime.toISOString()
 
-    const { data: existingSessions, error: sessionError } = await supabase
+    const { data: existingSessions, error: sessionError } = await supabaseAdmin
       .from('teleconsulta_sessions')
       .select('id')
       .eq('nutritionist_id', nutritionist.id)
@@ -277,10 +280,13 @@ export const POST = async (request: NextRequest) => {
     }
 
     const sessionToken = uuidv4()
-    const origin = process.env.APP_BASE_URL || new URL(request.url).origin
-    const joinUrl = `${origin}/teleconsulta/${sessionToken}`
+    const siteUrl =
+      process.env.NEXT_PUBLIC_SITE_URL ||
+      process.env.APP_BASE_URL ||
+      new URL(request.url).origin
+    const joinUrl = `${siteUrl}/teleconsulta/${sessionToken}`
 
-    const { data: session, error: createError } = await supabase
+    const { data: session, error: createError } = await supabaseAdmin
       .from('teleconsulta_sessions')
       .insert({
         session_token: sessionToken,
@@ -291,7 +297,6 @@ export const POST = async (request: NextRequest) => {
         price,
         notes,
         status: 'pending_payment',
-        join_url: joinUrl,
       })
       .select()
       .single()
