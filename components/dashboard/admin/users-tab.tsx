@@ -42,20 +42,17 @@ import {
   MoreHorizontal,
   Search,
   Filter,
+  CheckCircle,
   Edit,
   Trash2,
-  Eye,
-  CheckCircle,
   XCircle,
   Loader2,
 } from 'lucide-react'
 import { type UserData } from '@/lib/admin-data-service'
-import { createSupabaseClient } from '@/lib/supabase'
 import { VerifyNutritionistModal } from './VerifyNutritionistModal'
 import EditUserModal, { EditUserData } from './EditUserModal'
-import ViewUserProfileModal, { ViewUserProfileData } from './ViewUserProfileModal'
 import { usePermissions } from '@/components/ui/permission-wrapper'
-import { getAllUsers, unverifyNutritionist } from '@/lib/admin-data-service'
+import { getAllUsers } from '@/lib/admin-data-service'
 
 const userTypeIcons = {
   paciente: User,
@@ -88,17 +85,9 @@ export function UsersTab() {
   const usersPerPage = 10
   
   const [ verifyModalOpen, setVerifyModalOpen ] = useState(false)
-  const [ selectedUser, setSelectedUser ] = useState<{
-    id: string
-    email: string
-    name?: string | null
-    nutritionistProfileId: string
-  } | null>(null)
+  const [ selectedUser, setSelectedUser ] = useState<UserData | null>(null)
   const [ editModalOpen, setEditModalOpen ] = useState(false)
   const [ editUser, setEditUser ] = useState<EditUserData | null>(null)
-  const [ isViewModalOpen, setIsViewModalOpen ] = useState(false)
-  const [ selectedViewUserId, setSelectedViewUserId ] = useState<string | null>(null)
-  const [ viewUser, setViewUser ] = useState<ViewUserProfileData | null>(null)
   const [ uiRefreshKey, setUiRefreshKey ] = useState(0)
 
   // Carregar todos os usuários uma única vez (ou ao forçar refresh)
@@ -241,146 +230,119 @@ export function UsersTab() {
     setCurrentPage(pageNumber)
   }
 
-  const handleAction = (action: string, user: UserData) => {
-    console.log("🚀 ~ handleAction ~ user:", user)
-    if (action === 'verify') {
-      if (user.type !== 'nutricionista') return
-      
-      if (!user.nutritionist_profiles?.id) {
-        alert('Perfil de nutricionista não encontrado para este usuário.')
-        return
-      }
+  const getUserIdForOps = (user: UserData): string => {
+    if (
+      typeof user.id === 'string' &&
+      user.id.trim().toLowerCase() !== 'undefined' &&
+      user.id.trim().toLowerCase() !== 'null'
+    ) {
+      return user.id.trim()
+    }
+    const numeric = (user as any)?.numericId
+    if (typeof numeric === 'number' && Number.isFinite(numeric)) return String(numeric)
+    return ''
+  }
 
-      setSelectedUser({
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        nutritionistProfileId: user.nutritionist_profiles.id
-      })
-      setVerifyModalOpen(true)
+  const handleOpenVerify = (user: UserData) => {
+    setSelectedUser(user)
+    setVerifyModalOpen(true)
+  }
+
+  const handleEditUser = (user: UserData) => {
+    const payload: EditUserData = {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      type: user.type,
+      status: user.status,
+      nutritionist_profiles: user.nutritionist_profiles,
+    }
+    setEditUser(payload)
+    setEditModalOpen(true)
+  }
+
+  const handleDeleteUser = (user: UserData) => {
+    if (!window.confirm(`Tem certeza que deseja excluir ${user.name}? Essa ação é irreversível.`)) {
       return
     }
-
-    if (action === 'unverify') {
-      if (!user.nutritionist_profiles?.id) return
-      
-      if (!window.confirm(`Tem certeza que deseja remover a verificação de ${user.name}? O status voltará para pendente.`)) {
-        return
-      }
-
-      const exec = async () => {
+    const exec = async () => {
+      try {
         setLoading(true)
-        try {
-          const ok = await unverifyNutritionist(user.nutritionist_profiles!.id)
-          if (ok) {
-            await fetchUsers()
-          } else {
-            alert('Falha ao remover verificação.')
-          }
-        } catch (err) {
-          console.error(err)
-          alert('Erro ao processar solicitação.')
-        } finally {
-          setLoading(false)
+        const idForOps = getUserIdForOps(user)
+        if (!idForOps) {
+          alert('ID do usuário inválido. Recarregue a página e tente novamente.')
+          return
         }
+        const url = `/api/admin/users/${idForOps}/delete`
+        const options: RequestInit = {
+          method: 'DELETE',
+          headers: { 'x-production-auth': 'liberar_producao' },
+        }
+        const ok = await execAdmin('delete', url, options)
+        if (!ok) return
+        await fetchUsers()
+        setVerifyModalOpen(false)
+        setSelectedUser(null)
+        setUiRefreshKey(prev => prev + 1)
+      } catch (err) {
+        console.warn('Erro executando exclusão de usuário:', err)
+        alert('Erro ao excluir usuário.')
+      } finally {
+        setLoading(false)
       }
-      exec()
+    }
+    void exec()
+  }
+
+  const handleBanUser = (user: UserData) => {
+    if (!window.confirm(`Tem certeza que deseja banir ${user.name}? O usuário não poderá mais acessar a plataforma.`)) {
       return
     }
-
-    if (action === 'edit') {
-        const base = {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          type: user.type,
-          status: user.status,
-        } as any
-        const payload = user.nutritionist_profiles
-          ? { ...base, nutritionist_profiles: user.nutritionist_profiles }
-          : base
-        setEditUser(payload)
-        setEditModalOpen(true)
-        return
-      }
-      if (action === 'view') {
-        setSelectedViewUserId(user.id)
-        setViewUser({
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          type: user.type as ViewUserProfileData['type'],
-        })
-        setIsViewModalOpen(true)
-        return
-      }
-      const exec = async () => {
-        try {
-          setLoading(true)
-          let url = ''
-          let options: RequestInit = { method: 'POST' }
-          const idForOps = (() => {
-            if (typeof user.id === 'string' && user.id.trim().toLowerCase() !== 'undefined' && user.id.trim().toLowerCase() !== 'null') {
-              return user.id.trim()
-            }
-            const numeric = (user as any)?.numericId
-            if (typeof numeric === 'number' && Number.isFinite(numeric)) return String(numeric)
-            return ''
-          })()
-          if (!idForOps) {
-            alert('ID do usuário inválido. Recarregue a página e tente novamente.')
-            return
-          }
-          if (action === 'deactivate') {
-            url = `/api/admin/users/${idForOps}/deactivate`
-            options = { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-production-auth': 'liberar_producao' }, body: JSON.stringify({ duration: '720h', production_auth: 'liberar_producao' }) }
-          } else if (action === 'activate') {
-            url = `/api/admin/users/${idForOps}/activate`
-            options = { method: 'POST', headers: { 'x-production-auth': 'liberar_producao' } }
-          } else if (action === 'delete') {
-            if (!window.confirm(`Tem certeza que deseja excluir ${user.name}?`)) {
-              return
-            }
-            url = `/api/admin/users/${idForOps}/delete`
-            options = { method: 'DELETE', headers: { 'x-production-auth': 'liberar_producao' } }
-          } else {
-            alert(`Ação não suportada: ${action}`)
-            return
-          }
-          const ok = await execAdmin(action, url, options)
-          if (!ok) return
-          // Recarregar lista
-          await fetchUsers()
-        } catch (err) {
-          console.warn('Erro executando ação admin:', err)
-          alert('Erro ao executar ação.')
-        } finally {
-          setLoading(false)
+    const exec = async () => {
+      try {
+        setLoading(true)
+        const idForOps = getUserIdForOps(user)
+        if (!idForOps) {
+          alert('ID do usuário inválido. Recarregue a página e tente novamente.')
+          return
         }
+        const url = `/api/admin/users/${idForOps}/deactivate`
+        const options: RequestInit = {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-production-auth': 'liberar_producao',
+          },
+          body: JSON.stringify({ duration: '720h', production_auth: 'liberar_producao' }),
+        }
+        const ok = await execAdmin('deactivate', url, options)
+        if (!ok) return
+        await fetchUsers()
+        setVerifyModalOpen(false)
+        setSelectedUser(null)
+        setUiRefreshKey(prev => prev + 1)
+      } catch (err) {
+        console.warn('Erro executando banimento de usuário:', err)
+        alert('Erro ao banir usuário.')
+      } finally {
+        setLoading(false)
       }
-      exec()
+    }
+    void exec()
   }
 
   const handleVerifyModalClose = () => {
     setVerifyModalOpen(false)
     setSelectedUser(null)
-  }
-
-  const handleViewModalOpenChange = (open: boolean) => {
-    setIsViewModalOpen(open)
-    if (!open) {
-      setSelectedViewUserId(null)
-      setViewUser(null)
-      setUiRefreshKey(prev => prev + 1)
+    setUiRefreshKey(prev => prev + 1)
+    document.body.classList.remove('overflow-hidden', 'modal-open')
+    document.body.style.pointerEvents = 'auto'
+    document.body.style.overflow = 'auto'
+    setTimeout(() => {
       document.body.classList.remove('overflow-hidden', 'modal-open')
       document.body.style.pointerEvents = 'auto'
       document.body.style.overflow = 'auto'
-      setTimeout(() => {
-        document.body.classList.remove('overflow-hidden', 'modal-open')
-        document.body.style.pointerEvents = 'auto'
-        document.body.style.overflow = 'auto'
-      }, 100)
-    }
+    }, 100)
   }
 
   const handleUserApproved = async () => {
@@ -556,25 +518,20 @@ export function UsersTab() {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                {user.type === 'nutricionista' && (
-                                  user.nutritionist_profiles?.is_verified ? (
-                                    <DropdownMenuItem onClick={() => handleAction('unverify', user)}>
-                                      <XCircle className="h-4 w-4 mr-2" /> Desverificar
-                                    </DropdownMenuItem>
-                                  ) : (
-                                    <DropdownMenuItem onClick={() => handleAction('verify', user)}>
-                                      <CheckCircle className="h-4 w-4 mr-2" /> Verificar
-                                    </DropdownMenuItem>
-                                  )
-                                )}
-                                <DropdownMenuItem onClick={() => handleAction('view', user)}>
-                                  <Eye className="h-4 w-4 mr-2" /> Ver Detalhe
+                                <DropdownMenuItem onClick={() => handleOpenVerify(user)}>
+                                  <CheckCircle className="h-4 w-4 mr-2" /> Verificar
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleAction('edit', user)}>
+                                <DropdownMenuItem onClick={() => handleEditUser(user)}>
                                   <Edit className="h-4 w-4 mr-2" /> Editar
                                 </DropdownMenuItem>
-                                <DropdownMenuItem className="text-red-600" onClick={() => handleAction('delete', user)}>
-                                  <Trash2 className="h-4 w-4 mr-2" /> Excluir conta
+                                <DropdownMenuItem onClick={() => handleBanUser(user)}>
+                                  <XCircle className="h-4 w-4 mr-2 text-red-500" /> Banir
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => handleDeleteUser(user)}
+                                  className="text-red-600 focus:text-red-600"
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" /> Excluir
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
@@ -629,26 +586,28 @@ export function UsersTab() {
 
       {selectedUser && verifyModalOpen && (
         <VerifyNutritionistModal
-          key={selectedUser?.id}  
+          key={selectedUser.id}
           open={verifyModalOpen}
           onOpenChange={handleVerifyModalClose}
-          user={selectedUser}
+          user={{
+            id: selectedUser.id,
+            email: selectedUser.email,
+            name: selectedUser.name,
+            type: selectedUser.type,
+            nutritionistProfileId: selectedUser.nutritionist_profiles?.id,
+          }}
           onApproved={handleUserApproved}
         />
       )}
 
-      <EditUserModal
-        open={editModalOpen}
-        onOpenChange={setEditModalOpen}
-        user={editUser}
-        onUpdated={handleUserUpdated}
-      />
-
-      <ViewUserProfileModal
-        open={isViewModalOpen}
-        onOpenChange={handleViewModalOpenChange}
-        user={viewUser}
-      />
+      {editUser && editModalOpen && (
+        <EditUserModal
+          open={editModalOpen}
+          onOpenChange={setEditModalOpen}
+          user={editUser}
+          onUpdated={handleUserUpdated}
+        />
+      )}
     </div>
   )
 }
