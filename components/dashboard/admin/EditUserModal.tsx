@@ -28,36 +28,52 @@ export type EditUserData = {
 }
 
 interface EditUserModalProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  user: EditUserData | null
-  onUpdated?: () => void
+  user: EditUserData
+  onClose: () => void
+  onEdited?: () => void
 }
 
-export function EditUserModal({ open, onOpenChange, user, onUpdated }: EditUserModalProps) {
-  const [saving, setSaving] = useState(false)
-  const [email, setEmail] = useState('')
-  const [name, setName] = useState('')
-  const [type, setType] = useState<UserType>('paciente')
-  const [verified, setVerified] = useState(false)
+type EditFormState = {
+  name: string
+  email: string
+  type: UserType
+  is_verified: boolean
+}
 
-  useEffect(() => {
-    if (user) {
-      setEmail(user.email || '')
-      setName(user.name || '')
-      setType(user.type)
-      const initialVerified =
-        user.type === 'nutricionista'
-          ? !!user.nutritionist_profiles?.is_verified
-          : user.type === 'empresa'
+export function EditUserModal({ user, onClose, onEdited }: EditUserModalProps) {
+  const [saving, setSaving] = useState(false)
+  const [form, setForm] = useState<EditFormState>(() => {
+    const initialVerified =
+      user.type === 'nutricionista'
+        ? !!user.nutritionist_profiles?.is_verified
+        : user.type === 'empresa'
           ? !!user.is_verified
           : false
-      setVerified(initialVerified)
+    return {
+      name: user.name,
+      email: user.email,
+      type: user.type,
+      is_verified: initialVerified,
     }
+  })
+
+  useEffect(() => {
+    const initialVerified =
+      user.type === 'nutricionista'
+        ? !!user.nutritionist_profiles?.is_verified
+        : user.type === 'empresa'
+          ? !!user.is_verified
+          : false
+    setForm({
+      name: user.name,
+      email: user.email,
+      type: user.type,
+      is_verified: initialVerified,
+    })
   }, [user])
 
   const nameLabel = useMemo(() => {
-    switch (type) {
+    switch (form.type) {
       case 'empresa':
         return 'Nome da empresa'
       case 'nutricionista':
@@ -65,35 +81,39 @@ export function EditUserModal({ open, onOpenChange, user, onUpdated }: EditUserM
       default:
         return 'Nome completo'
     }
-  }, [type])
+  }, [form.type])
 
-  const canToggleVerified = type === 'nutricionista' || type === 'empresa'
+  const canToggleVerified = form.type === 'nutricionista' || form.type === 'empresa'
 
-  async function handleSave() {
-    if (!user) return
+  const hasChanges =
+    form.email !== user.email ||
+    form.name !== user.name ||
+    form.type !== user.type ||
+    (canToggleVerified && form.is_verified !== !!user.is_verified)
 
-    const hasChanges =
-      (email && email !== user.email) ||
-      (name && name !== user.name) ||
-      (type && type !== user.type) ||
-      (canToggleVerified && verified !== (user as any).is_verified)
+  const handleChangeField = (field: keyof EditFormState, value: string | boolean) => {
+    setForm(prev => ({
+      ...prev,
+      [field]: value,
+    }))
+  }
 
+  async function handleSubmit() {
     if (!hasChanges) {
       toast({
         title: 'Nenhuma alteração detectada',
         description: 'Os dados do usuário já estavam iguais.',
       })
-      onOpenChange(false)
       return
     }
 
     setSaving(true)
     try {
       const payload: Record<string, any> = {}
-      if (email && email !== user.email) payload['email'] = email
-      if (type && type !== user.type) payload['user_type'] = type
-      if (name && name !== user.name) payload['name'] = name
-      if (canToggleVerified) payload['is_verified'] = verified
+      if (form.email !== user.email) payload['email'] = form.email
+      if (form.type !== user.type) payload['user_type'] = form.type
+      if (form.name !== user.name) payload['name'] = form.name
+      if (canToggleVerified) payload['is_verified'] = form.is_verified
       payload['production_auth'] = 'liberar_producao'
 
       const res = await fetch(`/api/admin/users/${user.id}/update`, {
@@ -135,15 +155,15 @@ export function EditUserModal({ open, onOpenChange, user, onUpdated }: EditUserM
           title: 'Usuário atualizado',
           description: 'As alterações foram salvas com sucesso.',
         })
-        onOpenChange(false)
-        onUpdated?.()
+        onEdited?.()
       } else {
         toast({
           title: 'Nenhuma alteração detectada',
           description: 'Os dados do usuário já estavam iguais.',
         })
-        onOpenChange(false)
       }
+
+      onClose()
     } catch (err: any) {
       toast({
         title: 'Erro ao salvar',
@@ -156,57 +176,73 @@ export function EditUserModal({ open, onOpenChange, user, onUpdated }: EditUserM
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={true} onOpenChange={open => { if (!open) onClose() }}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Editar Usuário</DialogTitle>
           <DialogDescription>Atualize informações básicas e status de verificação.</DialogDescription>
         </DialogHeader>
 
-        {user ? (
-          <div className="space-y-4 py-2">
-            <div className="grid gap-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="email@exemplo.com" />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="name">{nameLabel}</Label>
-              <Input id="name" value={name} onChange={e => setName(e.target.value)} placeholder={nameLabel} />
-            </div>
-            <div className="grid gap-2">
-              <Label>Tipo de usuário</Label>
-              <Select value={type} onValueChange={v => setType(v as UserType)}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Selecione o tipo" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="paciente">Paciente</SelectItem>
-                  <SelectItem value="nutricionista">Nutricionista</SelectItem>
-                  <SelectItem value="empresa">Empresa</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {canToggleVerified && (
-              <div className="flex items-center justify-between pt-2">
-                <div>
-                  <Label>Verificado</Label>
-                  <p className="text-xs text-muted-foreground">Controla a verificação de nutricionistas/empresas.</p>
-                </div>
-                <Switch checked={verified} onCheckedChange={setVerified} />
-              </div>
-            )}
-
-            <div className="flex justify-end gap-2 pt-4">
-              <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Cancelar</Button>
-              <Button onClick={handleSave} disabled={saving}>
-                {saving ? 'Salvando...' : 'Salvar alterações'}
-              </Button>
-            </div>
+        <div className="space-y-4 py-2">
+          <div className="grid gap-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              value={form.email}
+              onChange={e => handleChangeField('email', e.target.value)}
+              placeholder="email@exemplo.com"
+            />
           </div>
-        ) : (
-          <div className="py-6 text-sm text-muted-foreground">Nenhum usuário selecionado.</div>
-        )}
+          <div className="grid gap-2">
+            <Label htmlFor="name">{nameLabel}</Label>
+            <Input
+              id="name"
+              value={form.name}
+              onChange={e => handleChangeField('name', e.target.value)}
+              placeholder={nameLabel}
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label>Tipo de usuário</Label>
+            <Select
+              value={form.type}
+              onValueChange={v => handleChangeField('type', v as UserType)}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Selecione o tipo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="paciente">Paciente</SelectItem>
+                <SelectItem value="nutricionista">Nutricionista</SelectItem>
+                <SelectItem value="empresa">Empresa</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {canToggleVerified && (
+            <div className="flex items-center justify-between pt-2">
+              <div>
+                <Label>Verificado</Label>
+                <p className="text-xs text-muted-foreground">
+                  Controla a verificação de nutricionistas/empresas.
+                </p>
+              </div>
+              <Switch
+                checked={form.is_verified}
+                onCheckedChange={v => handleChangeField('is_verified', v)}
+              />
+            </div>
+          )}
+
+          <div className="flex justify-end gap-2 pt-4">
+            <Button variant="outline" onClick={onClose} disabled={saving}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSubmit} disabled={saving}>
+              {saving ? 'Salvando...' : 'Salvar alterações'}
+            </Button>
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   )

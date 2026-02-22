@@ -59,6 +59,7 @@ import {
 } from '@/components/ui/dialog'
 import { toast } from '@/components/ui/use-toast'
 import { Switch } from '@/components/ui/switch'
+import EditUserModal, { EditUserData } from './EditUserModal'
 import { usePermissions } from '@/components/ui/permission-wrapper'
 import { getAllUsers } from '@/lib/admin-data-service'
 
@@ -76,7 +77,7 @@ const userStatusColors = {
   suspenso: 'bg-red-100 text-red-700',
 }
 
-type ModalAction = 'edit' | 'ban' | 'delete' | null
+type ModalAction = 'ban' | 'delete' | null
 
 export function UsersTab() {
   const { hasPermission } = usePermissions()
@@ -99,12 +100,9 @@ export function UsersTab() {
   const [ modalOpen, setModalOpen ] = useState(false)
   const [ modalAction, setModalAction ] = useState<ModalAction>(null)
   const [ modalSubmitting, setModalSubmitting ] = useState(false)
+  const [ isEditOpen, setIsEditOpen ] = useState(false)
+  const [ userEditing, setUserEditing ] = useState<EditUserData | null>(null)
   const [ uiRefreshKey, setUiRefreshKey ] = useState(0)
-
-  const [ modalEmail, setModalEmail ] = useState('')
-  const [ modalName, setModalName ] = useState('')
-  const [ modalType, setModalType ] = useState<UserData['type']>('paciente')
-  const [ modalVerified, setModalVerified ] = useState(false)
 
   const fetchUsers = async () => {
     setLoading(true)
@@ -125,31 +123,30 @@ export function UsersTab() {
     void fetchUsers()
   }, [])
 
-  useEffect(() => {
-    if (modalOpen && modalAction === 'edit' && selectedUser) {
-      setModalEmail(selectedUser.email || '')
-      setModalName(selectedUser.name || '')
-      setModalType(selectedUser.type)
-      const initialVerified =
-        selectedUser.type === 'nutricionista'
-          ? !!selectedUser.nutritionist_profiles?.is_verified
-          : selectedUser.type === 'empresa'
-            ? !!(selectedUser as any).is_verified
-            : false
-      setModalVerified(initialVerified)
+  const startEdit = (user: UserData) => {
+    const payload: EditUserData = {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      type: user.type as any,
+      status: user.status,
+      is_verified: (user as any).is_verified,
+      nutritionist_profiles: user.nutritionist_profiles
+        ? {
+            id: user.nutritionist_profiles.id,
+            full_name: user.nutritionist_profiles.full_name ?? user.name,
+            is_verified: user.nutritionist_profiles.is_verified as any,
+          }
+        : undefined,
     }
-  }, [modalOpen, modalAction, selectedUser])
+    setUserEditing(payload)
+    setIsEditOpen(true)
+  }
 
-  const nameLabel = useMemo(() => {
-    switch (modalType) {
-      case 'empresa':
-        return 'Nome da empresa'
-      case 'nutricionista':
-        return 'Nome completo'
-      default:
-        return 'Nome completo'
-    }
-  }, [modalType])
+  const closeEdit = () => {
+    setIsEditOpen(false)
+    setUserEditing(null)
+  }
 
   // Filtragem local eficiente
   useEffect(() => {
@@ -345,7 +342,7 @@ export function UsersTab() {
   }
 
   const handleEditUser = (user: UserData) => {
-    openActionModal('edit', user)
+    startEdit(user)
   }
 
   const handleDeleteUser = (user: UserData) => {
@@ -374,10 +371,6 @@ export function UsersTab() {
     await refreshUsersAndUi()
   }
 
-  const handleUserUpdated = async () => {
-    await refreshUsersAndUi()
-  }
-
   const handleActionSuccess = async (edited: boolean) => {
     if (edited) {
       await refreshUsersAndUi()
@@ -385,94 +378,8 @@ export function UsersTab() {
     closeActionModal()
   }
 
-  const handleConfirmEdit = async () => {
-    if (!selectedUser) return
-
-    const hasChanges =
-      (modalEmail && modalEmail !== selectedUser.email) ||
-      (modalName && modalName !== selectedUser.name) ||
-      (modalType && modalType !== selectedUser.type) ||
-      (modalType === 'nutricionista' || modalType === 'empresa'
-        ? modalVerified !==
-          (modalType === 'nutricionista'
-            ? !!selectedUser.nutritionist_profiles?.is_verified
-            : !!(selectedUser as any).is_verified)
-        : false)
-
-    if (!hasChanges) {
-      toast({
-        title: 'Nenhuma alteração detectada',
-        description: 'Os dados do usuário já estavam iguais.',
-      })
-      closeActionModal()
-      return
-    }
-
-    setModalSubmitting(true)
-    try {
-      const payload: Record<string, any> = {}
-      if (modalEmail && modalEmail !== selectedUser.email) payload['email'] = modalEmail
-      if (modalType && modalType !== selectedUser.type) payload['user_type'] = modalType
-      if (modalName && modalName !== selectedUser.name) payload['name'] = modalName
-      if (modalType === 'nutricionista' || modalType === 'empresa') payload['is_verified'] = modalVerified
-      payload['production_auth'] = 'liberar_producao'
-
-      const res = await fetch(`/api/admin/users/${selectedUser.id}/update`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-production-auth': 'liberar_producao' },
-        credentials: 'include',
-        body: JSON.stringify(payload),
-      })
-
-      const j = await res.json().catch(() => ({}))
-      const data = j?.data ?? j
-
-      if (!res.ok) {
-        const msg =
-          (j?.error && (j?.error?.message || j?.error)) ||
-          j?.message ||
-          data?.error ||
-          'Falha ao atualizar usuário'
-        throw new Error(String(msg))
-      }
-
-      if (data && data.ok === false) {
-        const msg =
-          (data.error && (data.error.message || data.error)) ||
-          data.message ||
-          'Falha ao atualizar usuário'
-        throw new Error(String(msg))
-      }
-
-      const edited =
-        typeof data?.edited === 'boolean'
-          ? data.edited
-          : typeof data?.success === 'boolean'
-            ? data.success
-            : true
-
-      if (edited) {
-        toast({
-          title: 'Usuário atualizado',
-          description: 'As alterações foram salvas com sucesso.',
-        })
-      } else {
-        toast({
-          title: 'Nenhuma alteração detectada',
-          description: 'Os dados do usuário já estavam iguais.',
-        })
-      }
-
-      await handleActionSuccess(edited)
-    } catch (err: any) {
-      toast({
-        title: 'Erro ao salvar',
-        description: err?.message || 'Tente novamente.',
-        variant: 'destructive',
-      })
-    } finally {
-      setModalSubmitting(false)
-    }
+  const handleEdited = async () => {
+    await refreshUsersAndUi()
   }
 
   const handleConfirmDelete = async () => {
@@ -820,86 +727,15 @@ export function UsersTab() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>
-                {modalAction === 'edit'
-                  ? 'Editar Usuário'
-                  : modalAction === 'ban'
-                    ? 'Banir Usuário'
-                    : 'Excluir Usuário'}
+                {modalAction === 'ban' ? 'Banir Usuário' : 'Excluir Usuário'}
               </DialogTitle>
               <DialogDescription>
-                {modalAction === 'edit' &&
-                  'Atualize informações básicas e status de verificação.'}
                 {modalAction === 'ban' &&
                   'Confirme o banimento do usuário. Ele não poderá mais acessar a plataforma.'}
                 {modalAction === 'delete' &&
                   'Confirme a exclusão do usuário. Esta ação é irreversível.'}
               </DialogDescription>
             </DialogHeader>
-
-            {modalAction === 'edit' && (
-              <div className="space-y-4 py-2">
-                <div className="grid gap-2">
-                  <label className="text-sm font-medium" htmlFor="admin-user-email">
-                    Email
-                  </label>
-                  <Input
-                    id="admin-user-email"
-                    value={modalEmail}
-                    onChange={e => setModalEmail(e.target.value)}
-                    placeholder="email@exemplo.com"
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <label className="text-sm font-medium" htmlFor="admin-user-name">
-                    {nameLabel}
-                  </label>
-                  <Input
-                    id="admin-user-name"
-                    value={modalName}
-                    onChange={e => setModalName(e.target.value)}
-                    placeholder={nameLabel}
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <span className="text-sm font-medium">Tipo de usuário</span>
-                  <Select value={modalType} onValueChange={v => setModalType(v as UserData['type'])}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Selecione o tipo" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="paciente">Paciente</SelectItem>
-                      <SelectItem value="nutricionista">Nutricionista</SelectItem>
-                      <SelectItem value="empresa">Empresa</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {(modalType === 'nutricionista' || modalType === 'empresa') && (
-                  <div className="flex items-center justify-between pt-2">
-                    <div>
-                      <span className="text-sm font-medium">Verificado</span>
-                      <p className="text-xs text-muted-foreground">
-                        Controla a verificação de nutricionistas/empresas.
-                      </p>
-                    </div>
-                    <Switch checked={modalVerified} onCheckedChange={setModalVerified} />
-                  </div>
-                )}
-
-                <div className="flex justify-end gap-2 pt-4">
-                  <Button
-                    variant="outline"
-                    onClick={closeActionModal}
-                    disabled={modalSubmitting}
-                  >
-                    Cancelar
-                  </Button>
-                  <Button onClick={handleConfirmEdit} disabled={modalSubmitting}>
-                    {modalSubmitting ? 'Salvando...' : 'Salvar alterações'}
-                  </Button>
-                </div>
-              </div>
-            )}
 
             {modalAction === 'ban' && (
               <div className="space-y-4 py-2">
@@ -954,6 +790,14 @@ export function UsersTab() {
             )}
           </DialogContent>
         </Dialog>
+      )}
+
+      {isEditOpen && userEditing && (
+        <EditUserModal
+          user={userEditing}
+          onClose={closeEdit}
+          onEdited={handleEdited}
+        />
       )}
     </div>
   )
