@@ -58,6 +58,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog'
 import { toast } from '@/components/ui/use-toast'
+import { Switch } from '@/components/ui/switch'
 import { usePermissions } from '@/components/ui/permission-wrapper'
 import { getAllUsers } from '@/lib/admin-data-service'
 
