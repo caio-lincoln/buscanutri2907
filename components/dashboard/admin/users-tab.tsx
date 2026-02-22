@@ -58,7 +58,6 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog'
 import { toast } from '@/components/ui/use-toast'
-import { Switch } from '@/components/ui/switch'
 import EditUserModal, { EditUserData } from './EditUserModal'
 import { usePermissions } from '@/components/ui/permission-wrapper'
 import { getAllUsers } from '@/lib/admin-data-service'
@@ -100,7 +99,7 @@ export function UsersTab() {
   const [ modalOpen, setModalOpen ] = useState(false)
   const [ modalAction, setModalAction ] = useState<ModalAction>(null)
   const [ modalSubmitting, setModalSubmitting ] = useState(false)
-  const [ isEditOpen, setIsEditOpen ] = useState(false)
+  const [ editOpen, setEditOpen ] = useState(false)
   const [ userEditing, setUserEditing ] = useState<EditUserData | null>(null)
   const [ uiRefreshKey, setUiRefreshKey ] = useState(0)
 
@@ -119,34 +118,13 @@ export function UsersTab() {
     setUiRefreshKey(prev => prev + 1)
   }
 
+  const handleEdited = async () => {
+    await refreshUsersAndUi()
+  }
+
   useEffect(() => {
     void fetchUsers()
   }, [])
-
-  const startEdit = (user: UserData) => {
-    const payload: EditUserData = {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      type: user.type as any,
-      status: user.status,
-      is_verified: (user as any).is_verified,
-      nutritionist_profiles: user.nutritionist_profiles
-        ? {
-            id: user.nutritionist_profiles.id,
-            full_name: user.nutritionist_profiles.full_name ?? user.name,
-            is_verified: user.nutritionist_profiles.is_verified as any,
-          }
-        : undefined,
-    }
-    setUserEditing(payload)
-    setIsEditOpen(true)
-  }
-
-  const closeEdit = () => {
-    setIsEditOpen(false)
-    setUserEditing(null)
-  }
 
   // Filtragem local eficiente
   useEffect(() => {
@@ -327,6 +305,31 @@ export function UsersTab() {
     setModalOpen(true)
   }
 
+  const openEdit = (user: UserData) => {
+    const payload: EditUserData = {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      type: user.type as any,
+      status: user.status,
+      is_verified: (user as any).is_verified,
+      nutritionist_profiles: user.nutritionist_profiles
+        ? {
+            id: user.nutritionist_profiles.id,
+            full_name: user.nutritionist_profiles.full_name ?? user.name,
+            is_verified: user.nutritionist_profiles.is_verified as any,
+          }
+        : undefined,
+    }
+    setUserEditing(payload)
+    setEditOpen(true)
+  }
+
+  const closeEdit = () => {
+    setEditOpen(false)
+    setUserEditing(null)
+  }
+
   const closeActionModal = () => {
     setModalOpen(false)
     setTimeout(() => {
@@ -342,7 +345,7 @@ export function UsersTab() {
   }
 
   const handleEditUser = (user: UserData) => {
-    startEdit(user)
+    openEdit(user)
   }
 
   const handleDeleteUser = (user: UserData) => {
@@ -370,16 +373,12 @@ export function UsersTab() {
   const handleUserApproved = async () => {
     await refreshUsersAndUi()
   }
-
+ 
   const handleActionSuccess = async (edited: boolean) => {
     if (edited) {
       await refreshUsersAndUi()
     }
     closeActionModal()
-  }
-
-  const handleEdited = async () => {
-    await refreshUsersAndUi()
   }
 
   const handleConfirmDelete = async () => {
@@ -792,7 +791,7 @@ export function UsersTab() {
         </Dialog>
       )}
 
-      {isEditOpen && userEditing && (
+      {editOpen && userEditing && (
         <EditUserModal
           user={userEditing}
           onClose={closeEdit}

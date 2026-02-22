@@ -11,33 +11,42 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { toast } from '@/components/ui/use-toast'
 
 type UserType = 'paciente' | 'nutricionista' | 'empresa'
+
+type UserStatus = 'ativo' | 'inativo' | 'pendente' | 'suspenso'
 
 export type EditUserData = {
   id: string
   name: string
   email: string
   type: UserType
-  status?: 'ativo' | 'inativo' | 'pendente'
+  status?: UserStatus
   is_verified?: boolean
   nutritionist_profiles?: { id: string; full_name: string; is_verified?: string }
-}
-
-interface EditUserModalProps {
-  user: EditUserData
-  onClose: () => void
-  onEdited?: () => void
 }
 
 type EditFormState = {
   name: string
   email: string
   type: UserType
+  status: UserStatus | undefined
   is_verified: boolean
+}
+
+interface EditUserModalProps {
+  user: EditUserData
+  onClose: () => void
+  onEdited?: () => void
 }
 
 export function EditUserModal({ user, onClose, onEdited }: EditUserModalProps) {
@@ -53,6 +62,7 @@ export function EditUserModal({ user, onClose, onEdited }: EditUserModalProps) {
       name: user.name,
       email: user.email,
       type: user.type,
+      status: user.status,
       is_verified: initialVerified,
     }
   })
@@ -68,6 +78,7 @@ export function EditUserModal({ user, onClose, onEdited }: EditUserModalProps) {
       name: user.name,
       email: user.email,
       type: user.type,
+      status: user.status,
       is_verified: initialVerified,
     })
   }, [user])
@@ -89,6 +100,7 @@ export function EditUserModal({ user, onClose, onEdited }: EditUserModalProps) {
     form.email !== user.email ||
     form.name !== user.name ||
     form.type !== user.type ||
+    form.status !== user.status ||
     (canToggleVerified && form.is_verified !== !!user.is_verified)
 
   const handleChangeField = (field: keyof EditFormState, value: string | boolean) => {
@@ -98,10 +110,21 @@ export function EditUserModal({ user, onClose, onEdited }: EditUserModalProps) {
     }))
   }
 
-  async function handleSubmit() {
+  const buildPayload = () => {
+    const payload: Record<string, any> = {}
+    if (form.email !== user.email) payload['email'] = form.email
+    if (form.type !== user.type) payload['user_type'] = form.type
+    if (form.name !== user.name) payload['name'] = form.name
+    if (form.status && form.status !== user.status) payload['status'] = form.status
+    if (canToggleVerified) payload['is_verified'] = form.is_verified
+    payload['production_auth'] = 'liberar_producao'
+    return payload
+  }
+
+  const handleSubmit = async () => {
     if (!hasChanges) {
       toast({
-        title: 'Nenhuma alteração detectada',
+        title: 'Nenhuma alteração realizada',
         description: 'Os dados do usuário já estavam iguais.',
       })
       return
@@ -109,16 +132,14 @@ export function EditUserModal({ user, onClose, onEdited }: EditUserModalProps) {
 
     setSaving(true)
     try {
-      const payload: Record<string, any> = {}
-      if (form.email !== user.email) payload['email'] = form.email
-      if (form.type !== user.type) payload['user_type'] = form.type
-      if (form.name !== user.name) payload['name'] = form.name
-      if (canToggleVerified) payload['is_verified'] = form.is_verified
-      payload['production_auth'] = 'liberar_producao'
+      const payload = buildPayload()
 
       const res = await fetch(`/api/admin/users/${user.id}/update`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-production-auth': 'liberar_producao' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-production-auth': 'liberar_producao',
+        },
         credentials: 'include',
         body: JSON.stringify(payload),
       })
@@ -150,19 +171,20 @@ export function EditUserModal({ user, onClose, onEdited }: EditUserModalProps) {
             ? data.success
             : true
 
-      if (edited) {
-        toast({
-          title: 'Usuário atualizado',
-          description: 'As alterações foram salvas com sucesso.',
-        })
-        onEdited?.()
-      } else {
+      if (!edited) {
         toast({
           title: 'Nenhuma alteração detectada',
           description: 'Os dados do usuário já estavam iguais.',
         })
+        return
       }
 
+      toast({
+        title: 'Usuário atualizado',
+        description: 'As alterações foram salvas com sucesso.',
+      })
+
+      await onEdited?.()
       onClose()
     } catch (err: any) {
       toast({
@@ -180,28 +202,32 @@ export function EditUserModal({ user, onClose, onEdited }: EditUserModalProps) {
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Editar Usuário</DialogTitle>
-          <DialogDescription>Atualize informações básicas e status de verificação.</DialogDescription>
+          <DialogDescription>
+            Atualize informações básicas e status do usuário.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-2">
           <div className="grid gap-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="admin-edit-email">Email</Label>
             <Input
-              id="email"
+              id="admin-edit-email"
               value={form.email}
               onChange={e => handleChangeField('email', e.target.value)}
               placeholder="email@exemplo.com"
             />
           </div>
+
           <div className="grid gap-2">
-            <Label htmlFor="name">{nameLabel}</Label>
+            <Label htmlFor="admin-edit-name">{nameLabel}</Label>
             <Input
-              id="name"
+              id="admin-edit-name"
               value={form.name}
               onChange={e => handleChangeField('name', e.target.value)}
               placeholder={nameLabel}
             />
           </div>
+
           <div className="grid gap-2">
             <Label>Tipo de usuário</Label>
             <Select
@@ -219,12 +245,30 @@ export function EditUserModal({ user, onClose, onEdited }: EditUserModalProps) {
             </Select>
           </div>
 
+          <div className="grid gap-2">
+            <Label>Status</Label>
+            <Select
+              value={form.status || 'ativo'}
+              onValueChange={v => handleChangeField('status', v as UserStatus)}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Selecione o status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ativo">Ativo</SelectItem>
+                <SelectItem value="inativo">Inativo</SelectItem>
+                <SelectItem value="pendente">Pendente</SelectItem>
+                <SelectItem value="suspenso">Suspenso</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           {canToggleVerified && (
             <div className="flex items-center justify-between pt-2">
               <div>
                 <Label>Verificado</Label>
                 <p className="text-xs text-muted-foreground">
-                  Controla a verificação de nutricionistas/empresas.
+                  Controla a verificação de nutricionistas e empresas.
                 </p>
               </div>
               <Switch
@@ -249,3 +293,4 @@ export function EditUserModal({ user, onClose, onEdited }: EditUserModalProps) {
 }
 
 export default EditUserModal
+
