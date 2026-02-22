@@ -23,6 +23,12 @@ export interface NutritionistDocument {
   title: string | null
   file_name: string
   public_url: string
+   storage_path?: string
+   mime_type?: string | null
+   file_size?: number | null
+   is_verified?: boolean | null
+   verification_notes?: string | null
+   created_at?: string | null
 }
 
 export interface TransactionData {

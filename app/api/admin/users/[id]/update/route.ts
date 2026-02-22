@@ -9,6 +9,8 @@ const schema = z.object({
   user_type: z.enum(['paciente', 'nutricionista', 'empresa']).optional(),
   name: z.string().min(1).optional(),
   is_verified: z.boolean().optional(),
+  phone: z.string().min(8).max(20).optional(),
+  location: z.string().min(2).max(255).optional(),
 })
 
 export const POST = withErrorHandling(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
@@ -29,7 +31,7 @@ export const POST = withErrorHandling(async (req: NextRequest, { params }: { par
       400
     )
   }
-  const { email, user_type, name, is_verified } = parsed.data
+  const { email, user_type, name, is_verified, phone, location } = parsed.data
   const newEmail = email ? email.trim().toLowerCase() : undefined
  
   const rawId = (await params).id
@@ -49,8 +51,9 @@ export const POST = withErrorHandling(async (req: NextRequest, { params }: { par
   let didUpdateType = false
   let didUpdateName = false
   let didUpdateVerified = false
+  let didUpdatePhone = false
+  let didUpdateLocation = false
 
-  // Atualizar email no Auth e tabela users
   if (newEmail && newEmail !== userRow?.email) {
     const { data: existingAuthUser } = await admin
       .schema('auth')
@@ -92,7 +95,6 @@ export const POST = withErrorHandling(async (req: NextRequest, { params }: { par
     didUpdateEmail = !!updatedUserEmail
   }
 
-  // Atualizar tipo do usuário na tabela users e migrar perfil
   if (user_type && user_type !== currentType) {
     const { data: updatedUserType } = await admin
       .from('users')
@@ -178,7 +180,6 @@ export const POST = withErrorHandling(async (req: NextRequest, { params }: { par
     }
   }
 
-  // Atualizar nome conforme tipo
   if (name && effectiveType) {
     const tryUpdateWithFallback = async (
       table: 'patient_profiles' | 'nutritionist_profiles' | 'company_profiles',
@@ -209,20 +210,27 @@ export const POST = withErrorHandling(async (req: NextRequest, { params }: { par
     if (effectiveType === 'paciente') {
       updated = await tryUpdateWithFallback('patient_profiles', { full_name: name })
       if (!updated) {
-        // Criar perfil ausente e tentar novamente
         await admin.from('patient_profiles').insert({ user_id: userRow!.id, full_name: name }).select('id').maybeSingle()
         updated = await tryUpdateWithFallback('patient_profiles', { full_name: name })
       }
     } else if (effectiveType === 'nutricionista') {
       updated = await tryUpdateWithFallback('nutritionist_profiles', { full_name: name })
       if (!updated) {
-        await admin.from('nutritionist_profiles').insert({ user_id: userRow!.id, full_name: name, is_verified: false }).select('id').maybeSingle()
+        await admin
+          .from('nutritionist_profiles')
+          .insert({ user_id: userRow!.id, full_name: name, is_verified: false })
+          .select('id')
+          .maybeSingle()
         updated = await tryUpdateWithFallback('nutritionist_profiles', { full_name: name })
       }
     } else if (effectiveType === 'empresa') {
       updated = await tryUpdateWithFallback('company_profiles', { company_name: name })
       if (!updated) {
-        await admin.from('company_profiles').insert({ user_id: userRow!.id, company_name: name, is_verified: false }).select('id').maybeSingle()
+        await admin
+          .from('company_profiles')
+          .insert({ user_id: userRow!.id, company_name: name, is_verified: false })
+          .select('id')
+          .maybeSingle()
         updated = await tryUpdateWithFallback('company_profiles', { company_name: name })
       }
     }
@@ -242,7 +250,94 @@ export const POST = withErrorHandling(async (req: NextRequest, { params }: { par
     didUpdateName = updated
   }
 
-  // Atualizar verificação para nutricionista/empresa
+  if ((phone || location) && effectiveType) {
+    const tryUpdateContactWithFallback = async (
+      table: 'patient_profiles' | 'nutritionist_profiles' | 'company_profiles',
+      values: Record<string, any>
+    ) => {
+      let { data: updatedByUserId } = await admin
+        .from(table)
+        .update(values)
+        .eq('user_id', userRow!.id)
+        .select('id')
+        .maybeSingle()
+
+      if (updatedByUserId) return true
+
+      const { data: updatedById } = await admin
+        .from(table)
+        .update(values)
+        .eq('id', userRow!.id)
+        .select('id')
+        .maybeSingle()
+
+      return !!updatedById
+    }
+
+    if (effectiveType === 'paciente') {
+      const values: Record<string, any> = {}
+      if (phone) values.phone = phone
+      if (Object.keys(values).length > 0) {
+        const updated = await tryUpdateContactWithFallback('patient_profiles', values)
+        if (!updated) {
+          return createApiResponse(
+            {
+              ok: false,
+              edited: false,
+              rowsAffected: 0,
+              success: false,
+              error: 'Perfil de paciente não encontrado para atualizar contato',
+            },
+            404
+          )
+        }
+        if (phone) didUpdatePhone = true
+      }
+    } else if (effectiveType === 'nutricionista') {
+      const values: Record<string, any> = {}
+      if (phone) values.phone = phone
+      if (location) values.location = location
+      if (Object.keys(values).length > 0) {
+        const updated = await tryUpdateContactWithFallback('nutritionist_profiles', values)
+        if (!updated) {
+          return createApiResponse(
+            {
+              ok: false,
+              edited: false,
+              rowsAffected: 0,
+              success: false,
+              error: 'Perfil de nutricionista não encontrado para atualizar contato',
+            },
+            404
+          )
+        }
+        if (phone) didUpdatePhone = true
+        if (location) didUpdateLocation = true
+      }
+    } else if (effectiveType === 'empresa') {
+      const values: Record<string, any> = {}
+      if (phone) values.phone = phone
+      if (location) values.address = location
+      if (Object.keys(values).length > 0) {
+        const updated = await tryUpdateContactWithFallback('company_profiles', values)
+        if (!updated) {
+          return createApiResponse(
+            {
+              ok: false,
+              edited: false,
+              rowsAffected: 0,
+              success: false,
+              error: 'Perfil de empresa não encontrado para atualizar contato',
+            },
+            404
+          )
+        }
+        if (phone) didUpdatePhone = true
+        if (location) didUpdateLocation = true
+      }
+    }
+  }
+
   if (typeof is_verified === 'boolean' && effectiveType) {
     const tryUpdateVerifyWithFallback = async (
       table: 'nutritionist_profiles' | 'company_profiles',
@@ -287,13 +382,17 @@ export const POST = withErrorHandling(async (req: NextRequest, { params }: { par
     user_type: didUpdateType,
     name: didUpdateName,
     is_verified: didUpdateVerified,
+    phone: didUpdatePhone,
+    location: didUpdateLocation,
   }
 
   const rowsAffected =
     (changes.email ? 1 : 0) +
     (changes.user_type ? 1 : 0) +
     (changes.name ? 1 : 0) +
-    (changes.is_verified ? 1 : 0)
+    (changes.is_verified ? 1 : 0) +
+    (changes.phone ? 1 : 0) +
+    (changes.location ? 1 : 0)
 
   const edited = rowsAffected > 0
 

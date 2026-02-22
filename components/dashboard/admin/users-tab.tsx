@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
   Table,
   TableHeader,
@@ -47,9 +48,12 @@ import {
   Trash2,
   XCircle,
   Loader2,
+  FileText,
+  Eye,
+  ExternalLink,
+  Download,
 } from 'lucide-react'
-import { type UserData } from '@/lib/admin-data-service'
-import { VerifyNutritionistModal } from './VerifyNutritionistModal'
+import { type UserData, type NutritionistDocument, getAllUsers, getNutritionistDocuments, approveNutritionist, rejectNutritionist, unverifyNutritionist } from '@/lib/admin-data-service'
 import {
   Dialog,
   DialogContent,
@@ -58,9 +62,15 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog'
 import { toast } from '@/components/ui/use-toast'
-import EditUserModal, { EditUserData } from './EditUserModal'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { Separator } from '@/components/ui/separator'
 import { usePermissions } from '@/components/ui/permission-wrapper'
-import { getAllUsers } from '@/lib/admin-data-service'
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { formatDateOnlyBR } from '@/lib/utils/format-date'
 
 const userTypeIcons = {
   paciente: User,
@@ -95,12 +105,11 @@ export function UsersTab() {
   const usersPerPage = 10
   
   const [ verifyModalOpen, setVerifyModalOpen ] = useState(false)
+  const [ verifyOpening, setVerifyOpening ] = useState(false)
   const [ selectedUser, setSelectedUser ] = useState<UserData | null>(null)
   const [ modalOpen, setModalOpen ] = useState(false)
   const [ modalAction, setModalAction ] = useState<ModalAction>(null)
   const [ modalSubmitting, setModalSubmitting ] = useState(false)
-  const [ editOpen, setEditOpen ] = useState(false)
-  const [ userEditing, setUserEditing ] = useState<EditUserData | null>(null)
   const [ uiRefreshKey, setUiRefreshKey ] = useState(0)
 
   const fetchUsers = async () => {
@@ -116,10 +125,6 @@ export function UsersTab() {
   const refreshUsersAndUi = async () => {
     await fetchUsers()
     setUiRefreshKey(prev => prev + 1)
-  }
-
-  const handleEdited = async () => {
-    await refreshUsersAndUi()
   }
 
   useEffect(() => {
@@ -305,31 +310,6 @@ export function UsersTab() {
     setModalOpen(true)
   }
 
-  const openEdit = (user: UserData) => {
-    const payload: EditUserData = {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      type: user.type as any,
-      status: user.status,
-      is_verified: (user as any).is_verified,
-      nutritionist_profiles: user.nutritionist_profiles
-        ? {
-            id: user.nutritionist_profiles.id,
-            full_name: user.nutritionist_profiles.full_name ?? user.name,
-            is_verified: user.nutritionist_profiles.is_verified as any,
-          }
-        : undefined,
-    }
-    setUserEditing(payload)
-    setEditOpen(true)
-  }
-
-  const closeEdit = () => {
-    setEditOpen(false)
-    setUserEditing(null)
-  }
-
   const closeActionModal = () => {
     setModalOpen(false)
     setTimeout(() => {
@@ -340,12 +320,18 @@ export function UsersTab() {
   }
 
   const handleOpenVerify = (user: UserData) => {
+    if (verifyOpening) return
+    setVerifyOpening(true)
     setSelectedUser(user)
     setVerifyModalOpen(true)
   }
 
   const handleEditUser = (user: UserData) => {
-    openEdit(user)
+    console.warn('Edição de usuário desabilitada', { id: user.id, email: user.email })
+    toast({
+      title: 'Edição desativada',
+      description: 'A edição de dados de usuários está desabilitada neste ambiente.',
+    })
   }
 
   const handleDeleteUser = (user: UserData) => {
@@ -359,18 +345,10 @@ export function UsersTab() {
   const handleVerifyModalClose = () => {
     setVerifyModalOpen(false)
     setSelectedUser(null)
-    setUiRefreshKey(prev => prev + 1)
-    document.body.classList.remove('overflow-hidden', 'modal-open')
-    document.body.style.pointerEvents = 'auto'
-    document.body.style.overflow = 'auto'
-    setTimeout(() => {
-      document.body.classList.remove('overflow-hidden', 'modal-open')
-      document.body.style.pointerEvents = 'auto'
-      document.body.style.overflow = 'auto'
-    }, 100)
+    setVerifyOpening(false)
   }
 
-  const handleUserApproved = async () => {
+  const handleUserUpdated = async () => {
     await refreshUsersAndUi()
   }
  
@@ -469,10 +447,6 @@ export function UsersTab() {
     } finally {
       setModalSubmitting(false)
     }
-  }
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('pt-BR')
   }
 
   if (loading) {
@@ -607,7 +581,7 @@ export function UsersTab() {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-gray-500 text-sm">
-                          {formatDate(user.createdAt)}
+                          {formatDateOnlyBR(user.createdAt)}
                         </TableCell>
                         <TableCell className="text-gray-500 text-sm">
                           {user.type === 'nutricionista' ? (
@@ -634,7 +608,10 @@ export function UsersTab() {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => handleOpenVerify(user)}>
+                                <DropdownMenuItem
+                                  onClick={() => handleOpenVerify(user)}
+                                  disabled={verifyModalOpen || verifyOpening}
+                                >
                                   <CheckCircle className="h-4 w-4 mr-2" /> Verificar
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => handleEditUser(user)}>
@@ -700,19 +677,15 @@ export function UsersTab() {
         </CardContent>
       </Card>
 
-      {selectedUser && verifyModalOpen && (
-        <VerifyNutritionistModal
-          key={selectedUser.id}
+      {selectedUser && (
+        <AdminUserVerifyPanel
           open={verifyModalOpen}
-          onOpenChange={handleVerifyModalClose}
-          user={{
-            id: selectedUser.id,
-            email: selectedUser.email,
-            name: selectedUser.name,
-            type: selectedUser.type,
-            nutritionistProfileId: selectedUser.nutritionist_profiles?.id,
+          onOpenChange={open => {
+            if (!open) handleVerifyModalClose()
+            else if (!verifyModalOpen) setVerifyModalOpen(true)
           }}
-          onApproved={handleUserApproved}
+          user={selectedUser}
+          onUpdated={handleUserUpdated}
         />
       )}
 
@@ -790,14 +763,1018 @@ export function UsersTab() {
           </DialogContent>
         </Dialog>
       )}
-
-      {editOpen && userEditing && (
-        <EditUserModal
-          user={userEditing}
-          onClose={closeEdit}
-          onEdited={handleEdited}
-        />
-      )}
     </div>
   )
+}
+
+type AdminUserVerifyPanelProps = {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  user: UserData
+  onUpdated: () => Promise<void> | void
+}
+
+function AdminUserVerifyPanel({ open, onOpenChange, user, onUpdated }: AdminUserVerifyPanelProps) {
+  const [tab, setTab] = useState<'summary' | 'edit' | 'docs'>('summary')
+  const [loadingProfile, setLoadingProfile] = useState(false)
+  const [profileError, setProfileError] = useState<string | null>(null)
+  const [profile, setProfile] = useState<any | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [errors, setErrors] = useState<Record<string, string>>({})
+
+  const [fullName, setFullName] = useState(user.name || '')
+  const [phone, setPhone] = useState('')
+  const [location, setLocation] = useState('')
+  const [userType, setUserType] = useState<UserData['type']>(user.type)
+  const [password, setPassword] = useState('')
+  const [docs, setDocs] = useState<NutritionistDocument[]>([])
+  const [loadingDocs, setLoadingDocs] = useState(false)
+  const [docsError, setDocsError] = useState<string | null>(null)
+  const [docsLoaded, setDocsLoaded] = useState(false)
+  const [crnActionLoading, setCrnActionLoading] = useState(false)
+  const [crnReason, setCrnReason] = useState('')
+  const [docStatusLoadingId, setDocStatusLoadingId] = useState<string | null>(null)
+  const [viewerDoc, setViewerDoc] = useState<NutritionistDocument | null>(null)
+  const [viewerOpen, setViewerOpen] = useState(false)
+
+  useEffect(() => {
+    if (!open) {
+      setProfile(null)
+      setProfileError(null)
+      setErrors({})
+      setSaving(false)
+      setPassword('')
+      setDocs([])
+      setDocsError(null)
+      setDocsLoaded(false)
+      setLoadingDocs(false)
+      return
+    }
+
+    setTab('summary')
+    setFullName(user.name || '')
+    setUserType(user.type)
+    setPassword('')
+    setErrors({})
+
+    const fetchProfile = async () => {
+      setLoadingProfile(true)
+      setProfileError(null)
+      try {
+        const idForOps =
+          typeof user.id === 'string' &&
+          user.id.trim().toLowerCase() !== 'undefined' &&
+          user.id.trim().toLowerCase() !== 'null'
+            ? user.id.trim()
+            : typeof (user as any).numericId === 'number' && Number.isFinite((user as any).numericId)
+              ? String((user as any).numericId)
+              : ''
+
+        if (!idForOps) {
+          setProfileError('ID de usuário inválido')
+          return
+        }
+
+        const url = `/api/admin/users/${idForOps}/profile`
+        const res = await fetch(url, { credentials: 'include' })
+        if (!res.ok) {
+          setProfileError('Falha ao carregar perfil do usuário')
+          return
+        }
+
+        const json = await res.json().catch(() => null)
+        const data = json?.data ?? json
+        if (!data) {
+          setProfileError('Resposta inválida ao carregar perfil')
+          return
+        }
+
+        if (data.error) {
+          setProfileError(typeof data.error === 'string' ? data.error : data.error.message || 'Erro ao carregar perfil')
+          return
+        }
+
+        setProfile(data.profile || null)
+
+        const baseName =
+          data.profile?.full_name || data.profile?.company_name || user.name || user.email.split('@')[0] || ''
+        setFullName(baseName)
+
+        const profilePhone = data.profile?.phone || ''
+        setPhone(formatPhoneDisplay(profilePhone))
+
+        const profileLocation =
+          data.profile?.location || data.profile?.address || data.profile?.city || data.profile?.state || ''
+        setLocation(profileLocation || '')
+      } catch (e) {
+        setProfileError('Falha ao carregar perfil do usuário. Tente novamente.')
+      } finally {
+        setLoadingProfile(false)
+      }
+    }
+
+    fetchProfile()
+  }, [open, user.id, user.email, user.name, user.type])
+
+  useEffect(() => {
+    if (!open) return
+    if (tab !== 'docs') return
+    if (userType !== 'nutricionista') return
+    if (docsLoaded) return
+
+    const loadDocs = async () => {
+      setLoadingDocs(true)
+      setDocsError(null)
+      try {
+        const idForOps =
+          typeof user.id === 'string' &&
+          user.id.trim().toLowerCase() !== 'undefined' &&
+          user.id.trim().toLowerCase() !== 'null'
+            ? user.id.trim()
+            : typeof (user as any).numericId === 'number' && Number.isFinite((user as any).numericId)
+              ? String((user as any).numericId)
+              : ''
+
+        if (!idForOps) {
+          setDocsError('ID de usuário inválido')
+          return
+        }
+
+        const documents = await getNutritionistDocuments(idForOps)
+        setDocs(documents)
+        setDocsLoaded(true)
+      } catch {
+        setDocsError('Falha ao carregar documentos do usuário. Tente novamente.')
+      } finally {
+        setLoadingDocs(false)
+      }
+    }
+
+    void loadDocs()
+  }, [open, tab, user.id, userType, docsLoaded])
+
+  const handleClose = () => {
+    if (saving) return
+    onOpenChange(false)
+  }
+
+  const displayStatus = useMemo(() => {
+    if (user.status === 'banido') return 'Banido'
+    if (user.status === 'inativo') return 'Inativo'
+    if (user.status === 'pendente') return 'Pendente'
+    return 'Ativo'
+  }, [user.status])
+
+  const displayType = useMemo(() => {
+    if (userType === 'nutricionista') return 'Nutricionista'
+    if (userType === 'paciente') return 'Paciente'
+    if (userType === 'empresa') return 'Empresa'
+    return userType
+  }, [userType])
+
+  const profileDocs = useMemo(() => {
+    if (!profile) return []
+    const items: { key: string; label: string; url: string }[] = []
+    if (profile.identity_document_url) {
+      items.push({ key: 'identity', label: 'Documento de identidade', url: profile.identity_document_url as string })
+    }
+    if (profile.rg_document_url) {
+      items.push({ key: 'rg', label: 'RG', url: profile.rg_document_url as string })
+    }
+    if (profile.cpf_document_url) {
+      items.push({ key: 'cpf', label: 'CPF', url: profile.cpf_document_url as string })
+    }
+    if (profile.crn_document_url) {
+      items.push({ key: 'crn', label: 'Documento CRN', url: profile.crn_document_url as string })
+    }
+    if (profile.curriculum_pdf_url) {
+      items.push({ key: 'cv', label: 'Currículo', url: profile.curriculum_pdf_url as string })
+    }
+    return items
+  }, [profile])
+
+  const crnStatusLabel = useMemo(() => {
+    if (!profile) return 'Indisponível'
+    if (profile.is_verified) return 'Verificado'
+    return 'Pendente'
+  }, [profile])
+
+  const handlePhoneChange = (value: string) => {
+    const formatted = formatPhoneDisplay(value)
+    setPhone(formatted)
+  }
+
+  const validate = () => {
+    const nextErrors: Record<string, string> = {}
+    const trimmedName = fullName.trim()
+    const nameWords = trimmedName.split(/\s+/).filter(Boolean)
+    const nameChars = trimmedName.replace(/\s+/g, '')
+    if (!trimmedName || nameWords.length < 2 || nameChars.length < 3) {
+      nextErrors.name = 'Informe nome completo com pelo menos 2 palavras'
+    }
+
+    const digits = phone.replace(/\D/g, '')
+    if (!digits) {
+      nextErrors.phone = 'Informe o telefone'
+    } else if (digits.length < 10 || digits.length > 11) {
+      nextErrors.phone = 'Telefone inválido'
+    }
+
+    if (!location || location.trim().length < 2) {
+      nextErrors.location = 'Informe a localização'
+    }
+
+    if (!userType) {
+      nextErrors.userType = 'Selecione o tipo de usuário'
+    }
+
+    if (password) {
+      const hasLetter = /[A-Za-z]/.test(password)
+      const hasNumber = /\d/.test(password)
+      if (password.length < 8 || !hasLetter || !hasNumber) {
+        nextErrors.password = 'Senha deve ter ao menos 8 caracteres, letra e número'
+      }
+    }
+
+    setErrors(nextErrors)
+    return Object.keys(nextErrors).length === 0
+  }
+
+  const handleSave = async () => {
+    if (!validate()) return
+    const idForOps =
+      typeof user.id === 'string' &&
+      user.id.trim().toLowerCase() !== 'undefined' &&
+      user.id.trim().toLowerCase() !== 'null'
+        ? user.id.trim()
+        : typeof (user as any).numericId === 'number' && Number.isFinite((user as any).numericId)
+          ? String((user as any).numericId)
+          : ''
+
+    if (!idForOps) {
+      setErrors(prev => ({ ...prev, root: 'ID de usuário inválido' }))
+      return
+    }
+
+    setSaving(true)
+    setErrors(prev => {
+      const { root: _root, ...rest } = prev
+      return rest
+    })
+
+    try {
+      const phoneDigits = phone.replace(/\D/g, '')
+      const payload: any = {
+        name: fullName.trim(),
+        user_type: userType,
+        phone: phoneDigits || undefined,
+        location: location.trim() || undefined,
+      }
+
+      const res = await fetch(`/api/admin/users/${idForOps}/update`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(payload),
+      })
+
+      const json = await res.json().catch(() => null)
+      const data = json?.data ?? json
+
+      if (!res.ok || (data && (data.ok === false || data.success === false))) {
+        const message =
+          data?.error?.message ||
+          data?.error ||
+          data?.message ||
+          'Falha ao atualizar usuário. Tente novamente.'
+        console.error('Erro ao atualizar usuário', { status: res.status, data })
+        toast({
+          title: 'Erro ao salvar',
+          description: message,
+          variant: 'destructive',
+        })
+        setSaving(false)
+        return
+      }
+
+      if (password) {
+        const resPassword = await fetch(`/api/admin/users/${idForOps}/password`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({ password }),
+        })
+
+        const jsonPassword = await resPassword.json().catch(() => null)
+        const dataPassword = jsonPassword?.data ?? jsonPassword
+
+        if (!resPassword.ok || (dataPassword && (dataPassword.ok === false || dataPassword.success === false))) {
+          const message =
+            dataPassword?.error?.message ||
+            dataPassword?.error ||
+            dataPassword?.message ||
+            'Falha ao alterar senha. Tente novamente.'
+          console.error('Erro ao alterar senha do usuário', { status: resPassword.status, data: dataPassword })
+          toast({
+            title: 'Erro ao alterar senha',
+            description: message,
+            variant: 'destructive',
+          })
+          setSaving(false)
+          return
+        }
+      }
+
+      toast({
+        title: 'Usuário atualizado',
+        description: password ? 'Dados e senha atualizados com sucesso.' : 'Dados atualizados com sucesso.',
+      })
+
+      try {
+        await onUpdated()
+      } catch (e) {
+    // silent
+      }
+
+      setPassword('')
+      setTab('summary')
+      setSaving(false)
+    } catch (e) {
+      toast({
+        title: 'Erro ao salvar',
+        description: 'Falha ao atualizar usuário. Tente novamente.',
+        variant: 'destructive',
+      })
+      setSaving(false)
+    }
+  }
+
+  const handleOpenDoc = (doc: NutritionistDocument) => {
+    if (!doc.public_url) return
+    setViewerDoc(doc)
+    setViewerOpen(true)
+  }
+
+  const handleOpenDocInNewTab = (doc: NutritionistDocument) => {
+    if (!doc.public_url) return
+    try {
+      window.open(doc.public_url, '_blank', 'noopener,noreferrer')
+    } catch {
+    }
+  }
+
+  const updateDocStatus = async (docId: string, status: 'pending' | 'verified' | 'rejected') => {
+    setDocStatusLoadingId(docId)
+    try {
+      const res = await fetch(`/api/admin/documents/${docId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ status }),
+      })
+      const json = await res.json().catch(() => null)
+      if (!res.ok || !json?.ok) {
+        const message = json?.message || 'Falha ao atualizar status do documento.'
+        toast({
+          title: 'Erro ao atualizar documento',
+          description: message,
+          variant: 'destructive',
+        })
+        return
+      }
+      const updated = json.document as NutritionistDocument
+      setDocs(prev =>
+        prev.map(doc => (doc.id === docId ? { ...doc, ...updated, public_url: doc.public_url || updated.public_url } : doc)),
+      )
+    } catch (e) {
+      toast({
+        title: 'Erro ao atualizar documento',
+        description: 'Falha ao atualizar status do documento. Tente novamente.',
+        variant: 'destructive',
+      })
+    } finally {
+      setDocStatusLoadingId(null)
+    }
+  }
+
+  const handleCrnApprove = async () => {
+    if (!profile?.id) return
+    setCrnActionLoading(true)
+    const ok = await approveNutritionist(profile.id as string)
+    if (!ok) {
+      toast({
+        title: 'Erro ao aprovar nutricionista',
+        description: 'Falha ao aprovar nutricionista. Tente novamente.',
+        variant: 'destructive',
+      })
+      setCrnActionLoading(false)
+      return
+    }
+    toast({
+      title: 'Nutricionista aprovado',
+      description: 'O nutricionista foi marcado como verificado.',
+    })
+    setProfile(prev => (prev ? { ...prev, is_verified: true } : prev))
+    try {
+      await onUpdated()
+    } catch (e) {
+      // silent
+    }
+    setCrnActionLoading(false)
+  }
+
+  const handleCrnUnverify = async () => {
+    if (!profile?.id) return
+    setCrnActionLoading(true)
+    const ok = await unverifyNutritionist(profile.id as string)
+    if (!ok) {
+      toast({
+        title: 'Erro ao alterar status',
+        description: 'Falha ao voltar para pendente. Tente novamente.',
+        variant: 'destructive',
+      })
+      setCrnActionLoading(false)
+      return
+    }
+    toast({
+      title: 'Status atualizado',
+      description: 'O nutricionista foi marcado como pendente.',
+    })
+    setProfile(prev => (prev ? { ...prev, is_verified: false } : prev))
+    try {
+      await onUpdated()
+    } catch (e) {
+      // silent
+    }
+    setCrnActionLoading(false)
+  }
+
+  const handleCrnReject = async () => {
+    if (!profile?.id) return
+    setCrnActionLoading(true)
+    const reason = crnReason.trim() || 'Sem motivo informado'
+    const ok = await rejectNutritionist(profile.id as string, reason)
+    if (!ok) {
+      toast({
+        title: 'Erro ao rejeitar nutricionista',
+        description: 'Falha ao rejeitar nutricionista. Tente novamente.',
+        variant: 'destructive',
+      })
+      setCrnActionLoading(false)
+      return
+    }
+    toast({
+      title: 'Nutricionista rejeitado',
+      description: 'A rejeição foi registrada.',
+    })
+    setProfile(prev => (prev ? { ...prev, is_verified: false } : prev))
+    try {
+      await onUpdated()
+    } catch (e) {
+      // silent
+    }
+    setCrnActionLoading(false)
+  }
+
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="right" className="w-full sm:max-w-xl overflow-y-auto">
+        <SheetHeader>
+          <SheetTitle>Verificar usuário</SheetTitle>
+          <SheetDescription>Revise e edite os dados antes de concluir a verificação.</SheetDescription>
+        </SheetHeader>
+
+        <div className="mt-4 space-y-4">
+          <div className="flex flex-col gap-2 border rounded-md p-3 bg-muted/50">
+            <div className="text-sm font-medium">{fullName || user.name || user.email}</div>
+            <div className="text-xs text-muted-foreground break-all">{user.email}</div>
+            <div className="flex flex-wrap gap-2 text-xs">
+              <Badge variant="outline">{displayType}</Badge>
+              <Badge variant={user.status === 'banido' ? 'destructive' : 'secondary'}>{displayStatus}</Badge>
+              {user.type === 'nutricionista' && (
+                <Badge variant={user.is_verified ? 'default' : 'outline'}>
+                  {user.is_verified ? 'Verificado' : 'Não verificado'}
+                </Badge>
+              )}
+            </div>
+          </div>
+
+          <Tabs value={tab} onValueChange={v => setTab(v as 'summary' | 'edit' | 'docs')}>
+            <TabsList className="grid grid-cols-3 w-full">
+              <TabsTrigger value="summary">1. Resumo</TabsTrigger>
+              <TabsTrigger value="edit">2. Editar</TabsTrigger>
+              <TabsTrigger value="docs">3. Documentos</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="summary" className="mt-4 space-y-4">
+              {loadingProfile ? (
+                <div className="space-y-3">
+                  <Skeleton className="h-4 w-2/3" />
+                  <Skeleton className="h-4 w-1/2" />
+                  <Skeleton className="h-4 w-1/3" />
+                  <Skeleton className="h-4 w-1/4" />
+                </div>
+              ) : profileError ? (
+                <Alert variant="destructive">
+                  <AlertTitle>Erro ao carregar</AlertTitle>
+                  <AlertDescription>{profileError}</AlertDescription>
+                </Alert>
+              ) : (
+                <div className="space-y-3 text-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Nome completo</span>
+                    <span className="font-medium max-w-[60%] text-right truncate">
+                      {fullName || user.name || 'Não informado'}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Telefone</span>
+                    <span className="font-medium max-w-[60%] text-right truncate">
+                      {phone || profile?.phone || 'Não informado'}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Localização</span>
+                    <span className="font-medium max-w-[60%] text-right truncate">
+                      {location ||
+                        profile?.location ||
+                        profile?.address ||
+                        profile?.city ||
+                        profile?.state ||
+                        'Não informado'}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Tipo de usuário</span>
+                    <span className="font-medium">{displayType}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">E-mail</span>
+                    <span className="font-medium max-w-[60%] text-right truncate">{user.email}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Status</span>
+                    <span className="font-medium">{displayStatus}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Criado em</span>
+                    <span className="font-medium">{formatDateOnlyBR(user.createdAt)}</span>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex justify-between gap-2 pt-4">
+                <Button variant="outline" onClick={handleClose}>
+                  Fechar
+                </Button>
+                <Button onClick={() => setTab('edit')}>Ir para edição</Button>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="edit" className="mt-4 space-y-4">
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <Label htmlFor="fullName">Nome completo</Label>
+                  <Input
+                    id="fullName"
+                    value={fullName}
+                    onChange={e => setFullName(e.target.value)}
+                    disabled={saving}
+                  />
+                  {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
+                </div>
+
+                <div className="space-y-1">
+                  <Label htmlFor="phone">Telefone</Label>
+                  <Input
+                    id="phone"
+                    value={phone}
+                    onChange={e => handlePhoneChange(e.target.value)}
+                    disabled={saving}
+                    placeholder="(11) 99999-9999"
+                  />
+                  {errors.phone && <p className="text-xs text-destructive">{errors.phone}</p>}
+                </div>
+
+                <div className="space-y-1">
+                  <Label htmlFor="location">Localização</Label>
+                  <Input
+                    id="location"
+                    value={location}
+                    onChange={e => setLocation(e.target.value)}
+                    disabled={saving}
+                    placeholder="Cidade/estado ou endereço"
+                  />
+                  {errors.location && <p className="text-xs text-destructive">{errors.location}</p>}
+                </div>
+
+                <div className="space-y-1">
+                  <Label htmlFor="userType">Tipo de usuário</Label>
+                  <Select
+                    value={userType}
+                    onValueChange={value => setUserType(value as UserData['type'])}
+                    disabled={saving}
+                  >
+                    <SelectTrigger id="userType">
+                      <SelectValue placeholder="Selecione um tipo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="paciente">Paciente</SelectItem>
+                      <SelectItem value="nutricionista">Nutricionista</SelectItem>
+                      <SelectItem value="empresa">Empresa</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {errors.userType && <p className="text-xs text-destructive">{errors.userType}</p>}
+                </div>
+
+                <Separator />
+
+                <div className="space-y-1">
+                  <Label htmlFor="password">Nova senha</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    disabled={saving}
+                    placeholder="Deixe em branco para não alterar"
+                  />
+                  {errors.password && <p className="text-xs text-destructive">{errors.password}</p>}
+                </div>
+              </div>
+
+              {errors.root && <p className="text-xs text-destructive">{errors.root}</p>}
+
+              <div className="flex justify-between gap-2 pt-4">
+                <Button variant="outline" type="button" onClick={() => setTab('summary')} disabled={saving}>
+                  Cancelar
+                </Button>
+                <Button type="button" onClick={handleSave} disabled={saving}>
+                  {saving ? 'Salvando...' : 'Salvar alterações'}
+                </Button>
+              </div>
+            </TabsContent>
+            <TabsContent value="docs" className="mt-4 space-y-4">
+              {userType !== 'nutricionista' && !profile && (
+                <p className="text-sm text-muted-foreground">
+                  Documentos detalhados ainda não estão configurados para este tipo de usuário.
+                </p>
+              )}
+
+              <Accordion type="multiple" className="w-full">
+                <AccordionItem value="user-docs">
+                  <AccordionTrigger>Documentos do usuário</AccordionTrigger>
+                  <AccordionContent>
+                    <div className="space-y-3">
+                      {profile && (profile.profile_image_url || profile.avatar_url) && (
+                        <div className="flex items-center justify-between gap-3 rounded-md border px-3 py-2 text-sm">
+                          <div className="flex items-center gap-3">
+                            <Avatar className="h-12 w-12">
+                              <AvatarImage
+                                src={
+                                  (profile.profile_image_url as string | undefined) ||
+                                  (profile.avatar_url as string | undefined) ||
+                                  undefined
+                                }
+                              />
+                              <AvatarFallback>
+                                {(profile.full_name as string | undefined)?.[0]?.toUpperCase() ||
+                                  (user.name?.[0]?.toUpperCase() ?? user.email[0]?.toUpperCase() ?? 'U')}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <div className="font-medium">Foto de perfil</div>
+                              <div className="text-xs text-muted-foreground">Imagem atual do perfil do usuário</div>
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              asChild
+                            >
+                              <a
+                                href={
+                                  ((profile.profile_image_url as string | undefined) ||
+                                    (profile.avatar_url as string | undefined) ||
+                                    '') as string
+                                }
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                <ExternalLink className="mr-1 h-3 w-3" />
+                                Abrir
+                              </a>
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+
+                      {profileDocs.length === 0 && !(profile && (profile.profile_image_url || profile.avatar_url)) ? (
+                        <p className="text-sm text-muted-foreground">Nenhum documento cadastrado no perfil.</p>
+                      ) : null}
+
+                      {profileDocs.length > 0 && (
+                        <div className="space-y-2">
+                          {profileDocs.map(doc => (
+                            <div
+                              key={doc.key}
+                              className="flex items-center justify-between gap-3 rounded-md border px-3 py-2 text-sm"
+                            >
+                              <div className="flex items-center gap-2">
+                                <FileText className="h-4 w-4 text-muted-foreground" />
+                                <span>{doc.label}</span>
+                              </div>
+                              <div className="flex gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  asChild
+                                >
+                                  <a href={doc.url} target="_blank" rel="noopener noreferrer">
+                                    <ExternalLink className="mr-1 h-3 w-3" />
+                                    Abrir
+                                  </a>
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+
+                {userType === 'nutricionista' && (
+                  <AccordionItem value="crn">
+                    <AccordionTrigger>Registro profissional (CRN)</AccordionTrigger>
+                    <AccordionContent>
+                      <div className="space-y-3 text-sm">
+                        <div className="flex items-center justify-between">
+                          <span className="text-muted-foreground">CRN</span>
+                          <span className="font-medium">{profile?.crn || 'Não informado'}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-muted-foreground">Status de verificação</span>
+                          <Badge variant={profile?.is_verified ? 'default' : 'outline'}>{crnStatusLabel}</Badge>
+                        </div>
+                        <div className="space-y-1">
+                          <Label htmlFor="crnReason">Motivo/observação (para rejeição)</Label>
+                          <Input
+                            id="crnReason"
+                            value={crnReason}
+                            onChange={e => setCrnReason(e.target.value)}
+                            disabled={crnActionLoading}
+                            placeholder="Opcional"
+                          />
+                        </div>
+                        <div className="flex flex-wrap gap-2 pt-2">
+                          <Button
+                            size="sm"
+                            type="button"
+                            onClick={handleCrnApprove}
+                            disabled={crnActionLoading}
+                          >
+                            {crnActionLoading ? 'Processando...' : 'Marcar como verificado'}
+                          </Button>
+                          <Button
+                            size="sm"
+                            type="button"
+                            variant="outline"
+                            onClick={handleCrnUnverify}
+                            disabled={crnActionLoading}
+                          >
+                            Voltar para pendente
+                          </Button>
+                          <Button
+                            size="sm"
+                            type="button"
+                            variant="destructive"
+                            onClick={handleCrnReject}
+                            disabled={crnActionLoading}
+                          >
+                            Reprovar
+                          </Button>
+                        </div>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                )}
+
+                <AccordionItem value="addresses">
+                  <AccordionTrigger>Endereços</AccordionTrigger>
+                  <AccordionContent>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Endereço principal</span>
+                        <span className="max-w-[70%] text-right font-medium">
+                          {profile?.location ||
+                            profile?.address ||
+                            profile?.city ||
+                            profile?.state ||
+                            location ||
+                            'Não informado'}
+                        </span>
+                      </div>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+
+                {userType === 'nutricionista' && (
+                  <AccordionItem value="attachments">
+                    <AccordionTrigger>Anexos e certificados</AccordionTrigger>
+                    <AccordionContent>
+                      {loadingDocs ? (
+                        <div className="space-y-2">
+                          <Skeleton className="h-4 w-2/3" />
+                          <Skeleton className="h-4 w-1/2" />
+                          <Skeleton className="h-4 w-3/4" />
+                        </div>
+                      ) : docsError ? (
+                        <Alert variant="destructive">
+                          <AlertTitle>Erro ao carregar documentos</AlertTitle>
+                          <AlertDescription>{docsError}</AlertDescription>
+                        </Alert>
+                      ) : docs.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">
+                          Nenhum documento foi enviado pelo nutricionista até o momento.
+                        </p>
+                      ) : (
+                        <div className="space-y-3">
+                          {docs.map(doc => {
+                            const statusLabel =
+                              doc.is_verified === true
+                                ? 'Verificado'
+                                : doc.verification_notes
+                                  ? 'Reprovado'
+                                  : 'Pendente'
+                            return (
+                              <div
+                                key={doc.id}
+                                className="flex flex-col gap-2 rounded-md border p-3 text-sm"
+                              >
+                                <div className="flex items-center justify-between gap-2">
+                                  <div className="flex items-center gap-2">
+                                    <FileText className="h-4 w-4 text-muted-foreground" />
+                                    <div>
+                                      <div className="font-medium">
+                                        {doc.title || doc.file_name}
+                                      </div>
+                                      <div className="text-xs text-muted-foreground">
+                                        {doc.document_type === 'crn_proof'
+                                          ? 'Comprovante CRN'
+                                          : 'Certificado'}
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <Badge variant="outline">{statusLabel}</Badge>
+                                </div>
+                                <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+                                  {doc.created_at && (
+                                    <span>Envio: {formatDateOnlyBR(doc.created_at)}</span>
+                                  )}
+                                  {typeof doc.file_size === 'number' && (
+                                    <span>Tamanho: {formatFileSize(doc.file_size)}</span>
+                                  )}
+                                </div>
+                                <div className="flex flex-wrap items-center gap-2 pt-2">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    type="button"
+                                    onClick={() => handleOpenDoc(doc)}
+                                    disabled={!doc.public_url}
+                                  >
+                                    <Eye className="mr-1 h-3 w-3" />
+                                    Visualizar
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    type="button"
+                                    onClick={() => handleOpenDocInNewTab(doc)}
+                                    disabled={!doc.public_url}
+                                  >
+                                    <ExternalLink className="mr-1 h-3 w-3" />
+                                    Abrir em nova guia
+                                  </Button>
+                                  {doc.public_url && (
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      asChild
+                                    >
+                                      <a
+                                        href={doc.public_url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        download
+                                      >
+                                        <Download className="mr-1 h-3 w-3" />
+                                        Baixar
+                                      </a>
+                                    </Button>
+                                  )}
+                                  <div className="ml-auto flex gap-2">
+                                    <Button
+                                      size="sm"
+                                      type="button"
+                                      variant="outline"
+                                      onClick={() => updateDocStatus(doc.id, 'pending')}
+                                      disabled={docStatusLoadingId === doc.id}
+                                    >
+                                      Pendente
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      type="button"
+                                      variant="outline"
+                                      onClick={() => updateDocStatus(doc.id, 'verified')}
+                                      disabled={docStatusLoadingId === doc.id}
+                                    >
+                                      Verificar
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      type="button"
+                                      variant="destructive"
+                                      onClick={() => updateDocStatus(doc.id, 'rejected')}
+                                      disabled={docStatusLoadingId === doc.id}
+                                    >
+                                      Reprovar
+                                    </Button>
+                                  </div>
+                                </div>
+                                {doc.verification_notes && (
+                                  <p className="text-xs text-muted-foreground">
+                                    Observação: {doc.verification_notes}
+                                  </p>
+                                )}
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </AccordionContent>
+                  </AccordionItem>
+                )}
+              </Accordion>
+
+              <Dialog open={viewerOpen} onOpenChange={setViewerOpen}>
+                <DialogContent className="max-w-3xl">
+                  <DialogHeader>
+                    <DialogTitle>{viewerDoc?.title || viewerDoc?.file_name || 'Documento'}</DialogTitle>
+                  </DialogHeader>
+                  {viewerDoc?.public_url && (
+                    <div className="mt-2 h-[60vh]">
+                      {viewerDoc.public_url.toLowerCase().includes('.pdf') ? (
+                        <iframe
+                          src={viewerDoc.public_url}
+                          className="h-full w-full rounded-md border"
+                        />
+                      ) : (
+                        <img
+                          src={viewerDoc.public_url}
+                          alt={viewerDoc.title || viewerDoc.file_name}
+                          className="h-full w-full rounded-md object-contain"
+                        />
+                      )}
+                    </div>
+                  )}
+                </DialogContent>
+              </Dialog>
+            </TabsContent>
+          </Tabs>
+        </div>
+      </SheetContent>
+    </Sheet>
+  )
+}
+
+function formatPhoneDisplay(value: string) {
+  const digits = value.replace(/\D/g, '').slice(0, 11)
+  if (digits.length <= 2) return digits
+  if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`
+  if (digits.length <= 10) {
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`
+  }
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`
+}
+
+function formatFileSize(bytes: number | null | undefined) {
+  if (!bytes || bytes <= 0) return '0 B'
+  const units = ['B', 'KB', 'MB', 'GB']
+  let size = bytes
+  let unitIndex = 0
+  while (size >= 1024 && unitIndex < units.length - 1) {
+    size /= 1024
+    unitIndex += 1
+  }
+  return `${size.toFixed(1)} ${units[unitIndex]}`
 }

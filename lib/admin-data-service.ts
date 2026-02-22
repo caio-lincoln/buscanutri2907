@@ -278,11 +278,10 @@ export async function getNutritionistDocuments(userId: string): Promise<Nutritio
   try {
     const { data: documents, error } = await supabase
     .from('nutritionist_documents')
-    .select('id, nutritionist_id, document_type, title, file_url, file_name, storage_path, created_at')
+    .select('id, nutritionist_id, document_type, title, file_url, file_name, storage_path, file_size, mime_type, is_verified, verification_notes, created_at')
       .eq('nutritionist_id', userId)
       .order('created_at', { ascending: true })
       
-      console.log("🚀 ~ getNutritionistDocuments ~ documents:", documents)
     if (error || !documents?.length) return []
 
     const paths = documents.map(d => d.storage_path)
@@ -303,7 +302,7 @@ export async function getNutritionistDocuments(userId: string): Promise<Nutritio
     // })
     return documents.map(doc => ({
       ...doc,
-      public_url: map[ doc.storage_path ] ?? ''   // use isso no <img src> e no botão "Abrir"
+      public_url: map[ doc.storage_path ] ?? ''
     }))
   } catch {
     return []
