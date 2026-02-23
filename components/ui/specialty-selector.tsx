@@ -1,18 +1,12 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { ChevronDown, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
-import { useBreakpoint } from '@/hooks/use-breakpoint'
 
 interface Specialty {
   id: string
@@ -39,12 +33,12 @@ export function SpecialtySelector({
   placeholder = 'Selecione suas especialidades...',
   className,
 }: SpecialtySelectorProps) {
-  const { isMobile } = useBreakpoint()
   const [open, setOpen] = useState(false)
   const [specialties, setSpecialties] = useState<Specialty[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
+  const containerRef = useRef<HTMLDivElement | null>(null)
 
   // Carregar especialidades do banco
   useEffect(() => {
@@ -109,6 +103,25 @@ export function SpecialtySelector({
     )
   }, [ specialties, searchTerm ])
 
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+      if (!open) return
+      if (!containerRef.current) return
+      const target = event.target as Node | null
+      if (target && !containerRef.current.contains(target)) {
+        setOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    document.addEventListener('touchstart', handleClickOutside)
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('touchstart', handleClickOutside)
+    }
+  }, [open])
+
   if (loading) {
     return (
       <div className={cn('space-y-2', className)}>
@@ -134,7 +147,7 @@ export function SpecialtySelector({
   }
 
   return (
-    <div className={cn('space-y-2', className)}>
+    <div ref={containerRef} className={cn('space-y-2', className)}>
       <Label>
         Especialidades {required && '*'}
         <span className="text-xs text-gray-500 ml-2">
@@ -167,166 +180,72 @@ export function SpecialtySelector({
       )}
 
       {/* Seletor de especialidades */}
-      {isMobile ? (
-        <div className="relative">
-          <Button
-            variant="outline"
-            type="button"
-            onClick={() => setOpen(true)}
-            className={cn(
-              'w-full h-11 justify-between',
-              disabled && 'opacity-50 cursor-not-allowed'
-            )}
-            disabled={disabled}
-          >
-            <span className="text-left truncate">
-              {selectedSpecialties.length === 0
-                ? placeholder
-                : `${selectedSpecialties.length} especialidade${selectedSpecialties.length > 1 ? 's' : ''} selecionada${selectedSpecialties.length > 1 ? 's' : ''}`}
-            </span>
-            <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-          </Button>
-
-          {open && (
-            <>
-              <div
-                className="fixed inset-0 z-40 bg-black/30"
-                onClick={() => setOpen(false)}
-              />
-              <div
-                role="dialog"
-                aria-modal="true"
-                className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-2xl p-4 max-h-[70vh] overflow-y-auto overscroll-contain shadow-2xl"
-              >
-                <div className="space-y-3">
-                  <Input
-                    placeholder="Buscar especialidade..."
-                    value={searchTerm}
-                    onChange={e => setSearchTerm(e.target.value)}
-                    className="h-10 text-sm"
-                  />
-                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
-                    {filteredSpecialties.map(esp => {
-                      const active = selectedSpecialties.includes(esp.id)
-                      const canSelect = active || canAddMore
-                      const isDisabled = disabled || (!active && !canSelect)
-                      return (
-                        <button
-                          key={esp.id}
-                          type="button"
-                          aria-pressed={active}
-                          onClick={() => {
-                            if (isDisabled) return
-                            handleSpecialtyToggle(esp.id)
-                            // Fecha automaticamente após selecionar/deselecionar
-                            setOpen(false)
-                          }}
-                          disabled={isDisabled}
-                          className={cn(
-                            'w-full min-h-[52px] px-4 py-3 rounded-xl border text-left transition select-none touch-manipulation',
-                            active
-                              ? 'bg-primary text-primary-foreground border-primary'
-                              : 'bg-white text-gray-800 border-gray-300',
-                            isDisabled && 'opacity-50 cursor-not-allowed'
-                          )}
-                        >
-                          {esp.name}
-                        </button>
-                      )
-                    })}
-                    {filteredSpecialties.length === 0 && (
-                      <div className="text-xs text-gray-500 px-1 py-2">
-                        Nenhuma especialidade encontrada.
-                      </div>
-                    )}
-                  </div>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    onClick={() => setOpen(false)}
-                    className="w-full py-3"
-                  >
-                    Fechar
-                  </Button>
-                </div>
-              </div>
-            </>
+      <div className="relative">
+        <Button
+          variant="outline"
+          type="button"
+          onClick={() => setOpen(prev => !prev)}
+          className={cn(
+            'w-full h-11 justify-between',
+            disabled && 'opacity-50 cursor-not-allowed'
           )}
-        </div>
-      ) : (
-        <Popover open={open} onOpenChange={setOpen}>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              role="combobox"
-              aria-expanded={open}
-              className={cn(
-                'w-full h-11 justify-between',
-                disabled && 'opacity-50 cursor-not-allowed'
-              )}
-              disabled={disabled}
-            >
-              <span className="text-left truncate">
-                {selectedSpecialties.length === 0
-                  ? placeholder
-                  : `${selectedSpecialties.length} especialidade${selectedSpecialties.length > 1 ? 's' : ''} selecionada${selectedSpecialties.length > 1 ? 's' : ''}`}
-              </span>
-              <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="z-50 w-[min(100vw-2rem,360px)] p-0" align="start">
-            <div className="p-3 space-y-3">
-              <Input
-                placeholder="Buscar especialidade..."
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-                className="h-10 text-sm"
-              />
-              <div className="max-h-[60vh] overflow-y-auto overscroll-contain">
-                <div className="flex flex-wrap gap-2">
-                  {filteredSpecialties.map(specialty => {
-                    const isSelected = selectedSpecialties.includes(specialty.id)
-                    const canSelect = canAddMore || isSelected
-                    const isDisabled = disabled || (!isSelected && !canSelect)
+          disabled={disabled}
+        >
+          <span className="text-left truncate">
+            {selectedSpecialties.length === 0
+              ? placeholder
+              : `${selectedSpecialties.length} especialidade${selectedSpecialties.length > 1 ? 's' : ''} selecionada${selectedSpecialties.length > 1 ? 's' : ''}`}
+          </span>
+          <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
 
-                    return (
-                      <button
-                        key={specialty.id}
-                        type="button"
-                        aria-pressed={isSelected}
-                        onClick={() => {
-                          if (isDisabled) return
-                          handleSpecialtyToggle(specialty.id)
-                          // Fecha automaticamente após selecionar no desktop
-                          setOpen(false)
-                        }}
-                        disabled={isDisabled}
-                        className={cn(
-                          'px-4 py-2 rounded-xl border text-sm font-medium',
-                          'min-h-[48px] min-w-[48px] touch-manipulation select-none',
-                          'flex items-center justify-center text-center whitespace-normal',
-                          'transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
-                          isSelected
-                            ? 'bg-primary text-primary-foreground border-primary shadow-sm'
-                            : 'bg-white text-gray-700 border-gray-300',
-                          isDisabled && 'opacity-50 cursor-not-allowed'
-                        )}
-                      >
-                        <span className="truncate">{specialty.name}</span>
-                      </button>
-                    )
-                  })}
-                  {filteredSpecialties.length === 0 && (
-                    <div className="text-xs text-gray-500 px-1 py-2">
-                      Nenhuma especialidade encontrada.
-                    </div>
-                  )}
-                </div>
+        {open && (
+          <div className="mt-2 p-3 border rounded-xl bg-white shadow-sm space-y-3">
+            <Input
+              placeholder="Buscar especialidade..."
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              className="h-10 text-sm"
+            />
+            <div className="max-h-[60vh] overflow-y-auto overscroll-contain">
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
+                {filteredSpecialties.map(esp => {
+                  const active = selectedSpecialties.includes(esp.id)
+                  const canSelect = active || canAddMore
+                  const isDisabled = disabled || (!active && !canSelect)
+                  return (
+                    <button
+                      key={esp.id}
+                      type="button"
+                      aria-pressed={active}
+                      onClick={() => {
+                        if (isDisabled) return
+                        handleSpecialtyToggle(esp.id)
+                        setOpen(false)
+                      }}
+                      disabled={isDisabled}
+                      className={cn(
+                        'w-full min-h-[52px] px-4 py-3 rounded-xl border text-left transition select-none touch-manipulation',
+                        active
+                          ? 'bg-primary text-primary-foreground border-primary'
+                          : 'bg-white text-gray-800 border-gray-300',
+                        isDisabled && 'opacity-50 cursor-not-allowed'
+                      )}
+                    >
+                      {esp.name}
+                    </button>
+                  )
+                })}
+                {filteredSpecialties.length === 0 && (
+                  <div className="text-xs text-gray-500 px-1 py-2">
+                    Nenhuma especialidade encontrada.
+                  </div>
+                )}
               </div>
             </div>
-          </PopoverContent>
-        </Popover>
-      )}
+          </div>
+        )}
+      </div>
 
       {/* Informações adicionais */}
       <div className="text-xs text-gray-500">
