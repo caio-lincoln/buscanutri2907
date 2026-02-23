@@ -22,6 +22,10 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
       user_type,
       created_at,
       is_deleted,
+      is_banned,
+      banned_at,
+      banned_reason,
+      banned_by,
       patient_profiles:patient_profiles!patient_profiles_user_id_fkey(full_name, phone, birth_date, gender),
       nutritionist_profiles:nutritionist_profiles!nutritionist_profiles_user_id_fkey(id, full_name, is_verified, crn, phone),
       company_profiles:company_profiles!company_profiles_user_id_fkey(company_name)
@@ -35,26 +39,32 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
 
   const enriched = await Promise.all(
     data.map(async (u: any) => {
-      let status: 'ativo' | 'inativo' | 'pendente' | 'suspenso' = 'ativo'
+      let status: 'ativo' | 'inativo' | 'pendente' | 'suspenso' | 'banido' = 'ativo'
+
+      // Se marcado como banido na tabela de usuários, tem prioridade máxima
+      if (u.is_banned) {
+        status = 'banido'
+      }
 
       // Verificação de nutricionista pendente
-      if (u.user_type === 'nutricionista' && !u.nutritionist_profiles?.is_verified) {
+      if (!u.is_banned && u.user_type === 'nutricionista' && !u.nutritionist_profiles?.is_verified) {
         status = 'pendente'
       }
 
-      // Consultar status de banimento via Auth Admin
-      try {
-        const { data: authUser } = await admin.auth.admin.getUserById(u.id)
-        const bannedUntil: string | undefined = (authUser as any)?.banned_until
-        if (bannedUntil) {
-          const bannedDate = new Date(bannedUntil)
-          if (!isNaN(bannedDate.getTime()) && bannedDate.getTime() > Date.now()) {
-            const diffDays = (bannedDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
-            status = diffDays >= 365 ? 'inativo' : 'suspenso'
+      // Status adicional via Auth Admin mantido apenas para suspensão temporária
+      if (!u.is_banned) {
+        try {
+          const { data: authUser } = await admin.auth.admin.getUserById(u.id)
+          const bannedUntil: string | undefined = (authUser as any)?.banned_until
+          if (bannedUntil) {
+            const bannedDate = new Date(bannedUntil)
+            if (!isNaN(bannedDate.getTime()) && bannedDate.getTime() > Date.now()) {
+              const diffDays = (bannedDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+              status = diffDays >= 365 ? 'inativo' : 'suspenso'
+            }
           }
+        } catch {
         }
-      } catch {
-        // Ignorar erros ao buscar auth user
       }
 
       let displayName = 'Nome não disponível'
@@ -75,6 +85,10 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
         type: u.user_type as 'paciente' | 'nutricionista' | 'empresa',
         status,
         createdAt: u.created_at,
+        is_banned: u.is_banned,
+        banned_at: u.banned_at,
+        banned_reason: u.banned_reason,
+        banned_by: u.banned_by,
         is_verified: u.nutritionist_profiles?.is_verified,
         nutritionist_profiles: u.nutritionist_profiles,
       }

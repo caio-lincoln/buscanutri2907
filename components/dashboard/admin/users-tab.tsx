@@ -82,7 +82,8 @@ const userStatusColors = {
   ativo: 'bg-green-100 text-green-700',
   inativo: 'bg-gray-100 text-gray-700',
   pendente: 'bg-yellow-100 text-yellow-700',
-  suspenso: 'bg-red-100 text-red-700',
+  suspenso: 'bg-orange-100 text-orange-700',
+  banido: 'bg-red-100 text-red-700',
 }
 
 type ModalAction = 'ban' | 'delete' | null
@@ -406,32 +407,52 @@ export function UsersTab() {
         })
         return
       }
-      const url = `/api/admin/users/${idForOps}/deactivate`
-      const options: RequestInit = {
+
+      const isCurrentlyBanned = selectedUser.is_banned || selectedUser.status === 'banido'
+      const action: 'ban' | 'unban' = isCurrentlyBanned ? 'unban' : 'ban'
+
+      const res = await fetch('/api/admin/users/ban-toggle', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-production-auth': 'liberar_producao',
         },
-        body: JSON.stringify({ duration: '720h', production_auth: 'liberar_producao' }),
-      }
-      const result = await execAdmin('deactivate', url, options)
-      if (!result.ok) return
-      if (result.edited) {
+        credentials: 'include',
+        body: JSON.stringify({
+          userId: idForOps,
+          action,
+        }),
+      })
+
+      const json = await res.json().catch(() => null)
+      const data = json?.data ?? json
+
+      if (!res.ok || (data && data.ok === false)) {
+        const message =
+          data?.error?.message ||
+          data?.message ||
+          (action === 'ban'
+            ? 'Falha ao banir usuário. Tente novamente.'
+            : 'Falha ao desbanir usuário. Tente novamente.')
         toast({
-          title: 'Usuário banido',
-          description: 'O usuário foi desativado e não poderá mais acessar a plataforma.',
+          title: 'Erro',
+          description: message,
+          variant: 'destructive',
         })
-      } else {
-        toast({
-          title: 'Nenhuma alteração aplicada',
-          description: 'O status de acesso do usuário já estava igual.',
-        })
+        return
       }
-      await handleActionSuccess(result.edited)
+
+      toast({
+        title: action === 'ban' ? 'Usuário banido' : 'Usuário desbanido',
+        description:
+          action === 'ban'
+            ? 'O usuário foi banido e não poderá mais acessar a plataforma.'
+            : 'O usuário foi desbanido e poderá voltar a acessar a plataforma.',
+      })
+
+      await handleActionSuccess(true)
     } catch (err: any) {
       toast({
-        title: 'Erro ao banir',
+        title: 'Erro',
         description: err?.message || 'Tente novamente.',
         variant: 'destructive',
       })
@@ -566,7 +587,7 @@ export function UsersTab() {
                         </TableCell>
                         <TableCell>
                           <Badge
-                            className={`capitalize ${userStatusColors[ user.status ]}`}
+                            className={`capitalize ${userStatusColors[user.status] || userStatusColors.ativo}`}
                           >
                             {user.status}
                           </Badge>
@@ -606,7 +627,10 @@ export function UsersTab() {
                                   <CheckCircle className="h-4 w-4 mr-2" /> Verificar
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => handleBanUser(user)}>
-                                  <XCircle className="h-4 w-4 mr-2 text-red-500" /> Banir
+                                  <XCircle
+                                    className={`h-4 w-4 mr-2 ${user.is_banned || user.status === 'banido' ? 'text-green-500' : 'text-red-500'}`}
+                                  />
+                                  {user.is_banned || user.status === 'banido' ? 'Desbanir' : 'Banir'}
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                   onClick={() => handleDeleteUser(user)}
@@ -687,11 +711,17 @@ export function UsersTab() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>
-                {modalAction === 'ban' ? 'Banir Usuário' : 'Excluir Usuário'}
+                {modalAction === 'ban'
+                  ? selectedUser.is_banned || selectedUser.status === 'banido'
+                    ? 'Desbanir Usuário'
+                    : 'Banir Usuário'
+                  : 'Excluir Usuário'}
               </DialogTitle>
               <DialogDescription>
                 {modalAction === 'ban' &&
-                  'Confirme o banimento do usuário. Ele não poderá mais acessar a plataforma.'}
+                  (selectedUser.is_banned || selectedUser.status === 'banido'
+                    ? 'Confirme o desbanimento do usuário. Ele poderá voltar a acessar a plataforma.'
+                    : 'Confirme o banimento do usuário. Ele não poderá mais acessar a plataforma.')}
                 {modalAction === 'delete' &&
                   'Confirme a exclusão do usuário. Esta ação é irreversível.'}
               </DialogDescription>
@@ -700,9 +730,19 @@ export function UsersTab() {
             {modalAction === 'ban' && (
               <div className="space-y-4 py-2">
                 <p className="text-sm text-muted-foreground">
-                  Tem certeza que deseja banir{' '}
-                  <span className="font-semibold">{selectedUser.name}</span>? O usuário
-                  não poderá mais acessar a plataforma.
+                  {selectedUser.is_banned || selectedUser.status === 'banido' ? (
+                    <>
+                      Tem certeza que deseja desbanir{' '}
+                      <span className="font-semibold">{selectedUser.name}</span>? O usuário
+                      poderá voltar a acessar a plataforma.
+                    </>
+                  ) : (
+                    <>
+                      Tem certeza que deseja banir{' '}
+                      <span className="font-semibold">{selectedUser.name}</span>? O usuário
+                      não poderá mais acessar a plataforma.
+                    </>
+                  )}
                 </p>
                 <div className="flex justify-end gap-2 pt-4">
                   <Button
@@ -713,11 +753,17 @@ export function UsersTab() {
                     Cancelar
                   </Button>
                   <Button
-                    variant="destructive"
+                    variant={selectedUser.is_banned || selectedUser.status === 'banido' ? 'default' : 'destructive'}
                     onClick={handleConfirmBan}
                     disabled={modalSubmitting}
                   >
-                    {modalSubmitting ? 'Processando...' : 'Confirmar banimento'}
+                    {modalSubmitting
+                      ? selectedUser.is_banned || selectedUser.status === 'banido'
+                        ? 'Desbanindo...'
+                        : 'Processando...'
+                      : selectedUser.is_banned || selectedUser.status === 'banido'
+                        ? 'Confirmar desbanimento'
+                        : 'Confirmar banimento'}
                   </Button>
                 </div>
               </div>
@@ -1299,12 +1345,32 @@ function AdminUserVerifyPanel({ open, onOpenChange, user, onUpdated }: AdminUser
         </SheetHeader>
 
         <div className="mt-4 space-y-4">
+          {user.is_banned && (
+            <div className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">
+              <div className="font-semibold mb-1">Este usuário está BANIDO do sistema.</div>
+              <div className="text-xs space-y-1">
+                {user.banned_at && (
+                  <div>
+                    Banido em: <span className="font-medium">{formatDateOnlyBR(user.banned_at)}</span>
+                  </div>
+                )}
+                {user.banned_reason && (
+                  <div>
+                    Motivo: <span className="font-medium">{user.banned_reason}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           <div className="flex flex-col gap-2 border rounded-md p-3 bg-muted/50">
             <div className="text-sm font-medium">{fullName || user.name || user.email}</div>
             <div className="text-xs text-muted-foreground break-all">{user.email}</div>
             <div className="flex flex-wrap gap-2 text-xs">
               <Badge variant="outline">{displayType}</Badge>
-              <Badge variant={user.status === 'banido' ? 'destructive' : 'secondary'}>{displayStatus}</Badge>
+              <Badge variant={user.is_banned || user.status === 'banido' ? 'destructive' : 'secondary'}>
+                {displayStatus}
+              </Badge>
               {user.type === 'nutricionista' && (
                 <Badge variant={user.is_verified ? 'default' : 'outline'}>
                   {user.is_verified ? 'Verificado' : 'Não verificado'}

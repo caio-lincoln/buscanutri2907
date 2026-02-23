@@ -61,10 +61,23 @@ export function withAuth(
   return withErrorHandling(async (req: NextRequest, context?: any) => {
     const supabase = await createClient()
     
-    const { data: { user }, error } = await supabase.auth.getUser()
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser()
     
     if (error || !user) {
       throw new ApiException('Não autorizado', 401, 'UNAUTHORIZED')
+    }
+
+    const { data: profile } = await supabase
+      .from('users')
+      .select('is_banned')
+      .eq('id', user.id)
+      .maybeSingle()
+
+    if (profile?.is_banned) {
+      throw new ApiException('Usuário banido', 403, 'FORBIDDEN')
     }
 
     return handler(req, user, context)

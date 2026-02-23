@@ -6,9 +6,13 @@ export interface UserData {
   name: string
   email: string
   type: 'paciente' | 'nutricionista' | 'empresa'
-  status: 'ativo' | 'inativo' | 'pendente'
+  status: 'ativo' | 'inativo' | 'pendente' | 'banido'
   createdAt: string
   lastLogin?: string
+  is_banned?: boolean
+  banned_at?: string | null
+  banned_reason?: string | null
+  banned_by?: string | null
   nutritionist_profiles?: {
     id: string
     full_name: string
