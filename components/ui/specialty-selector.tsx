@@ -12,6 +12,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
+import { useBreakpoint } from '@/hooks/use-breakpoint'
 
 interface Specialty {
   id: string
@@ -38,6 +39,7 @@ export function SpecialtySelector({
   placeholder = 'Selecione suas especialidades...',
   className,
 }: SpecialtySelectorProps) {
+  const { isMobile } = useBreakpoint()
   const [open, setOpen] = useState(false)
   const [specialties, setSpecialties] = useState<Specialty[]>([])
   const [loading, setLoading] = useState(true)
@@ -165,76 +167,122 @@ export function SpecialtySelector({
       )}
 
       {/* Seletor de especialidades */}
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            role="combobox"
-            aria-expanded={open}
-            className={cn(
-              'w-full h-11 justify-between',
-              disabled && 'opacity-50 cursor-not-allowed'
-            )}
-            disabled={disabled}
-          >
-            <span className="text-left truncate">
-              {selectedSpecialties.length === 0
-                ? placeholder
-                : `${selectedSpecialties.length} especialidade${selectedSpecialties.length > 1 ? 's' : ''} selecionada${selectedSpecialties.length > 1 ? 's' : ''}`}
-            </span>
-            <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-[min(100vw-2rem,360px)] p-0" align="start">
-          <div className="p-3 space-y-3">
-            <Input
-              placeholder="Buscar especialidade..."
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-              className="h-10 text-sm"
-            />
-            <div className="max-h-[60vh] overflow-y-auto overscroll-contain">
-              <div className="flex flex-wrap gap-2">
-                {filteredSpecialties.map(specialty => {
-                  const isSelected = selectedSpecialties.includes(specialty.id)
-                  const canSelect = canAddMore || isSelected
-                  const isDisabled = disabled || (!isSelected && !canSelect)
-
-                  return (
-                    <button
-                      key={specialty.id}
-                      type="button"
-                      aria-pressed={isSelected}
-                      onClick={() => {
-                        if (isDisabled) return
-                        handleSpecialtyToggle(specialty.id)
-                      }}
-                      disabled={isDisabled}
-                      className={cn(
-                        'px-4 py-2 rounded-xl border text-sm font-medium',
-                        'min-h-[48px] min-w-[48px] touch-manipulation select-none',
-                        'flex items-center justify-center text-center whitespace-normal',
-                        'transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
-                        isSelected
-                          ? 'bg-primary text-primary-foreground border-primary shadow-sm'
-                          : 'bg-white text-gray-700 border-gray-300',
-                        isDisabled && 'opacity-50 cursor-not-allowed'
-                      )}
-                    >
-                      <span className="truncate">{specialty.name}</span>
-                    </button>
-                  )
-                })}
-                {filteredSpecialties.length === 0 && (
-                  <div className="text-xs text-gray-500 px-1 py-2">
-                    Nenhuma especialidade encontrada.
-                  </div>
-                )}
-              </div>
+      {isMobile ? (
+        <div className="space-y-3">
+          <Input
+            placeholder="Buscar especialidade..."
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            className="h-10 text-sm"
+          />
+          <div className="max-h-[60vh] overflow-y-auto overscroll-contain">
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
+              {filteredSpecialties.map(esp => {
+                const active = selectedSpecialties.includes(esp.id)
+                const canSelect = active || canAddMore
+                const isDisabled = disabled || (!active && !canSelect)
+                return (
+                  <button
+                    key={esp.id}
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => {
+                      if (isDisabled) return
+                      handleSpecialtyToggle(esp.id)
+                    }}
+                    disabled={isDisabled}
+                    className={cn(
+                      'w-full min-h-[52px] px-4 py-3 rounded-xl border text-left transition select-none touch-manipulation',
+                      active
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : 'bg-white text-gray-800 border-gray-300',
+                      isDisabled && 'opacity-50 cursor-not-allowed'
+                    )}
+                  >
+                    {esp.name}
+                  </button>
+                )
+              })}
+              {filteredSpecialties.length === 0 && (
+                <div className="text-xs text-gray-500 px-1 py-2">
+                  Nenhuma especialidade encontrada.
+                </div>
+              )}
             </div>
           </div>
-        </PopoverContent>
-      </Popover>
+        </div>
+      ) : (
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              role="combobox"
+              aria-expanded={open}
+              className={cn(
+                'w-full h-11 justify-between',
+                disabled && 'opacity-50 cursor-not-allowed'
+              )}
+              disabled={disabled}
+            >
+              <span className="text-left truncate">
+                {selectedSpecialties.length === 0
+                  ? placeholder
+                  : `${selectedSpecialties.length} especialidade${selectedSpecialties.length > 1 ? 's' : ''} selecionada${selectedSpecialties.length > 1 ? 's' : ''}`}
+              </span>
+              <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="z-50 w-[min(100vw-2rem,360px)] p-0" align="start">
+            <div className="p-3 space-y-3">
+              <Input
+                placeholder="Buscar especialidade..."
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                className="h-10 text-sm"
+              />
+              <div className="max-h-[60vh] overflow-y-auto overscroll-contain">
+                <div className="flex flex-wrap gap-2">
+                  {filteredSpecialties.map(specialty => {
+                    const isSelected = selectedSpecialties.includes(specialty.id)
+                    const canSelect = canAddMore || isSelected
+                    const isDisabled = disabled || (!isSelected && !canSelect)
+
+                    return (
+                      <button
+                        key={specialty.id}
+                        type="button"
+                        aria-pressed={isSelected}
+                        onClick={() => {
+                          if (isDisabled) return
+                          handleSpecialtyToggle(specialty.id)
+                        }}
+                        disabled={isDisabled}
+                        className={cn(
+                          'px-4 py-2 rounded-xl border text-sm font-medium',
+                          'min-h-[48px] min-w-[48px] touch-manipulation select-none',
+                          'flex items-center justify-center text-center whitespace-normal',
+                          'transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
+                          isSelected
+                            ? 'bg-primary text-primary-foreground border-primary shadow-sm'
+                            : 'bg-white text-gray-700 border-gray-300',
+                          isDisabled && 'opacity-50 cursor-not-allowed'
+                        )}
+                      >
+                        <span className="truncate">{specialty.name}</span>
+                      </button>
+                    )
+                  })}
+                  {filteredSpecialties.length === 0 && (
+                    <div className="text-xs text-gray-500 px-1 py-2">
+                      Nenhuma especialidade encontrada.
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </PopoverContent>
+        </Popover>
+      )}
 
       {/* Informações adicionais */}
       <div className="text-xs text-gray-500">
