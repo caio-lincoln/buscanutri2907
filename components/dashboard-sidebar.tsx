@@ -60,6 +60,7 @@ import { useProfile } from '@/contexts/profile-context'
 import { useContext } from 'react'
 import { ProfileContext } from '@/contexts/profile-context'
 import { ClientOnly } from '@/components/client-only'
+import { useAuth } from '@/contexts/auth-context'
 
 export interface DashboardMenuItem {
   id: string
@@ -149,6 +150,10 @@ export function DashboardSidebar({
   onSignOut = () => { },
   children,
 }: DashboardSidebarProps) {
+  const { restriction } = useAuth()
+  if (restriction === 'reprovado') {
+    return null
+  }
   const config = userTypeConfig[ userType ] || userTypeConfig.paciente
 
   return (

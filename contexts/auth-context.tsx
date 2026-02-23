@@ -32,6 +32,7 @@ interface AuthContextType {
   refreshUser: (user?: User) => Promise<void>
   isRestricted?: boolean
   restriction?: 'banido' | 'reprovado' | null
+  blockIfReprovado?: () => boolean
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -404,6 +405,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [ isClient, userProfile, nutritionistProfile ])
 
+  const blockIfReprovado = useCallback(() => {
+    const norm = (v?: string | null) => (v || '').toString().trim().toLowerCase()
+    const userStatus = norm((userProfile as any)?.status as any)
+    const nutriVerif = norm((nutritionistProfile as any)?.verification_status as any)
+    const isRejected = userStatus === 'reprovado' || nutriVerif === 'reprovado' || nutriVerif === 'rejected'
+    if (isRejected) {
+      toast({
+        title: 'Acesso restrito',
+        description: 'Seu perfil está reprovado. Regularize seus dados para liberar o acesso.',
+        variant: 'default',
+      })
+      return true
+    }
+    return false
+  }, [ userProfile, nutritionistProfile ])
+
   const value = useMemo(
     () => ({
       user,
@@ -430,8 +447,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             String((nutritionistProfile as any)?.verification_status || '').toLowerCase() === 'rejected')
           ? 'reprovado'
           : null,
+      blockIfReprovado,
     }),
-    [ user, userProfile, nutritionistProfile, patientProfile, companyProfile, loading, handleSignOut, loadUser]
+    [ user, userProfile, nutritionistProfile, patientProfile, companyProfile, loading, handleSignOut, loadUser, blockIfReprovado]
   )
 
   return (
