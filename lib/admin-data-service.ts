@@ -372,19 +372,41 @@ export async function approveNutritionist(nutritionistProfileId: string): Promis
 /**
  * Rejeitar nutricionista
  */
-export async function rejectNutritionist(nutritionistProfileId: string, reason: string): Promise<boolean> {
+export async function rejectNutritionist(
+  nutritionistProfileId: string,
+  reason: string
+): Promise<{ ok: boolean; message?: string }> {
   try {
     const res = await fetch('/api/admin/nutritionists/reject', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ nutritionistProfileId, reason }),
     })
-    if (!res.ok) return false
-    const j = await res.json()
-    return !!j?.ok
-  } catch {
-    // Silent error handling: Error in rejectNutritionist
-    return false
+
+    const text = await res.text()
+    let json: any = null
+    try {
+      json = text ? JSON.parse(text) : null
+    } catch {
+      json = null
+    }
+
+    if (!res.ok || !json?.ok) {
+      const message =
+        typeof json?.message === 'string'
+          ? json.message
+          : json?.error?.message || 'Falha ao rejeitar nutricionista'
+      console.error('Erro ao rejeitar nutricionista:', {
+        status: res.status,
+        body: json,
+      })
+      return { ok: false, message }
+    }
+
+    return { ok: true, message: typeof json?.message === 'string' ? json.message : undefined }
+  } catch (err) {
+    console.error('Erro em rejectNutritionist:', err)
+    return { ok: false, message: 'Erro inesperado ao rejeitar nutricionista' }
   }
 }
 

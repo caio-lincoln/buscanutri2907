@@ -7,9 +7,11 @@ export type NutritionistDoc = {
   nutritionist_id: string
   document_type: string
   title: string | null
-  file_name: string   
+  file_name: string
   storage_path: string
   created_at: string
+  is_verified?: boolean | null
+  verification_notes?: string | null
 }
 
 export async function listMyDocs(profileId?: string): Promise<NutritionistDoc[]> {
@@ -22,7 +24,7 @@ export async function listMyDocs(profileId?: string): Promise<NutritionistDoc[]>
 
   const { data, error } = await supabase
     .from('nutritionist_documents')
-    .select('id, nutritionist_id, document_type, title, file_name, storage_path, created_at')
+    .select('id, nutritionist_id, document_type, title, file_name, storage_path, created_at, is_verified, verification_notes')
     .eq('nutritionist_id', queryId)
     .order('created_at', { ascending: false })
   if (error) throw error

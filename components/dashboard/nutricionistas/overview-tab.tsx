@@ -32,6 +32,7 @@ import { Tab } from '../../../app/dashboard/nutricionistas/_client'
 import NutritionistRecentChatsList from '../../../app/dashboard/nutricionistas/_components/NutriotinistRecentChatsList'
 import { createSupabaseClient } from '../../../lib/supabase'
 import { PermissionWrapper, usePermissions } from '../../../components/ui/permission-wrapper'
+import { listMyDocs, type NutritionistDoc } from '@/lib/nutritionist-documents-service'
 
 export default function OverviewTab({ setActiveTab }: { setActiveTab: (tab: Tab) => void }) {
   const { nutritionistProfile } = useAuth()
@@ -39,6 +40,7 @@ export default function OverviewTab({ setActiveTab }: { setActiveTab: (tab: Tab)
   const [ upcomingAppointments, setUpcomingAppointments ] = useState<
     ScheduledAppointment[]
   >([])
+  const [ rejectionReason, setRejectionReason ] = useState<string | null>(null)
   const supabase = useMemo(() => createSupabaseClient(), [])
 
   const router = useRouter()
@@ -82,6 +84,40 @@ export default function OverviewTab({ setActiveTab }: { setActiveTab: (tab: Tab)
     })()
   }, [supabase, nutritionistProfile?.id])
 
+  useEffect(() => {
+    const status = String(nutritionistProfile?.verification_status || '').toLowerCase()
+    if (status !== 'reprovado') {
+      setRejectionReason(null)
+      return
+    }
+
+    let cancelled = false
+
+    const loadReason = async () => {
+      try {
+        const docs: NutritionistDoc[] = await listMyDocs()
+        if (cancelled) return
+        const notes = docs
+          .map(d => (d.verification_notes || '').trim())
+          .filter(Boolean)
+        if (!notes.length) {
+          setRejectionReason(null)
+          return
+        }
+        const unique = Array.from(new Set(notes))
+        setRejectionReason(unique.join('\n\n'))
+      } catch {
+        if (!cancelled) setRejectionReason(null)
+      }
+    }
+
+    loadReason()
+
+    return () => {
+      cancelled = true
+    }
+  }, [nutritionistProfile?.verification_status])
+
   const loadDashboardData = async () => {
     if (!nutritionistProfile?.user_id) return
 
@@ -100,6 +136,37 @@ export default function OverviewTab({ setActiveTab }: { setActiveTab: (tab: Tab)
 
   return (
     <div className="space-y-8">
+      {String(nutritionistProfile?.verification_status || '').toLowerCase() === 'reprovado' && (
+        <Card className="border border-red-200 bg-red-50">
+          <CardContent className="py-4">
+            <div className="space-y-2">
+              <p className="text-sm font-semibold text-red-700">
+                Seu cadastro como nutricionista está reprovado no momento.
+              </p>
+              {rejectionReason && (
+                <p className="text-sm text-red-800 whitespace-pre-line">
+                  Motivo informado pela equipe: {rejectionReason}
+                </p>
+              )}
+              <p className="text-sm text-red-800">
+                Em caso de dúvidas ou para ajustar seus dados/documentos, fale com o suporte
+                pelo WhatsApp em horário comercial:
+              </p>
+              <p className="text-sm font-medium text-red-900">
+                <a
+                  href={`https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_SUPPORT_RAW || '5579998134938'}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="underline"
+                >
+                  {process.env.NEXT_PUBLIC_WHATSAPP_SUPPORT_DISPLAY || '(79) 9 9813-4938'}
+                </a>
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Welcome Section */}
       <div className="relative overflow-hidden bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 rounded-3xl p-8 text-white shadow-2xl">
         <div className="absolute inset-0 bg-[url('/placeholder.svg?height=400&width=800')] opacity-10"></div>

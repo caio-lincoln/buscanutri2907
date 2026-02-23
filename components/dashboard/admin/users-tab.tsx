@@ -1463,11 +1463,15 @@ function AdminUserVerifyPanel({ open, onOpenChange, user, onUpdated }: AdminUser
       const actionKey = `crn-reject-${profile.id as string}`
       await runSafeAction(actionKey, async () => {
         const reason = crnReason.trim() || 'Sem motivo informado'
-        const ok = await rejectNutritionist(profile.id as string, reason)
-        if (!ok) {
+        const result = await rejectNutritionist(profile.id as string, reason)
+        if (!result.ok) {
+          const description =
+            typeof result.message === 'string' && result.message.length > 0
+              ? result.message
+              : 'Falha ao rejeitar nutricionista. Tente novamente.'
           toast({
             title: 'Erro ao rejeitar nutricionista',
-            description: 'Falha ao rejeitar nutricionista. Tente novamente.',
+            description,
             variant: 'destructive',
           })
           return

@@ -197,19 +197,24 @@ export function VerifyNutritionistModal({
     }
     try {
       setProcessing(true)
-    let success = false
-    if (user.type === 'nutricionista' && user.nutritionistProfileId) {
-      success = await rejectNutritionist(user.nutritionistProfileId, reason)
-    } else {
-      success = true
-    }
-      if (success) {
+      let ok = true
+      let message: string | undefined
+      if (user.type === 'nutricionista' && user.nutritionistProfileId) {
+        const result = await rejectNutritionist(user.nutritionistProfileId, reason)
+        ok = result.ok
+        message = result.message
+      }
+      if (ok) {
         toast({ title: 'Informação', description: 'Rejeição registrada com sucesso' })
         setRejecting(false)
         setReason('')
         onOpenChange(false)
       } else {
-        toast({ title: 'Erro', description: 'Não foi possível registrar a rejeição', variant: 'destructive' })
+        toast({
+          title: 'Erro',
+          description: message || 'Não foi possível registrar a rejeição',
+          variant: 'destructive',
+        })
       }
     } catch {
       toast({ title: 'Erro', description: 'Ocorreu um erro ao registrar a rejeição', variant: 'destructive' })

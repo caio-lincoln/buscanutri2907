@@ -150,6 +150,18 @@ export default function DocumentsCard({ profileId, debug = false }: Props) {
                     <div className="text-xs text-gray-600">
                       <p><strong>Tipo:</strong> {doc.document_type}</p>
                       <p><strong>Criado em:</strong> {new Date(doc.created_at).toLocaleDateString('pt-BR')}</p>
+                      {typeof doc.is_verified === 'boolean' && (
+                        <p>
+                          <strong>Status:</strong>{' '}
+                          {doc.is_verified ? 'Aprovado' : 'Pendente / Reprovado'}
+                        </p>
+                      )}
+                      {doc.verification_notes && (
+                        <p className="mt-1">
+                          <strong>Observação da análise:</strong>{' '}
+                          <span className="whitespace-pre-line">{doc.verification_notes}</span>
+                        </p>
+                      )}
                     </div>
                     <div className="flex gap-2">
                       <Button
