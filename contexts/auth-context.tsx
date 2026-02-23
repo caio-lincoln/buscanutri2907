@@ -30,6 +30,8 @@ interface AuthContextType {
   setUser: (value: React.SetStateAction<User | null>) => void
   setUserProfile: (value: React.SetStateAction<UserProfile | null>) => void
   refreshUser: (user?: User) => Promise<void>
+  isRestricted?: boolean
+  restriction?: 'banido' | 'reprovado' | null
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -323,6 +325,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [isClient])
 
   const bannedHandledRef = useRef(false)
+  const rejectedHandledRef = useRef(false)
 
   useEffect(() => {
     if (!isClient) return
@@ -358,6 +361,49 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       })
   }, [ isClient, userProfile ])
 
+  // Guard global para usuário REPROVADO (modo restrito total, só /perfil):
+  useEffect(() => {
+    if (!isClient) return
+    const norm = (v?: string | null) => (v || '').toString().trim().toLowerCase()
+    const userStatus = norm((userProfile as any)?.status as any)
+    const nutriVerif = norm((nutritionistProfile as any)?.verification_status as any)
+    const isRejected = userStatus === 'reprovado' || nutriVerif === 'reprovado' || nutriVerif === 'rejected'
+    if (!isRejected) {
+      rejectedHandledRef.current = false
+      return
+    }
+
+    // Determina rota de perfil por tipo
+    const utype = (userProfile as any)?.user_type || (user as any)?.user_metadata?.user_type
+    const profilePath =
+      utype === 'nutricionista'
+        ? '/dashboard/nutricionistas/perfil'
+        : utype === 'paciente'
+        ? '/dashboard/paciente?activeTab=perfil'
+        : utype === 'empresa'
+        ? '/dashboard/empresa/perfil'
+        : utype === 'admin'
+        ? '/dashboard/admin?activeTab=perfil'
+        : '/perfil'
+
+    const currentPath =
+      typeof window !== 'undefined' ? window.location.pathname + window.location.search : ''
+
+    if (!rejectedHandledRef.current) {
+      rejectedHandledRef.current = true
+      toast({
+        title: 'Perfil reprovado',
+        description:
+          'Seu perfil está reprovado. Regularize seus dados para liberar o acesso ao sistema.',
+        variant: 'default',
+      })
+    }
+
+    if (currentPath !== profilePath) {
+      router.replace(profilePath)
+    }
+  }, [ isClient, userProfile, nutritionistProfile ])
+
   const value = useMemo(
     () => ({
       user,
@@ -370,6 +416,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser,
       signOut: handleSignOut,
       refreshUser: async () => { refreshUser()},
+      isRestricted:
+        ((userProfile as any)?.is_banned === true ||
+          (userProfile as any)?.status === 'banido') ||
+        ((String((userProfile as any)?.status || '').toLowerCase() === 'reprovado') ||
+          (String((nutritionistProfile as any)?.verification_status || '').toLowerCase() === 'reprovado') ||
+          (String((nutritionistProfile as any)?.verification_status || '').toLowerCase() === 'rejected')),
+      restriction:
+        (userProfile as any)?.is_banned === true || (userProfile as any)?.status === 'banido'
+          ? 'banido'
+          : (String((userProfile as any)?.status || '').toLowerCase() === 'reprovado' ||
+            String((nutritionistProfile as any)?.verification_status || '').toLowerCase() === 'reprovado' ||
+            String((nutritionistProfile as any)?.verification_status || '').toLowerCase() === 'rejected')
+          ? 'reprovado'
+          : null,
     }),
     [ user, userProfile, nutritionistProfile, patientProfile, companyProfile, loading, handleSignOut, loadUser]
   )

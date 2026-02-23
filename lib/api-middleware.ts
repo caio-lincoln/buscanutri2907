@@ -72,12 +72,26 @@ export function withAuth(
 
     const { data: profile } = await supabase
       .from('users')
-      .select('is_banned')
+      .select('is_banned, user_type')
       .eq('id', user.id)
       .maybeSingle()
 
     if (profile?.is_banned) {
       throw new ApiException('Usuário banido', 403, 'FORBIDDEN')
+    }
+
+    // Bloqueio adicional para usuário reprovado (nutricionista): não pode executar actions (non-GET)
+    if (profile?.user_type === 'nutricionista') {
+      const { data: nutri } = await supabase
+        .from('nutritionist_profiles')
+        .select('verification_status, is_verified')
+        .eq('user_id', user.id)
+        .maybeSingle()
+      const ver = String(nutri?.verification_status || '').toLowerCase()
+      const isRejected = ver === 'reprovado' || ver === 'rejected'
+      if (isRejected && req.method !== 'GET') {
+        throw new ApiException('Usuário reprovado', 403, 'REJECTED')
+      }
     }
 
     return handler(req, user, context)
