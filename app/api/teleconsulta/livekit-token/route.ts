@@ -35,19 +35,34 @@ export async function GET(req: NextRequest) {
   if (!isParticipant) return NextResponse.json({ error: 'forbidden' }, { status: 403 })
 
   const roomName = `teleconsulta_${session.id}_${session.session_token}`
+
+  const livekitUrl = process.env['NEXT_PUBLIC_LIVEKIT_URL']
+  const livekitApiKey = process.env['NEXT_PUBLIC_LIVEKIT_API_KEY']
+  const livekitApiSecret = process.env['NEXT_PUBLIC_LIVEKIT_API_SECRET']
+
+  if (!livekitUrl || !livekitApiKey || !livekitApiSecret) {
+    console.error('[teleconsulta][livekit-token] Missing LiveKit environment variables', {
+      hasUrl: !!livekitUrl,
+      hasKey: !!livekitApiKey,
+      hasSecret: !!livekitApiSecret,
+    })
+    return NextResponse.json(
+      { error: 'Configuração de teleconsulta incompleta no servidor' },
+      { status: 500 }
+    )
+  }
+
   // (Opcional) Garanta que a sala existe e limite para 2 participantes
-  const roomSvc = new RoomServiceClient(process.env[ "NEXT_PUBLIC_LIVEKIT_URL" ] as string, process.env[ "NEXT_PUBLIC_LIVEKIT_API_KEY" ], process.env[ "NEXT_PUBLIC_LIVEKIT_API_SECRET" ])
+  const roomSvc = new RoomServiceClient(livekitUrl, livekitApiKey, livekitApiSecret)
   try {
     await roomSvc.createRoom({ name: roomName, maxParticipants: 2, emptyTimeout: 60 * 5 })
   } catch { /* se já existe, ignora */ }
 
-  const at = new AccessToken(process.env[ "NEXT_PUBLIC_LIVEKIT_API_KEY" ], process.env[ "NEXT_PUBLIC_LIVEKIT_API_SECRET" ], {
+  const at = new AccessToken(livekitApiKey, livekitApiSecret, {
     identity: user.id,                        
     ttl: '1h',                                
     metadata: JSON.stringify({ name: user.email }), 
   })
-
-  await supabase.from('teleconsulta_session').update('')
   at.addGrant({
     room: roomName,
     roomJoin: true,
