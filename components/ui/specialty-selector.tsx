@@ -168,48 +168,90 @@ export function SpecialtySelector({
 
       {/* Seletor de especialidades */}
       {isMobile ? (
-        <div className="space-y-3">
-          <Input
-            placeholder="Buscar especialidade..."
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-            className="h-10 text-sm"
-          />
-          <div className="max-h-[60vh] overflow-y-auto overscroll-contain">
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
-              {filteredSpecialties.map(esp => {
-                const active = selectedSpecialties.includes(esp.id)
-                const canSelect = active || canAddMore
-                const isDisabled = disabled || (!active && !canSelect)
-                return (
-                  <button
-                    key={esp.id}
-                    type="button"
-                    aria-pressed={active}
-                    onClick={() => {
-                      if (isDisabled) return
-                      handleSpecialtyToggle(esp.id)
-                    }}
-                    disabled={isDisabled}
-                    className={cn(
-                      'w-full min-h-[52px] px-4 py-3 rounded-xl border text-left transition select-none touch-manipulation',
-                      active
-                        ? 'bg-primary text-primary-foreground border-primary'
-                        : 'bg-white text-gray-800 border-gray-300',
-                      isDisabled && 'opacity-50 cursor-not-allowed'
+        <div className="relative">
+          <Button
+            variant="outline"
+            type="button"
+            onClick={() => setOpen(true)}
+            className={cn(
+              'w-full h-11 justify-between',
+              disabled && 'opacity-50 cursor-not-allowed'
+            )}
+            disabled={disabled}
+          >
+            <span className="text-left truncate">
+              {selectedSpecialties.length === 0
+                ? placeholder
+                : `${selectedSpecialties.length} especialidade${selectedSpecialties.length > 1 ? 's' : ''} selecionada${selectedSpecialties.length > 1 ? 's' : ''}`}
+            </span>
+            <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+
+          {open && (
+            <>
+              <div
+                className="fixed inset-0 z-40 bg-black/30"
+                onClick={() => setOpen(false)}
+              />
+              <div
+                role="dialog"
+                aria-modal="true"
+                className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-2xl p-4 max-h-[70vh] overflow-y-auto overscroll-contain shadow-2xl"
+              >
+                <div className="space-y-3">
+                  <Input
+                    placeholder="Buscar especialidade..."
+                    value={searchTerm}
+                    onChange={e => setSearchTerm(e.target.value)}
+                    className="h-10 text-sm"
+                  />
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
+                    {filteredSpecialties.map(esp => {
+                      const active = selectedSpecialties.includes(esp.id)
+                      const canSelect = active || canAddMore
+                      const isDisabled = disabled || (!active && !canSelect)
+                      return (
+                        <button
+                          key={esp.id}
+                          type="button"
+                          aria-pressed={active}
+                          onClick={() => {
+                            if (isDisabled) return
+                            handleSpecialtyToggle(esp.id)
+                            // Fecha automaticamente após selecionar/deselecionar
+                            setOpen(false)
+                          }}
+                          disabled={isDisabled}
+                          className={cn(
+                            'w-full min-h-[52px] px-4 py-3 rounded-xl border text-left transition select-none touch-manipulation',
+                            active
+                              ? 'bg-primary text-primary-foreground border-primary'
+                              : 'bg-white text-gray-800 border-gray-300',
+                            isDisabled && 'opacity-50 cursor-not-allowed'
+                          )}
+                        >
+                          {esp.name}
+                        </button>
+                      )
+                    })}
+                    {filteredSpecialties.length === 0 && (
+                      <div className="text-xs text-gray-500 px-1 py-2">
+                        Nenhuma especialidade encontrada.
+                      </div>
                     )}
+                  </div>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => setOpen(false)}
+                    className="w-full py-3"
                   >
-                    {esp.name}
-                  </button>
-                )
-              })}
-              {filteredSpecialties.length === 0 && (
-                <div className="text-xs text-gray-500 px-1 py-2">
-                  Nenhuma especialidade encontrada.
+                    Fechar
+                  </Button>
                 </div>
-              )}
-            </div>
-          </div>
+              </div>
+            </>
+          )}
         </div>
       ) : (
         <Popover open={open} onOpenChange={setOpen}>
@@ -255,6 +297,8 @@ export function SpecialtySelector({
                         onClick={() => {
                           if (isDisabled) return
                           handleSpecialtyToggle(specialty.id)
+                          // Fecha automaticamente após selecionar no desktop
+                          setOpen(false)
                         }}
                         disabled={isDisabled}
                         className={cn(
