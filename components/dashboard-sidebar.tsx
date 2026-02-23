@@ -150,9 +150,32 @@ export function DashboardSidebar({
   onSignOut = () => { },
   children,
 }: DashboardSidebarProps) {
-  const { restriction } = useAuth()
+  const { restriction, signOut } = useAuth()
   if (restriction === 'reprovado') {
-    return null
+    return (
+      <div className="min-h-screen bg-white">
+        <div className="w-full border-b bg-yellow-50 px-4 py-3 flex items-center justify-between">
+          <div className="text-sm font-medium text-yellow-800">
+            Seu perfil está reprovado. Regularize seus dados para liberar o acesso.
+          </div>
+          <Button
+            variant="ghost"
+            onClick={async () => {
+              try {
+                await signOut()
+              } catch {}
+            }}
+            className="text-[#1E1D40] hover:text-red-600 hover:bg-red-50"
+          >
+            <LogOut className="h-4 w-4 mr-2" />
+            Desconectar
+          </Button>
+        </div>
+        <main className="flex-1 overflow-auto p-4 md:p-6 lg:p-8">
+          <div className="max-w-7xl mx-auto">{children}</div>
+        </main>
+      </div>
+    )
   }
   const config = userTypeConfig[ userType ] || userTypeConfig.paciente
 

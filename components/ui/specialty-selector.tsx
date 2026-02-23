@@ -1,17 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Check, ChevronDown, X } from 'lucide-react'
+import { useState, useEffect, useMemo } from 'react'
+import { ChevronDown, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-} from '@/components/ui/command'
+import { Input } from '@/components/ui/input'
 import {
   Popover,
   PopoverContent,
@@ -48,6 +42,7 @@ export function SpecialtySelector({
   const [specialties, setSpecialties] = useState<Specialty[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [searchTerm, setSearchTerm] = useState('')
 
   // Carregar especialidades do banco
   useEffect(() => {
@@ -102,6 +97,15 @@ export function SpecialtySelector({
   }
 
   const canAddMore = selectedSpecialties.length < maxSelections
+
+  const filteredSpecialties = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase()
+    if (!term) return specialties
+    return specialties.filter(s =>
+      s.name.toLowerCase().includes(term) ||
+      (s.description || '').toLowerCase().includes(term)
+    )
+  }, [ specialties, searchTerm ])
 
   if (loading) {
     return (
@@ -182,47 +186,54 @@ export function SpecialtySelector({
             <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-full p-0" align="start">
-          <Command>
-            <CommandInput placeholder="Buscar especialidade..." />
-            <CommandEmpty>Nenhuma especialidade encontrada.</CommandEmpty>
-            <CommandGroup className="max-h-64 overflow-auto">
-              {specialties.map(specialty => {
-                const isSelected = selectedSpecialties.includes(specialty.id)
-                const canSelect = canAddMore || isSelected
+        <PopoverContent className="w-[min(100vw-2rem,360px)] p-0" align="start">
+          <div className="p-3 space-y-3">
+            <Input
+              placeholder="Buscar especialidade..."
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              className="h-10 text-sm"
+            />
+            <div className="max-h-[60vh] overflow-y-auto overscroll-contain">
+              <div className="flex flex-wrap gap-2">
+                {filteredSpecialties.map(specialty => {
+                  const isSelected = selectedSpecialties.includes(specialty.id)
+                  const canSelect = canAddMore || isSelected
+                  const isDisabled = disabled || (!isSelected && !canSelect)
 
-                return (
-                  <CommandItem
-                    key={specialty.id}
-                    value={specialty.name}
-                    onSelect={() => handleSpecialtyToggle(specialty.id)}
-                    className={cn(
-                      'cursor-pointer',
-                      !canSelect &&
-                        !isSelected &&
-                        'opacity-50 cursor-not-allowed'
-                    )}
-                    disabled={!canSelect && !isSelected}
-                  >
-                    <Check
+                  return (
+                    <button
+                      key={specialty.id}
+                      type="button"
+                      aria-pressed={isSelected}
+                      onClick={() => {
+                        if (isDisabled) return
+                        handleSpecialtyToggle(specialty.id)
+                      }}
+                      disabled={isDisabled}
                       className={cn(
-                        'mr-2 h-4 w-4',
-                        isSelected ? 'opacity-100' : 'opacity-0'
+                        'px-4 py-2 rounded-xl border text-sm font-medium',
+                        'min-h-[48px] min-w-[48px] touch-manipulation select-none',
+                        'flex items-center justify-center text-center whitespace-normal',
+                        'transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
+                        isSelected
+                          ? 'bg-primary text-primary-foreground border-primary shadow-sm'
+                          : 'bg-white text-gray-700 border-gray-300',
+                        isDisabled && 'opacity-50 cursor-not-allowed'
                       )}
-                    />
-                    <div className="flex-1">
-                      <div className="font-medium">{specialty.name}</div>
-                      {specialty.description && (
-                        <div className="text-xs text-gray-500 mt-1">
-                          {specialty.description}
-                        </div>
-                      )}
-                    </div>
-                  </CommandItem>
-                )
-              })}
-            </CommandGroup>
-          </Command>
+                    >
+                      <span className="truncate">{specialty.name}</span>
+                    </button>
+                  )
+                })}
+                {filteredSpecialties.length === 0 && (
+                  <div className="text-xs text-gray-500 px-1 py-2">
+                    Nenhuma especialidade encontrada.
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         </PopoverContent>
       </Popover>
 
