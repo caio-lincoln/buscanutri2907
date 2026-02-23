@@ -44,7 +44,6 @@ import {
   Search,
   Filter,
   CheckCircle,
-  Edit,
   Trash2,
   XCircle,
   Loader2,
@@ -324,14 +323,6 @@ export function UsersTab() {
     setVerifyOpening(true)
     setSelectedUser(user)
     setVerifyModalOpen(true)
-  }
-
-  const handleEditUser = (user: UserData) => {
-    console.warn('Edição de usuário desabilitada', { id: user.id, email: user.email })
-    toast({
-      title: 'Edição desativada',
-      description: 'A edição de dados de usuários está desabilitada neste ambiente.',
-    })
   }
 
   const handleDeleteUser = (user: UserData) => {
@@ -614,9 +605,6 @@ export function UsersTab() {
                                 >
                                   <CheckCircle className="h-4 w-4 mr-2" /> Verificar
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleEditUser(user)}>
-                                  <Edit className="h-4 w-4 mr-2" /> Editar
-                                </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => handleBanUser(user)}>
                                   <XCircle className="h-4 w-4 mr-2 text-red-500" /> Banir
                                 </DropdownMenuItem>
@@ -796,6 +784,13 @@ function AdminUserVerifyPanel({ open, onOpenChange, user, onUpdated }: AdminUser
   const [docStatusLoadingId, setDocStatusLoadingId] = useState<string | null>(null)
   const [viewerDoc, setViewerDoc] = useState<NutritionistDocument | null>(null)
   const [viewerOpen, setViewerOpen] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
+  const [initialValues, setInitialValues] = useState<{
+    fullName: string
+    phone: string
+    location: string
+    userType: UserData['type']
+  } | null>(null)
 
   useEffect(() => {
     if (open) {
@@ -818,12 +813,16 @@ function AdminUserVerifyPanel({ open, onOpenChange, user, onUpdated }: AdminUser
       setDocsError(null)
       setDocsLoaded(false)
       setLoadingDocs(false)
+      setIsEditing(false)
+      setInitialValues(null)
       return
     }
 
     setTab('summary')
     setFullName(user.name || '')
     setUserType(user.type)
+    setPhone('')
+    setLocation('')
     setPassword('')
     setErrors({})
 
@@ -868,14 +867,20 @@ function AdminUserVerifyPanel({ open, onOpenChange, user, onUpdated }: AdminUser
 
         const baseName =
           data.profile?.full_name || data.profile?.company_name || user.name || user.email.split('@')[0] || ''
-        setFullName(baseName)
-
         const profilePhone = data.profile?.phone || ''
-        setPhone(formatPhoneDisplay(profilePhone))
-
+        const formattedPhone = formatPhoneDisplay(profilePhone)
         const profileLocation =
           data.profile?.location || data.profile?.address || data.profile?.city || data.profile?.state || ''
+
+        setFullName(baseName)
+        setPhone(formattedPhone)
         setLocation(profileLocation || '')
+        setInitialValues({
+          fullName: baseName,
+          phone: formattedPhone,
+          location: profileLocation || '',
+          userType: user.type,
+        })
       } catch (e) {
         setProfileError('Falha ao carregar perfil do usuário. Tente novamente.')
       } finally {
@@ -1010,6 +1015,32 @@ function AdminUserVerifyPanel({ open, onOpenChange, user, onUpdated }: AdminUser
     return Object.keys(nextErrors).length === 0
   }
 
+  const handleStartEdit = () => {
+    setIsEditing(true)
+    setTab('edit')
+    setInitialValues({
+      fullName,
+      phone,
+      location,
+      userType,
+    })
+    setErrors({})
+    setPassword('')
+  }
+
+  const handleCancelEdit = () => {
+    if (initialValues) {
+      setFullName(initialValues.fullName)
+      setPhone(initialValues.phone)
+      setLocation(initialValues.location)
+      setUserType(initialValues.userType)
+    }
+    setErrors({})
+    setPassword('')
+    setIsEditing(false)
+    setTab('summary')
+  }
+
   const handleSave = async () => {
     if (!validate()) return
     const idForOps =
@@ -1107,10 +1138,17 @@ function AdminUserVerifyPanel({ open, onOpenChange, user, onUpdated }: AdminUser
       try {
         await onUpdated()
       } catch (e) {
-    // silent
+        // silent
       }
 
       setPassword('')
+      setInitialValues({
+        fullName: fullName.trim(),
+        phone,
+        location: location.trim(),
+        userType,
+      })
+      setIsEditing(false)
       setTab('summary')
       setSaving(false)
     } catch (e) {
@@ -1343,7 +1381,7 @@ function AdminUserVerifyPanel({ open, onOpenChange, user, onUpdated }: AdminUser
                 <Button variant="outline" onClick={handleClose}>
                   Fechar
                 </Button>
-                <Button onClick={() => setTab('edit')}>Ir para edição</Button>
+                <Button onClick={handleStartEdit}>Editar dados</Button>
               </div>
             </TabsContent>
 
@@ -1355,7 +1393,7 @@ function AdminUserVerifyPanel({ open, onOpenChange, user, onUpdated }: AdminUser
                     id="fullName"
                     value={fullName}
                     onChange={e => setFullName(e.target.value)}
-                    disabled={saving}
+                    disabled={saving || !isEditing}
                   />
                   {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
                 </div>
@@ -1366,7 +1404,7 @@ function AdminUserVerifyPanel({ open, onOpenChange, user, onUpdated }: AdminUser
                     id="phone"
                     value={phone}
                     onChange={e => handlePhoneChange(e.target.value)}
-                    disabled={saving}
+                    disabled={saving || !isEditing}
                     placeholder="(11) 99999-9999"
                   />
                   {errors.phone && <p className="text-xs text-destructive">{errors.phone}</p>}
@@ -1378,7 +1416,7 @@ function AdminUserVerifyPanel({ open, onOpenChange, user, onUpdated }: AdminUser
                     id="location"
                     value={location}
                     onChange={e => setLocation(e.target.value)}
-                    disabled={saving}
+                    disabled={saving || !isEditing}
                     placeholder="Cidade/estado ou endereço"
                   />
                   {errors.location && <p className="text-xs text-destructive">{errors.location}</p>}
@@ -1389,7 +1427,7 @@ function AdminUserVerifyPanel({ open, onOpenChange, user, onUpdated }: AdminUser
                   <Select
                     value={userType}
                     onValueChange={value => setUserType(value as UserData['type'])}
-                    disabled={saving}
+                    disabled={saving || !isEditing}
                   >
                     <SelectTrigger id="userType">
                       <SelectValue placeholder="Selecione um tipo" />
@@ -1412,7 +1450,7 @@ function AdminUserVerifyPanel({ open, onOpenChange, user, onUpdated }: AdminUser
                     type="password"
                     value={password}
                     onChange={e => setPassword(e.target.value)}
-                    disabled={saving}
+                    disabled={saving || !isEditing}
                     placeholder="Deixe em branco para não alterar"
                   />
                   {errors.password && <p className="text-xs text-destructive">{errors.password}</p>}
@@ -1422,10 +1460,10 @@ function AdminUserVerifyPanel({ open, onOpenChange, user, onUpdated }: AdminUser
               {errors.root && <p className="text-xs text-destructive">{errors.root}</p>}
 
               <div className="flex justify-between gap-2 pt-4">
-                <Button variant="outline" type="button" onClick={() => setTab('summary')} disabled={saving}>
-                  Cancelar
+                <Button variant="outline" type="button" onClick={handleCancelEdit} disabled={saving}>
+                  Cancelar edição
                 </Button>
-                <Button type="button" onClick={handleSave} disabled={saving}>
+                <Button type="button" onClick={handleSave} disabled={saving || !isEditing}>
                   {saving ? 'Salvando...' : 'Salvar alterações'}
                 </Button>
               </div>
