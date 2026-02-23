@@ -173,10 +173,9 @@ export function SpecialtySelector({
             aria-expanded={open}
             className={cn(
               'w-full h-11 justify-between',
-              !canAddMore && 'opacity-50 cursor-not-allowed',
               disabled && 'opacity-50 cursor-not-allowed'
             )}
-            disabled={disabled || !canAddMore}
+            disabled={disabled}
           >
             <span className="text-left truncate">
               {selectedSpecialties.length === 0
