@@ -1,21 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { profileViewsService } from '@/lib/profile-views-service'
 import { createClient } from '@/lib/supabase/server'
 
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient()
 
-    const body = await request.json()
+    const body = await request.json().catch(() => ({} as any))
 
-    const { nutritionistId, referrer, sessionId, userAgent } = body
+    const userAgentHeader = request.headers.get('user-agent') || undefined
+    const refHeader =
+      request.headers.get('referer') ||
+      request.headers.get('referrer') ||
+      undefined
 
-    if (!userAgent) {
-      return NextResponse.json(
-        { error: 'Requisição mal recebida' },
-        { status: 400 }
-      )
-    }
+    const nutritionistId = (body?.nutritionistId as string) || undefined
+    const sessionId = (body?.sessionId as string) || undefined
+    const referrer = (body?.referrer as string) || refHeader || undefined
+    const userAgent = (body?.userAgent as string) || userAgentHeader || 'unknown'
 
     if (!nutritionistId || typeof nutritionistId !== 'string') {
       return NextResponse.json(
@@ -28,7 +29,7 @@ export async function POST(request: NextRequest) {
       p_nutritionist_id: nutritionistId,
       p_session_id: sessionId,
       p_referrer: referrer,
-      p_user_agent: navigator.userAgent,
+      p_user_agent: userAgent,
     })
     if (error) {
       return NextResponse.json(
