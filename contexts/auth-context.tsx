@@ -13,6 +13,7 @@ import { createSupabaseClient } from '@/lib/supabase'
 import { getCurrentUser, getUserProfile } from '@/lib/auth'
 import { useIsClient } from '@/hooks/use-local-storage'
 import { useAuthSync } from '@/hooks/use-auth-sync'
+import { toast } from '@/components/ui/use-toast'
 import type { User } from '@supabase/supabase-js'
 import type { UserProfile, NutritionistProfile, PatientProfile, CompanyProfile } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
@@ -320,6 +321,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       loadUser()
     }
   }, [isClient])
+
+  const bannedHandledRef = useRef(false)
+
+  useEffect(() => {
+    if (!isClient) return
+
+    const isBanned =
+      (userProfile as any)?.is_banned === true ||
+      (userProfile as any)?.status === 'banido'
+
+    if (!isBanned) {
+      bannedHandledRef.current = false
+      return
+    }
+
+    if (bannedHandledRef.current) return
+    bannedHandledRef.current = true
+
+    toast({
+      title: 'Conta banida',
+      description: 'Sua conta foi banida. Entre em contato com o suporte.',
+      variant: 'destructive',
+    })
+
+    supabase.auth
+      .signOut()
+      .catch(() => {})
+      .finally(() => {
+        setUser(null)
+        setUserProfile(null)
+        setNutritionistProfile(null)
+        setPatientProfile(null)
+        setCompanyProfile(null)
+        router.replace('/login')
+      })
+  }, [ isClient, userProfile ])
 
   const value = useMemo(
     () => ({
