@@ -73,6 +73,8 @@
   body {
     @apply bg-background text-foreground;
   }
+  html { font-size: clamp(14px, 1.2vw, 16px); }
+  button { touch-action: manipulation; }
 }
 
 /* Animações personalizadas */
@@ -266,7 +268,7 @@
 }
 
 /* Responsive text utilities */
-@media (max-width: 768px) {
+@media (max-width: 640px) {
   .mobile-padding {
     padding-left: 1rem;
     padding-right: 1rem;
@@ -279,7 +281,7 @@
 }
 
 /* Melhorias de responsividade */
-@media (max-width: 768px) {
+@media (max-width: 640px) {
   .mobile-padding {
     padding-left: 1rem;
     padding-right: 1rem;
@@ -333,7 +335,7 @@
 }
 
 /* Sidebar mobile específico */
-@media (max-width: 767px) {
+@media (max-width: 640px) {
   [data-sidebar='sidebar'][data-mobile='true'] {
     transform: translateX(0);
   }

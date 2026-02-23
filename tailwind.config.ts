@@ -182,6 +182,13 @@ const config: Config = {
     'bg-gray-100',
   ],
   theme: {
+    screens: {
+      sm: '640px',
+      md: '641px',
+      lg: '1025px',
+      xl: '1280px',
+      '2xl': '1536px',
+    },
     container: {
       center: true,
       padding: '2rem',
