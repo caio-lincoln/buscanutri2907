@@ -86,6 +86,74 @@ const userStatusColors = {
   banido: 'bg-red-100 text-red-700',
 }
 
+function unlockUIHard() {
+  if (typeof document === 'undefined') return
+  try {
+    document.body.style.overflow = 'auto'
+    document.body.style.pointerEvents = 'auto'
+  } catch {}
+  try {
+    document.documentElement.classList.remove('overflow-hidden')
+    document.body.classList.remove('overflow-hidden', 'pointer-events-none')
+  } catch {}
+}
+
+type SafeActionResult<T = unknown> = {
+  ok: boolean
+  data?: T
+  error?: string
+}
+
+async function runSafeAction<T>(
+  actionKey: string,
+  fn: () => Promise<T>,
+): Promise<SafeActionResult<T>> {
+  if (typeof window === 'undefined') {
+    try {
+      const data = await fn()
+      return { ok: true, data }
+    } catch (e: any) {
+      return { ok: false, error: e?.message || 'UNKNOWN_ERROR' }
+    }
+  }
+
+  const anyWindow = window as any
+  if (anyWindow.__ACTION_LOCKS__?.[actionKey]) {
+    return { ok: false, error: 'ACTION_LOCKED' }
+  }
+
+  anyWindow.__ACTION_LOCKS__ = anyWindow.__ACTION_LOCKS__ || {}
+  anyWindow.__ACTION_LOCKS__[actionKey] = true
+
+  try {
+    unlockUIHard()
+    const data = await fn()
+    return { ok: true, data }
+  } catch (e: any) {
+    return { ok: false, error: e?.message || 'UNKNOWN_ERROR' }
+  } finally {
+    anyWindow.__ACTION_LOCKS__[actionKey] = false
+    unlockUIHard()
+  }
+}
+
+function checkOverlaysDev(source: string) {
+  if (typeof document === 'undefined') return
+  if (typeof window === 'undefined') return
+  if (process.env.NODE_ENV === 'production') return
+  try {
+    const overlays = document.querySelectorAll('[data-overlay="true"]')
+    if (overlays.length > 1) {
+      // eslint-disable-next-line no-console
+      console.warn('[overlay-check]', {
+        source,
+        count: overlays.length,
+        overlays,
+      })
+    }
+  } catch {}
+}
+
 type ModalAction = 'ban' | 'delete' | null
 
 export function UsersTab() {
@@ -130,6 +198,23 @@ export function UsersTab() {
   useEffect(() => {
     void fetchUsers()
   }, [])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const id = window.setInterval(() => {
+      if (verifyModalOpen) return
+      if (typeof document === 'undefined') return
+      const overflow = document.body.style.overflow
+      const pointerEvents = document.body.style.pointerEvents
+      if (overflow === 'hidden' || pointerEvents === 'none') {
+        document.body.style.overflow = 'auto'
+        document.body.style.pointerEvents = 'auto'
+      }
+    }, 500)
+    return () => {
+      window.clearInterval(id)
+    }
+  }, [verifyModalOpen])
 
   // Filtragem local eficiente
   useEffect(() => {
@@ -353,6 +438,7 @@ export function UsersTab() {
 
   const handleConfirmDelete = async () => {
     if (!selectedUser) return
+    if (modalSubmitting) return
     setModalSubmitting(true)
     try {
       const idForOps = getUserIdForOps(selectedUser)
@@ -364,25 +450,30 @@ export function UsersTab() {
         })
         return
       }
-      const url = `/api/admin/users/${idForOps}/delete`
-      const options: RequestInit = {
-        method: 'DELETE',
-        headers: { 'x-production-auth': 'liberar_producao' },
-      }
-      const result = await execAdmin('delete', url, options)
-      if (!result.ok) return
-      if (result.edited) {
-        toast({
-          title: 'Usuário excluído',
-          description: 'O usuário foi removido com sucesso.',
-        })
-      } else {
-        toast({
-          title: 'Nenhuma alteração aplicada',
-          description: 'O usuário já estava excluído ou inativo.',
-        })
-      }
-      await handleActionSuccess(result.edited)
+
+      const actionKey = `delete-user-${idForOps}`
+
+      await runSafeAction(actionKey, async () => {
+        const url = `/api/admin/users/${idForOps}/delete`
+        const options: RequestInit = {
+          method: 'DELETE',
+          headers: { 'x-production-auth': 'liberar_producao' },
+        }
+        const result = await execAdmin('delete', url, options)
+        if (!result.ok) return
+        if (result.edited) {
+          toast({
+            title: 'Usuário excluído',
+            description: 'O usuário foi removido com sucesso.',
+          })
+        } else {
+          toast({
+            title: 'Nenhuma alteração aplicada',
+            description: 'O usuário já estava excluído ou inativo.',
+          })
+        }
+        await handleActionSuccess(result.edited)
+      })
     } catch (err: any) {
       toast({
         title: 'Erro ao excluir',
@@ -396,6 +487,7 @@ export function UsersTab() {
 
   const handleConfirmBan = async () => {
     if (!selectedUser) return
+    if (modalSubmitting) return
     setModalSubmitting(true)
     try {
       const idForOps = getUserIdForOps(selectedUser)
@@ -410,46 +502,49 @@ export function UsersTab() {
 
       const isCurrentlyBanned = selectedUser.is_banned || selectedUser.status === 'banido'
       const action: 'ban' | 'unban' = isCurrentlyBanned ? 'unban' : 'ban'
+      const actionKey = `ban-user-${idForOps}`
 
-      const res = await fetch('/api/admin/users/ban-toggle', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          userId: idForOps,
-          action,
-        }),
-      })
-
-      const json = await res.json().catch(() => null)
-      const data = json?.data ?? json
-
-      if (!res.ok || (data && data.ok === false)) {
-        const message =
-          data?.error?.message ||
-          data?.message ||
-          (action === 'ban'
-            ? 'Falha ao banir usuário. Tente novamente.'
-            : 'Falha ao desbanir usuário. Tente novamente.')
-        toast({
-          title: 'Erro',
-          description: message,
-          variant: 'destructive',
+      await runSafeAction(actionKey, async () => {
+        const res = await fetch('/api/admin/users/ban-toggle', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            userId: idForOps,
+            action,
+          }),
         })
-        return
-      }
 
-      toast({
-        title: action === 'ban' ? 'Usuário banido' : 'Usuário desbanido',
-        description:
-          action === 'ban'
-            ? 'O usuário foi banido e não poderá mais acessar a plataforma.'
-            : 'O usuário foi desbanido e poderá voltar a acessar a plataforma.',
+        const json = await res.json().catch(() => null)
+        const data = json?.data ?? json
+
+        if (!res.ok || (data && data.ok === false)) {
+          const message =
+            data?.error?.message ||
+            data?.message ||
+            (action === 'ban'
+              ? 'Falha ao banir usuário. Tente novamente.'
+              : 'Falha ao desbanir usuário. Tente novamente.')
+          toast({
+            title: 'Erro',
+            description: message,
+            variant: 'destructive',
+          })
+          return
+        }
+
+        toast({
+          title: action === 'ban' ? 'Usuário banido' : 'Usuário desbanido',
+          description:
+            action === 'ban'
+              ? 'O usuário foi banido e não poderá mais acessar a plataforma.'
+              : 'O usuário foi desbanido e poderá voltar a acessar a plataforma.',
+        })
+
+        await handleActionSuccess(true)
       })
-
-      await handleActionSuccess(true)
     } catch (err: any) {
       toast({
         title: 'Erro',
@@ -689,7 +784,7 @@ export function UsersTab() {
         </CardContent>
       </Card>
 
-      {selectedUser && (
+      {verifyModalOpen && selectedUser && (
         <AdminUserVerifyPanel
           open={verifyModalOpen}
           onOpenChange={open => {
@@ -825,7 +920,9 @@ function AdminUserVerifyPanel({ open, onOpenChange, user, onUpdated }: AdminUser
   const [loadingDocs, setLoadingDocs] = useState(false)
   const [docsError, setDocsError] = useState<string | null>(null)
   const [docsLoaded, setDocsLoaded] = useState(false)
-  const [crnActionLoading, setCrnActionLoading] = useState(false)
+  const [crnApproveLoading, setCrnApproveLoading] = useState(false)
+  const [crnUnverifyLoading, setCrnUnverifyLoading] = useState(false)
+  const [crnRejectLoading, setCrnRejectLoading] = useState(false)
   const [crnReason, setCrnReason] = useState('')
   const [docStatusLoadingId, setDocStatusLoadingId] = useState<string | null>(null)
   const [viewerDoc, setViewerDoc] = useState<NutritionistDocument | null>(null)
@@ -839,14 +936,13 @@ function AdminUserVerifyPanel({ open, onOpenChange, user, onUpdated }: AdminUser
   } | null>(null)
 
   useEffect(() => {
-    if (open) {
-      document.body.style.overflow = 'hidden'
+    if (typeof document === 'undefined') return
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = 'auto'
       document.body.style.pointerEvents = 'auto'
-      return
     }
-    document.body.style.overflow = 'auto'
-    document.body.style.pointerEvents = 'auto'
-  }, [open])
+  }, [])
 
   useEffect(() => {
     if (!open) {
@@ -1110,93 +1206,95 @@ function AdminUserVerifyPanel({ open, onOpenChange, user, onUpdated }: AdminUser
     })
 
     try {
-      const phoneDigits = phone.replace(/\D/g, '')
-      const payload: any = {
-        name: fullName.trim(),
-        user_type: userType,
-        phone: phoneDigits || undefined,
-        location: location.trim() || undefined,
-      }
+      const actionKey = `update-user-${idForOps}`
 
-      const res = await fetch(`/api/admin/users/${idForOps}/update`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify(payload),
-      })
+      await runSafeAction(actionKey, async () => {
+        const phoneDigits = phone.replace(/\D/g, '')
+        const payload: any = {
+          name: fullName.trim(),
+          user_type: userType,
+          phone: phoneDigits || undefined,
+          location: location.trim() || undefined,
+        }
 
-      const json = await res.json().catch(() => null)
-      const data = json?.data ?? json
-
-      if (!res.ok || (data && (data.ok === false || data.success === false))) {
-        const message =
-          data?.error?.message ||
-          data?.error ||
-          data?.message ||
-          'Falha ao atualizar usuário. Tente novamente.'
-        console.error('Erro ao atualizar usuário', { status: res.status, data })
-        toast({
-          title: 'Erro ao salvar',
-          description: message,
-          variant: 'destructive',
-        })
-        setSaving(false)
-        return
-      }
-
-      if (password) {
-        const resPassword = await fetch(`/api/admin/users/${idForOps}/password`, {
+        const res = await fetch(`/api/admin/users/${idForOps}/update`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           credentials: 'include',
-          body: JSON.stringify({ password }),
+          body: JSON.stringify(payload),
         })
 
-        const jsonPassword = await resPassword.json().catch(() => null)
-        const dataPassword = jsonPassword?.data ?? jsonPassword
+        const json = await res.json().catch(() => null)
+        const data = json?.data ?? json
 
-        if (!resPassword.ok || (dataPassword && (dataPassword.ok === false || dataPassword.success === false))) {
+        if (!res.ok || (data && (data.ok === false || data.success === false))) {
           const message =
-            dataPassword?.error?.message ||
-            dataPassword?.error ||
-            dataPassword?.message ||
-            'Falha ao alterar senha. Tente novamente.'
-          console.error('Erro ao alterar senha do usuário', { status: resPassword.status, data: dataPassword })
+            data?.error?.message ||
+            data?.error ||
+            data?.message ||
+            'Falha ao atualizar usuário. Tente novamente.'
+          console.error('Erro ao atualizar usuário', { status: res.status, data })
           toast({
-            title: 'Erro ao alterar senha',
+            title: 'Erro ao salvar',
             description: message,
             variant: 'destructive',
           })
           setSaving(false)
           return
         }
-      }
 
-      toast({
-        title: 'Usuário atualizado',
-        description: password ? 'Dados e senha atualizados com sucesso.' : 'Dados atualizados com sucesso.',
+        if (password) {
+          const resPassword = await fetch(`/api/admin/users/${idForOps}/password`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify({ password }),
+          })
+
+          const jsonPassword = await resPassword.json().catch(() => null)
+          const dataPassword = jsonPassword?.data ?? jsonPassword
+
+          if (!resPassword.ok || (dataPassword && (dataPassword.ok === false || dataPassword.success === false))) {
+            const message =
+              dataPassword?.error?.message ||
+              dataPassword?.error ||
+              dataPassword?.message ||
+              'Falha ao alterar senha. Tente novamente.'
+            console.error('Erro ao alterar senha do usuário', { status: resPassword.status, data: dataPassword })
+            toast({
+              title: 'Erro ao alterar senha',
+              description: message,
+              variant: 'destructive',
+            })
+            setSaving(false)
+            return
+          }
+        }
+
+        toast({
+          title: 'Usuário atualizado',
+          description: password ? 'Dados e senha atualizados com sucesso.' : 'Dados atualizados com sucesso.',
+        })
+
+        try {
+          await onUpdated()
+        } catch (e) {}
+
+        setPassword('')
+        setInitialValues({
+          fullName: fullName.trim(),
+          phone,
+          location: location.trim(),
+          userType,
+        })
+        setIsEditing(false)
+        setTab('summary')
+        setSaving(false)
       })
-
-      try {
-        await onUpdated()
-      } catch (e) {
-        // silent
-      }
-
-      setPassword('')
-      setInitialValues({
-        fullName: fullName.trim(),
-        phone,
-        location: location.trim(),
-        userType,
-      })
-      setIsEditing(false)
-      setTab('summary')
-      setSaving(false)
     } catch (e) {
       toast({
         title: 'Erro ao salvar',
@@ -1224,28 +1322,31 @@ function AdminUserVerifyPanel({ open, onOpenChange, user, onUpdated }: AdminUser
   const updateDocStatus = async (docId: string, status: 'pending' | 'verified' | 'rejected') => {
     setDocStatusLoadingId(docId)
     try {
-      const res = await fetch(`/api/admin/documents/${docId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({ status }),
-      })
-      const json = await res.json().catch(() => null)
-      if (!res.ok || !json?.ok) {
-        const message = json?.message || 'Falha ao atualizar status do documento.'
-        toast({
-          title: 'Erro ao atualizar documento',
-          description: message,
-          variant: 'destructive',
+      const actionKey = `doc-status-${docId}`
+      await runSafeAction(actionKey, async () => {
+        const res = await fetch(`/api/admin/documents/${docId}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({ status }),
         })
-        return
-      }
-      const updated = json.document as NutritionistDocument
-      setDocs(prev =>
-        prev.map(doc => (doc.id === docId ? { ...doc, ...updated, public_url: doc.public_url || updated.public_url } : doc)),
-      )
+        const json = await res.json().catch(() => null)
+        if (!res.ok || !json?.ok) {
+          const message = json?.message || 'Falha ao atualizar status do documento.'
+          toast({
+            title: 'Erro ao atualizar documento',
+            description: message,
+            variant: 'destructive',
+          })
+          return
+        }
+        const updated = json.document as NutritionistDocument
+        setDocs(prev =>
+          prev.map(doc => (doc.id === docId ? { ...doc, ...updated, public_url: doc.public_url || updated.public_url } : doc)),
+        )
+      })
     } catch (e) {
       toast({
         title: 'Erro ao atualizar documento',
@@ -1260,97 +1361,91 @@ function AdminUserVerifyPanel({ open, onOpenChange, user, onUpdated }: AdminUser
   const handleCrnApprove = async () => {
     if (!profile?.id) return
     try {
-      setCrnActionLoading(true)
-      const ok = await approveNutritionist(profile.id as string)
-      if (!ok) {
+      setCrnApproveLoading(true)
+      const actionKey = `crn-approve-${profile.id as string}`
+      await runSafeAction(actionKey, async () => {
+        const ok = await approveNutritionist(profile.id as string)
+        if (!ok) {
+          toast({
+            title: 'Erro ao aprovar nutricionista',
+            description: 'Falha ao aprovar nutricionista. Tente novamente.',
+            variant: 'destructive',
+          })
+          return
+        }
         toast({
-          title: 'Erro ao aprovar nutricionista',
-          description: 'Falha ao aprovar nutricionista. Tente novamente.',
-          variant: 'destructive',
+          title: 'Nutricionista aprovado',
+          description: 'O nutricionista foi marcado como verificado.',
         })
-        return
-      }
-      toast({
-        title: 'Nutricionista aprovado',
-        description: 'O nutricionista foi marcado como verificado.',
+        setProfile(prev => (prev ? { ...prev, is_verified: true } : prev))
+        try {
+          await onUpdated()
+        } catch (e) {}
       })
-      setProfile(prev => (prev ? { ...prev, is_verified: true } : prev))
-      try {
-        await onUpdated()
-      } catch (e) {
-        // silent
-      }
     } finally {
-      setCrnActionLoading(false)
-      if (typeof document !== 'undefined' && document.body) {
-        document.body.style.overflow = 'auto'
-        document.body.style.pointerEvents = 'auto'
-      }
+      setCrnApproveLoading(false)
+      checkOverlaysDev('crn-approve')
     }
   }
 
   const handleCrnUnverify = async () => {
     if (!profile?.id) return
     try {
-      setCrnActionLoading(true)
-      const ok = await unverifyNutritionist(profile.id as string)
-      if (!ok) {
+      setCrnUnverifyLoading(true)
+      const actionKey = `crn-unverify-${profile.id as string}`
+      await runSafeAction(actionKey, async () => {
+        const ok = await unverifyNutritionist(profile.id as string)
+        if (!ok) {
+          toast({
+            title: 'Erro ao alterar status',
+            description: 'Falha ao voltar para pendente. Tente novamente.',
+            variant: 'destructive',
+          })
+          return
+        }
         toast({
-          title: 'Erro ao alterar status',
-          description: 'Falha ao voltar para pendente. Tente novamente.',
-          variant: 'destructive',
+          title: 'Status atualizado',
+          description: 'O nutricionista foi marcado como pendente.',
         })
-        return
-      }
-      toast({
-        title: 'Status atualizado',
-        description: 'O nutricionista foi marcado como pendente.',
+        setProfile(prev => (prev ? { ...prev, is_verified: false } : prev))
+        try {
+          await onUpdated()
+        } catch (e) {}
       })
-      setProfile(prev => (prev ? { ...prev, is_verified: false } : prev))
-      try {
-        await onUpdated()
-      } catch (e) {
-        // silent
-      }
     } finally {
-      setCrnActionLoading(false)
-      if (typeof document !== 'undefined' && document.body) {
-        document.body.style.overflow = 'auto'
-        document.body.style.pointerEvents = 'auto'
-      }
+      setCrnUnverifyLoading(false)
+      checkOverlaysDev('crn-unverify')
     }
   }
 
   const handleCrnReject = async () => {
     if (!profile?.id) return
     try {
-      setCrnActionLoading(true)
-      const reason = crnReason.trim() || 'Sem motivo informado'
-      const ok = await rejectNutritionist(profile.id as string, reason)
-      if (!ok) {
+      setCrnRejectLoading(true)
+      const actionKey = `crn-reject-${profile.id as string}`
+      await runSafeAction(actionKey, async () => {
+        const reason = crnReason.trim() || 'Sem motivo informado'
+        const ok = await rejectNutritionist(profile.id as string, reason)
+        if (!ok) {
+          toast({
+            title: 'Erro ao rejeitar nutricionista',
+            description: 'Falha ao rejeitar nutricionista. Tente novamente.',
+            variant: 'destructive',
+          })
+          return
+        }
         toast({
-          title: 'Erro ao rejeitar nutricionista',
-          description: 'Falha ao rejeitar nutricionista. Tente novamente.',
-          variant: 'destructive',
+          title: 'Nutricionista rejeitado',
+          description: 'A rejeição foi registrada.',
         })
-        return
-      }
-      toast({
-        title: 'Nutricionista rejeitado',
-        description: 'A rejeição foi registrada.',
+        setProfile(prev => (prev ? { ...prev, is_verified: false } : prev))
+        try {
+          await onUpdated()
+        } catch (e) {}
       })
-      setProfile(prev => (prev ? { ...prev, is_verified: false } : prev))
-      try {
-        await onUpdated()
-      } catch (e) {
-        // silent
-      }
     } finally {
-      setCrnActionLoading(false)
-      if (typeof document !== 'undefined' && document.body) {
-        document.body.style.overflow = 'auto'
-        document.body.style.pointerEvents = 'auto'
-      }
+      setCrnRejectLoading(false)
+      checkOverlaysDev('crn-reject')
     }
   }
 
@@ -1662,7 +1757,7 @@ function AdminUserVerifyPanel({ open, onOpenChange, user, onUpdated }: AdminUser
                             id="crnReason"
                             value={crnReason}
                             onChange={e => setCrnReason(e.target.value)}
-                            disabled={crnActionLoading}
+                            disabled={crnApproveLoading || crnUnverifyLoading || crnRejectLoading}
                             placeholder="Opcional"
                           />
                         </div>
@@ -1671,27 +1766,27 @@ function AdminUserVerifyPanel({ open, onOpenChange, user, onUpdated }: AdminUser
                             size="sm"
                             type="button"
                             onClick={handleCrnApprove}
-                            disabled={crnActionLoading}
+                            disabled={crnApproveLoading || crnUnverifyLoading || crnRejectLoading}
                           >
-                            {crnActionLoading ? 'Processando...' : 'Marcar como verificado'}
+                            {crnApproveLoading ? 'Processando...' : 'Marcar como verificado'}
                           </Button>
                           <Button
                             size="sm"
                             type="button"
                             variant="outline"
                             onClick={handleCrnUnverify}
-                            disabled={crnActionLoading}
+                            disabled={crnApproveLoading || crnUnverifyLoading || crnRejectLoading}
                           >
-                            Voltar para pendente
+                            {crnUnverifyLoading ? 'Processando...' : 'Voltar para pendente'}
                           </Button>
                           <Button
                             size="sm"
                             type="button"
                             variant="destructive"
                             onClick={handleCrnReject}
-                            disabled={crnActionLoading}
+                            disabled={crnApproveLoading || crnUnverifyLoading || crnRejectLoading}
                           >
-                            Reprovar
+                            {crnRejectLoading ? 'Processando...' : 'Reprovar'}
                           </Button>
                         </div>
                       </div>

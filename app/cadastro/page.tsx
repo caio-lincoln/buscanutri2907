@@ -81,6 +81,7 @@ function SubmittingOverlay({ message = 'Enviando seu cadastro...' }: { message?:
       className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm flex items-center justify-center"
       role="alert"
       aria-live="assertive"
+      data-overlay="true"
     >
       <div className="bg-white rounded-2xl shadow-xl p-6 w-[90%] max-w-sm text-center border border-gray-100">
         <Loader2 className="h-6 w-6 animate-spin mx-auto mb-3 text-[#4AB0D9]" aria-hidden />
