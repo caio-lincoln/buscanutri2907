@@ -51,6 +51,7 @@ import {
   Eye,
   ExternalLink,
   Download,
+  Undo2,
 } from 'lucide-react'
 import { type UserData, type NutritionistDocument, getAllUsers, getNutritionistDocuments, approveNutritionist, rejectNutritionist, unverifyNutritionist } from '@/lib/admin-data-service'
 import {
@@ -155,6 +156,20 @@ function checkOverlaysDev(source: string) {
 }
 
 type ModalAction = 'ban' | 'delete' | null
+
+type VerificationStatus = 'pendente' | 'verificado' | 'reprovado'
+
+function getVerificationStatusFromProfile(profile: any | null, user: UserData): VerificationStatus {
+  const raw = (profile?.verification_status as string | undefined) || ''
+  const normalized = raw.toLowerCase()
+  if (profile?.is_verified || user.is_verified || normalized === 'aprovado' || normalized === 'verificado') {
+    return 'verificado'
+  }
+  if (normalized === 'reprovado' || normalized === 'rejected') {
+    return 'reprovado'
+  }
+  return 'pendente'
+}
 
 export function UsersTab() {
   const { hasPermission } = usePermissions()
@@ -908,6 +923,7 @@ function AdminUserVerifyPanel({ open, onOpenChange, user, onUpdated }: AdminUser
   const [loadingProfile, setLoadingProfile] = useState(false)
   const [profileError, setProfileError] = useState<string | null>(null)
   const [profile, setProfile] = useState<any | null>(null)
+  const [verificationStatus, setVerificationStatus] = useState<VerificationStatus>('pendente')
   const [saving, setSaving] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
 
@@ -1005,7 +1021,8 @@ function AdminUserVerifyPanel({ open, onOpenChange, user, onUpdated }: AdminUser
           return
         }
 
-        setProfile(data.profile || null)
+        const nextProfile = data.profile || null
+        setProfile(nextProfile)
 
         const baseName =
           data.profile?.full_name || data.profile?.company_name || user.name || user.email.split('@')[0] || ''
@@ -1023,6 +1040,7 @@ function AdminUserVerifyPanel({ open, onOpenChange, user, onUpdated }: AdminUser
           location: profileLocation || '',
           userType: user.type,
         })
+        setVerificationStatus(getVerificationStatusFromProfile(nextProfile, user))
       } catch (e) {
         setProfileError('Falha ao carregar perfil do usuário. Tente novamente.')
       } finally {
@@ -1112,9 +1130,10 @@ function AdminUserVerifyPanel({ open, onOpenChange, user, onUpdated }: AdminUser
 
   const crnStatusLabel = useMemo(() => {
     if (!profile) return 'Indisponível'
-    if (profile.is_verified) return 'Verificado'
+    if (verificationStatus === 'verificado') return 'Verificado'
+    if (verificationStatus === 'reprovado') return 'Reprovado'
     return 'Pendente'
-  }, [profile])
+  }, [profile, verificationStatus])
 
   const handlePhoneChange = (value: string) => {
     const formatted = formatPhoneDisplay(value)
@@ -1378,6 +1397,7 @@ function AdminUserVerifyPanel({ open, onOpenChange, user, onUpdated }: AdminUser
           description: 'O nutricionista foi marcado como verificado.',
         })
         setProfile(prev => (prev ? { ...prev, is_verified: true } : prev))
+        setVerificationStatus('verificado')
         try {
           await onUpdated()
         } catch (e) {}
@@ -1408,6 +1428,7 @@ function AdminUserVerifyPanel({ open, onOpenChange, user, onUpdated }: AdminUser
           description: 'O nutricionista foi marcado como pendente.',
         })
         setProfile(prev => (prev ? { ...prev, is_verified: false } : prev))
+        setVerificationStatus('pendente')
         try {
           await onUpdated()
         } catch (e) {}
@@ -1439,6 +1460,7 @@ function AdminUserVerifyPanel({ open, onOpenChange, user, onUpdated }: AdminUser
           description: 'A rejeição foi registrada.',
         })
         setProfile(prev => (prev ? { ...prev, is_verified: false } : prev))
+        setVerificationStatus('reprovado')
         try {
           await onUpdated()
         } catch (e) {}
@@ -1749,45 +1771,9 @@ function AdminUserVerifyPanel({ open, onOpenChange, user, onUpdated }: AdminUser
                         </div>
                         <div className="flex items-center justify-between">
                           <span className="text-muted-foreground">Status de verificação</span>
-                          <Badge variant={profile?.is_verified ? 'default' : 'outline'}>{crnStatusLabel}</Badge>
-                        </div>
-                        <div className="space-y-1">
-                          <Label htmlFor="crnReason">Motivo/observação (para rejeição)</Label>
-                          <Input
-                            id="crnReason"
-                            value={crnReason}
-                            onChange={e => setCrnReason(e.target.value)}
-                            disabled={crnApproveLoading || crnUnverifyLoading || crnRejectLoading}
-                            placeholder="Opcional"
-                          />
-                        </div>
-                        <div className="flex flex-wrap gap-2 pt-2">
-                          <Button
-                            size="sm"
-                            type="button"
-                            onClick={handleCrnApprove}
-                            disabled={crnApproveLoading || crnUnverifyLoading || crnRejectLoading}
-                          >
-                            {crnApproveLoading ? 'Processando...' : 'Marcar como verificado'}
-                          </Button>
-                          <Button
-                            size="sm"
-                            type="button"
-                            variant="outline"
-                            onClick={handleCrnUnverify}
-                            disabled={crnApproveLoading || crnUnverifyLoading || crnRejectLoading}
-                          >
-                            {crnUnverifyLoading ? 'Processando...' : 'Voltar para pendente'}
-                          </Button>
-                          <Button
-                            size="sm"
-                            type="button"
-                            variant="destructive"
-                            onClick={handleCrnReject}
-                            disabled={crnApproveLoading || crnUnverifyLoading || crnRejectLoading}
-                          >
-                            {crnRejectLoading ? 'Processando...' : 'Reprovar'}
-                          </Button>
+                          <Badge variant={verificationStatus === 'verificado' ? 'default' : 'outline'}>
+                            {crnStatusLabel}
+                          </Badge>
                         </div>
                       </div>
                     </AccordionContent>
@@ -1952,6 +1938,76 @@ function AdminUserVerifyPanel({ open, onOpenChange, user, onUpdated }: AdminUser
                   </AccordionItem>
                 )}
               </Accordion>
+
+              {userType === 'nutricionista' && (
+                <div className="sticky bottom-0 mt-4 pt-4 bg-background border-t">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm font-medium">Ações de verificação</div>
+                      <div className="text-xs text-muted-foreground">
+                        Status atual:{' '}
+                        {verificationStatus === 'pendente'
+                          ? 'Pendente'
+                          : verificationStatus === 'verificado'
+                            ? 'Verificado'
+                            : 'Reprovado'}
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="space-y-1">
+                        <Label htmlFor="crnReason">Motivo/observação (para rejeição)</Label>
+                        <Input
+                          id="crnReason"
+                          value={crnReason}
+                          onChange={e => setCrnReason(e.target.value)}
+                          disabled={crnApproveLoading || crnUnverifyLoading || crnRejectLoading}
+                          placeholder="Opcional"
+                        />
+                      </div>
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        {verificationStatus === 'pendente' && (
+                          <>
+                            <Button
+                              size="lg"
+                              type="button"
+                              onClick={handleCrnApprove}
+                              disabled={crnApproveLoading || crnUnverifyLoading || crnRejectLoading}
+                              className="flex-1 justify-center"
+                            >
+                              <CheckCircle className="mr-2 h-4 w-4" />
+                              {crnApproveLoading ? 'Processando...' : 'Aprovar usuário'}
+                            </Button>
+                            <Button
+                              size="lg"
+                              type="button"
+                              variant="destructive"
+                              onClick={handleCrnReject}
+                              disabled={crnApproveLoading || crnUnverifyLoading || crnRejectLoading}
+                              className="flex-1 justify-center"
+                            >
+                              <XCircle className="mr-2 h-4 w-4" />
+                              {crnRejectLoading ? 'Processando...' : 'Reprovar usuário'}
+                            </Button>
+                          </>
+                        )}
+                        {(verificationStatus === 'verificado' || verificationStatus === 'reprovado') && (
+                          <Button
+                            size="lg"
+                            type="button"
+                            variant="outline"
+                            onClick={handleCrnUnverify}
+                            disabled={crnApproveLoading || crnUnverifyLoading || crnRejectLoading}
+                            className="flex-1 justify-center"
+                          >
+                            <Undo2 className="mr-2 h-4 w-4" />
+                            {crnUnverifyLoading ? 'Processando...' : 'Voltar para pendente'}
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <Dialog open={viewerOpen} onOpenChange={setViewerOpen}>
                 <DialogContent className="max-w-3xl">
