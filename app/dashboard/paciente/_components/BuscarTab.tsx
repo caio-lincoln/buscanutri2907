@@ -599,9 +599,12 @@ export default function BuscarTab() {
                           {/* Header with name and verification */}
                           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
                             <div className="min-w-0 flex-1">
-                              <h3 className="font-bold text-[#1E1D40] text-base md:text-lg lg:text-xl truncate">
+                              <Link
+                                href={nutritionist.id ? `/nutricionistas/${nutritionist.id}` : '/nutricionistas'}
+                                className="font-bold text-[#1E1D40] text-base md:text-lg lg:text-xl truncate cursor-pointer hover:underline"
+                              >
                                 {nutritionist.full_name}
-                              </h3>
+                              </Link>
                               <p className="text-xs md:text-sm text-gray-600 font-medium">
                                 CRN: {nutritionist.crn}
                               </p>

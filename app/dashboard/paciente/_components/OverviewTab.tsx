@@ -24,6 +24,7 @@ import { useRouter } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from '../../../../components/ui/avatar';
 import { createSupabaseClient } from '../../../../lib/supabase';
 import { PermissionWrapper, usePermissions } from '../../../../components/ui/permission-wrapper';
+import Link from 'next/link'
 
 async function fetchPatientStats(p_patient_id: string, supabase: any): Promise<PatientStats> {
   const { data, error } = await supabase
@@ -378,9 +379,12 @@ export default function OverviewTab({ setActiveTab, setIsAnamneseModalOpen }: { 
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-[#1E1D40]">
+                    <Link
+                      href={nutritionist.nutritionist_profiles?.id ? `/nutricionistas/${nutritionist.nutritionist_profiles.id}` : '/nutricionistas'}
+                      className="font-semibold text-[#1E1D40] cursor-pointer hover:underline"
+                    >
                       {nutritionist.nutritionist_profiles?.full_name}
-                    </p>
+                    </Link>
                     <p className="text-sm text-gray-600">
                       {nutritionist.nutritionist_profiles?.specialties?.join(
                         ', '

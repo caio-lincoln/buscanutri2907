@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -768,9 +769,12 @@ export default function AgendarPage() {
                               </AvatarFallback>
                             </Avatar>
                             <div className="flex-1 min-w-0">
-                              <h3 className="font-semibold text-lg truncate">
+                              <Link
+                                href={nutritionist.id ? `/nutricionistas/${nutritionist.id}` : '/nutricionistas'}
+                                className="font-semibold text-lg truncate cursor-pointer hover:underline"
+                              >
                                 {nutritionist.full_name}
-                              </h3>
+                              </Link>
                               <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
                                 <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                                 <span>{(nutritionist.rating ?? 0).toFixed(1)}</span>

@@ -302,7 +302,12 @@ export default function PresenciaisPage() {
                           {STATUS_CONFIG[a.status].label}
                         </span>
                       </div>
-                      <h3 className="text-lg font-semibold mt-2">{a.nutritionist?.full_name || 'Nutricionista'}</h3>
+                      <Link
+                        href={a.nutritionist?.id ? `/nutricionistas/${a.nutritionist.id}` : '/nutricionistas'}
+                        className="text-lg font-semibold mt-2 cursor-pointer hover:underline"
+                      >
+                        {a.nutritionist?.full_name || 'Nutricionista'}
+                      </Link>
                       <div className="mt-2 text-sm text-gray-600 flex items-center gap-2">
                         <MapPin className="h-4 w-4" />
                         <span>{formatAddress(a.address_main) || a.nutritionist?.address || 'Endereço não informado'}</span>

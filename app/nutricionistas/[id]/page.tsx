@@ -1,6 +1,6 @@
 import { getNutritionistById } from '@/lib/nutritionist-service'
 import NutritionistProfilePageClient from './NutritionistProfileClient'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { generateImageVariants } from '@/lib/image-variants'
 import { formatNameProperCase } from '@/lib/utils/format-name'
 import { createClient } from '@/lib/supabase/server'
@@ -72,7 +72,7 @@ export default async function NutritionistProfilePage({ params }: PageProps) {
   const nutritionist = await getNutritionistById(id)
 
   if (!nutritionist) {
-    notFound()
+    redirect('/nutricionistas')
   }
 
   // Verificação de segurança: Ocultar usuários de teste para não-admins

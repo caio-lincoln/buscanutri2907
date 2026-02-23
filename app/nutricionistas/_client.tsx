@@ -533,11 +533,16 @@ export default function NutricionistasClient({ initialNutritionists, initialSpec
                         )}
                       </div>
                       <div className={`p-6 ${viewMode === 'list' ? 'flex-1' : ''}`}>
-                        <div className={viewMode === 'list' ? 'flex justify-between h-full' : ''}>
+                          <div className={viewMode === 'list' ? 'flex justify-between h-full' : ''}>
                           <div className={viewMode === 'list' ? 'flex-1' : ''}>
                             <div className="flex items-start justify-between mb-3">
                               <div>
-                                <h3 className="text-xl font-bold text-[#1E1D40] group-hover:text-[#4AB0D9] transition-colors">{formatted.name}</h3>
+                                <Link
+                                  href={nutritionist.id ? `/nutricionistas/${nutritionist.id}` : '/nutricionistas'}
+                                  className="text-xl font-bold text-[#1E1D40] group-hover:text-[#4AB0D9] transition-colors cursor-pointer hover:underline block"
+                                >
+                                  {formatted.name}
+                                </Link>
                                 <p className="text-[#4AB0D9] font-medium">{formatted.specialty}</p>
                               </div>
                               <div className="text-right">
@@ -612,4 +617,3 @@ export default function NutricionistasClient({ initialNutritionists, initialSpec
     </>
   )
 }
-
