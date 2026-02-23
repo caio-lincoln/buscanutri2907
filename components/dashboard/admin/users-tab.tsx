@@ -1259,81 +1259,99 @@ function AdminUserVerifyPanel({ open, onOpenChange, user, onUpdated }: AdminUser
 
   const handleCrnApprove = async () => {
     if (!profile?.id) return
-    setCrnActionLoading(true)
-    const ok = await approveNutritionist(profile.id as string)
-    if (!ok) {
-      toast({
-        title: 'Erro ao aprovar nutricionista',
-        description: 'Falha ao aprovar nutricionista. Tente novamente.',
-        variant: 'destructive',
-      })
-      setCrnActionLoading(false)
-      return
-    }
-    toast({
-      title: 'Nutricionista aprovado',
-      description: 'O nutricionista foi marcado como verificado.',
-    })
-    setProfile(prev => (prev ? { ...prev, is_verified: true } : prev))
     try {
-      await onUpdated()
-    } catch (e) {
-      // silent
+      setCrnActionLoading(true)
+      const ok = await approveNutritionist(profile.id as string)
+      if (!ok) {
+        toast({
+          title: 'Erro ao aprovar nutricionista',
+          description: 'Falha ao aprovar nutricionista. Tente novamente.',
+          variant: 'destructive',
+        })
+        return
+      }
+      toast({
+        title: 'Nutricionista aprovado',
+        description: 'O nutricionista foi marcado como verificado.',
+      })
+      setProfile(prev => (prev ? { ...prev, is_verified: true } : prev))
+      try {
+        await onUpdated()
+      } catch (e) {
+        // silent
+      }
+    } finally {
+      setCrnActionLoading(false)
+      if (typeof document !== 'undefined' && document.body) {
+        document.body.style.overflow = 'auto'
+        document.body.style.pointerEvents = 'auto'
+      }
     }
-    setCrnActionLoading(false)
   }
 
   const handleCrnUnverify = async () => {
     if (!profile?.id) return
-    setCrnActionLoading(true)
-    const ok = await unverifyNutritionist(profile.id as string)
-    if (!ok) {
-      toast({
-        title: 'Erro ao alterar status',
-        description: 'Falha ao voltar para pendente. Tente novamente.',
-        variant: 'destructive',
-      })
-      setCrnActionLoading(false)
-      return
-    }
-    toast({
-      title: 'Status atualizado',
-      description: 'O nutricionista foi marcado como pendente.',
-    })
-    setProfile(prev => (prev ? { ...prev, is_verified: false } : prev))
     try {
-      await onUpdated()
-    } catch (e) {
-      // silent
+      setCrnActionLoading(true)
+      const ok = await unverifyNutritionist(profile.id as string)
+      if (!ok) {
+        toast({
+          title: 'Erro ao alterar status',
+          description: 'Falha ao voltar para pendente. Tente novamente.',
+          variant: 'destructive',
+        })
+        return
+      }
+      toast({
+        title: 'Status atualizado',
+        description: 'O nutricionista foi marcado como pendente.',
+      })
+      setProfile(prev => (prev ? { ...prev, is_verified: false } : prev))
+      try {
+        await onUpdated()
+      } catch (e) {
+        // silent
+      }
+    } finally {
+      setCrnActionLoading(false)
+      if (typeof document !== 'undefined' && document.body) {
+        document.body.style.overflow = 'auto'
+        document.body.style.pointerEvents = 'auto'
+      }
     }
-    setCrnActionLoading(false)
   }
 
   const handleCrnReject = async () => {
     if (!profile?.id) return
-    setCrnActionLoading(true)
-    const reason = crnReason.trim() || 'Sem motivo informado'
-    const ok = await rejectNutritionist(profile.id as string, reason)
-    if (!ok) {
-      toast({
-        title: 'Erro ao rejeitar nutricionista',
-        description: 'Falha ao rejeitar nutricionista. Tente novamente.',
-        variant: 'destructive',
-      })
-      setCrnActionLoading(false)
-      return
-    }
-    toast({
-      title: 'Nutricionista rejeitado',
-      description: 'A rejeição foi registrada.',
-    })
-    setProfile(prev => (prev ? { ...prev, is_verified: false } : prev))
     try {
-      await onUpdated()
-    } catch (e) {
-      // silent
+      setCrnActionLoading(true)
+      const reason = crnReason.trim() || 'Sem motivo informado'
+      const ok = await rejectNutritionist(profile.id as string, reason)
+      if (!ok) {
+        toast({
+          title: 'Erro ao rejeitar nutricionista',
+          description: 'Falha ao rejeitar nutricionista. Tente novamente.',
+          variant: 'destructive',
+        })
+        return
+      }
+      toast({
+        title: 'Nutricionista rejeitado',
+        description: 'A rejeição foi registrada.',
+      })
+      setProfile(prev => (prev ? { ...prev, is_verified: false } : prev))
+      try {
+        await onUpdated()
+      } catch (e) {
+        // silent
+      }
+    } finally {
+      setCrnActionLoading(false)
+      if (typeof document !== 'undefined' && document.body) {
+        document.body.style.overflow = 'auto'
+        document.body.style.pointerEvents = 'auto'
+      }
     }
-    setCrnActionLoading(false)
   }
 
   return (

@@ -183,6 +183,10 @@ export function VerifyNutritionistModal({
       toast({ type: '', description: 'Ocorreu um erro ao aprovar o nutricionista', variant: 'destructive' })
     } finally {
       setProcessing(false)
+      if (typeof document !== 'undefined' && document.body) {
+        document.body.style.overflow = 'auto'
+        document.body.style.pointerEvents = 'auto'
+      }
     }
   }
 
@@ -211,6 +215,10 @@ export function VerifyNutritionistModal({
       toast({ title: 'Erro', description: 'Ocorreu um erro ao registrar a rejeição', variant: 'destructive' })
     } finally {
       setProcessing(false)
+      if (typeof document !== 'undefined' && document.body) {
+        document.body.style.overflow = 'auto'
+        document.body.style.pointerEvents = 'auto'
+      }
     }
   }
 
