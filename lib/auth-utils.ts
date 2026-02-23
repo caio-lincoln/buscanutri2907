@@ -33,6 +33,7 @@ export interface NutritionistProfile extends UserProfile {
   bio?: string
   phone?: string
   is_verified: boolean
+  verification_status?: string
 }
 
 export interface PatientProfile extends UserProfile {

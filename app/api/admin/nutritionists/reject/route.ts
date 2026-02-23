@@ -19,10 +19,9 @@ export async function POST(req: Request) {
   }
   const { nutritionistProfileId, reason } = parsed.data
 
-  // Marcar perfil como não verificado e salvar motivo da rejeição no campo verification_notes dos documentos mais recentes
   const { error: upErr } = await supabaseAdmin
     .from('nutritionist_profiles')
-    .update({ is_verified: false, verified_at: null })
+    .update({ verification_status: 'reprovado', is_verified: false, verified_at: null })
     .eq('id', nutritionistProfileId)
 
   if (upErr) {

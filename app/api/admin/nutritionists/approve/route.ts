@@ -19,7 +19,7 @@ export async function POST(req: Request) {
   const { nutritionistProfileId } = parsed.data
 
   const { error: pErr } = await supabaseAdmin.from('nutritionist_profiles')
-    .update({ is_verified: true, verified_at: new Date().toISOString() })
+    .update({ verification_status: 'aprovado', is_verified: true, verified_at: new Date().toISOString() })
     .eq('id', nutritionistProfileId)
 
   if (pErr) {

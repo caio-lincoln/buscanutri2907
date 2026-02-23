@@ -27,7 +27,7 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
       banned_reason,
       banned_by,
       patient_profiles:patient_profiles!patient_profiles_user_id_fkey(full_name, phone, birth_date, gender),
-      nutritionist_profiles:nutritionist_profiles!nutritionist_profiles_user_id_fkey(id, full_name, is_verified, crn, phone),
+      nutritionist_profiles:nutritionist_profiles!nutritionist_profiles_user_id_fkey(id, full_name, is_verified, verification_status, crn, phone),
       company_profiles:company_profiles!company_profiles_user_id_fkey(company_name)
     `)
     .eq('is_deleted', false) // Filter out soft deleted users
@@ -46,9 +46,16 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
         status = 'banido'
       }
 
-      // Verificação de nutricionista pendente
-      if (!u.is_banned && u.user_type === 'nutricionista' && !u.nutritionist_profiles?.is_verified) {
-        status = 'pendente'
+      if (!u.is_banned && u.user_type === 'nutricionista') {
+        const rawStatus = (u.nutritionist_profiles?.verification_status as string | undefined) || ''
+        const normalized = rawStatus.toLowerCase()
+        if (normalized === 'aprovado' || normalized === 'verificado') {
+          status = 'ativo'
+        } else if (normalized === 'reprovado' || normalized === 'rejected') {
+          status = 'inativo'
+        } else if (!u.nutritionist_profiles?.is_verified) {
+          status = 'pendente'
+        }
       }
 
       // Status adicional via Auth Admin mantido apenas para suspensão temporária
@@ -89,7 +96,9 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
         banned_at: u.banned_at,
         banned_reason: u.banned_reason,
         banned_by: u.banned_by,
-        is_verified: u.nutritionist_profiles?.is_verified,
+        is_verified: u.nutritionist_profiles?.verification_status
+          ? String(u.nutritionist_profiles.verification_status).toLowerCase() === 'aprovado'
+          : u.nutritionist_profiles?.is_verified,
         nutritionist_profiles: u.nutritionist_profiles,
       }
     })

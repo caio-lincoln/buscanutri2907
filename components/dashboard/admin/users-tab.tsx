@@ -162,11 +162,14 @@ type VerificationStatus = 'pendente' | 'verificado' | 'reprovado'
 function getVerificationStatusFromProfile(profile: any | null, user: UserData): VerificationStatus {
   const raw = (profile?.verification_status as string | undefined) || ''
   const normalized = raw.toLowerCase()
-  if (profile?.is_verified || user.is_verified || normalized === 'aprovado' || normalized === 'verificado') {
+  if (normalized === 'aprovado' || normalized === 'verificado') {
     return 'verificado'
   }
   if (normalized === 'reprovado' || normalized === 'rejected') {
     return 'reprovado'
+  }
+  if (profile?.is_verified || user.is_verified) {
+    return 'verificado'
   }
   return 'pendente'
 }
@@ -707,16 +710,30 @@ export function UsersTab() {
                         </TableCell>
                         <TableCell className="text-gray-500 text-sm">
                           {user.type === 'nutricionista' ? (
-                            user?.nutritionist_profiles?.is_verified ? (
-                              <Badge className="bg-green-100 text-green-700">
-                                <CheckCircle className="h-3 w-3 mr-1" />
-                                Verificado
-                              </Badge>
-                            ) : (
-                              <Badge variant="outline" className="text-yellow-600 border-yellow-300">
-                                Pendente
-                              </Badge>
-                            )
+                            (() => {
+                              const vStatus = getVerificationStatusFromProfile(user.nutritionist_profiles || null, user)
+                              if (vStatus === 'verificado') {
+                                return (
+                                  <Badge className="bg-green-100 text-green-700">
+                                    <CheckCircle className="h-3 w-3 mr-1" />
+                                    Verificado
+                                  </Badge>
+                                )
+                              }
+                              if (vStatus === 'reprovado') {
+                                return (
+                                  <Badge className="bg-red-100 text-red-700">
+                                    <XCircle className="h-3 w-3 mr-1" />
+                                    Reprovado
+                                  </Badge>
+                                )
+                              }
+                              return (
+                                <Badge variant="outline" className="text-yellow-600 border-yellow-300">
+                                  Pendente
+                                </Badge>
+                              )
+                            })()
                           ) : (
                             <span className="text-gray-400">N/A</span>
                           )}
@@ -1396,7 +1413,7 @@ function AdminUserVerifyPanel({ open, onOpenChange, user, onUpdated }: AdminUser
           title: 'Nutricionista aprovado',
           description: 'O nutricionista foi marcado como verificado.',
         })
-        setProfile(prev => (prev ? { ...prev, is_verified: true } : prev))
+        setProfile(prev => (prev ? { ...prev, is_verified: true, verification_status: 'aprovado' } : prev))
         setVerificationStatus('verificado')
         try {
           await onUpdated()
@@ -1427,7 +1444,7 @@ function AdminUserVerifyPanel({ open, onOpenChange, user, onUpdated }: AdminUser
           title: 'Status atualizado',
           description: 'O nutricionista foi marcado como pendente.',
         })
-        setProfile(prev => (prev ? { ...prev, is_verified: false } : prev))
+        setProfile(prev => (prev ? { ...prev, is_verified: false, verification_status: 'pendente' } : prev))
         setVerificationStatus('pendente')
         try {
           await onUpdated()
@@ -1459,7 +1476,7 @@ function AdminUserVerifyPanel({ open, onOpenChange, user, onUpdated }: AdminUser
           title: 'Nutricionista rejeitado',
           description: 'A rejeição foi registrada.',
         })
-        setProfile(prev => (prev ? { ...prev, is_verified: false } : prev))
+        setProfile(prev => (prev ? { ...prev, is_verified: false, verification_status: 'reprovado' } : prev))
         setVerificationStatus('reprovado')
         try {
           await onUpdated()
@@ -1507,8 +1524,12 @@ function AdminUserVerifyPanel({ open, onOpenChange, user, onUpdated }: AdminUser
                 {displayStatus}
               </Badge>
               {user.type === 'nutricionista' && (
-                <Badge variant={user.is_verified ? 'default' : 'outline'}>
-                  {user.is_verified ? 'Verificado' : 'Não verificado'}
+                <Badge variant={verificationStatus === 'verificado' ? 'default' : verificationStatus === 'reprovado' ? 'destructive' : 'outline'}>
+                  {verificationStatus === 'verificado'
+                    ? 'Verificado'
+                    : verificationStatus === 'reprovado'
+                      ? 'Reprovado'
+                      : 'Pendente'}
                 </Badge>
               )}
             </div>

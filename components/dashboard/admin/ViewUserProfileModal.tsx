@@ -119,7 +119,23 @@ export default function ViewUserProfileModal({ open, onOpenChange, user }: Props
     } catch {}
   }
 
-  const renderNutritionist = (p: any) => (
+  const renderNutritionist = (p: any) => {
+    const rawStatus = (p?.verification_status as string | undefined) || ''
+    const normalized = rawStatus.toLowerCase()
+    let verificationLabel = 'Pendente'
+    let verificationVariant: 'default' | 'outline' | 'secondary' | 'destructive' = 'outline'
+    if (normalized === 'aprovado' || normalized === 'verificado') {
+      verificationLabel = 'Verificado'
+      verificationVariant = 'default'
+    } else if (normalized === 'reprovado' || normalized === 'rejected') {
+      verificationLabel = 'Reprovado'
+      verificationVariant = 'destructive'
+    } else if (p?.is_verified) {
+      verificationLabel = 'Verificado'
+      verificationVariant = 'default'
+    }
+
+    return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
         <span className="text-sm text-gray-500">Nome</span>
@@ -134,12 +150,19 @@ export default function ViewUserProfileModal({ open, onOpenChange, user }: Props
         <span className="font-medium">{p?.phone || '-'}</span>
       </div>
       <div className="flex items-center justify-between">
-        <span className="text-sm text-gray-500">Verificado</span>
-        {p?.is_verified ? (
-          <Badge className="bg-green-100 text-green-700">Verificado</Badge>
-        ) : (
-          <Badge variant="outline" className="text-yellow-600 border-yellow-300">Pendente</Badge>
-        )}
+        <span className="text-sm text-gray-500">Verificação</span>
+        <Badge
+          variant={verificationVariant}
+          className={
+            verificationVariant === 'default'
+              ? 'bg-green-100 text-green-700'
+              : verificationVariant === 'destructive'
+              ? 'bg-red-100 text-red-700'
+              : 'text-yellow-600 border-yellow-300'
+          }
+        >
+          {verificationLabel}
+        </Badge>
       </div>
       <Separator className="my-2" />
       <div className="space-y-1">
@@ -213,7 +236,8 @@ export default function ViewUserProfileModal({ open, onOpenChange, user }: Props
         )}
       </div>
     </div>
-  )
+    )
+  }
 
   const renderPatient = (p: any) => (
     <div className="space-y-2">

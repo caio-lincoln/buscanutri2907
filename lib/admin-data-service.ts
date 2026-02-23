@@ -49,7 +49,7 @@ export async function getAllUsers(): Promise<UserData[]> {
         user_type,
         created_at,
         patient_profiles:patient_profiles!patient_profiles_user_id_fkey(full_name),
-        nutritionist_profiles:nutritionist_profiles!nutritionist_profiles_user_id_fkey(id, full_name, is_verified),
+        nutritionist_profiles:nutritionist_profiles!nutritionist_profiles_user_id_fkey(id, full_name, is_verified, verification_status),
         company_profiles:company_profiles!company_profiles_user_id_fkey(company_name)
       `)
       .order('created_at', { ascending: false })
@@ -70,15 +70,30 @@ export async function getAllUsers(): Promise<UserData[]> {
         displayName = user.patient_profiles?.full_name || user.nutritionist_profiles?.full_name || user.company_profiles?.company_name || 'Nome não disponível'
       }
 
+      let status: 'ativo' | 'inativo' | 'pendente' | 'banido' = 'ativo'
+      if (userType === 'nutricionista') {
+        const rawStatus = (user.nutritionist_profiles?.verification_status as string | undefined) || ''
+        const normalized = rawStatus.toLowerCase()
+        if (normalized === 'aprovado' || normalized === 'verificado') {
+          status = 'ativo'
+        } else if (normalized === 'reprovado' || normalized === 'rejected') {
+          status = 'inativo'
+        } else if (!user.nutritionist_profiles?.is_verified) {
+          status = 'pendente'
+        }
+      }
+
       return {
         id: user.id,
         numericId: (user as any)?.ID,
         name: displayName,
         email: user.email,
         type: userType,
-        status: user.nutritionist_profiles?.is_verified === false && userType === 'nutricionista' ? 'pendente' : 'ativo',
+        status,
         createdAt: user.created_at,
-        is_verified: user.nutritionist_profiles?.is_verified,
+        is_verified: user.nutritionist_profiles?.verification_status
+          ? String(user.nutritionist_profiles.verification_status).toLowerCase() === 'aprovado'
+          : user.nutritionist_profiles?.is_verified,
         nutritionist_profiles: user.nutritionist_profiles,
       }
     })

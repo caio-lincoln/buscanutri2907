@@ -16,7 +16,8 @@ export interface UserData {
   nutritionist_profiles?: {
     id: string
     full_name: string
-    is_verified?: string
+    is_verified?: boolean
+    verification_status?: string
   }
 }
 

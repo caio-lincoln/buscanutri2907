@@ -146,7 +146,8 @@ export const POST = withErrorHandling(async (req: NextRequest, { params }: { par
                 full_name: name,
                 phone: phone,
                 profile_image_url: image,
-                is_verified: false // Padrão como não verificado ao migrar
+                verification_status: 'pendente',
+                is_verified: false
               })
             }
           } else if (user_type === 'empresa') {
@@ -168,7 +169,7 @@ export const POST = withErrorHandling(async (req: NextRequest, { params }: { par
             if (user_type === 'paciente') {
                 await admin.from('patient_profiles').insert({ user_id: userRow!.id, full_name: basicName }).select('id').maybeSingle()
             } else if (user_type === 'nutricionista') {
-                await admin.from('nutritionist_profiles').insert({ user_id: userRow!.id, full_name: basicName, is_verified: false }).select('id').maybeSingle()
+                await admin.from('nutritionist_profiles').insert({ user_id: userRow!.id, full_name: basicName, verification_status: 'pendente', is_verified: false }).select('id').maybeSingle()
             } else if (user_type === 'empresa') {
                 await admin.from('company_profiles').insert({ user_id: userRow!.id, company_name: basicName, is_verified: false }).select('id').maybeSingle()
             }
@@ -218,7 +219,7 @@ export const POST = withErrorHandling(async (req: NextRequest, { params }: { par
       if (!updated) {
         await admin
           .from('nutritionist_profiles')
-          .insert({ user_id: userRow!.id, full_name: name, is_verified: false })
+          .insert({ user_id: userRow!.id, full_name: name, verification_status: 'pendente', is_verified: false })
           .select('id')
           .maybeSingle()
         updated = await tryUpdateWithFallback('nutritionist_profiles', { full_name: name })
@@ -363,10 +364,29 @@ export const POST = withErrorHandling(async (req: NextRequest, { params }: { par
     }
 
     if (effectiveType === 'nutricionista') {
-      didUpdateVerified = await tryUpdateVerifyWithFallback('nutritionist_profiles', { is_verified, verified_at: is_verified ? new Date().toISOString() : null })
+      const verificationStatus = is_verified ? 'aprovado' : 'pendente'
+      didUpdateVerified = await tryUpdateVerifyWithFallback('nutritionist_profiles', {
+        verification_status: verificationStatus,
+        is_verified,
+        verified_at: is_verified ? new Date().toISOString() : null,
+      })
       if (!didUpdateVerified) {
-        await admin.from('nutritionist_profiles').insert({ user_id: userRow!.id, full_name: null, is_verified }).select('id').maybeSingle()
-        didUpdateVerified = await tryUpdateVerifyWithFallback('nutritionist_profiles', { is_verified, verified_at: is_verified ? new Date().toISOString() : null })
+        await admin
+          .from('nutritionist_profiles')
+          .insert({
+            user_id: userRow!.id,
+            full_name: null,
+            verification_status: verificationStatus,
+            is_verified,
+            verified_at: is_verified ? new Date().toISOString() : null,
+          })
+          .select('id')
+          .maybeSingle()
+        didUpdateVerified = await tryUpdateVerifyWithFallback('nutritionist_profiles', {
+          verification_status: verificationStatus,
+          is_verified,
+          verified_at: is_verified ? new Date().toISOString() : null,
+        })
       }
     } else if (effectiveType === 'empresa') {
       didUpdateVerified = await tryUpdateVerifyWithFallback('company_profiles', { is_verified })
