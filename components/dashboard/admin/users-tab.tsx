@@ -798,6 +798,16 @@ function AdminUserVerifyPanel({ open, onOpenChange, user, onUpdated }: AdminUser
   const [viewerOpen, setViewerOpen] = useState(false)
 
   useEffect(() => {
+    if (open) {
+      document.body.style.overflow = 'hidden'
+      document.body.style.pointerEvents = 'auto'
+      return
+    }
+    document.body.style.overflow = 'auto'
+    document.body.style.pointerEvents = 'auto'
+  }, [open])
+
+  useEffect(() => {
     if (!open) {
       setProfile(null)
       setProfileError(null)
