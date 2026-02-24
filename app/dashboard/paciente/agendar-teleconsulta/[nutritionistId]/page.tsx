@@ -190,7 +190,7 @@ export default function AgendarTeleconsultaPage() {
       return
     }
 
-    const scheduledFor = buildLocalIsoWithOffset(selectedSlot)
+    const scheduledFor = selectedSlot.datetime
 
     setBooking(true)
     try {

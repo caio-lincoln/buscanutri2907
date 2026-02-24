@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { withErrorHandling } from '@/lib/api-middleware'
 import { validateAuth } from '@/src/lib/middleware/error-handler'
 import { addDays, parseISO } from 'date-fns'
+import { fromZonedTime, toZonedTime, format as formatTz } from 'date-fns-tz'
 import { z } from 'zod'
 import { createClient } from '../../../../lib/supabase/server'
 
@@ -139,28 +140,22 @@ export function generateAvailableSlots(
     const rules = availability.filter(a => a.weekday === wd);
 
     for (const rule of rules) {
-      const [ sh, sm ] = rule.start_time.split(':').map(Number);
-      const [ eh, em ] = rule.end_time.split(':').map(Number);
-
       const durationMin = rule.slot_duration_minutes;
       const durationMs = durationMin * 60_000;
 
       const stepMin = gcd(durationMin, minGapMinutes || durationMin);
       const stepMs = stepMin * 60_000;
 
-      let slotStart = new Date(
-        cursor.getFullYear(),
-        cursor.getMonth(),
-        cursor.getDate(),
-        sh, sm, 0, 0
-      ).getTime();
-
-      const dayEnd = new Date(
-        cursor.getFullYear(),
-        cursor.getMonth(),
-        cursor.getDate(),
-        eh, em, 0, 0
-      ).getTime();
+      const yyyy = cursor.getFullYear();
+      const mm = String(cursor.getMonth() + 1).padStart(2, '0');
+      const dd = String(cursor.getDate()).padStart(2, '0');
+      const dateStr = `${yyyy}-${mm}-${dd}`;
+      
+      const startDateTimeStr = `${dateStr}T${rule.start_time}:00`;
+      const endDateTimeStr = `${dateStr}T${rule.end_time}:00`;
+      
+      let slotStart = fromZonedTime(startDateTimeStr, 'America/Sao_Paulo').getTime();
+      const dayEnd = fromZonedTime(endDateTimeStr, 'America/Sao_Paulo').getTime();
 
       while (slotStart + durationMs <= dayEnd) {
         const slotEnd = slotStart + durationMs;
@@ -171,8 +166,8 @@ export function generateAvailableSlots(
         const dt = new Date(slotStart);
         slots.push({
           datetime: dt.toISOString(), 
-          date: ymdLocal(dt),         
-          time: hmLocal(dt),          
+          date: formatTz(dt, 'yyyy-MM-dd', { timeZone: 'America/Sao_Paulo' }),         
+          time: formatTz(dt, 'HH:mm', { timeZone: 'America/Sao_Paulo' }),          
           duration: durationMin,
           available: !collides && !past,
         });
