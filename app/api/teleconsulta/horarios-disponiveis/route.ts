@@ -6,6 +6,8 @@ import { fromZonedTime, toZonedTime, format as formatTz } from 'date-fns-tz'
 import { z } from 'zod'
 import { createClient } from '../../../../lib/supabase/server'
 
+export const dynamic = 'force-dynamic'
+
 const availableTimesQuerySchema = z.object({
   nutritionistId: z.string().uuid('ID do nutricionista inválido'),
   startDate: z.string().optional(),
@@ -184,11 +186,13 @@ export function generateAvailableSlots(
       
       // Interpretamos o horário da regra (ex: "08:00") como sendo no fuso de SP
       // Isso gera o timestamp correto (ex: 11:00 UTC)
-      const startRuleInSP = fromZonedTime(startDateTimeStr, 'America/Sao_Paulo');
-      const endRuleInSP = fromZonedTime(endDateTimeStr, 'America/Sao_Paulo');
+      // FIX CRITICO: Construção manual do offset para garantir SP (-03:00)
+      // Evita problemas com fromZonedTime em ambientes sem ICU completo
+      const isoWithOffset = `${dateStr}T${rule.start_time}:00-03:00`
+      const startRuleInSP = new Date(isoWithOffset)
       
       let slotStart = startRuleInSP.getTime();
-      const dayEnd = endRuleInSP.getTime();
+      const dayEnd = new Date(`${dateStr}T${rule.end_time}:00-03:00`).getTime();
 
       while (slotStart + durationMs <= dayEnd) {
         const slotEnd = slotStart + durationMs;
@@ -207,7 +211,9 @@ export function generateAvailableSlots(
           time: formatTz(dt, 'HH:mm', { timeZone: 'America/Sao_Paulo' }),          
           duration: durationMin,
           available: !collides && !past,
-        });
+          is_past: past,
+          has_collision: collides
+        } as any);
 
         slotStart += stepMs;
       }

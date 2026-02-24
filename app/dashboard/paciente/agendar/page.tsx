@@ -60,6 +60,8 @@ interface AvailableSlot {
   time: string
   duration: number
   available: boolean
+  is_past?: boolean
+  has_collision?: boolean
 }
 
 // CORREÇÃO URGENTE: Override de segurança para disponibilidade no frontend
@@ -313,7 +315,8 @@ export default function AgendarPage() {
       const endDate = format(addDays(new Date(), 14), 'yyyy-MM-dd')
 
       const response = await fetch(
-        `/api/teleconsulta/horarios-disponiveis?nutritionistId=${nutritionistId}&startDate=${startDate}&endDate=${endDate}`
+        `/api/teleconsulta/horarios-disponiveis?nutritionistId=${nutritionistId}&startDate=${startDate}&endDate=${endDate}`,
+        { cache: 'no-store' }
       )
 
       if (!response.ok) {
@@ -1140,7 +1143,9 @@ export default function AgendarPage() {
                         </h3>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                           {slots.map((slot, index) => {
-                            const isAvailable = slot.available && isSlotAvailableOverride(slot.datetime)
+                            // Se tivermos os flags detalhados, usamos eles. Senão, fallback para available
+                            const isBooked = slot.has_collision ?? !slot.available
+                            const isAvailable = !isBooked && isSlotAvailableOverride(slot.datetime)
                             return (
                               <Button
                                 key={index}

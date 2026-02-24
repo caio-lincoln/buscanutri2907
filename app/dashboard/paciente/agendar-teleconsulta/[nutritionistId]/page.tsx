@@ -37,6 +37,8 @@ interface AvailableSlot {
   time: string
   duration: number
   available: boolean
+  is_past?: boolean
+  has_collision?: boolean
 }
 
 interface ViewStats {
@@ -170,7 +172,7 @@ export default function AgendarTeleconsultaPage() {
       
       const response = await fetch(
         `/api/teleconsulta/horarios-disponiveis?nutritionistId=${nutritionistProfileId}&startDate=${startDate}&endDate=${endDate}`,
-        { credentials: 'include' }
+        { credentials: 'include', cache: 'no-store' }
       )
       
       if (!response.ok) {
@@ -448,7 +450,9 @@ export default function AgendarTeleconsultaPage() {
                       </h3>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                         {slots.map((slot, index) => {
-                          const isAvailable = slot.available && isSlotAvailableOverride(slot.datetime)
+                          // Se tivermos os flags detalhados, usamos eles. Senão, fallback para available
+                          const isBooked = slot.has_collision ?? !slot.available
+                          const isAvailable = !isBooked && isSlotAvailableOverride(slot.datetime)
                           return (
                             <Button
                               key={index}
