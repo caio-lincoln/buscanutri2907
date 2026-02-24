@@ -60,6 +60,24 @@ export default function AgendarTeleconsultaPage() {
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
   const isValidUUID = (id: string) => uuidRegex.test(id)
 
+  // CORREÇÃO URGENTE: Override de segurança para disponibilidade no frontend
+  // Garante que slots futuros sejam sempre exibidos, ignorando buffers de servidor
+  const isSlotAvailableOverride = (slotISO: string) => {
+    try {
+      const timezone = "America/Sao_Paulo"
+      const nowLocal = new Date(
+        new Date().toLocaleString("en-US", { timeZone: timezone })
+      )
+      const slotLocal = new Date(
+        new Date(slotISO).toLocaleString("en-US", { timeZone: timezone })
+      )
+      return slotLocal > nowLocal
+    } catch (e) {
+      // Fallback seguro em caso de erro de parse
+      return new Date(slotISO) > new Date()
+    }
+  }
+
   const [currentTime, setCurrentTime] = useState('')
 
   useEffect(() => {
@@ -429,17 +447,21 @@ export default function AgendarTeleconsultaPage() {
                         })}
                       </h3>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                        {slots.map((slot, index) => (
-                          <Button
-                            key={index}
-                            variant={selectedSlot?.datetime === slot.datetime ? 'default' : 'outline'}
-                            onClick={() => setSelectedSlot(slot)}
-                            className="h-12 flex items-center justify-center"
-                          >
-                            <Clock className="h-4 w-4 mr-2" />
-                            {formatTz(parseISO(slot.datetime), 'HH:mm', { timeZone: 'America/Sao_Paulo', locale: ptBR })}
-                          </Button>
-                        ))}
+                        {slots.map((slot, index) => {
+                          const isAvailable = slot.available && isSlotAvailableOverride(slot.datetime)
+                          return (
+                            <Button
+                              key={index}
+                              disabled={!isAvailable}
+                              variant={selectedSlot?.datetime === slot.datetime ? 'default' : 'outline'}
+                              onClick={() => setSelectedSlot(slot)}
+                              className={`h-12 flex items-center justify-center ${!isAvailable ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            >
+                              <Clock className="h-4 w-4 mr-2" />
+                              {formatTz(parseISO(slot.datetime), 'HH:mm', { timeZone: 'America/Sao_Paulo', locale: ptBR })}
+                            </Button>
+                          )
+                        })}
                       </div>
                     </div>
                   ))}

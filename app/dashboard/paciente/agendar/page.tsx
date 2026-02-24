@@ -62,6 +62,23 @@ interface AvailableSlot {
   available: boolean
 }
 
+// CORREÇÃO URGENTE: Override de segurança para disponibilidade no frontend
+// Garante que slots futuros sejam sempre exibidos, ignorando buffers de servidor
+const isSlotAvailableOverride = (slotISO: string) => {
+  try {
+    const timezone = "America/Sao_Paulo"
+    const nowLocal = new Date(
+      new Date().toLocaleString("en-US", { timeZone: timezone })
+    )
+    const slotLocal = new Date(
+      new Date(slotISO).toLocaleString("en-US", { timeZone: timezone })
+    )
+    return slotLocal > nowLocal
+  } catch (e) {
+    return new Date(slotISO) > new Date()
+  }
+}
+
 function buildLocalIsoWithOffset(slot: AvailableSlot) {
   const [year, month, day] = slot.date.split('-').map(Number)
   const [hour, minute] = slot.time.split(':').map(Number)
@@ -1122,18 +1139,21 @@ export default function AgendarPage() {
                           })}
                         </h3>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                          {slots.map((slot, index) => (
-                            <Button
-                              key={index}
-                              disabled={!slot.available}
-                              variant={selectedSlot?.datetime === slot.datetime ? 'default' : 'outline'}
-                              onClick={() => setSelectedSlot(slot)}
-                              className="h-12 flex items-center justify-center"
-                            >
-                              <Clock className="h-4 w-4 mr-2" />
-                              {slot.time}
-                            </Button>
-                          ))}
+                          {slots.map((slot, index) => {
+                            const isAvailable = slot.available && isSlotAvailableOverride(slot.datetime)
+                            return (
+                              <Button
+                                key={index}
+                                disabled={!isAvailable}
+                                variant={selectedSlot?.datetime === slot.datetime ? 'default' : 'outline'}
+                                onClick={() => setSelectedSlot(slot)}
+                                className={`h-12 flex items-center justify-center ${!isAvailable ? 'opacity-50 cursor-not-allowed' : ''}`}
+                              >
+                                <Clock className="h-4 w-4 mr-2" />
+                                {slot.time}
+                              </Button>
+                            )
+                          })}
                         </div>
                       </div>
                     ))}
