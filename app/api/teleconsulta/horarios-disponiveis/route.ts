@@ -110,10 +110,23 @@ export function generateAvailableSlots(
     .filter(r => getField(r, [ 'is_available', 'available' ], true))
     .map(r => {
       const weekdayRaw = getField<number>(r, [ 'weekday', 'day_of_week', 'week_day', 'day' ]);
-      const startStr = getField<string>(r, [ 'start_time', 'start', 'from', 'opens_at' ]); // "HH:mm"
-      const endStr = getField<string>(r, [ 'end_time', 'end', 'to', 'closes_at' ]);      // "HH:mm"
+      let startStr = getField<string>(r, [ 'start_time', 'start', 'from', 'opens_at' ]); // "HH:mm"
+      let endStr = getField<string>(r, [ 'end_time', 'end', 'to', 'closes_at' ]);      // "HH:mm"
       const dur = getField<number>(r, [ 'slot_duration_minutes', 'slot_duration', 'duration_minutes' ], defaultDurationMinutes);
+      
       if (weekdayRaw == null || !startStr || !endStr) return null;
+
+      // Sanitização de horário: garantir formato HH:mm
+      const startParts = startStr.split(':');
+      const endParts = endStr.split(':');
+      
+      if (startParts.length >= 2) {
+        startStr = `${startParts[0].padStart(2, '0')}:${startParts[1].padStart(2, '0')}`;
+      }
+      if (endParts.length >= 2) {
+        endStr = `${endParts[0].padStart(2, '0')}:${endParts[1].padStart(2, '0')}`;
+      }
+      
       return {
         weekday: normWeekday(Number(weekdayRaw)),
         start_time: startStr,
@@ -132,8 +145,11 @@ export function generateAvailableSlots(
 
   const slots: Array<{ datetime: string; date: string; time: string; duration: number; available: boolean }> = [];
 
-  const cursor = new Date(start.getFullYear(), start.getMonth(), start.getDate());
-  const endLocal = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+  const startInZone = toZonedTime(start, 'America/Sao_Paulo');
+  const endInZone = toZonedTime(end, 'America/Sao_Paulo');
+
+  const cursor = new Date(startInZone.getFullYear(), startInZone.getMonth(), startInZone.getDate());
+  const endLocal = new Date(endInZone.getFullYear(), endInZone.getMonth(), endInZone.getDate());
 
   while (cursor <= endLocal) {
     const wd = cursor.getDay(); 
