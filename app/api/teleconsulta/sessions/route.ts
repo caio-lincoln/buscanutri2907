@@ -46,12 +46,17 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   }
 
   const sessionToken = uuidv4()
+  
+  // Tenta obter a URL base das variáveis de ambiente
+  // Se não encontrar, usa caminho relativo para evitar problemas com localhost em produção
   const siteUrl =
     process.env.NEXT_PUBLIC_SITE_URL ||
-    process.env.APP_BASE_URL ||
-    new URL(request.url).origin
+    process.env.NEXT_PUBLIC_APP_URL ||
+    process.env.APP_BASE_URL
 
-  const joinUrl = `${siteUrl}/teleconsulta/${sessionToken}`
+  const joinUrl = siteUrl 
+    ? `${siteUrl.replace(/\/$/, '')}/teleconsulta/${sessionToken}`
+    : `/teleconsulta/${sessionToken}`
 
   const { data: session, error } = await supabaseAdmin
     .from('teleconsulta_sessions')

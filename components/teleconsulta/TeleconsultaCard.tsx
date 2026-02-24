@@ -94,7 +94,11 @@ export function TeleconsultaCard({
 
   const handleCopyLink = async () => {
     try {
-      await navigator.clipboard.writeText(session.join_url)
+      const url = session.join_url.startsWith('http') 
+        ? session.join_url 
+        : `${window.location.origin}${session.join_url.startsWith('/') ? '' : '/'}${session.join_url}`
+      
+      await navigator.clipboard.writeText(url)
       toast.success('Link copiado para a área de transferência!')
     } catch (error) {
       toast.error('Erro ao copiar link')
