@@ -194,7 +194,15 @@ export function generateAvailableSlots(
         const slotEnd = slotStart + durationMs;
 
         const collides = bookedRanges.some(([ bs, be ]) => overlaps(slotStart, slotEnd, bs, be));
-        const past = slotStart < Date.now();
+        
+        // CORREÇÃO CRÍTICA DE TIMEZONE / BUFFER
+        // Compara slot e now diretamente no fuso horário local (America/Sao_Paulo)
+        // Evita problemas de UTC vs Local e buffers implícitos
+        const nowSP = toZonedTime(new Date(), 'America/Sao_Paulo');
+        const slotSP = toZonedTime(new Date(slotStart), 'America/Sao_Paulo');
+        
+        // Slot é passado se for menor ou igual ao momento atual (com tolerância zero)
+        const past = slotSP <= nowSP;
 
         const dt = new Date(slotStart);
         slots.push({
