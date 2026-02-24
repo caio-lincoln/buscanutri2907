@@ -210,7 +210,10 @@ export function generateAvailableSlots(
           date: formatTz(dt, 'yyyy-MM-dd', { timeZone: 'America/Sao_Paulo' }),         
           time: formatTz(dt, 'HH:mm', { timeZone: 'America/Sao_Paulo' }),          
           duration: durationMin,
-          available: !collides && !past,
+          // MUDANÇA ESTRATÉGICA: O backend NÃO deve bloquear slots passados na flag 'available'.
+          // A responsabilidade de filtrar passado/futuro é 100% do frontend (isSlotAvailableOverride).
+          // Aqui garantimos apenas que não há colisão (agendamento).
+          available: !collides, 
           is_past: past,
           has_collision: collides
         } as any);
