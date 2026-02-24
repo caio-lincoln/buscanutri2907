@@ -195,14 +195,10 @@ export function generateAvailableSlots(
 
         const collides = bookedRanges.some(([ bs, be ]) => overlaps(slotStart, slotEnd, bs, be));
         
-        // CORREÇÃO CRÍTICA DE TIMEZONE / BUFFER
-        // Compara slot e now diretamente no fuso horário local (America/Sao_Paulo)
-        // Evita problemas de UTC vs Local e buffers implícitos
-        const nowSP = toZonedTime(new Date(), 'America/Sao_Paulo');
-        const slotSP = toZonedTime(new Date(slotStart), 'America/Sao_Paulo');
-        
+        // Comparação direta de timestamps (UTC)
+        // Evita problemas de conversão de timezone e garante consistência entre ambientes
         // Slot é passado se for menor ou igual ao momento atual (com tolerância zero)
-        const past = slotSP <= nowSP;
+        const past = slotStart <= Date.now();
 
         const dt = new Date(slotStart);
         slots.push({
