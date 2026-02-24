@@ -18,32 +18,44 @@ if (typeof window !== 'undefined' && (!supabaseUrl || !supabaseAnonKey)) {
   // Silent error handling: Environment variables not defined
 }
 
-// Cliente antigo para compatibilidade com sessionStorage
-export const supabase = createClient(finalUrl, finalKey, {
-  auth: {
-    storage: typeof window !== 'undefined' ? window.localStorage : undefined,
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: true
-  }
-})
+// Variável para armazenar a instância singleton no navegador
+let supabaseBrowserClient: ReturnType<typeof createBrowserClient<Database>> | undefined
 
-// Novo cliente para autenticação com sessionStorage (expira ao fechar o navegador)
-export const createSupabaseClient = () =>
-  createBrowserClient<Database>(finalUrl, finalKey, {
+// Novo cliente para autenticação com sessionStorage (Singleton no browser)
+export const createSupabaseClient = () => {
+  if (typeof window !== 'undefined') {
+    // Singleton pattern para o navegador
+    if (!supabaseBrowserClient) {
+      supabaseBrowserClient = createBrowserClient<Database>(finalUrl, finalKey, {
+        auth: {
+          storage: window.localStorage,
+          autoRefreshToken: true,
+          persistSession: true,
+          detectSessionInUrl: true,
+          flowType: 'pkce'
+        },
+        global: {
+          headers: {
+            'x-client-info': 'buscanutri-web'
+          }
+        }
+      })
+    }
+    return supabaseBrowserClient
+  }
+
+  // Para SSR, retorna uma nova instância (embora deva-se preferir createServerClient em Server Components)
+  return createBrowserClient<Database>(finalUrl, finalKey, {
     auth: {
-      storage: typeof window !== 'undefined' ? window.localStorage : undefined,
       autoRefreshToken: true,
       persistSession: true,
-      detectSessionInUrl: false, // Desabilita detecção de sessão na URL
-      flowType: 'implicit'
-    },
-    global: {
-      headers: {
-        'x-client-info': 'buscanutri-web'
-      }
+      detectSessionInUrl: true,
     }
   })
+}
+
+// Cliente exportado para compatibilidade (usa o mesmo Singleton no browser)
+export const supabase = createSupabaseClient()
 
 // Export UserType for use in other files
 export type UserType = 'paciente' | 'nutricionista' | 'empresa' | 'admin'
