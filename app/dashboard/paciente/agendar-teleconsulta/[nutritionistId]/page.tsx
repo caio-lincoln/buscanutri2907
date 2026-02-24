@@ -13,6 +13,7 @@ import { getUserProfile } from '@/lib/auth'
 import type { PatientProfile } from '@/lib/supabase'
 import { format, parseISO, addDays } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+import { toZonedTime } from 'date-fns-tz'
 import { toast } from 'sonner'
 
 interface NutritionistProfile {
@@ -351,7 +352,7 @@ export default function AgendarTeleconsultaPage() {
                       <div className="flex items-center justify-between mt-1">
                         <span className="text-xs text-gray-600">Última visualização:</span>
                         <span className="text-xs">
-                          {format(parseISO(viewStats.lastViewAt), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
+                          {format(toZonedTime(parseISO(viewStats.lastViewAt), 'America/Sao_Paulo'), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
                         </span>
                       </div>
                     )}
@@ -364,7 +365,7 @@ export default function AgendarTeleconsultaPage() {
                         <div className="flex items-center gap-2 text-green-800">
                           <Calendar className="h-4 w-4" />
                           <span className="font-medium">
-                            {format(parseISO(selectedSlot.datetime), "dd 'de' MMMM 'de' yyyy", {
+                            {format(toZonedTime(parseISO(selectedSlot.datetime), 'America/Sao_Paulo'), "dd 'de' MMMM 'de' yyyy", {
                               locale: ptBR,
                             })}
                           </span>
@@ -372,7 +373,7 @@ export default function AgendarTeleconsultaPage() {
                         <div className="flex items-center gap-2 text-green-800 mt-1">
                           <Clock className="h-4 w-4" />
                           <span className="font-medium">
-                            {format(parseISO(selectedSlot.datetime), 'HH:mm', {
+                            {format(toZonedTime(parseISO(selectedSlot.datetime), 'America/Sao_Paulo'), 'HH:mm', {
                               locale: ptBR,
                             })}
                           </span>
@@ -415,7 +416,7 @@ export default function AgendarTeleconsultaPage() {
                   {Object.entries(slotsByDate).map(([date, slots]) => (
                     <div key={date}>
                       <h3 className="font-medium text-lg mb-3">
-                        {format(parseISO(date), "EEEE, dd 'de' MMMM", {
+                        {format(parseISO(`${date}T12:00:00`), "EEEE, dd 'de' MMMM", {
                           locale: ptBR,
                         })}
                       </h3>
@@ -428,7 +429,7 @@ export default function AgendarTeleconsultaPage() {
                             className="h-12 flex items-center justify-center"
                           >
                             <Clock className="h-4 w-4 mr-2" />
-                            {slot.time}
+                            {format(toZonedTime(parseISO(slot.datetime), 'America/Sao_Paulo'), 'HH:mm', { locale: ptBR })}
                           </Button>
                         ))}
                       </div>
