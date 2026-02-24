@@ -29,8 +29,14 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
 
   // Parse start/end dates ensuring we get the correct range in America/Sao_Paulo
   // startDate comes as "YYYY-MM-DD" or ISO string. We need YYYY-MM-DD.
-  const startYMD = startDate ? startDate.split('T')[0] : new Date().toISOString().split('T')[0]
-  const endYMD = endDate ? endDate.split('T')[0] : addDays(new Date(), 14).toISOString().split('T')[0]
+  const nowSP = toZonedTime(new Date(), 'America/Sao_Paulo')
+  const startYMD = startDate 
+    ? startDate.split('T')[0] 
+    : formatTz(nowSP, 'yyyy-MM-dd', { timeZone: 'America/Sao_Paulo' })
+    
+  const endYMD = endDate 
+    ? endDate.split('T')[0] 
+    : addDays(new Date(), 14).toISOString().split('T')[0]
 
   // Create range boundaries: Start of day and End of day in SP
   const start = fromZonedTime(`${startYMD}T00:00:00`, 'America/Sao_Paulo')

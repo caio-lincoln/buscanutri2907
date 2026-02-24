@@ -60,6 +60,23 @@ export default function AgendarTeleconsultaPage() {
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
   const isValidUUID = (id: string) => uuidRegex.test(id)
 
+  const [currentTime, setCurrentTime] = useState('')
+
+  useEffect(() => {
+    const updateTime = () => {
+      const now = new Date()
+      const formatted = new Intl.DateTimeFormat("pt-BR", {
+        timeZone: "America/Sao_Paulo",
+        hour: "2-digit",
+        minute: "2-digit"
+      }).format(now)
+      setCurrentTime(formatted)
+    }
+    updateTime()
+    const interval = setInterval(updateTime, 60000) // Update every minute
+    return () => clearInterval(interval)
+  }, [])
+
   useEffect(() => {
     if (!authLoading) {
       loadProfile()
@@ -259,6 +276,12 @@ export default function AgendarTeleconsultaPage() {
                 <Video className="h-5 w-5 text-green-600" />
                 Teleconsulta
               </CardTitle>
+              {currentTime && (
+                <div className="flex items-center gap-2 text-sm font-normal text-gray-500 mt-1">
+                  <Clock className="h-3 w-3" />
+                  <span>Agora: {currentTime} (Brasília)</span>
+                </div>
+              )}
             </CardHeader>
             <CardContent className="space-y-6">
               {nutritionist && (
