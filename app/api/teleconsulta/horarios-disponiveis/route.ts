@@ -27,13 +27,14 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
 
   const { nutritionistId, startDate, endDate } = availableTimesQuerySchema.parse(queryParams)
 
-  const start = startDate 
-    ? fromZonedTime(`${startDate}T00:00:00`, 'America/Sao_Paulo') 
-    : new Date()
-    
-  const end = endDate 
-    ? fromZonedTime(`${endDate}T23:59:59`, 'America/Sao_Paulo') 
-    : addDays(new Date(), 14)
+  // Parse start/end dates ensuring we get the correct range in America/Sao_Paulo
+  // startDate comes as "YYYY-MM-DD" or ISO string. We need YYYY-MM-DD.
+  const startYMD = startDate ? startDate.split('T')[0] : new Date().toISOString().split('T')[0]
+  const endYMD = endDate ? endDate.split('T')[0] : addDays(new Date(), 14).toISOString().split('T')[0]
+
+  // Create range boundaries: Start of day and End of day in SP
+  const start = fromZonedTime(`${startYMD}T00:00:00`, 'America/Sao_Paulo')
+  const end = fromZonedTime(`${endYMD}T23:59:59`, 'America/Sao_Paulo')
 
   const { data: nutritionist, error: nutritionistError } = await supabase
   .from('nutritionist_profiles')
@@ -175,8 +176,13 @@ export function generateAvailableSlots(
       const startDateTimeStr = `${dateStr}T${rule.start_time}:00`;
       const endDateTimeStr = `${dateStr}T${rule.end_time}:00`;
       
-      let slotStart = fromZonedTime(startDateTimeStr, 'America/Sao_Paulo').getTime();
-      const dayEnd = fromZonedTime(endDateTimeStr, 'America/Sao_Paulo').getTime();
+      // Interpretamos o horário da regra (ex: "08:00") como sendo no fuso de SP
+      // Isso gera o timestamp correto (ex: 11:00 UTC)
+      const startRuleInSP = fromZonedTime(startDateTimeStr, 'America/Sao_Paulo');
+      const endRuleInSP = fromZonedTime(endDateTimeStr, 'America/Sao_Paulo');
+      
+      let slotStart = startRuleInSP.getTime();
+      const dayEnd = endRuleInSP.getTime();
 
       while (slotStart + durationMs <= dayEnd) {
         const slotEnd = slotStart + durationMs;

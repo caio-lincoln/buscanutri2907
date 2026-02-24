@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  env: {
+    TZ: 'UTC',
+  },
   allowedDevOrigins: ['pretty-words-post.loca.lt'],
   typescript: {
     ignoreBuildErrors: true,
