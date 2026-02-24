@@ -27,8 +27,13 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
 
   const { nutritionistId, startDate, endDate } = availableTimesQuerySchema.parse(queryParams)
 
-  const start = startDate ? parseISO(startDate) : new Date()
-  const end = endDate ? parseISO(endDate) : addDays(new Date(), 14)
+  const start = startDate 
+    ? fromZonedTime(`${startDate}T00:00:00`, 'America/Sao_Paulo') 
+    : new Date()
+    
+  const end = endDate 
+    ? fromZonedTime(`${endDate}T23:59:59`, 'America/Sao_Paulo') 
+    : addDays(new Date(), 14)
 
   const { data: nutritionist, error: nutritionistError } = await supabase
   .from('nutritionist_profiles')
