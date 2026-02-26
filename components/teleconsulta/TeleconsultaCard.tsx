@@ -17,7 +17,7 @@ export interface TeleconsultaSession {
   scheduled_at: string
   duration_minutes: number
   price: number
-  status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled' | 'pending_payment' | 'agendado' | 'confirmado' | 'concluido' | 'cancelado' | 'em_andamento'
+  status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled' | 'pending_payment' | 'agendado' | 'confirmado' | 'concluido' | 'cancelado' | 'em_andamento' | 'paid'
   join_url: string
   session_token: string
   nutritionist?: {
@@ -92,6 +92,11 @@ const statusConfig: Record<string, { label: string, color: string, icon: any }> 
     label: 'Em andamento',
     color: 'bg-green-100 text-green-800',
     icon: Video
+  },
+  paid: {
+    label: 'Confirmada',
+    color: 'bg-green-100 text-green-800',
+    icon: Calendar
   }
 }
 

@@ -4,6 +4,12 @@ import { NextResponse } from 'next/server'
 import { stripe } from '@/lib/stripe'
 import { createClient } from '@supabase/supabase-js'
 
+// DOMAIN RULE:
+// teleconsulta_sessions is the ONLY valid table for online consultations.
+// Legacy tables (appointments, etc.) should not be used for new teleconsultations.
+// Any successful payment MUST create a record in teleconsulta_sessions.
+
+
 // We need a Service Role client to update DB without user context
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -40,57 +46,42 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Missing metadata' }, { status: 400 })
     }
 
-    // 1. Idempotency Check: Check if appointment already created for this session
-    const { data: existingAppointment } = await supabaseAdmin
-      .from('appointments')
-      .select('id')
-      .eq('stripe_session_id', session.id)
-      .maybeSingle()
+    // 1. Idempotency Check: Check if session already created for this payment intent
+    // We use payment_intent_id as the unique key for the transaction
+    const paymentIntentId = session.payment_intent as string
 
-    if (existingAppointment) {
-      console.log(`Appointment already created for session ${session.id}`)
-      return NextResponse.json({ received: true })
+    if (paymentIntentId) {
+      const { data: existingSession } = await supabaseAdmin
+        .from('teleconsulta_sessions')
+        .select('id')
+        .eq('payment_intent_id', paymentIntentId)
+        .maybeSingle()
+
+      if (existingSession) {
+        console.log(`Session already created for payment intent ${paymentIntentId}`)
+        return NextResponse.json({ received: true })
+      }
+    } else {
+        // Fallback: check by stripe_session_id in payments table?
+        // Or just proceed and risk duplicate if payment_intent is somehow missing (unlikely for payments)
+        console.warn('Missing payment_intent_id in session', session.id)
     }
 
-    // 2. Prepare Data
-    const scheduledDate = new Date(metadata.scheduled_at)
-    // Extract UTC date and time for unique constraint compliance
-    const appointment_date = scheduledDate.toISOString().split('T')[0]
-    const appointment_time = scheduledDate.toISOString().split('T')[1].substring(0, 8)
+    // 2. Concurrency/Conflict Check
+    // Since we don't have a unique constraint on (nutritionist_id, scheduled_at) in teleconsulta_sessions yet,
+    // we must check manually. This is not perfect but better than nothing.
+    // Ideally we should rely on a DB constraint.
+    
+    const { data: conflicts } = await supabaseAdmin
+        .from('teleconsulta_sessions')
+        .select('id')
+        .eq('nutritionist_id', metadata.nutritionist_id)
+        .eq('scheduled_at', metadata.scheduled_at)
+        .in('status', ['scheduled', 'in_progress', 'completed'])
+        .maybeSingle()
 
-    const appointmentData = {
-      nutritionist_id: metadata.nutritionist_id,
-      patient_id: metadata.patient_id,
-      scheduled_at: metadata.scheduled_at,
-      appointment_date,
-      appointment_time,
-      price: Number(metadata.price),
-      duration_minutes: Number(metadata.duration_minutes || 60),
-      status: 'agendado', // Confirmed booking status
-      payment_status: 'pago',
-      stripe_session_id: session.id,
-      patient_name: metadata.patient_name,
-      patient_email: metadata.patient_email,
-      patient_phone: metadata.patient_phone,
-      is_online: metadata.appointment_type === 'online',
-      type: metadata.appointment_type || 'online',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    }
-
-    // 3. Insert Appointment (Handle Race Condition)
-    const { data: newAppointment, error: insertError } = await supabaseAdmin
-      .from('appointments')
-      .insert(appointmentData)
-      .select()
-      .single()
-
-    if (insertError) {
-      console.error('Error creating appointment:', insertError)
-
-      // Check for Unique Violation (Code 23505) -> Slot already taken
-      if (insertError.code === '23505') {
-        console.warn('Slot conflict detected (Double Booking). refunding...')
+    if (conflicts) {
+        console.warn('Slot conflict detected (Double Booking). Refunding...')
         
         // REFUND LOGIC
         try {
@@ -108,28 +99,68 @@ export async function POST(req: Request) {
             console.error('Failed to refund:', refundError)
         }
         
-        // Record failed payment attempt/log if possible (optional)
         return NextResponse.json({ error: 'Slot conflict - Refunded' }, { status: 409 })
-      }
-
-      return NextResponse.json({ error: 'Failed to create appointment' }, { status: 500 })
     }
 
-    // 4. Record Payment in 'payments' table (Audit)
-    await supabaseAdmin.from('payments').insert({
-      patient_id: metadata.patient_id,
+    // 3. Prepare Data for teleconsulta_sessions
+    const sessionData = {
       nutritionist_id: metadata.nutritionist_id,
-      amount_brl: Number(metadata.price),
-      currency: 'brl',
-      status: 'paid',
-      stripe_session_id: session.id,
-      stripe_payment_intent_id: session.payment_intent,
-      appointment_id: newAppointment.id,
-      created_at: new Date().toISOString()
-    })
+      patient_id: metadata.patient_id,
+      scheduled_at: metadata.scheduled_at,
+      duration_minutes: Number(metadata.duration_minutes || 60),
+      price: Number(metadata.price),
+      status: 'scheduled',
+      payment_status: 'paid',
+      payment_intent_id: paymentIntentId, // Store payment intent for idempotency
+      // stripe_session_id is not in schema, but we link via payments table
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }
 
-    console.log(`Appointment created successfully: ${newAppointment.id}`)
-    return NextResponse.json({ received: true, appointment_id: newAppointment.id })
+    // 4. Insert Session
+    const { data: newSession, error: insertError } = await supabaseAdmin
+      .from('teleconsulta_sessions')
+      .insert(sessionData)
+      .select()
+      .single()
+
+    if (insertError) {
+      console.error('Error creating teleconsulta session:', insertError)
+      return NextResponse.json({ error: 'Failed to create session' }, { status: 500 })
+    }
+
+    // 5. Record Payment in 'payments' table (Audit)
+    const { data: newPayment, error: paymentError } = await supabaseAdmin
+      .from('payments')
+      .insert({
+        patient_id: metadata.patient_id,
+        nutritionist_id: metadata.nutritionist_id,
+        amount_brl: Number(metadata.price),
+        currency: 'brl',
+        status: 'paid',
+        stripe_session_id: session.id,
+        stripe_payment_intent_id: paymentIntentId,
+        teleconsulta_session_id: newSession.id, // Link to the new session
+        created_at: new Date().toISOString()
+      })
+      .select()
+      .single()
+    
+    if (paymentError) {
+        console.error('Error recording payment:', paymentError)
+        // We created the session but failed to record payment. 
+        // We should probably log this critical error. 
+        // The session exists and is paid, so the user gets their service.
+    } else {
+        // 6. Update session with payment_id if needed (bi-directional link)
+        await supabaseAdmin
+            .from('teleconsulta_sessions')
+            .update({ payment_id: newPayment.id })
+            .eq('id', newSession.id)
+    }
+
+    console.log(`Teleconsulta session created successfully: ${newSession.id}`)
+    return NextResponse.json({ received: true, session_id: newSession.id })
   }
 
   return NextResponse.json({ received: true })

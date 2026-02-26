@@ -113,18 +113,56 @@ export async function GET(
 
     debug.steps.push({ step: 'rules_found', count: rules.length })
 
-    // 3. Buscar Agendamentos (Appointments) no intervalo
-    // Status que ocupam horário: paid, scheduled, in_progress, pending_payment, agendado, confirmado, concluido
-    const { data: appointments } = await supabase
-      .from('appointments')
+    // 3. Buscar Agendamentos (Teleconsultas) no intervalo
+    // DOMAIN RULE: Use teleconsulta_sessions ONLY.
+    // Legacy: appointments table is deprecated.
+    // Status que ocupam horário: paid, scheduled, in_progress, completed
+    const { data: sessions } = await supabase
+      .from('teleconsulta_sessions')
       .select('scheduled_at, duration_minutes, status')
       .eq('nutritionist_id', nutritionist.id)
-      .in('status', ['paid', 'scheduled', 'in_progress', 'pending_payment', 'agendado', 'confirmado', 'concluido', 'em_andamento'])
+      .in('status', ['paid', 'scheduled', 'in_progress', 'completed'])
       .gte('scheduled_at', startParam)
       .lte('scheduled_at', endParam)
-      .is('is_deleted', false) // Excluir deletados logicamente
 
-    debug.steps.push({ step: 'appointments_found', count: appointments?.length || 0 })
+    debug.steps.push({ step: 'sessions_found', count: sessions?.length || 0 })
+
+    // 3b. Buscar Agendamentos Presenciais (Tabela appointments)
+    // RE-ENABLED for Presencial Flow. Must block slots.
+    const startDateStr = startParam.split('T')[0]
+    const endDateStr = endParam.split('T')[0]
+    
+    const { data: presencialAppointments } = await supabase
+      .from('appointments')
+      .select('scheduled_at, duration_minutes, appointment_date, appointment_time, status')
+      .eq('nutritionist_id', nutritionist.id)
+      .in('status', ['agendado', 'confirmed', 'paid', 'completed', 'scheduled']) // Include all blocking statuses
+      .not('status', 'eq', 'cancelled')
+      .gte('appointment_date', startDateStr)
+      .lte('appointment_date', endDateStr)
+
+    debug.steps.push({ step: 'presencial_found', count: presencialAppointments?.length || 0 })
+
+    // Combine blocked sessions
+    const blockedIntervals = [
+      ...(sessions || []).map(s => ({
+        start: parseISO(s.scheduled_at),
+        end: addMinutes(parseISO(s.scheduled_at), s.duration_minutes + (nutritionist.min_time_between_appointments || 0))
+      })),
+      ...(presencialAppointments || []).map(p => {
+        let start: Date;
+        if (p.scheduled_at) {
+          start = parseISO(p.scheduled_at);
+        } else {
+          // Construct from date/time if scheduled_at is missing (Legacy fallback)
+          start = fromSaoPauloStr(p.appointment_date, p.appointment_time);
+        }
+        return {
+          start,
+          end: addMinutes(start, (p.duration_minutes || 60) + (nutritionist.min_time_between_appointments || 0))
+        };
+      })
+    ];
 
     // 4. Gerar Slots
     const generatedSlots: any[] = []
@@ -206,12 +244,10 @@ export async function GET(
             { start: currentSlotStart, end: slotEndUTC },
             { start: rangeStart, end: rangeEnd }
           )) {
-            const isBlocked = appointments?.some(app => {
-              const appStart = parseISO(app.scheduled_at)
-              const appEnd = addMinutes(appStart, app.duration_minutes + minGap)
+            const isBlocked = blockedIntervals.some(interval => {
               return areIntervalsOverlapping(
                 { start: currentSlotStart, end: slotEndUTC },
-                { start: appStart, end: appEnd }
+                interval
               )
             })
 

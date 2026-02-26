@@ -15,8 +15,26 @@ export async function getNutritionistStats(
   userId: string
 ): Promise<DashboardStats> {
   try {
-    // Consultas agendadas (próximas) - Funcionalidade de telemedicina removida
-    const appointments = null // Telemedicina desabilitada temporariamente
+    // 1. Get Nutritionist Profile ID
+    const { data: profile } = await supabase
+      .from('nutritionist_profiles')
+      .select('id')
+      .eq('user_id', userId)
+      .single()
+
+    // 2. Count Upcoming Appointments from teleconsulta_sessions
+    // DOMAIN RULE: Use teleconsulta_sessions ONLY
+    let upcomingAppointments = 0
+    if (profile) {
+      const { count } = await supabase
+        .from('teleconsulta_sessions')
+        .select('id', { count: 'exact', head: true })
+        .eq('nutritionist_id', profile.id)
+        .in('status', ['scheduled', 'in_progress', 'paid'])
+        .gte('scheduled_at', new Date().toISOString())
+      
+      upcomingAppointments = count || 0
+    }
 
     // Vagas disponíveis
     const { data: jobs, error: jobsError } = await supabase
@@ -40,7 +58,7 @@ export async function getNutritionistStats(
     }
 
     return {
-      upcomingAppointments: appointments?.length || 0,
+      upcomingAppointments,
       availableJobs: jobs?.length || 0,
       unreadNotifications: notifications?.length || 0,
     }
@@ -59,8 +77,26 @@ export async function getNutritionistStats(
  */
 export async function getPatientStats(userId: string): Promise<DashboardStats> {
   try {
-    // Consultas agendadas (próximas) - Funcionalidade de telemedicina removida
-    const appointments = null // Telemedicina desabilitada temporariamente
+    // 1. Get Patient Profile ID
+    const { data: profile } = await supabase
+      .from('patient_profiles')
+      .select('id')
+      .eq('user_id', userId)
+      .single()
+
+    // 2. Count Upcoming Appointments from teleconsulta_sessions
+    // DOMAIN RULE: Use teleconsulta_sessions ONLY
+    let upcomingAppointments = 0
+    if (profile) {
+      const { count } = await supabase
+        .from('teleconsulta_sessions')
+        .select('id', { count: 'exact', head: true })
+        .eq('patient_id', profile.id)
+        .in('status', ['scheduled', 'in_progress', 'paid'])
+        .gte('scheduled_at', new Date().toISOString())
+      
+      upcomingAppointments = count || 0
+    }
 
     // Notificações não lidas
     const { data: notifications, error: notificationsError } = await supabase
@@ -74,7 +110,7 @@ export async function getPatientStats(userId: string): Promise<DashboardStats> {
     }
 
     return {
-      upcomingAppointments: appointments?.length || 0,
+      upcomingAppointments,
       availableJobs: 0, // Pacientes não veem vagas
       unreadNotifications: notifications?.length || 0,
     }

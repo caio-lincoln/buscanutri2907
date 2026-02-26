@@ -3,6 +3,11 @@ import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { stripe } from '@/lib/stripe'
 
+// DOMAIN RULE:
+// teleconsulta_sessions is the ONLY valid table for online consultations.
+// Legacy tables (appointments, etc.) should not be used for new teleconsultations.
+
+
 export async function POST(request: Request) {
   try {
     const supabase = await createClient()
@@ -25,13 +30,13 @@ export async function POST(request: Request) {
     }
 
     // 1. Validate slot availability (Concurrency check)
-    // Check if there is any confirmed appointment at this time
+    // Check if there is any confirmed appointment at this time in teleconsulta_sessions
     const { data: conflicts, error: conflictError } = await supabase
-      .from('appointments')
+      .from('teleconsulta_sessions')
       .select('id')
       .eq('nutritionist_id', nutritionist_id)
       .eq('scheduled_at', scheduled_at)
-      .in('status', ['agendado', 'confirmado', 'confirmada', 'concluido', 'realizada']) // Status that block the slot
+      .in('status', ['scheduled', 'in_progress', 'completed']) // Status that block the slot
       .maybeSingle()
 
     if (conflictError) {
@@ -57,11 +62,12 @@ export async function POST(request: Request) {
     // 3. Fetch Patient Profile (for metadata)
     const { data: patient, error: patError } = await supabase
       .from('patient_profiles')
-      .select('id, full_name, email, phone')
+      .select('id, full_name, phone')
       .eq('user_id', user.id)
       .single()
 
     if (patError || !patient) {
+      console.error('[CreateCheckout] Error fetching patient profile:', patError)
       return NextResponse.json({ error: 'Patient profile not found' }, { status: 404 })
     }
 
@@ -91,7 +97,7 @@ export async function POST(request: Request) {
       ],
       mode: 'payment',
       success_url: `${request.headers.get('origin')}/paciente/dashboard?session_id={CHECKOUT_SESSION_ID}&status=success`,
-      cancel_url: `${request.headers.get('origin')}/paciente/dashboard?status=cancelled`,
+      cancel_url: `${request.headers.get('origin')}/dashboard/paciente?status=cancelled`,
       customer_email: user.email,
       metadata: {
         nutritionist_id,

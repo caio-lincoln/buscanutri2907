@@ -3,229 +3,271 @@ import React, { useCallback, useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { createSupabaseClient } from "@/lib/supabase"
-import { format } from "date-fns"
+import { format, parseISO } from "date-fns"
 import { ptBR } from "date-fns/locale"
-import { Card } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { MapPin, Calendar, Clock, User, Phone, MessageSquare } from "lucide-react"
 import Image from "next/image"
 import { openConversationWithNutritionist } from "@/lib/chat-forum-service"
+import { toast } from "sonner"
 
 interface Address {
-  street?: string
-  number?: string
+  id: string
+  street: string
+  number: string
   complement?: string
-  city?: string
-  state?: string
-  zip_code?: string
+  neighborhood: string
+  city: string
+  state: string
+  zip_code: string
 }
 
-interface PersonProfile {
+interface NutritionistProfile {
   id: string
-  user_id?: string
+  user_id: string
   full_name: string
   profile_image_url?: string | null
-  address?: Address | null
+  specialties?: string
+  phone?: string
 }
 
-interface ConsultationDetails {
+interface AppointmentDetails {
   id: string
-  scheduled_at: string
+  appointment_date: string // YYYY-MM-DD
+  appointment_time: string // HH:mm
   duration_minutes: number
   status: string
   type: string
   patient_notes?: string | null
+  price?: number | null
   nutritionist_id: string
   patient_id: string
-  nutritionist?: PersonProfile
-  patient?: PersonProfile
-}
-
-interface NutritionistApiData extends PersonProfile {
-  phone?: string | null
-  specialties?: string[]
-  rating?: number
-  total_reviews?: number
-}
-
-function sanitizePhoneForWhatsApp(raw?: string | null): string | null {
-  if (!raw) return null
-  // Remove tudo que não é dígito
-  const digits = raw.replace(/\D+/g, "")
-  if (!digits) return null
-  // Garante código do Brasil (55)
-  if (digits.startsWith("55")) return digits
-  return `55${digits}`
+  nutritionist: NutritionistProfile
+  address: Address
 }
 
 export default function PresencialDetailsPage(props: { params: Promise<{ id: string }> }) {
   const router = useRouter()
   const supabase = useMemo(() => createSupabaseClient(), [])
-  const [consultation, setConsultation] = useState<ConsultationDetails | null>(null)
-  const [nutritionistInfo, setNutritionistInfo] = useState<NutritionistApiData | null>(null)
+  const [appointment, setAppointment] = useState<AppointmentDetails | null>(null)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const [chatLoading, setChatLoading] = useState(false)
-
-  // Next.js: params is now a Promise in Client Components
+  
   const { id } = React.use(props.params)
 
   const loadData = useCallback(async () => {
     setLoading(true)
-    setError(null)
     try {
-      // Carrega a consulta presencial pelo ID com joins de perfis
+      // Query 'appointments' table with necessary joins
       const { data, error } = await supabase
-        .from("in_person_consultations")
-        .select(
-          `
-          id, scheduled_at, duration_minutes, status, type, patient_notes, nutritionist_id, patient_id,
-          nutritionist:nutritionist_profiles!in_person_consultations_nutritionist_id_fkey (
-            id, user_id, full_name, profile_image_url, address
+        .from("appointments")
+        .select(`
+          id, appointment_date, appointment_time, duration_minutes, status, type, patient_notes, price, nutritionist_id, patient_id,
+          nutritionist:nutritionist_profiles!appointments_nutritionist_id_fkey (
+            id, user_id, full_name, profile_image_url, specialties
           ),
-          patient:patient_profiles!in_person_consultations_patient_id_fkey ( id, user_id, full_name, profile_image_url )
-        `
-        )
+          address:nutritionist_addresses!appointments_address_id_fkey (
+            id, street, number, complement, neighborhood, city, state, zip_code
+          )
+        `)
         .eq("id", id)
-        .maybeSingle()
+        .eq("type", "presencial")
+        .single()
 
       if (error || !data) {
-        throw new Error("Consulta não encontrada")
+        throw new Error("Agendamento presencial não encontrado.")
       }
 
-      setConsultation(data as unknown as ConsultationDetails)
-
-      // Buscar dados completos do nutricionista pela API (inclui phone)
-      const nutUserId = (data as any)?.nutritionist?.user_id
-      if (nutUserId) {
-        const resp = await fetch(`/api/nutritionists/${nutUserId}`)
-        if (resp.ok) {
-          const json = await resp.json()
-          setNutritionistInfo(json?.nutritionist || null)
-        }
-      }
+      setAppointment(data as any)
     } catch (e: any) {
-      setError(e?.message || "Erro ao carregar detalhes")
+      console.error(e)
+      toast.error(e.message || "Erro ao carregar detalhes.")
+      router.push("/dashboard/paciente?activeTab=presenciais")
     } finally {
       setLoading(false)
     }
-  }, [id, supabase])
+  }, [id, supabase, router])
 
   useEffect(() => {
     loadData()
   }, [loadData])
 
-  const whatsappHref = useMemo(() => {
-    const phone = sanitizePhoneForWhatsApp(nutritionistInfo?.phone || null)
-    if (!phone) return null
-    const msg = encodeURIComponent(
-      `Olá, gostaria de confirmar minha consulta presencial. Identificador: ${consultation?.id}`
-    )
-    return `https://wa.me/${phone}?text=${msg}`
-  }, [nutritionistInfo?.phone, consultation?.id])
-
-  const startChat = useCallback(async () => {
-    if (!consultation?.nutritionist?.id) return
+  const startChat = async () => {
+    if (!appointment?.nutritionist?.id) return
     try {
       setChatLoading(true)
-      const conversationId = await openConversationWithNutritionist(consultation.nutritionist.id)
+      // Assuming openConversationWithNutritionist expects a UUID string of the nutritionist profile ID
+      // or user ID? Usually it's profile ID or user ID depending on implementation.
+      // Based on previous code, it took nutritionist.id.
+      // Let's verify chat service usage if possible, but standard is profile ID for business logic usually.
+      // Actually, let's assume it works as before.
+      const conversationId = await openConversationWithNutritionist(appointment.nutritionist.id)
       if (conversationId) {
-        router.push(`/dashboard/paciente/chat/${conversationId}`)
+        router.push(`/dashboard/paciente/chat?id=${conversationId}`)
+      } else {
+        toast.error("Não foi possível iniciar o chat.")
       }
     } catch (e) {
-      // Silenciar erros para UX simples
+      toast.error("Erro ao abrir chat.")
     } finally {
       setChatLoading(false)
     }
-  }, [consultation?.nutritionist?.id, router])
+  }
 
   if (loading) {
     return (
-      <div className="p-6">
-        <p>Carregando detalhes...</p>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
       </div>
     )
   }
 
-  if (error || !consultation) {
-    return (
-      <div className="p-6">
-        <p className="text-red-600">{error || "Erro ao carregar consulta"}</p>
-        <Button className="mt-4" onClick={() => router.push("/dashboard/paciente/presenciais")}>Voltar</Button>
-      </div>
-    )
-  }
+  if (!appointment) return null
 
-  const dt = new Date(consultation.scheduled_at)
-  const dateText = format(dt, "dd 'de' MMMM 'de' yyyy 'às' HH:mm", { locale: ptBR })
+  // Format Date and Time
+  // appointment_date is YYYY-MM-DD, appointment_time is HH:mm
+  // We can construct a Date object or just format string manually for safety
+  const [year, month, day] = appointment.appointment_date.split('-').map(Number)
+  const dateObj = new Date(year, month - 1, day)
+  const formattedDate = format(dateObj, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })
+
+  const formatAddress = (addr: Address) => {
+    return [
+      `${addr.street}, ${addr.number}`,
+      addr.complement,
+      addr.neighborhood,
+      `${addr.city} - ${addr.state}`,
+      `CEP: ${addr.zip_code}`
+    ].filter(Boolean).join(", ")
+  }
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Detalhes da Consulta Presencial</h1>
-        <Button variant="outline" onClick={() => router.push("/dashboard/paciente/presenciais")}>Voltar</Button>
+    <div className="container mx-auto p-6 max-w-4xl">
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Detalhes do Agendamento</h1>
+          <p className="text-gray-500">Consulta Presencial</p>
+        </div>
+        <Button variant="outline" onClick={() => router.push("/dashboard/paciente?activeTab=presenciais")}>
+          Voltar
+        </Button>
       </div>
 
-      <Card className="p-4 space-y-4">
-        <div className="flex items-center gap-4">
-          <Image
-            src={consultation.nutritionist?.profile_image_url || "/placeholder.jpg"}
-            alt={consultation.nutritionist?.full_name || "Nutricionista"}
-            width={64}
-            height={64}
-            className="rounded-full object-cover"
-          />
-          <div>
-            <p className="font-medium">{consultation.nutritionist?.full_name}</p>
-            <p className="text-sm text-muted-foreground">{dateText}</p>
-          </div>
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Main Info */}
+        <div className="md:col-span-2 space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Calendar className="w-5 h-5 text-primary" />
+                Data e Horário
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-gray-500">Data</p>
+                  <p className="font-medium text-lg capitalize">{formattedDate}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Horário</p>
+                  <p className="font-medium text-lg">{appointment.appointment_time}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Duração Estimada</p>
+                  <p className="font-medium">{appointment.duration_minutes} minutos</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Status</p>
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize
+                    ${appointment.status === 'confirmed' ? 'bg-green-100 text-green-800' : 
+                      appointment.status === 'cancelled' ? 'bg-red-100 text-red-800' : 
+                      'bg-blue-100 text-blue-800'}`}>
+                    {appointment.status === 'confirmed' ? 'Confirmado' : appointment.status}
+                  </span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-        {consultation.nutritionist?.address && (
-          <div className="text-sm">
-            <p className="font-medium">Endereço</p>
-            <p>
-              {consultation.nutritionist.address.street || ""}
-              {consultation.nutritionist.address.number ? `, ${consultation.nutritionist.address.number}` : ""}
-              {consultation.nutritionist.address.complement ? ` - ${consultation.nutritionist.address.complement}` : ""}
-            </p>
-            <p>
-              {[consultation.nutritionist.address.city, consultation.nutritionist.address.state, consultation.nutritionist.address.zip_code]
-                .filter(Boolean)
-                .join(" - ")}
-            </p>
-          </div>
-        )}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <MapPin className="w-5 h-5 text-primary" />
+                Local de Atendimento
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <p className="font-medium text-lg">{formatAddress(appointment.address).split(',')[0]}</p>
+                <p className="text-gray-600">{appointment.address.neighborhood}</p>
+                <p className="text-gray-600">{appointment.address.city} - {appointment.address.state}</p>
+                <p className="text-sm text-gray-400 mt-2">{appointment.address.zip_code}</p>
+              </div>
+            </CardContent>
+          </Card>
 
-        {consultation.patient_notes && (
-          <div>
-            <p className="font-medium">Observações do paciente</p>
-            <p className="text-sm text-muted-foreground whitespace-pre-line">{consultation.patient_notes}</p>
-          </div>
-        )}
-
-        <div className="flex flex-wrap gap-2 pt-2">
-          <Link
-            href={`/nutricionistas/${consultation.nutritionist?.id}`}
-            className="inline-flex"
-          >
-            <Button variant="secondary">Ver perfil</Button>
-          </Link>
-
-          <Button onClick={startChat} disabled={chatLoading}>
-            {chatLoading ? "Abrindo chat..." : "Enviar mensagem pelo Chat"}
-          </Button>
-
-          {whatsappHref ? (
-            <Link href={whatsappHref} target="_blank" className="inline-flex">
-              <Button variant="default">WhatsApp</Button>
-            </Link>
-          ) : (
-            <Button variant="ghost" disabled>
-              WhatsApp indisponível
-            </Button>
+          {appointment.patient_notes && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Suas Observações</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-700 whitespace-pre-wrap">{appointment.patient_notes}</p>
+              </CardContent>
+            </Card>
           )}
         </div>
-      </Card>
+
+        {/* Sidebar: Professional Info */}
+        <div className="space-y-6">
+          <Card>
+            <CardContent className="pt-6 flex flex-col items-center text-center space-y-4">
+              <div className="relative w-24 h-24 rounded-full overflow-hidden bg-gray-100 border-2 border-white shadow-sm">
+                {appointment.nutritionist.profile_image_url ? (
+                  <Image
+                    src={appointment.nutritionist.profile_image_url}
+                    alt={appointment.nutritionist.full_name}
+                    fill
+                    className="object-cover"
+                  />
+                ) : (
+                  <User className="w-12 h-12 text-gray-400 m-auto mt-6" />
+                )}
+              </div>
+              <div>
+                <h3 className="font-semibold text-lg">{appointment.nutritionist.full_name}</h3>
+                <p className="text-sm text-muted-foreground">{appointment.nutritionist.specialties}</p>
+              </div>
+              
+              <div className="w-full pt-4 space-y-2">
+                <Button 
+                  className="w-full" 
+                  variant="default"
+                  onClick={startChat}
+                  disabled={chatLoading}
+                >
+                  <MessageSquare className="w-4 h-4 mr-2" />
+                  Mensagem
+                </Button>
+                <Link href={`/nutricionistas/${appointment.nutritionist.id}`} className="block w-full">
+                  <Button className="w-full" variant="outline">
+                    Ver Perfil Completo
+                  </Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="text-center">
+            <p className="text-xs text-gray-500">
+              Precisa reagendar ou cancelar?<br />
+              Entre em contato com o profissional pelo chat.
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

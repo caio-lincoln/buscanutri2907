@@ -113,34 +113,37 @@ export default function TeleconsultasPage() {
       setIsFetching(true)
 
       let q = supabase
-        .from('appointments')
+        .from('teleconsulta_sessions')
         .select(`
           id, scheduled_at, price, status, payment_status,
-          appointment_date, appointment_time, duration_minutes,
-          nutritionist:nutritionist_profiles!fk_appointments_nutritionist_id (
+          duration_minutes, session_token, join_url,
+          nutritionist:nutritionist_profiles!teleconsulta_sessions_nutritionist_id_fkey (
             id, user_id, full_name, profile_image_url
           ),
-          patient:patient_profiles!appointments_patient_id_fkey (
+          patient:patient_profiles!teleconsulta_sessions_patient_id_fkey (
             id, user_id, full_name, phone, profile_image_url
           )
         `)
         .eq('patient_id', patientProfile.id)
-        // FILTRO DE SEGURANÇA: Apenas mostrar agendamentos com pagamento confirmado
-        // Isso garante que agendamentos pendentes ou falhos não apareçam
-        .eq('payment_status', 'pago')
         .order('scheduled_at', { ascending: false })
 
       const { status, dateFrom, dateTo, priceMin, priceMax } = debouncedServerFilters
 
       // Mapeamento de status do filtro para o banco
       if (status !== 'all') {
-        if (status === 'scheduled') q = q.in('status', ['paid', 'confirmed', 'agendado', 'confirmada'])
+        if (status === 'scheduled') q = q.in('status', ['scheduled', 'confirmed', 'agendado', 'confirmada', 'paid'])
         else if (status === 'cancelled') q = q.in('status', ['cancelled', 'cancelado'])
         else if (status === 'completed') q = q.in('status', ['completed', 'realizada', 'concluido'])
       } else {
-        // Por padrão, não mostrar agendamentos pendentes de pagamento ou cancelados
-        // Apenas pagos/confirmados e concluídos devem aparecer na lista geral
-        q = q.in('status', ['paid', 'confirmed', 'agendado', 'confirmada', 'completed', 'realizada', 'concluido'])
+        // Mostrar todos os status relevantes para o histórico
+        // Incluindo 'paid' que é um status válido inicial
+        q = q.in('status', [
+          'scheduled', 'confirmed', 'agendado', 'confirmada', 
+          'completed', 'realizada', 'concluido', 
+          'in_progress', 'em_andamento',
+          'paid', // Importante: status inicial pós-pagamento
+          'cancelled', 'cancelado' // Incluir cancelados no histórico geral
+        ])
       }
 
       if (dateFrom) q = q.gte('scheduled_at', startOfDay(dateFrom).toISOString())
@@ -167,15 +170,12 @@ export default function TeleconsultasPage() {
           normalizedStatus = 'in_progress'
         }
 
-        // Fallback para scheduled_at se estiver nulo
+        // Fallback para scheduled_at se estiver nulo (não deve ocorrer em teleconsulta_sessions)
         let scheduledAt = app.scheduled_at
-        if (!scheduledAt && app.appointment_date && app.appointment_time) {
-          scheduledAt = `${app.appointment_date}T${app.appointment_time}`
-        }
-
+        
         return {
           id: app.id,
-          session_token: app.id, // Usando ID como token por enquanto
+          session_token: app.session_token || app.id, // Usando ID como token se nulo
           nutritionist_id: app.nutritionist?.id,
           patient_id: app.patient?.id,
           scheduled_at: scheduledAt,

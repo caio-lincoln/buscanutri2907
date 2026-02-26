@@ -37,11 +37,12 @@ export async function getNutritionistStats(
 ): Promise<NutritionistStats> {
   try {
     const { data, error } = await supabase.rpc('get_nutritionist_stats', {
-      nutritionist_id: nutritionistId,
+      p_nutritionist_id: nutritionistId,
+      p_tz: 'America/Sao_Paulo' // Pass timezone explicitly if procedure requires it
     })
 
     if (error) {
-      // Silent error handling: Error fetching statistics
+      console.error('Error fetching statistics:', error)
       return {
         activePatients: 0,
         scheduledAppointments: 0,
@@ -50,14 +51,18 @@ export async function getNutritionistStats(
       }
     }
 
+    // Handle single object return from RPC (it usually returns setof record or json, need to check if it's array or object)
+    // Based on previous tool output, it returns a record. Supabase client might return array of records.
+    const stats = Array.isArray(data) ? data[0] : data
+
     return {
-      activePatients: data?.active_patients || 0,
-      scheduledAppointments: data?.scheduled_appointments || 0,
-      unreadMessages: data?.unread_messages || 0,
-      totalConsultations: data?.total_consultations || 0,
+      activePatients: stats?.active_patients || 0,
+      scheduledAppointments: stats?.scheduled_appointments || 0,
+      unreadMessages: stats?.unread_messages || 0,
+      totalConsultations: stats?.total_consultations || 0,
     }
   } catch (error) {
-    // Silent error handling: Error fetching statistics
+    console.error('Error fetching statistics:', error)
     return {
       activePatients: 0,
       scheduledAppointments: 0,
@@ -73,19 +78,18 @@ export async function getActivePatients(
   try {
     const { data, error } = await supabase
       .from('chat_conversations')
-      .select('id, patient_id, last_message_at')
+      .select('id, patient_id, last_message_at, patient_profiles(full_name, profile_image_url), chat_messages(message_text)')
       .eq('nutritionist_id', nutritionistId)
-      .eq('status', 'active')
+      .eq('status', 'active') // Ensure 'active' status is correct for your schema
       .order('last_message_at', { ascending: false })
       .limit(10)
 
     if (error) {
-      // Silent error handling: Error fetching active patients
       return []
     }
 
     return (
-      data?.map(conv => ({
+      data?.map((conv: any) => ({
         id: conv.patient_id,
         name: conv.patient_profiles?.full_name || 'Paciente',
         lastMessage: conv.chat_messages?.[0]?.message_text || 'Sem mensagens',
@@ -96,7 +100,6 @@ export async function getActivePatients(
       })) || []
     )
   } catch (error) {
-    // Silent error handling: Error fetching active patients
     return []
   }
 }
@@ -104,8 +107,7 @@ export async function getActivePatients(
 export async function getScheduledAppointments(
   nutritionistId: string
 ): Promise<ScheduledAppointment[]> {
-  // Função removida - não há mais consultas de telemedicina
-  return []
+  return getUpcomingAppointments(nutritionistId, 100)
 }
 
 export async function getUnreadMessages(
@@ -114,19 +116,18 @@ export async function getUnreadMessages(
   try {
     const { data, error } = await supabase
       .from('chat_messages')
-      .select('id, message_text, created_at, conversation_id, sender_id')
+      .select('id, message_text, created_at, conversation_id, sender_id, chat_conversations(patient_profiles(full_name))')
       .neq('sender_id', nutritionistId)
       .is('read_at', null)
       .order('created_at', { ascending: false })
       .limit(10)
 
     if (error) {
-      // Silent error handling: Error fetching unread messages
       return []
     }
 
     return (
-      data?.map(message => ({
+      data?.map((message: any) => ({
         id: message.id,
         patientName:
           message.chat_conversations?.patient_profiles?.full_name || 'Paciente',
@@ -136,7 +137,6 @@ export async function getUnreadMessages(
       })) || []
     )
   } catch (error) {
-    // Silent error handling: Error fetching unread messages
     return []
   }
 }
@@ -157,10 +157,10 @@ export async function markMessagesAsRead(
       .is('read_at', null)
 
     if (error) {
-      // Silent error handling: Error marking messages as read
+      // Silent error handling
     }
   } catch (error) {
-    // Silent error handling: Error marking messages as read
+    // Silent error handling
   }
 }
 
@@ -168,6 +168,39 @@ export async function getUpcomingAppointments(
   nutritionistId: string,
   limit: number = 5
 ): Promise<ScheduledAppointment[]> {
-  // Função removida - não há mais consultas de telemedicina
-  return []
+  try {
+    const { data, error } = await supabase
+      .from('teleconsulta_sessions')
+      .select(`
+        id, scheduled_at, status,
+        patient:patient_profiles!teleconsulta_sessions_patient_id_fkey (
+          full_name
+        )
+      `)
+      .eq('nutritionist_id', nutritionistId)
+      .in('status', ['scheduled', 'in_progress'])
+      .gte('scheduled_at', new Date().toISOString())
+      .order('scheduled_at', { ascending: true })
+      .limit(limit)
+
+    if (error) {
+      console.error('Error fetching upcoming appointments:', error)
+      return []
+    }
+
+    return (data || []).map((session: any) => {
+        const dateObj = new Date(session.scheduled_at)
+        return {
+            id: session.id,
+            patientName: session.patient?.full_name || 'Paciente',
+            date: dateObj.toLocaleDateString('pt-BR'),
+            time: dateObj.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+            type: 'video',
+            status: session.status
+        }
+    })
+  } catch (error) {
+      console.error('Error fetching upcoming appointments:', error)
+      return []
+  }
 }

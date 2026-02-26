@@ -101,11 +101,17 @@ export default function ConsultasPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'confirmed':
+      case 'paid':
+      case 'scheduled':
+      case 'in_progress':
         return 'bg-green-50 text-green-700 border-green-200'
       case 'pending':
+      case 'pending_payment':
         return 'bg-yellow-50 text-yellow-700 border-yellow-200'
       case 'cancelled':
         return 'bg-red-50 text-red-700 border-red-200'
+      case 'completed':
+        return 'bg-blue-50 text-blue-700 border-blue-200'
       default:
         return 'bg-gray-50 text-gray-700 border-gray-200'
     }
@@ -114,11 +120,18 @@ export default function ConsultasPage() {
   const getStatusText = (status: string) => {
     switch (status) {
       case 'confirmed':
+      case 'paid':
+      case 'scheduled':
         return 'Confirmado'
+      case 'in_progress':
+        return 'Em Andamento'
       case 'pending':
+      case 'pending_payment':
         return 'Pendente'
       case 'cancelled':
         return 'Cancelado'
+      case 'completed':
+        return 'Concluído'
       default:
         return status
     }

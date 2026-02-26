@@ -54,6 +54,10 @@ export default function NutritionistPresenciaisTab({ nutritionistId }: Nutrition
     setLoading(true)
     setError(null)
     try {
+      // TODO: DEPRECATION WARNING
+      // The 'appointments' table is deprecated and should be empty.
+      // This feature (Presenciais) needs to be migrated to a new table or integrated into 'teleconsulta_sessions' with a type flag.
+      // Currently, this will likely return no data.
       const { data, error } = await supabase
         .from('appointments')
         .select(

@@ -128,14 +128,15 @@ export default function TeleconsultaRoom() {
   // Load session data
   const loadSessionData = useCallback(async () => {
     try {
+      // DOMAIN RULE: teleconsulta_sessions only
       const { data, error } = await supabase
-        .from('appointments')
+        .from('teleconsulta_sessions')
         .select(`
-          id, scheduled_at, duration_minutes, price, status,
-          nutritionist:nutritionist_profiles!fk_appointments_nutritionist_id (
+          id, scheduled_at, duration_minutes, price, status, session_token,
+          nutritionist:nutritionist_profiles (
             id, user_id, full_name, profile_image_url, specialty
           ),
-          patient:patient_profiles!appointments_patient_id_fkey (
+          patient:patient_profiles (
             id, user_id, full_name, profile_image_url
           )
         `)
@@ -147,14 +148,17 @@ export default function TeleconsultaRoom() {
         // Mapear para garantir compatibilidade
         const sessionData = {
           ...data,
-          session_token: data.id, // Usando ID como token
+          // session_token já vem do banco, mas se não vier, usa ID como fallback
+          session_token: data.session_token || data.id, 
           nutritionist_id: data.nutritionist.id,
           patient_id: data.patient.id
         }
         setSession(sessionData as unknown as TeleconsultaSession)
         if (data.status === 'in_progress') setSessionStartTime(new Date())
       }
-    } catch {}
+    } catch (err) {
+      console.error('Error loading session:', err)
+    }
     finally {
       setLoading(false)
     }

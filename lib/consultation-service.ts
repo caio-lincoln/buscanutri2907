@@ -53,33 +53,70 @@ export async function getPatientConsultations(
   patientId: string
 ): Promise<Consultation[]> {
   try {
+    // DOMAIN RULE: Use teleconsulta_sessions ONLY for online consultations.
+    // Migrating from 'consultations' table to 'teleconsulta_sessions'.
+    
     const { data, error } = await supabase
-      .from('consultations')
+      .from('teleconsulta_sessions')
       .select(`
-        *,
-        nutritionist_profiles(
+        id,
+        patient_id,
+        nutritionist_id,
+        scheduled_at,
+        duration_minutes,
+        status,
+        created_at,
+        updated_at,
+        nutritionist:nutritionist_profiles!teleconsulta_sessions_nutritionist_id_fkey(
           full_name,
           specialties,
-          avatar_url
+          profile_image_url
         ),
-        patient_profiles(
+        patient:patient_profiles!teleconsulta_sessions_patient_id_fkey(
           full_name,
-          avatar_url
+          profile_image_url
         )
       `)
       .eq('patient_id', patientId)
-      .order('start_time', { ascending: false })
+      .order('scheduled_at', { ascending: false })
 
     if (error) {
-      // Silent error handling: Error fetching patient consultations
+      console.error('Error fetching patient consultations from teleconsulta_sessions:', error)
       return []
     }
 
-    return data || []
+    // Map to Consultation interface
+    return (data || []).map(session => ({
+      id: session.id,
+      patient_id: session.patient_id,
+      nutritionist_id: session.nutritionist_id,
+      start_time: session.scheduled_at,
+      end_time: new Date(new Date(session.scheduled_at).getTime() + (session.duration_minutes || 60) * 60000).toISOString(),
+      status: mapStatus(session.status),
+      created_at: session.created_at,
+      updated_at: session.updated_at,
+      nutritionist_profiles: {
+        full_name: session.nutritionist?.full_name || 'Nutricionista',
+        specialties: session.nutritionist?.specialties || [],
+        avatar_url: session.nutritionist?.profile_image_url
+      },
+      patient_profiles: {
+        full_name: session.patient?.full_name || 'Paciente',
+        avatar_url: session.patient?.profile_image_url
+      }
+    }))
   } catch (error) {
-    // Silent error handling: Error fetching patient consultations
+    console.error('Error in getPatientConsultations:', error)
     return []
   }
+}
+
+function mapStatus(status: string): 'scheduled' | 'completed' | 'cancelled' {
+  if (['scheduled', 'agendado', 'paid', 'pending'].includes(status)) return 'scheduled';
+  if (['completed', 'concluido', 'realizado'].includes(status)) return 'completed';
+  if (['cancelled', 'cancelado'].includes(status)) return 'cancelled';
+  if (['in_progress', 'em_andamento'].includes(status)) return 'scheduled'; // Treat in_progress as scheduled for now or add status
+  return 'scheduled';
 }
 
 /**

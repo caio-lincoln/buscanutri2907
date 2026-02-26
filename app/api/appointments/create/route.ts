@@ -14,8 +14,17 @@ export async function POST(request: Request) {
       )
     }
 
+    // DOMAIN RULE: BLOCK LEGACY TABLE USAGE
+    // appointments table is deprecated. All new sessions must go through the payment flow -> teleconsulta_sessions.
+    return NextResponse.json(
+      { error: 'This endpoint is deprecated. Please use the payment flow to schedule a consultation.' },
+      { status: 410 } // Gone
+    )
+
+    /* LEGACY CODE BLOCKED
     const body = await request.json()
     const { nutritionist_id, scheduled_at, price } = body
+
 
     if (!nutritionist_id || !scheduled_at || price === undefined) {
       return NextResponse.json(
@@ -40,7 +49,23 @@ export async function POST(request: Request) {
       .single()
 
     if (profileError || !patientProfile) {
-      console.error('Error fetching patient profile:', profileError)
+      console.error('[CreateAppointment] Error fetching patient profile:', {
+        userId: user.id,
+        error: profileError,
+        metadata: user.user_metadata
+      })
+
+      // Check if user is a nutritionist
+      const isNutritionist = user.user_metadata?.user_type === 'nutricionista' || 
+                            user.app_metadata?.user_type === 'nutricionista';
+                            
+      if (isNutritionist) {
+        return NextResponse.json(
+          { error: 'Nutritionists cannot book appointments. Please use a patient account.' },
+          { status: 403 }
+        )
+      }
+
       return NextResponse.json(
         { error: 'Patient profile not found. Please complete your profile first.' },
         { status: 404 }

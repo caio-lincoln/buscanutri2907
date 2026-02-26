@@ -20,6 +20,8 @@ import { PaymentFeedback } from './_components/PaymentFeedback'
 import { AnamneseNutricionalModal } from '../../../components/anamnese-nutricional-modal'
 import { createSupabaseClient } from '../../../lib/supabase'
 import Loading from '@/components/ui/loading'
+import { XCircle } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 const TABS = [
   'overview',
@@ -53,6 +55,27 @@ export default function PatientDashboard() {
     enabled: !!user?.id,
   })
   const [ isAnamneseModalOpen, setIsAnamneseModalOpen ] = useState(false)
+
+  // Payment cancellation logic
+  const [countdown, setCountdown] = useState(5)
+  const status = searchParams?.get('status')
+
+  useEffect(() => {
+    if (status === 'cancelled') {
+      const timer = setInterval(() => {
+        setCountdown((prev) => (prev > 0 ? prev - 1 : 0))
+      }, 1000)
+
+      const redirectTimeout = setTimeout(() => {
+        router.replace('/dashboard/paciente')
+      }, 5000)
+
+      return () => {
+        clearInterval(timer)
+        clearTimeout(redirectTimeout)
+      }
+    }
+  }, [status, router])
 
   const menuItems = getMenuItems('paciente', dashboardStats)
   const supabase = useMemo(() => createSupabaseClient(), [])
@@ -114,6 +137,37 @@ export default function PatientDashboard() {
 
   if (authLoading) {
     return <Loading message="Carregando seu dashboard..." />
+  }
+
+  if (status === 'cancelled') {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 p-4">
+        <div className="bg-white p-8 rounded-lg shadow-md max-w-md w-full text-center space-y-6">
+          <div className="flex justify-center">
+            <div className="h-16 w-16 bg-red-100 rounded-full flex items-center justify-center">
+              <XCircle className="h-8 w-8 text-red-600" />
+            </div>
+          </div>
+          
+          <h1 className="text-2xl font-bold text-gray-900">Pagamento cancelado</h1>
+          
+          <p className="text-gray-600">
+            O pagamento não foi concluído e, por isso, a consulta não foi agendada.
+          </p>
+          
+          <p className="text-sm text-gray-500">
+            Você será redirecionado automaticamente em {countdown} segundos.
+          </p>
+          
+          <Button 
+            onClick={() => router.replace('/dashboard/paciente')}
+            className="w-full bg-primary hover:bg-primary/90"
+          >
+            Voltar agora
+          </Button>
+        </div>
+      </div>
+    )
   }
 
   return (

@@ -112,9 +112,10 @@ export async function getReportMetrics(): Promise<ReportMetric[]> {
       .from('users')
       .select('*', { count: 'exact', head: true })
 
-    // Buscar contagem de consultas
+    // Buscar contagem de consultas (Teleconsultas)
+    // DOMAIN RULE: Usar teleconsulta_sessions
     const { count: consultationsCount } = await supabase
-      .from('consultations')
+      .from('teleconsulta_sessions')
       .select('*', { count: 'exact', head: true })
 
     // Buscar contagem de posts do blog
@@ -123,13 +124,14 @@ export async function getReportMetrics(): Promise<ReportMetric[]> {
       .select('*', { count: 'exact', head: true })
 
     // Calcular receita total (exemplo - adaptar conforme necessário)
+    // DOMAIN RULE: Usar teleconsulta_sessions
     const { data: appointments } = await supabase
-      .from('consultations')
+      .from('teleconsulta_sessions')
       .select('price')
       .eq('status', 'completed')
 
     const totalRevenue =
-      appointments?.reduce((sum, apt) => sum + (apt.price || 0), 0) || 0
+      appointments?.reduce((sum, apt) => sum + (Number(apt.price) || 0), 0) || 0
 
     return [
       {
@@ -177,40 +179,42 @@ export async function getReportMetrics(): Promise<ReportMetric[]> {
 export async function getTransactions(): Promise<TransactionData[]> {
   try {
     // Buscar consultas como transações de receita
+    // DOMAIN RULE: Usar teleconsulta_sessions
     const { data: appointments, error } = await supabase
-      .from('consultations')
+      .from('teleconsulta_sessions')
       .select(
         `
         id,
         price,
         status,
-        start_time,
-        patient_profiles(full_name),
-        nutritionist_profiles(full_name)
+        scheduled_at,
+        patient:patient_profiles(full_name),
+        nutritionist:nutritionist_profiles(full_name)
       `
       )
       .not('price', 'is', null)
-      .order('start_time', { ascending: false })
+      .order('scheduled_at', { ascending: false })
       .limit(50)
 
     if (error) {
       // Silent error handling: Error fetching transactions
       return []
     }
-
-    return appointments.map(apt => ({
+    
+    // Mapear para o formato TransactionData
+    return appointments.map((apt: any) => ({
       id: apt.id,
       type: 'receita' as const,
-      amount: apt.price || 0,
-      description: `Consulta - ${apt.patient_profiles?.[ 0 ]?.full_name || 'Paciente'} com ${apt.nutritionist_profiles?.[ 0 ]?.full_name || 'Nutricionista'}`,
-      date: apt.start_time,
+      amount: Number(apt.price) || 0,
+      description: `Consulta - ${apt.patient?.full_name || 'Paciente'} com ${apt.nutritionist?.full_name || 'Nutricionista'}`,
+      date: apt.scheduled_at,
       status:
         apt.status === 'completed'
           ? 'concluída'
-          : apt.status === 'scheduled'
+          : ['scheduled', 'in_progress', 'pending_payment'].includes(apt.status)
             ? 'pendente'
             : 'cancelada',
-      userName: apt.patient_profiles?.[ 0 ]?.full_name || 'Usuário',
+      userName: apt.patient?.full_name || 'Usuário',
     }))
   } catch {
     // Silent error handling: Error in getTransactions

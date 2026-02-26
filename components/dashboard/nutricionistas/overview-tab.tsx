@@ -447,13 +447,15 @@ export default function OverviewTab({ setActiveTab }: { setActiveTab: (tab: Tab)
                             <Badge
                               variant="outline"
                               className={
-                                appointment.status === 'confirmed'
+                                ['confirmed', 'paid', 'scheduled', 'in_progress'].includes(appointment.status)
                                   ? 'bg-green-50 text-green-700 border-green-200'
                                   : 'bg-yellow-50 text-yellow-700 border-yellow-200'
                               }
                             >
-                              {appointment.status === 'confirmed'
+                              {['confirmed', 'paid', 'scheduled'].includes(appointment.status)
                                 ? 'Confirmado'
+                                : appointment.status === 'in_progress'
+                                ? 'Em andamento'
                                 : 'Agendado'}
                             </Badge>
                           </div>

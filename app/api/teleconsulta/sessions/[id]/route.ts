@@ -5,6 +5,10 @@ import { updateSessionStatusSchema, idParamSchema } from '@/src/lib/validations/
 import { createNotification } from '@/lib/notifications-service'
 import { createClient } from '../../../../../lib/supabase/server'
 
+// ATENÇÃO: teleconsulta_sessions é a ÚNICA tabela válida para teleconsultas.
+// Qualquer outra tabela relacionada (appointments, consultations, telemedicine_consultations) é legado ou descartável.
+// REGRA: Nutricionista só age sobre sessões dessa tabela.
+
 // PUT /api/teleconsulta/sessions/[id] - Atualizar status da sessão
 export const PUT = withErrorHandling(async (
   request: NextRequest,
@@ -14,9 +18,13 @@ export const PUT = withErrorHandling(async (
 
   const supabase = await createClient()
   
-  // Verificar autenticação
+  // 1. Validar sessão autenticada
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   const userId = validateAuth(authError ? null : user?.id || null)
+
+  // 2. Validar role = nutritionist (via metadata ou verificação de perfil)
+  const userType = user?.user_metadata?.user_type
+  // Nota: Verificaremos a ownership exata abaixo, que é mais forte que apenas checar o tipo
 
   // Validar parâmetros
   const { id: sessionId } = idParamSchema.parse(params)
@@ -25,15 +33,15 @@ export const PUT = withErrorHandling(async (
   const body = await request.json()
   const { status } = updateSessionStatusSchema.parse(body)
 
-  // Verificar se a sessão existe e se o usuário tem permissão
+  // 3. Buscar sessão na ÚNICA tabela válida: teleconsulta_sessions
   const { data: session, error: sessionError } = await supabase
-  .from('appointments')
+  .from('teleconsulta_sessions')
   .select(`
-    id, scheduled_at, price, status,
-    nutritionist:nutritionist_profiles!fk_appointments_nutritionist_id (
+    id, scheduled_at, price, status, join_url,
+    nutritionist:nutritionist_profiles!teleconsulta_sessions_nutritionist_id_fkey (
       id, user_id, full_name, profile_image_url
     ),
-    patient:patient_profiles!appointments_patient_id_fkey (
+    patient:patient_profiles!teleconsulta_sessions_patient_id_fkey (
       id, user_id, full_name, phone, profile_image_url
     )
   `)
@@ -42,16 +50,18 @@ export const PUT = withErrorHandling(async (
 
   const validSession = validateResourceExists(sessionError ? null : session, 'Sessão não encontrada')
 
-  // Verificar permissão (paciente ou nutricionista da sessão)
-  if (validSession.patient.user_id !== userId && validSession.nutritionist.user_id !== userId) {
-    throw new ForbiddenError('Sem permissão para modificar esta sessão')
+  // 4. Validar que a sessão pertence ao nutricionista logado
+  if (validSession.nutritionist.user_id !== userId) {
+    // Se for o paciente tentando alterar, bloqueamos conforme regra "Nutricionista só age..."
+    // Se for outro nutricionista, também bloqueamos.
+    throw new ForbiddenError('Apenas o nutricionista responsável pode alterar esta sessão')
   }
 
-  // Validar transições de status
+  // 5. Validar status permitido para a ação
   const currentStatus = validSession.status
   const validTransitions: Record<string, string[]> = {
-    'paid': ['in_progress', 'cancelled'], // 'paid' equivale a 'scheduled'
-    'scheduled': ['in_progress', 'cancelled'], // caso já tenha sido migrado ou criado como scheduled
+    'paid': ['in_progress', 'cancelled'], 
+    'scheduled': ['in_progress', 'cancelled'],
     'in_progress': ['completed', 'cancelled'],
     'completed': [],
     'cancelled': []
@@ -67,19 +77,20 @@ export const PUT = withErrorHandling(async (
     updated_at: new Date().toISOString()
   }
   
-  // Atualizar sessão
+  // Atualizar sessão em teleconsulta_sessions
   const { data: updatedSession, error: updateError } = await supabase
-  .from('appointments')
+  .from('teleconsulta_sessions')
   .update(updateData)
   .eq('id', sessionId)
   .select('*')
   .maybeSingle()
   
   if (updateError) {
+    console.error('Erro ao atualizar teleconsulta_sessions:', updateError)
     throw new Error('Erro ao atualizar sessão')
   }
 
-  // Enviar notificações baseadas no novo status
+  // Enviar notificações
   try {
     const notificationMessages = {
       'in_progress': {
@@ -101,7 +112,7 @@ export const PUT = withErrorHandling(async (
     if (notification) {
       // Notificar paciente
       await createNotification({
-        userId: validSession.patient.user_id, // Usando user_id do perfil
+        userId: validSession.patient.user_id,
         title: notification.title,
         message: notification.message,
         notificationType: `teleconsulta_session_${status}`,
@@ -113,9 +124,9 @@ export const PUT = withErrorHandling(async (
         }
       })
 
-      // Notificar nutricionista
+      // Notificar nutricionista (confirmação)
       await createNotification({
-        userId: validSession.nutritionist.user_id, // Usando user_id do perfil
+        userId: validSession.nutritionist.user_id,
         title: notification.title,
         message: notification.message,
         notificationType: `teleconsulta_session_${status}`,
@@ -128,91 +139,91 @@ export const PUT = withErrorHandling(async (
       })
     }
   } catch (notificationError) {
-    // Log do erro mas não falha a atualização
     console.error('Erro ao enviar notificações:', notificationError)
   }
 
   return NextResponse.json({ session: updatedSession })
 })
 
-// DELETE /api/teleconsulta/sessions/[id] - Deletar sessão (apenas se agendada)
+// DELETE /api/teleconsulta/sessions/[id] - Cancelar sessão (mantido para compatibilidade, age como cancelar)
 export const DELETE = withErrorHandling(async (
   request: NextRequest,
-  { params }: { params: { id: string } }
+  props: { params: Promise<{ id: string }> }
 ) => {
+  const params = await props.params;
   const cookieStore = cookies()
   const supabase = createClient(cookieStore)
   
-  // Verificar autenticação
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   const userId = validateAuth(authError ? null : user?.id || null)
 
-  // Validar parâmetros
   const { id: sessionId } = idParamSchema.parse(params)
 
-  // Verificar se a sessão existe e se o usuário tem permissão
+  // Buscar em teleconsulta_sessions
   const { data: session, error: sessionError } = await supabase
-    .from('appointments')
-    .select('*, patient:patient_profiles!appointments_patient_id_fkey(user_id), nutritionist:nutritionist_profiles!fk_appointments_nutritionist_id(user_id)')
+    .from('teleconsulta_sessions')
+    .select(`
+      *,
+      nutritionist:nutritionist_profiles!teleconsulta_sessions_nutritionist_id_fkey(user_id),
+      patient:patient_profiles!teleconsulta_sessions_patient_id_fkey(user_id)
+    `)
     .eq('id', sessionId)
     .single()
 
   const validSession = validateResourceExists(sessionError ? null : session, 'Sessão não encontrada')
 
-  // Verificar permissão (paciente ou nutricionista da sessão)
-  const patientUserId = validSession.patient?.user_id
-  const nutritionistUserId = validSession.nutritionist?.user_id
-  
-  if (patientUserId !== userId && nutritionistUserId !== userId) {
-    throw new ForbiddenError('Sem permissão para deletar esta sessão')
+  // Validar ownership (Nutricionista)
+  if (validSession.nutritionist.user_id !== userId) {
+    throw new ForbiddenError('Sem permissão para cancelar esta sessão')
   }
 
-  // Só permitir deletar sessões agendadas/pagas
-  if (validSession.status !== 'paid' && validSession.status !== 'scheduled') {
-    throw new ValidationError('Só é possível deletar sessões agendadas')
+  // Validar status
+  if (validSession.status !== 'scheduled' && validSession.status !== 'paid') {
+    throw new ValidationError('Só é possível cancelar sessões agendadas')
   }
 
-  // Soft delete sessão
+  // Cancelar sessão (update status)
   const { error: deleteError } = await supabase
-    .from('appointments')
-    .update({ is_deleted: true, deleted_at: new Date().toISOString(), status: 'cancelled' })
+    .from('teleconsulta_sessions')
+    .update({ 
+      status: 'cancelled',
+      updated_at: new Date().toISOString()
+    })
     .eq('id', sessionId)
 
   if (deleteError) {
-    throw new Error('Erro ao deletar sessão')
+    throw new Error('Erro ao cancelar sessão')
   }
 
-  return NextResponse.json({ message: 'Sessão deletada com sucesso' })
+  return NextResponse.json({ message: 'Sessão cancelada com sucesso' })
 })
 
 // GET /api/teleconsulta/sessions/[id] - Buscar sessão específica
 export const GET = withErrorHandling(async (
   request: NextRequest,
-  { params }: { params: { id: string } }
+  props: { params: Promise<{ id: string }> }
 ) => {
+  const params = await props.params;
   const supabase = await createClient()
   
-  // Verificar autenticação
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   validateAuth(authError ? null : user?.id || null)
 
-  // Validar parâmetros
-  const { id: sessionId } = idParamSchema.parse(await params)
+  const { id: sessionId } = idParamSchema.parse(params)
 
-  // Buscar sessão com dados relacionados
+  // Buscar em teleconsulta_sessions
   const { data: session, error: sessionError } = await supabase
-    .from('appointments')
+    .from('teleconsulta_sessions')
     .select(`
-      id, scheduled_at, price, status, join_url:online_meeting_link,
-      nutritionist:nutritionist_profiles!fk_appointments_nutritionist_id (
+      id, scheduled_at, price, status, join_url,
+      nutritionist:nutritionist_profiles!teleconsulta_sessions_nutritionist_id_fkey (
         id, user_id, full_name, profile_image_url
       ),
-      patient:patient_profiles!appointments_patient_id_fkey (
+      patient:patient_profiles!teleconsulta_sessions_patient_id_fkey (
         id, user_id, full_name, phone, profile_image_url
       )
     `)
     .eq('id', sessionId)
-    // .or(`nutritionist_id.eq.${userId},patient_id.eq.${userId}`)
     .maybeSingle()
 
   const validSession = validateResourceExists(sessionError ? null : session, 'Sessão não encontrada')

@@ -47,12 +47,12 @@ export function PaymentFeedback() {
           
           try {
             const { data, error } = await supabase
-              .from('appointments')
-              .select('id')
+              .from('payments')
+              .select('id, teleconsulta_session_id')
               .eq('stripe_session_id', sessionId)
               .single()
             
-            if (data && !error) {
+            if (data && !error && data.teleconsulta_session_id) {
               clearInterval(interval)
               setIsPolling(false)
               toast.success('Pagamento confirmado! Sua consulta foi agendada.', {

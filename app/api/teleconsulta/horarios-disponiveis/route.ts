@@ -98,13 +98,16 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
     throw new Error('Erro ao buscar disponibilidade')
   }
 
+  // DOMAIN RULE: Use teleconsulta_sessions ONLY.
+  // Legacy: appointments table is deprecated.
   const { data: bookedSessions, error: sessionsError } = await supabase
-    .from('appointments')
+    .from('teleconsulta_sessions')
     .select('scheduled_at, duration_minutes')
     .eq('nutritionist_id', nutritionist.id)
-    .in('status', [ 'paid', 'confirmed', 'scheduled', 'agendado', 'confirmada' ])
+    .in('status', ['paid', 'scheduled', 'in_progress', 'completed']) // Valid statuses that block slots
   
   if (sessionsError) {
+    console.error('Error fetching teleconsulta_sessions:', sessionsError)
     throw new Error('Erro ao buscar sessões agendadas')
   }
 
