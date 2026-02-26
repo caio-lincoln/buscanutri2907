@@ -1,11 +1,42 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { addMinutes, areIntervalsOverlapping, isBefore, parseISO, addDays, startOfDay, endOfDay } from 'date-fns'
-import { fromZonedTime, toZonedTime, format as formatTz } from 'date-fns-tz'
 
 export const dynamic = 'force-dynamic'
 
-const TIMEZONE = 'America/Sao_Paulo'
+// Helper constants and functions for Timezone Handling
+// We manually handle 'America/Sao_Paulo' (-03:00) to avoid environment-specific Intl issues
+const SP_OFFSET_HOURS = -3;
+const SP_OFFSET_MS = SP_OFFSET_HOURS * 60 * 60 * 1000;
+
+/**
+ * Returns a Date object shifted by the offset, so that UTC methods return local time components.
+ * e.g. 23:00 UTC -> 20:00 UTC (which represents 20:00 SP)
+ */
+function toSaoPaulo(date: Date): Date {
+  return new Date(date.getTime() + SP_OFFSET_MS);
+}
+
+/**
+ * Parses a date string and time string assuming they are in Sao Paulo time,
+ * and returns the corresponding UTC Date.
+ * e.g. "2026-02-26", "20:00" -> "2026-02-26T20:00:00-03:00" -> 23:00 UTC
+ */
+function fromSaoPauloStr(dateStr: string, timeStr: string = '00:00:00'): Date {
+  // Ensure strict format YYYY-MM-DD and HH:mm:ss
+  // Append fixed offset -03:00
+  return new Date(`${dateStr}T${timeStr}-03:00`);
+}
+
+function formatSaoPauloDate(date: Date): string {
+  // Shift to SP time, then take ISO date part (which is YYYY-MM-DD)
+  return toSaoPaulo(date).toISOString().split('T')[0];
+}
+
+function formatSaoPauloTime(date: Date): string {
+  // Shift to SP time, then take ISO time part HH:mm
+  return toSaoPaulo(date).toISOString().split('T')[1].substring(0, 5);
+}
 
 interface AvailabilityRule {
   id: string
@@ -100,29 +131,32 @@ export async function GET(
     const defaultDuration = nutritionist.default_consultation_duration || 60
     const minGap = nutritionist.min_time_between_appointments || 0
 
-    // Converter params para Date objects
+    // Converter params para Date objects (Input já é ISO UTC ou local, mas vamos tratar como referência)
     const rangeStart = parseISO(startParam)
     const rangeEnd = parseISO(endParam)
 
-    // Iterar dia a dia dentro do range
-    // Para garantir cobertura correta, vamos iterar sobre os dias no fuso SP
-    // Converter rangeStart para SP para saber o dia inicial
-    const startZoned = toZonedTime(rangeStart, TIMEZONE)
-    const endZoned = toZonedTime(rangeEnd, TIMEZONE)
+    // Iterar dia a dia dentro do range em FUSO SP
+    // rangeStart é o início do range em UTC (ou local do request).
+    // Precisamos saber qual o dia correspondente em SP.
+    const startZoned = toSaoPaulo(rangeStart)
+    const endZoned = toSaoPaulo(rangeEnd)
     
-    // Normalizar para o início do dia para iteração
-    let currentDayIterator = startOfDay(startZoned)
-    const endDayLimit = endOfDay(endZoned)
+    // Normalizar para o início do dia (00:00:00) para iteração, usando UTC Date components que representam SP
+    let currentDayIterator = new Date(Date.UTC(startZoned.getUTCFullYear(), startZoned.getUTCMonth(), startZoned.getUTCDate()))
+    const endDayLimit = new Date(Date.UTC(endZoned.getUTCFullYear(), endZoned.getUTCMonth(), endZoned.getUTCDate(), 23, 59, 59))
 
     debug.steps.push({ 
       step: 'iteration_range', 
-      startZoned: formatTz(startZoned, 'yyyy-MM-dd HH:mm', { timeZone: TIMEZONE }), 
-      endZoned: formatTz(endZoned, 'yyyy-MM-dd HH:mm', { timeZone: TIMEZONE })
+      startZoned: startZoned.toISOString(), 
+      endZoned: endZoned.toISOString()
     })
 
+    // Loop de dias
+    // currentDayIterator é um Date que representa 00:00 UTC do dia que queremos processar.
+    // Mas conceitualmente ele é "00:00 SP".
     while (currentDayIterator <= endDayLimit) {
-      // Dia da semana (0-6)
-      const weekDay = currentDayIterator.getDay() // 0=Dom, 1=Seg...
+      // Dia da semana (0-6) do dia atual
+      const weekDay = currentDayIterator.getUTCDay() // 0=Dom, 1=Seg...
       
       // Encontrar regras para este dia
       const dayRules = rules.filter((r: AvailabilityRule) => {
@@ -133,52 +167,71 @@ export async function GET(
       })
 
       for (const rule of dayRules) {
-        const [startHour, startMinute] = rule.start_time.split(':').map(Number)
-        const [endHour, endMinute] = rule.end_time.split(':').map(Number)
+        // currentDayIterator é "YYYY-MM-DD 00:00:00 UTC" que mapeia para o dia em questão
+        const yyyy = currentDayIterator.getUTCFullYear()
+        const mm = String(currentDayIterator.getUTCMonth() + 1).padStart(2, '0')
+        const dd = String(currentDayIterator.getUTCDate()).padStart(2, '0')
+        const dateStr = `${yyyy}-${mm}-${dd}`
         
-        // Construir data base para o slot no fuso SP
-        // currentDayIterator já está "ancorado" no dia correto (mas cuidado com horas)
-        // Use toISOString() to extract YYYY-MM-DD from the shifted date
-        // formatTz would shift it again, causing wrong date
-        const dateStr = currentDayIterator.toISOString().split('T')[0]
+        // Criar datas de inicio e fim da REGRA em SP, usando construção manual
+        // Isso gera o timestamp UTC correto (ex: 23:00 UTC anterior ou XX:00 UTC atual)
+        const slotStartUTC = fromSaoPauloStr(dateStr, rule.start_time)
+        const ruleEndUTC = fromSaoPauloStr(dateStr, rule.end_time)
         
-        // Criar datas de inicio e fim da REGRA em SP
-        // date-fns-tz fromZonedTime converte "2023-10-27 08:00" (SP) -> UTC
-        const ruleStartUTC = fromZonedTime(`${dateStr} ${rule.start_time}`, TIMEZONE)
-        const ruleEndUTC = fromZonedTime(`${dateStr} ${rule.end_time}`, TIMEZONE)
-        
-        let slotStartUTC = ruleStartUTC
+        let currentSlotStart = slotStartUTC
         const slotDuration = (rule.slot_duration_minutes || defaultDuration)
         const step = slotDuration + minGap
         const toleranceMinutes = 30 // Allow slots to exceed rule end time by up to 30 mins
+        
+        // Use a minute counter to generate time strings strictly from rule.start_time
+        // This avoids any Date object timezone formatting issues (e.g. 20:00 -> 23:00)
+        let minutesFromStart = 0;
 
-        while (addMinutes(slotStartUTC, slotDuration) <= addMinutes(ruleEndUTC, toleranceMinutes)) {
-          const slotEndUTC = addMinutes(slotStartUTC, slotDuration)
+        function addMinutesToTimeString(baseTime: string, minutesToAdd: number): string {
+          const [hh, mm] = baseTime.split(':').map(Number);
+          const totalMinutes = hh * 60 + mm + minutesToAdd;
+          const newHH = Math.floor(totalMinutes / 60) % 24;
+          const newMM = totalMinutes % 60;
+          return `${String(newHH).padStart(2, '0')}:${String(newMM).padStart(2, '0')}`;
+        }
 
+        while (addMinutes(currentSlotStart, slotDuration) <= addMinutes(ruleEndUTC, toleranceMinutes)) {
+          const slotEndUTC = addMinutes(currentSlotStart, slotDuration)
+          
+          // Generate strict time string
+          const timeString = addMinutesToTimeString(rule.start_time, minutesFromStart);
+
+          // Verificar sobreposição com o range solicitado (apenas para não retornar slots fora do pedido)
           if (areIntervalsOverlapping(
-            { start: slotStartUTC, end: slotEndUTC },
+            { start: currentSlotStart, end: slotEndUTC },
             { start: rangeStart, end: rangeEnd }
           )) {
             const isBlocked = appointments?.some(app => {
               const appStart = parseISO(app.scheduled_at)
               const appEnd = addMinutes(appStart, app.duration_minutes + minGap)
               return areIntervalsOverlapping(
-                { start: slotStartUTC, end: slotEndUTC },
+                { start: currentSlotStart, end: slotEndUTC },
                 { start: appStart, end: appEnd }
               )
             })
 
+            // Debug log for specific slot issues
+            if (process.env.NODE_ENV !== 'production' || timeString === '20:00' || timeString === '23:00') {
+              console.log(`[SlotGen] RuleStart=${rule.start_time} Mins=${minutesFromStart} -> TimeStr=${timeString} | DateISO=${currentSlotStart.toISOString()}`);
+            }
+
             generatedSlots.push({
-              datetime: slotStartUTC.toISOString(),
-              date: dateStr,
-              time: formatTz(slotStartUTC, 'HH:mm', { timeZone: TIMEZONE }),
+              datetime: currentSlotStart.toISOString(),
+              date: formatSaoPauloDate(currentSlotStart),
+              time: timeString, // Use the strictly calculated string
               duration: slotDuration,
               available: !isBlocked,
               has_collision: isBlocked
             })
           }
 
-          slotStartUTC = addMinutes(slotStartUTC, step)
+          currentSlotStart = addMinutes(currentSlotStart, step)
+          minutesFromStart += step
         }
       }
 
@@ -191,7 +244,7 @@ export async function GET(
 
     return NextResponse.json({
       ok: true,
-      timezone: TIMEZONE,
+      timezone: 'America/Sao_Paulo',
       range: { start: startParam, end: endParam },
       slots: generatedSlots,
       debug: process.env.NODE_ENV !== 'production' ? debug : undefined

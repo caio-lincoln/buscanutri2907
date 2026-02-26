@@ -38,21 +38,31 @@ export function PaymentPanel({ nutritionist, selectedSlot }: PaymentPanelProps) 
   
   const availableMethods = useMemo(() => {
     const methods: string[] = []
+    
     if (nutritionist.payment_methods) {
-      const p = nutritionist.payment_methods.toLowerCase()
-      console.log('Payment Methods Raw:', p) // Debug log
+      const raw = nutritionist.payment_methods.toLowerCase()
       
-      if (p.includes('cartao') || p.includes('cartão') || p.includes('credit')) methods.push('credit_card')
-      if (p.includes('boleto')) methods.push('boleto')
-      if (p.includes('pix')) methods.push('pix')
+      // Debug logs to help diagnose production issues
+      if (process.env.NODE_ENV !== 'production' || raw.includes('iris') || raw.includes('cristiane')) {
+        console.log('[PaymentPanel] Processing payment methods for:', nutritionist.full_name)
+        console.log('[PaymentPanel] Raw string:', raw)
+      }
+
+      // Robust parsing logic
+      const hasCredit = raw.includes('cartao') || raw.includes('cartão') || raw.includes('credit') || raw.includes('crédito')
+      const hasBoleto = raw.includes('boleto')
+      const hasPix = raw.includes('pix')
+
+      if (hasCredit) methods.push('credit_card')
+      if (hasBoleto) methods.push('boleto')
+      if (hasPix) methods.push('pix')
     }
     
-    // Default fallback if no known methods found
+    // Default fallback if no known methods found (always show at least credit card)
     if (methods.length === 0) methods.push('credit_card')
     
-    console.log('Available Methods Parsed:', methods) // Debug log
     return methods
-  }, [nutritionist.payment_methods])
+  }, [nutritionist.payment_methods, nutritionist.full_name])
 
   const [paymentMethod, setPaymentMethod] = useState(availableMethods[0])
 

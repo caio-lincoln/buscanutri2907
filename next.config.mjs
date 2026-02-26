@@ -60,7 +60,7 @@ const nextConfig = {
   reactStrictMode: true,
   // Configuração para otimização de build
   compiler: {
-    removeConsole: process.env.NODE_ENV === 'production',
+    // removeConsole: process.env.NODE_ENV === 'production',
   },
   // Headers otimizados para produção
   async headers() {
