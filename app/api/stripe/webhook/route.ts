@@ -66,7 +66,7 @@ export async function POST(req: Request) {
         .select('id')
         .eq('nutritionist_id', appointment.nutritionist_id)
         .eq('scheduled_at', appointment.scheduled_at)
-        .eq('status', 'paid')
+        .eq('status', 'confirmado')
         .neq('id', appointmentId)
 
       if (conflicts && conflicts.length > 0) {
@@ -87,7 +87,7 @@ export async function POST(req: Request) {
 
         await supabaseAdmin
           .from('appointments')
-          .update({ status: 'cancelled', cancellation_reason: 'Double booking conflict - Refunded' })
+          .update({ status: 'cancelado', cancellation_reason: 'Double booking conflict - Refunded' })
           .eq('id', appointmentId)
 
         return NextResponse.json({ error: 'Conflict detected - Refunded' }, { status: 409 })
@@ -97,7 +97,7 @@ export async function POST(req: Request) {
     // 3. Mark appointment as PAID
     const { error: updateError } = await supabaseAdmin
       .from('appointments')
-      .update({ status: 'paid' })
+      .update({ status: 'confirmado', payment_status: 'pago' })
       .eq('id', appointmentId)
 
     if (updateError) {

@@ -17,7 +17,7 @@ export interface TeleconsultaSession {
   scheduled_at: string
   duration_minutes: number
   price: number
-  status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled'
+  status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled' | 'pending_payment' | 'agendado' | 'confirmado' | 'concluido' | 'cancelado' | 'em_andamento'
   join_url: string
   session_token: string
   nutritionist?: {
@@ -42,7 +42,7 @@ export interface TeleconsultaCardProps {
   className?: string
 }
 
-const statusConfig = {
+const statusConfig: Record<string, { label: string, color: string, icon: any }> = {
   scheduled: {
     label: 'Agendada',
     color: 'bg-blue-100 text-blue-800',
@@ -67,6 +67,31 @@ const statusConfig = {
     label: 'Pendente pagamento',
     color: 'bg-blue-100 text-blue-800',
     icon: Calendar
+  },
+  agendado: {
+    label: 'Agendada',
+    color: 'bg-blue-100 text-blue-800',
+    icon: Calendar
+  },
+  confirmado: {
+    label: 'Confirmada',
+    color: 'bg-green-100 text-green-800',
+    icon: Calendar
+  },
+  concluido: {
+    label: 'Concluída',
+    color: 'bg-gray-100 text-gray-800',
+    icon: Clock
+  },
+  cancelado: {
+    label: 'Cancelada',
+    color: 'bg-red-100 text-red-800',
+    icon: Clock
+  },
+  em_andamento: {
+    label: 'Em andamento',
+    color: 'bg-green-100 text-green-800',
+    icon: Video
   }
 }
 
@@ -85,11 +110,11 @@ export function TeleconsultaCard({
   const scheduledUtcMs = scheduledDate.getTime()
   const allowJoinMinutesBefore = 5
   const canJoinFromMs = scheduledUtcMs - allowJoinMinutesBefore * 60 * 1000
-  const canJoin = session.status === 'scheduled' && nowUtcMs >= canJoinFromMs
+  const canJoin = (session.status === 'scheduled' || session.status === 'agendado' || session.status === 'confirmado') && nowUtcMs >= canJoinFromMs
   const isToday = isSameDayBR(session.scheduled_at)
   
   const otherUser = userRole === 'nutricionista' ? session.patient : session.nutritionist
-  const statusInfo = statusConfig[session.status]
+  const statusInfo = statusConfig[session.status] || statusConfig.scheduled
   const StatusIcon = statusInfo?.icon
 
   const handleCopyLink = async () => {

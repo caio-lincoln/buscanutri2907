@@ -124,7 +124,7 @@ export async function POST(request: Request) {
         nutritionist_id,
         scheduled_at,
         price,
-        status: 'pending_payment', // Changed from 'agendado' to enforce payment first
+        status: 'agendado', // Changed from 'pending_payment' to match DB constraint
         payment_status: 'pendente', // Default payment status
         // Required legacy/redundant fields
         appointment_date,

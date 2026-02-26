@@ -39,13 +39,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Appointment is not pending or agendado' }, { status: 400 })
     }
 
-    // 2. Check availability (ensure no other paid appointment for this slot)
+    // 2. Check availability (ensure no other paid/confirmed appointment for this slot)
     const { data: conflicts, error: conflictError } = await supabase
       .from('appointments')
       .select('id')
       .eq('nutritionist_id', appointment.nutritionist_id)
       .eq('scheduled_at', appointment.scheduled_at)
-      .eq('status', 'paid')
+      .in('status', ['confirmado', 'concluido'])
       .neq('id', appointment_id) // Exclude self (though self is pending)
 
     if (conflictError) {

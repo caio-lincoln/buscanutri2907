@@ -114,12 +114,12 @@ export async function GET(
     debug.steps.push({ step: 'rules_found', count: rules.length })
 
     // 3. Buscar Agendamentos (Appointments) no intervalo
-    // Status que ocupam horário: paid, scheduled, in_progress, pending_payment
+    // Status que ocupam horário: paid, scheduled, in_progress, pending_payment, agendado, confirmado, concluido
     const { data: appointments } = await supabase
       .from('appointments')
       .select('scheduled_at, duration_minutes, status')
       .eq('nutritionist_id', nutritionist.id)
-      .in('status', ['paid', 'scheduled', 'in_progress', 'pending_payment'])
+      .in('status', ['paid', 'scheduled', 'in_progress', 'pending_payment', 'agendado', 'confirmado', 'concluido', 'em_andamento'])
       .gte('scheduled_at', startParam)
       .lte('scheduled_at', endParam)
       .is('is_deleted', false) // Excluir deletados logicamente
