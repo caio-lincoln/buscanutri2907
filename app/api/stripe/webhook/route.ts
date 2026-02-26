@@ -1,366 +1,125 @@
-import { NextRequest, NextResponse } from 'next/server'
-import Stripe from 'stripe'
-import { createAdminClient } from '@/lib/supabase/server'
-import { stripe } from '../../../../lib/stripe'
 
-const supabaseAdmin = createAdminClient()
+import { headers } from 'next/headers'
+import { NextResponse } from 'next/server'
+import { stripe } from '@/lib/stripe'
+import { createClient } from '@supabase/supabase-js'
 
-export async function POST(req: NextRequest) {
+// We need a Service Role client to update DB without user context
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
+
+export async function POST(req: Request) {
+  if (!stripe) {
+    return NextResponse.json({ error: 'Stripe not configured' }, { status: 500 })
+  }
+
   const body = await req.text()
-  const sig = req.headers.get('stripe-signature') || ''
-  let event: Stripe.Event
+  const signature = headers().get('stripe-signature') as string
+
+  let event
+
   try {
     event = stripe.webhooks.constructEvent(
       body,
-      sig,
-      process.env[ 'STRIPE_WEBHOOK_SECRET' ] as string
+      signature,
+      process.env.STRIPE_WEBHOOK_SECRET!
     )
-  } catch (e1: any) {
-    try {
-      event = stripe.webhooks.constructEvent(
-        body,
-        sig,
-        process.env[ 'STRIPE_CONNECT_WEBHOOK_SECRET' ] as string
-      )
-    } catch (e2: any) {
-      console.error('Webhook signature verify failed:', e1?.message, e2?.message)
-      return new NextResponse(`Webhook Error: signature`, { status: 400 })
-    }
+  } catch (err: any) {
+    console.error(`Webhook signature verification failed: ${err.message}`)
+    return NextResponse.json({ error: 'Webhook error' }, { status: 400 })
   }
 
-  try {
-    switch (event.type) {
-      // ===================== PAGAMENTOS DE TELECONSULTA ======================
-      case 'checkout.session.completed': {
-        const session = event.data.object as Stripe.Checkout.Session
-        const metadata = session.metadata || {}
+  if (event.type === 'checkout.session.completed') {
+    const session = event.data.object as any
+    const appointmentId = session.metadata?.appointment_id
 
-        if (metadata[ 'type' ] === 'teleconsulta') {
-          const patient_id = session.client_reference_id || metadata.patient_id
-          const nutritionist_id = metadata.nutritionist_id
-          const teleconsulta_session_id = metadata.teleconsulta_session_id
-          const scheduled_for = metadata.scheduled_for
-          const duration_minutes = Number(metadata.duration_minutes || 60)
-          const price_brl = Number(metadata.price_brl || 0)
-          const stripe_payment_intent_id = String(session.payment_intent || '')
-          const payment_method =
-            Array.isArray(session.payment_method_types) && session.payment_method_types.length > 0
-              ? session.payment_method_types[ 0 ]
-              : null
+    if (!appointmentId) {
+      console.error('Missing appointment_id in metadata')
+      return NextResponse.json({ error: 'Missing metadata' }, { status: 400 })
+    }
 
-          const amount_subtotal = typeof session.amount_subtotal === 'number' ? session.amount_subtotal / 100 : price_brl
-          const amount_total = typeof session.amount_total === 'number' ? session.amount_total / 100 : price_brl
-          const discount_brl = session.total_details?.amount_discount
-            ? session.total_details.amount_discount / 100
-            : Math.max(0, amount_subtotal - amount_total)
-          const coupon_code_meta = metadata.coupon_code && metadata.coupon_code.length > 0
-            ? metadata.coupon_code
-            : null
+    // 1. Check idempotency: if payment already exists
+    const { data: existingPayment } = await supabaseAdmin
+      .from('payments')
+      .select('id')
+      .eq('stripe_payment_intent_id', session.payment_intent)
+      .single()
 
-          const { error: upErr } = await supabaseAdmin
-            .from('teleconsulta_sessions')
-            .update({
-              scheduled_at: scheduled_for,
-              duration_minutes,
-              status: 'scheduled',
-              payment_intent_id: stripe_payment_intent_id || null,
-              payment_status: 'paid',
-              payment_method,
-              coupon_code: coupon_code_meta,
-              discount_value: discount_brl || null,
-              amount_original: amount_subtotal,
-              amount_paid: amount_total,
-              updated_at: new Date().toISOString(),
+    if (existingPayment) {
+      return NextResponse.json({ received: true })
+    }
+
+    // 2. Check conflict: if another appointment is already PAID for same slot?
+    // First fetch the appointment to get details
+    const { data: appointment } = await supabaseAdmin
+      .from('appointments')
+      .select('*')
+      .eq('id', appointmentId)
+      .single()
+
+    if (appointment) {
+      // Check for other PAID appointments in same slot
+      const { data: conflicts } = await supabaseAdmin
+        .from('appointments')
+        .select('id')
+        .eq('nutritionist_id', appointment.nutritionist_id)
+        .eq('scheduled_at', appointment.scheduled_at)
+        .eq('status', 'paid')
+        .neq('id', appointmentId)
+
+      if (conflicts && conflicts.length > 0) {
+        // CONFLICT DETECTED!
+        // Refund the payment and mark as cancelled
+        console.error('Conflict detected! Issuing refund.')
+        
+        try {
+          if (session.payment_intent) {
+            await stripe.refunds.create({
+              payment_intent: session.payment_intent as string,
+              reason: 'duplicate',
             })
-            .eq('id', teleconsulta_session_id)
-            .eq('patient_id', patient_id)
-            .eq('nutritionist_id', nutritionist_id)
-
-          if (upErr) console.error('Erro ao atualizar teleconsulta:', upErr)
-
-          const { error: payErr } = await supabaseAdmin.from('payments').insert({
-            patient_id,
-            nutritionist_id,
-            amount_brl: price_brl,
-            currency: 'brl',
-            status: 'succeeded',
-            stripe_session_id: session.id,
-            stripe_payment_intent_id,
-            teleconsulta_session_id,
-            raw: session as any,
-          })
-          if (payErr) console.error('Erro ao inserir payment:', payErr)
+          }
+        } catch (refundError) {
+          console.error('Error issuing refund:', refundError)
         }
-
-        break
-      }
-
-      case 'payment_intent.processing':
-      case 'payment_intent.succeeded':
-      case 'payment_intent.payment_failed': {
-        const intent = event.data.object as Stripe.PaymentIntent
-        const metadata = intent.metadata || {}
-
-        if (metadata[ 'type' ] !== 'teleconsulta') {
-          break
-        }
-
-        const teleconsulta_session_id = metadata.teleconsulta_session_id
-        const patient_id = metadata.patient_id
-        const nutritionist_id = metadata.nutritionist_id
-
-        if (!teleconsulta_session_id || !patient_id || !nutritionist_id) {
-          break
-        }
-
-        let payment_status: 'pending' | 'paid' | 'failed' = 'pending'
-        switch (event.type) {
-          case 'payment_intent.succeeded':
-            payment_status = 'paid'
-            break
-          case 'payment_intent.payment_failed':
-            payment_status = 'failed'
-            break
-          default:
-            payment_status = 'pending'
-        }
-
-        const primaryMethod =
-          Array.isArray(intent.payment_method_types) && intent.payment_method_types.length > 0
-            ? intent.payment_method_types[ 0 ]
-            : null
-
-        const { error: upErr } = await supabaseAdmin
-          .from('teleconsulta_sessions')
-          .update({
-            payment_intent_id: intent.id,
-            payment_status,
-            payment_method: primaryMethod,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', teleconsulta_session_id)
-          .eq('patient_id', patient_id)
-          .eq('nutritionist_id', nutritionist_id)
-
-        if (upErr) {
-          console.error('Erro ao atualizar pagamento da teleconsulta (PI):', upErr)
-        }
-
-        break
-      }
-
-      // ======================= CONNECT (status da conta) ======================
-      case 'account.updated': {
-        const account = event.data.object as Stripe.Account
-
-        const onboardingComplete =
-          !!account.details_submitted && !!account.charges_enabled && !!account.payouts_enabled
-
-        const { data: prof, error: profErr } = await supabaseAdmin
-          .from('nutritionist_profiles')
-          .update({
-            stripe_onboarding_complete: onboardingComplete,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('stripe_account_id', account.id)
-          .select('user_id, stripe_account_id, stripe_onboarding_complete')
-          .single()
-
-        if (profErr) {
-          console.error('Erro ao marcar onboarding como completo:', profErr)
-          break
-        }
-
-        if (!prof?.user_id) break
-
-        const connectOk = !!prof.stripe_account_id && !!onboardingComplete
-        const subOk = await isSubscriptionActive(prof.user_id)
 
         await supabaseAdmin
-          .from('nutritionist_profiles')
-          .update({
-            is_listed: connectOk && subOk,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('user_id', prof.user_id)
+          .from('appointments')
+          .update({ status: 'cancelled', cancellation_reason: 'Double booking conflict - Refunded' })
+          .eq('id', appointmentId)
 
-        break
+        return NextResponse.json({ error: 'Conflict detected - Refunded' }, { status: 409 })
       }
-
-      case 'account.application.deauthorized': {
-        const data = event.data.object as { account: string }
-        const accountId = data.account
-
-        const { data: prof, error } = await supabaseAdmin
-          .from('nutritionist_profiles')
-          .update({
-            stripe_onboarding_complete: false,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('stripe_account_id', accountId)
-          .select('user_id')
-          .single()
-
-        if (error) {
-          console.error('Erro ao tratar deauthorized:', error)
-          break
-        }
-
-        if (prof?.user_id) {
-          // Se desconectou, não pode ser listado
-          await supabaseAdmin
-            .from('nutritionist_profiles')
-            .update({ is_listed: false, updated_at: new Date().toISOString() })
-            .eq('user_id', prof.user_id)
-        }
-        break
-      }
-
-      // ====================== ASSINATURAS (Stripe Billing) ====================
-      case 'customer.subscription.created':
-      case 'customer.subscription.updated':
-      case 'customer.subscription.deleted': {
-        const sub = event.data.object as Stripe.Subscription;
-
-        const customerId =
-          typeof sub.customer === 'string' ? sub.customer : sub.customer.id;
-        const subscriptionId = sub.id;
-        const status = sub.status;
-        const currentPeriodEndIso = sub.current_period_end
-          ? new Date(sub.current_period_end * 1000).toISOString()
-          : null;
-        const cancelAtPeriodEnd = !!sub.cancel_at_period_end;
-
-        let userId = await findUserIdByStripeCustomerId(customerId);
-        if (!userId) {
-          try {
-            const cust = await stripe.customers.retrieve(customerId);
-            if (typeof cust !== 'string' && cust.metadata?.user_id) {
-              userId = cust.metadata.user_id as string;
-            }
-          } catch { }
-        }
-        if (!userId) {
-          console.error('Sem user_id resolvido para customer', customerId);
-          break;
-        }
-
-        // Espelha assinatura
-        const { error: upErr } = await supabaseAdmin
-          .from('user_subscriptions')
-          .upsert({
-            user_id: userId,
-            stripe_customer_id: customerId,
-            stripe_subscription_id: subscriptionId,
-            status,
-            current_period_end: currentPeriodEndIso,
-            cancel_at_period_end: cancelAtPeriodEnd,
-            updated_at: new Date().toISOString(),
-          });
-        if (upErr) {
-          console.error('Erro ao upsert user_subscriptions:', upErr);
-          break;
-        }
-
-        // Recalcula listagem
-        const subOk = isSubOk(status);
-
-        if (!subOk) {
-          await unlist(userId);
-        } else {
-          const { data: prof, error: profErr } = await supabaseAdmin
-            .from('nutritionist_profiles')
-            .select('stripe_account_id, stripe_onboarding_complete')
-            .eq('user_id', userId)
-            .single();
-          if (profErr) {
-            console.error('Erro ao consultar perfil p/ is_listed:', profErr);
-            break;
-          }
-
-          const connectOk = !!prof?.stripe_account_id && !!prof?.stripe_onboarding_complete;
-
-          await supabaseAdmin
-            .from('nutritionist_profiles')
-            .update({
-              is_listed: connectOk, // volta a ser listado só se o Connect estiver ok
-              updated_at: new Date().toISOString(),
-            })
-            .eq('user_id', userId);
-        }
-
-        break;
-      }
-
-      case 'invoice.payment_failed': {
-        const invoice = event.data.object as Stripe.Invoice;
-        if (invoice.billing_reason !== 'subscription_cycle') break;
-
-        const customerId =
-          typeof invoice.customer === 'string' ? invoice.customer : invoice.customer?.id;
-        if (!customerId) break;
-
-        const userId = await findUserIdByStripeCustomerId(customerId);
-        if (!userId) break;
-
-        // marca past_due e deslista
-        const { error } = await supabaseAdmin
-          .from('user_subscriptions')
-          .update({
-            status: 'past_due',
-            updated_at: new Date().toISOString(),
-          })
-          .eq('user_id', userId)
-          .eq('stripe_customer_id', customerId);
-        if (error) console.error('Erro ao marcar past_due:', error);
-
-        await unlist(userId);
-        break;
-      }
-
-      default:
-        break
     }
 
-    return NextResponse.json({ received: true })
-  } catch (err) {
-    console.error('Erro no webhook:', err)
-    return new NextResponse('Webhook handler failed', { status: 500 })
+    // 3. Mark appointment as PAID
+    const { error: updateError } = await supabaseAdmin
+      .from('appointments')
+      .update({ status: 'paid' })
+      .eq('id', appointmentId)
+
+    if (updateError) {
+      console.error('Error updating appointment status:', updateError)
+      return NextResponse.json({ error: 'Database update failed' }, { status: 500 })
+    }
+
+    // 4. Create Payment record
+    const { error: paymentError } = await supabaseAdmin
+      .from('payments')
+      .insert({
+        appointment_id: appointmentId,
+        stripe_payment_intent_id: session.payment_intent,
+        amount: session.amount_total ? session.amount_total / 100 : 0,
+        currency: session.currency || 'brl',
+        status: 'paid',
+      })
+
+    if (paymentError) {
+      console.error('Error creating payment record:', paymentError)
+    }
   }
-}
 
-async function findUserIdByStripeCustomerId(customerId: string): Promise<string | null> {
-  const { data, error } = await supabaseAdmin
-    .from('user_subscriptions')
-    .select('user_id')
-    .eq('stripe_customer_id', customerId)
-    .single()
-  if (error) return null
-  return (data?.user_id as string) ?? null
-}
-
-const ACTIVE_STATUSES = new Set(['active', 'trialing']) 
-
-export function isSubOk(status: string | null): boolean {
-  return !!status && ACTIVE_STATUSES.has(status)
-}
-
-async function isSubscriptionActive(userId: string): Promise<boolean> {
-  const { data } = await supabaseAdmin
-    .from('user_subscriptions')
-    .select('status')
-    .eq('user_id', userId)
-    .single()
-  const status = (data as any)?.status ?? null
-  return isSubOk(status)
-}
-
-async function unlist(userId: string) {
-  await supabaseAdmin
-    .from('nutritionist_profiles')
-    .update({
-      is_listed: false,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('user_id', userId);
+  return NextResponse.json({ received: true })
 }

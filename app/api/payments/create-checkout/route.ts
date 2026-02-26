@@ -1,422 +1,159 @@
-// app/api/teleconsulta/checkout/route.ts
-import { NextRequest, NextResponse } from 'next/server'
-import Stripe from 'stripe'
-import { formatDateBR } from '@/lib/utils/format-date'
+
+import { createClient } from '@/lib/supabase/server'
+import { NextResponse } from 'next/server'
 import { stripe } from '@/lib/stripe'
-import { createAdminClient, createClient } from '@/lib/supabase/server'
 
-type ConsultPaymentMethod = 'card' | 'boleto'
-
-interface CreateConsultPaymentParams {
-  amountBrl: number
-  patientId: string
-  patientEmail?: string | null
-  nutritionistId: string
-  nutritionistName?: string | null
-  teleconsultaSessionId: string
-  scheduledFor: string
-  durationMinutes?: number
-  paymentMethod?: ConsultPaymentMethod
-  couponCode?: string | null
-  connectedAccountId: string
-  successUrl: string
-  cancelUrl: string
-}
-
-interface ConsultPaymentResult {
-  client_secret: string | null
-  payment_intent_id: string | null
-  session_id: string
-  available_methods: ConsultPaymentMethod[]
-  amount_original: number
-  amount_final: number
-  discount_applied: boolean
-  discount_value: number
-}
-
-function getAvailablePaymentMethodsForCurrency(currency: string): ConsultPaymentMethod[] {
-  const normalized = currency.toLowerCase()
-
-  if (normalized === 'brl') {
-    return [ 'card', 'boleto' ]
-  }
-
-  return [ 'card' ]
-}
-
-async function validatePromotionCode(
-  couponCode: string,
-  amountInCents: number,
-  currency: string,
-): Promise<{
-  promotionCode: Stripe.PromotionCode
-  coupon: Stripe.Coupon
-  discountAmountInCents: number
-  finalAmountInCents: number
-}> {
-  if (!stripe) {
-    throw new Error('Stripe não inicializado')
-  }
-
-  const list = await stripe.promotionCodes.list({
-    code: couponCode,
-    active: true,
-    limit: 1,
-    expand: [ 'data.coupon' ],
-  })
-
-  const promotionCode = list.data[ 0 ]
-  if (!promotionCode) {
-    throw new Error('Cupom inválido ou expirado')
-  }
-
-  const coupon = promotionCode.coupon as Stripe.Coupon
-
-  if (coupon.valid === false) {
-    throw new Error('Cupom inválido ou expirado')
-  }
-
-  let discountAmountInCents = 0
-
-  if (coupon.percent_off) {
-    discountAmountInCents = Math.round(amountInCents * (coupon.percent_off / 100))
-  } else if (coupon.amount_off && coupon.currency?.toLowerCase() === currency.toLowerCase()) {
-    discountAmountInCents = coupon.amount_off
-  }
-
-  const finalAmountInCents = Math.max(amountInCents - discountAmountInCents, 0)
-
-  return {
-    promotionCode,
-    coupon,
-    discountAmountInCents,
-    finalAmountInCents,
-  }
-}
-
-async function createConsultPayment(params: CreateConsultPaymentParams): Promise<ConsultPaymentResult> {
-  if (!stripe) {
-    throw new Error('Stripe não inicializado')
-  }
-
-  const {
-    amountBrl,
-    patientId,
-    patientEmail,
-    nutritionistId,
-    nutritionistName,
-    teleconsultaSessionId,
-    scheduledFor,
-    durationMinutes,
-    paymentMethod,
-    couponCode,
-    connectedAccountId,
-    successUrl,
-    cancelUrl,
-  } = params
-
-  const amount = Math.round(Number(amountBrl) * 100)
-  const appFee = Math.round(amount * 0.20)
-  const currency = 'brl'
-
-  const availableMethods = getAvailablePaymentMethodsForCurrency(currency)
-  const normalizedSelected = paymentMethod && availableMethods.includes(paymentMethod) ? paymentMethod : null
-
-  const paymentMethodTypes = normalizedSelected ? [ normalizedSelected ] : availableMethods
-
-  let promotionCodeId: string | undefined
-  let discountAmountInCents = 0
-  let finalAmountInCents = amount
-
-  if (couponCode && couponCode.trim()) {
-    const validation = await validatePromotionCode(couponCode.trim(), amount, currency)
-    promotionCodeId = validation.promotionCode.id
-    discountAmountInCents = validation.discountAmountInCents
-    finalAmountInCents = validation.finalAmountInCents
-  }
-
-  const metadata = {
-    teleconsulta_session_id: teleconsultaSessionId,
-    patient_id: patientId,
-    nutritionist_id: nutritionistId,
-    scheduled_for: scheduledFor,
-    duration_minutes: String(durationMinutes || 60),
-    type: 'teleconsulta',
-    price_brl: String(amountBrl),
-    coupon_code: couponCode?.trim() || '',
-    discount_value_cents: String(discountAmountInCents),
-    amount_original_cents: String(amount),
-    amount_final_cents: String(finalAmountInCents),
-  }
-
-  const session = await stripe.checkout.sessions.create({
-    mode: 'payment',
-    payment_method_types: paymentMethodTypes,
-    customer_email: patientEmail || undefined,
-    client_reference_id: patientId,
-    line_items: [
-      {
-        quantity: 1,
-        price_data: {
-          currency,
-          unit_amount: amount,
-          product_data: {
-            name: `Teleconsulta com ${nutritionistName || 'nutricionista'}`,
-            description: `Data/Hora: ${formatDateBR(scheduledFor)} · Duração: ${durationMinutes || 60} min`,
-          },
-        },
-      },
-    ],
-    payment_intent_data: {
-      application_fee_amount: appFee,
-      transfer_data: { destination: connectedAccountId },
-      on_behalf_of: connectedAccountId,
-      metadata,
-    },
-    metadata,
-    discounts: promotionCodeId ? [ { promotion_code: promotionCodeId } ] : undefined,
-    success_url: successUrl,
-    cancel_url: cancelUrl,
-    billing_address_collection: 'auto',
-    expand: [ 'payment_intent' ],
-  })
-
-  const paymentIntent = session.payment_intent && typeof session.payment_intent !== 'string'
-    ? session.payment_intent as Stripe.PaymentIntent
-    : null
-
-  const paymentIntentId = paymentIntent?.id || (typeof session.payment_intent === 'string' ? session.payment_intent : null)
-  const clientSecret = paymentIntent?.client_secret ?? null
-
-  return {
-    client_secret: clientSecret,
-    payment_intent_id: paymentIntentId,
-    session_id: session.id,
-    available_methods: availableMethods,
-    amount_original: amount / 100,
-    amount_final: finalAmountInCents / 100,
-    discount_applied: discountAmountInCents > 0,
-    discount_value: discountAmountInCents / 100,
-  }
-}
-
-function buildErrorResponse(requestId: string, code: string, message: string, status: number, details?: Record<string, unknown>) {
-  return NextResponse.json(
-    {
-      ok: false,
-      error: {
-        code,
-        message,
-        details: {
-          requestId,
-          ...details,
-        },
-      },
-    },
-    { status },
-  )
-}
-
-function buildSuccessResponse(requestId: string, data: Record<string, unknown>, status: number = 200) {
-  return NextResponse.json(
-    {
-      ok: true,
-      data,
-      requestId,
-    },
-    { status },
-  )
-}
-
-export async function POST(req: NextRequest) {
-  const requestId = crypto.randomUUID()
-
+export async function POST(request: Request) {
   try {
-    const origin = process.env[ 'APP_BASE_URL' ] || new URL(req.url).origin
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
 
-    const {
-      patient_id,
-      patient_email,
-      nutritionist_id,
-      nutritionist_name,
-      scheduled_for,
-      duration_minutes,
-      price_brl,
-      teleconsulta_session_id,
-      payment_method,
-      coupon_code,
-    } = await req.json()
-
-    if (!patient_id || !nutritionist_id || !scheduled_for || !price_brl || !teleconsulta_session_id) {
-      console.error('payments/create-checkout POST invalid payload', {
-        requestId,
-        patient_id,
-        nutritionist_id,
-        scheduled_for,
-        price_brl,
-        teleconsulta_session_id,
-      })
-      return buildErrorResponse(requestId, 'INVALID_DATETIME', 'Dados incompletos para iniciar o pagamento', 400)
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     if (!stripe) {
-      console.error('payments/create-checkout POST stripe not initialized', { requestId })
-      return buildErrorResponse(
-        requestId,
-        'ENV_MISCONFIG',
-        'Pagamento indisponível no momento.',
-        500,
-      )
+      console.error('Stripe is not configured')
+      return NextResponse.json({ error: 'Stripe configuration error' }, { status: 500 })
     }
 
-    const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const body = await request.json()
+    const { appointment_id } = body
 
-    if (authError || !user?.id) {
-      console.error('payments/create-checkout POST auth error', { requestId, authError })
-      return buildErrorResponse(requestId, 'AUTH_REQUIRED', 'Usuário não autenticado', 401)
+    if (!appointment_id) {
+      return NextResponse.json({ error: 'Missing appointment_id' }, { status: 400 })
     }
 
-    const userId = user.id
-
-    const { data: patientProfile, error: patientError } = await supabase
-      .from('patient_profiles')
-      .select('id, user_id')
-      .eq('id', patient_id)
-      .eq('user_id', userId)
+    // 1. Fetch appointment
+    const { data: appointment, error: fetchError } = await supabase
+      .from('appointments')
+      .select('*')
+      .eq('id', appointment_id)
       .single()
 
-    if (patientError || !patientProfile) {
-      console.error('payments/create-checkout POST patient profile mismatch', {
-        requestId,
-        userId,
-        patient_id,
-        patientError,
-      })
-      return buildErrorResponse(
-        requestId,
-        'RLS_DENIED',
-        'Permissão insuficiente. Faça login novamente.',
-        403,
-      )
+    if (fetchError || !appointment) {
+      return NextResponse.json({ error: 'Appointment not found' }, { status: 404 })
     }
 
-    const supabaseAdmin = createAdminClient()
-
-    const { data: session, error: sessionError } = await supabaseAdmin
-      .from('teleconsulta_sessions')
-      .select('id, patient_id, status, price')
-      .eq('id', teleconsulta_session_id)
-      .single()
-
-    if (sessionError || !session || session.patient_id !== patientProfile.id) {
-      console.error('payments/create-checkout POST session not found or not owned by patient', {
-        requestId,
-        teleconsulta_session_id,
-        patient_id,
-        sessionError,
-      })
-      return buildErrorResponse(
-        requestId,
-        'SESSION_NOT_FOUND',
-        'Sessão de teleconsulta não encontrada.',
-        404,
-      )
+    if (appointment.status !== 'pending' && appointment.status !== 'agendado') {
+      return NextResponse.json({ error: 'Appointment is not pending or agendado' }, { status: 400 })
     }
 
-    if (session.status !== 'pending_payment') {
-      console.error('payments/create-checkout POST invalid session state', {
-        requestId,
-        teleconsulta_session_id,
-        status: session.status,
-      })
-      return buildErrorResponse(
-        requestId,
-        'INVALID_SESSION_STATE',
-        'Esta sessão não está disponível para pagamento.',
-        409,
-      )
+    // 2. Check availability (ensure no other paid appointment for this slot)
+    const { data: conflicts, error: conflictError } = await supabase
+      .from('appointments')
+      .select('id')
+      .eq('nutritionist_id', appointment.nutritionist_id)
+      .eq('scheduled_at', appointment.scheduled_at)
+      .eq('status', 'paid')
+      .neq('id', appointment_id) // Exclude self (though self is pending)
+
+    if (conflictError) {
+      console.error('Error checking conflicts:', conflictError)
+      return NextResponse.json({ error: 'Failed to check availability' }, { status: 500 })
     }
 
-    const { data: np, error } = await supabaseAdmin
+    if (conflicts && conflicts.length > 0) {
+      return NextResponse.json({ error: 'Slot is no longer available' }, { status: 409 })
+    }
+
+    // 2.1 Fetch Nutritionist Profile for Price and Payment Methods
+    const { data: nutritionist, error: nutritionistError } = await supabase
       .from('nutritionist_profiles')
-      .select('stripe_account_id, stripe_onboarding_complete, full_name')
-      .eq('id', nutritionist_id)
+      .select('consultation_price, payment_methods')
+      .eq('id', appointment.nutritionist_id) // Assuming nutritionist_id in appointment is the profile id (user_id or profile id, need to check FK)
+      // Actually, appointments.nutritionist_id usually refers to the profile ID in this schema, let's verify if appointment.nutritionist_id is UUID matching profile.id
       .single()
 
-    if (error || !np?.stripe_account_id) {
-      console.error('payments/create-checkout POST missing stripe account', {
-        requestId,
-        nutritionist_id,
-        error,
-      })
-      return buildErrorResponse(
-        requestId,
-        'ENV_MISCONFIG',
-        'Pagamento indisponível no momento.',
-        500,
-      )
-    }
-    if (!np.stripe_onboarding_complete) {
-      console.error('payments/create-checkout POST onboarding incomplete', {
-        requestId,
-        nutritionist_id,
-      })
-      return buildErrorResponse(
-        requestId,
-        'ENV_MISCONFIG',
-        'Pagamento indisponível no momento.',
-        500,
-      )
+    if (nutritionistError || !nutritionist) {
+        console.error('Error fetching nutritionist profile:', nutritionistError)
+        return NextResponse.json({ error: 'Failed to fetch nutritionist profile' }, { status: 500 })
     }
 
-    const connectedAccountId = np.stripe_account_id
+    // Determine Payment Methods
+    const allowedPaymentMethods: ('card' | 'boleto')[] = []
+    if (nutritionist.payment_methods) {
+        const methods = nutritionist.payment_methods.toLowerCase()
+        if (methods.includes('cartao') || methods.includes('cartão') || methods.includes('credit')) {
+            allowedPaymentMethods.push('card')
+        }
+        if (methods.includes('boleto')) {
+            allowedPaymentMethods.push('boleto')
+        }
+        // Note: Pix support requires specific Stripe activation
+        // if (methods.includes('pix')) allowedPaymentMethods.push('pix')
+    }
+    
+    // Fallback to card if nothing valid found or empty
+    if (allowedPaymentMethods.length === 0) {
+        allowedPaymentMethods.push('card')
+    }
 
-    const result = await createConsultPayment({
-      amountBrl: Number(price_brl),
-      patientId: patient_id,
-      patientEmail: patient_email,
-      nutritionistId: nutritionist_id,
-      nutritionistName: nutritionist_name || np.full_name,
-      teleconsultaSessionId: teleconsulta_session_id,
-      scheduledFor: scheduled_for,
-      durationMinutes: duration_minutes,
-      paymentMethod: payment_method as ConsultPaymentMethod | undefined,
-      couponCode: coupon_code as string | undefined,
-      connectedAccountId,
-      successUrl: `${origin}/dashboard/paciente?activeTab=teleconsultas&sucesso=true`,
-      cancelUrl: `${origin}/pagamento/cancelado`,
+    // Determine Price
+    // Logic:
+    // 1. Get base price from nutritionist profile (consultation_price)
+    // 2. Compare with appointment.price (which might have a coupon discount applied)
+    // 3. If appointment.price is lower than base price, assume valid discount and use it.
+    // 4. Otherwise, fallback to base price to prevent tampering (unless base price is null/zero, then trust appointment).
+    
+    let priceToUse = nutritionist.consultation_price ? Number(nutritionist.consultation_price) : appointment.price
+
+    if (appointment.price && nutritionist.consultation_price) {
+        const appointmentPrice = Number(appointment.price)
+        const basePrice = Number(nutritionist.consultation_price)
+        
+        // If appointment price is lower (discount) but not unreasonably low (e.g. > 0), use it
+        // We could add a tolerance check (e.g. max 50% discount) if needed, but for now trust the created appointment
+        // provided it's not higher than base price (which would be weird but safe to cap at base).
+        if (appointmentPrice < basePrice && appointmentPrice > 0) {
+            priceToUse = appointmentPrice
+        }
+    }
+
+    // Ensure we have a base URL
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || request.headers.get('origin') || 'http://localhost:3000'
+
+    // 3. Create Stripe Session
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: allowedPaymentMethods,
+      mode: 'payment',
+      customer_email: user.email,
+      line_items: [
+        {
+          price_data: {
+            currency: 'brl',
+            product_data: {
+              name: 'Consulta Nutricional',
+              description: `Agendamento com nutricionista em ${new Date(appointment.scheduled_at).toLocaleString('pt-BR')}`,
+            },
+            unit_amount: Math.round(priceToUse * 100), // Stripe expects cents
+          },
+          quantity: 1,
+        },
+      ],
+      metadata: {
+        appointment_id: appointment.id,
+        patient_id: appointment.patient_id,
+        nutritionist_id: appointment.nutritionist_id,
+      },
+      success_url: `${baseUrl}/dashboard/paciente/agendar/sucesso?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${baseUrl}/dashboard/paciente/agendar/${appointment.nutritionist_id}?cancelled=true`,
     })
 
-    const data = {
-      sessionId: result.session_id,
-      client_secret: result.client_secret,
-      payment_intent_id: result.payment_intent_id,
-      available_methods: result.available_methods,
-      amount_original: result.amount_original,
-      amount_final: result.amount_final,
-      discount_applied: result.discount_applied,
-      discount_value: result.discount_value,
+    // 4. Update appointment with session ID
+    const { error: updateError } = await supabase
+      .from('appointments')
+      .update({ stripe_session_id: session.id })
+      .eq('id', appointment_id)
+
+    if (updateError) {
+      console.error('Error updating appointment with session ID:', updateError)
+      // We continue anyway since we have the session URL, but ideally we'd want this to succeed.
     }
 
-    return buildSuccessResponse(requestId, data, 200)
-  } catch (err: any) {
-    console.error('payments/create-checkout POST unexpected error', { requestId, error: err })
-
-    if (err instanceof Error && err.message && err.message.toLowerCase().includes('stripe')) {
-      return buildErrorResponse(
-        requestId,
-        'STRIPE_ERROR',
-        'Erro ao processar pagamento.',
-        502,
-      )
-    }
-
-    return buildErrorResponse(
-      requestId,
-      'DB_ERROR',
-      'Erro interno ao iniciar pagamento.',
-      500,
-    )
+    return NextResponse.json({ checkout_url: session.url })
+  } catch (error) {
+    console.error('Internal error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

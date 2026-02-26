@@ -27,16 +27,13 @@ export const PUT = withErrorHandling(async (
 
   // Verificar se a sessão existe e se o usuário tem permissão
   const { data: session, error: sessionError } = await supabase
-  .from('teleconsulta_sessions')
+  .from('appointments')
   .select(`
-    id, session_token, scheduled_at, started_at, ended_at,
-    duration_minutes, price, status, join_url,
-
-    nutritionist:nutritionist_profiles!teleconsulta_sessions_nutritionist_id_fkey (
+    id, scheduled_at, price, status,
+    nutritionist:nutritionist_profiles!fk_appointments_nutritionist_id (
       id, user_id, full_name, profile_image_url
     ),
-
-    patient:patient_profiles!teleconsulta_sessions_patient_id_fkey (
+    patient:patient_profiles!appointments_patient_id_fkey (
       id, user_id, full_name, phone, profile_image_url
     )
   `)
@@ -53,7 +50,8 @@ export const PUT = withErrorHandling(async (
   // Validar transições de status
   const currentStatus = validSession.status
   const validTransitions: Record<string, string[]> = {
-    'scheduled': ['in_progress', 'cancelled'],
+    'paid': ['in_progress', 'cancelled'], // 'paid' equivale a 'scheduled'
+    'scheduled': ['in_progress', 'cancelled'], // caso já tenha sido migrado ou criado como scheduled
     'in_progress': ['completed', 'cancelled'],
     'completed': [],
     'cancelled': []
@@ -68,17 +66,10 @@ export const PUT = withErrorHandling(async (
     status,
     updated_at: new Date().toISOString()
   }
-
-  // Adicionar timestamps específicos
-  if (status === 'in_progress') {
-    updateData.started_at = new Date().toISOString()
-  } else if (status === 'completed') {
-    updateData.ended_at = new Date().toISOString()
-  }
   
   // Atualizar sessão
   const { data: updatedSession, error: updateError } = await supabase
-  .from('teleconsulta_sessions')
+  .from('appointments')
   .update(updateData)
   .eq('id', sessionId)
   .select('*')
@@ -101,7 +92,7 @@ export const PUT = withErrorHandling(async (
       },
       'cancelled': {
         title: 'Teleconsulta Cancelada',
-        message: `Sua teleconsulta agendada para ${new Date(validSession.scheduled_for).toLocaleString('pt-BR')} foi cancelada.`
+        message: `Sua teleconsulta agendada para ${new Date(validSession.scheduled_at).toLocaleString('pt-BR')} foi cancelada.`
       }
     }
 
@@ -110,7 +101,7 @@ export const PUT = withErrorHandling(async (
     if (notification) {
       // Notificar paciente
       await createNotification({
-        userId: validSession.patient_id,
+        userId: validSession.patient.user_id, // Usando user_id do perfil
         title: notification.title,
         message: notification.message,
         notificationType: `teleconsulta_session_${status}`,
@@ -118,13 +109,13 @@ export const PUT = withErrorHandling(async (
         data: {
           session_id: sessionId,
           status,
-          scheduled_for: validSession.scheduled_for
+          scheduled_at: validSession.scheduled_at
         }
       })
 
       // Notificar nutricionista
       await createNotification({
-        userId: validSession.nutritionist_id,
+        userId: validSession.nutritionist.user_id, // Usando user_id do perfil
         title: notification.title,
         message: notification.message,
         notificationType: `teleconsulta_session_${status}`,
@@ -132,7 +123,7 @@ export const PUT = withErrorHandling(async (
         data: {
           session_id: sessionId,
           status,
-          scheduled_for: validSession.scheduled_for
+          scheduled_at: validSession.scheduled_at
         }
       })
     }
@@ -161,27 +152,30 @@ export const DELETE = withErrorHandling(async (
 
   // Verificar se a sessão existe e se o usuário tem permissão
   const { data: session, error: sessionError } = await supabase
-    .from('teleconsulta_sessions')
-    .select('*, patient_id, nutritionist_id')
+    .from('appointments')
+    .select('*, patient:patient_profiles!appointments_patient_id_fkey(user_id), nutritionist:nutritionist_profiles!fk_appointments_nutritionist_id(user_id)')
     .eq('id', sessionId)
     .single()
 
   const validSession = validateResourceExists(sessionError ? null : session, 'Sessão não encontrada')
 
   // Verificar permissão (paciente ou nutricionista da sessão)
-  if (validSession.patient_id !== userId && validSession.nutritionist_id !== userId) {
+  const patientUserId = validSession.patient?.user_id
+  const nutritionistUserId = validSession.nutritionist?.user_id
+  
+  if (patientUserId !== userId && nutritionistUserId !== userId) {
     throw new ForbiddenError('Sem permissão para deletar esta sessão')
   }
 
-  // Só permitir deletar sessões agendadas
-  if (validSession.status !== 'scheduled') {
+  // Só permitir deletar sessões agendadas/pagas
+  if (validSession.status !== 'paid' && validSession.status !== 'scheduled') {
     throw new ValidationError('Só é possível deletar sessões agendadas')
   }
 
-  // Deletar sessão
+  // Soft delete sessão
   const { error: deleteError } = await supabase
-    .from('teleconsulta_sessions')
-    .delete()
+    .from('appointments')
+    .update({ is_deleted: true, deleted_at: new Date().toISOString(), status: 'cancelled' })
     .eq('id', sessionId)
 
   if (deleteError) {
@@ -207,20 +201,17 @@ export const GET = withErrorHandling(async (
 
   // Buscar sessão com dados relacionados
   const { data: session, error: sessionError } = await supabase
-    .from('teleconsulta_sessions')
+    .from('appointments')
     .select(`
-      id, session_token, scheduled_at, started_at, ended_at,
-      duration_minutes, price, status, join_url,
-  
-      nutritionist:nutritionist_profiles!teleconsulta_sessions_nutritionist_id_fkey (
+      id, scheduled_at, price, status, join_url:online_meeting_link,
+      nutritionist:nutritionist_profiles!fk_appointments_nutritionist_id (
         id, user_id, full_name, profile_image_url
       ),
-  
-      patient:patient_profiles!teleconsulta_sessions_patient_id_fkey (
+      patient:patient_profiles!appointments_patient_id_fkey (
         id, user_id, full_name, phone, profile_image_url
       )
     `)
-    .eq('session_token', sessionId)
+    .eq('id', sessionId)
     // .or(`nutritionist_id.eq.${userId},patient_id.eq.${userId}`)
     .maybeSingle()
 

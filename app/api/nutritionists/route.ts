@@ -75,7 +75,7 @@ export async function GET(request: NextRequest) {
 
       if (searchTerm) {
         q = q.or(
-          `full_name.ilike.%${searchTerm}%,bio.ilike.%${searchTerm}%,city.ilike.%${searchTerm}%`
+          `full_name.ilike.%${searchTerm}%,bio.ilike.%${searchTerm}%,location.ilike.%${searchTerm}%,address.ilike.%${searchTerm}%`
         )
       }
 
@@ -100,6 +100,8 @@ export async function GET(request: NextRequest) {
         user_id,
         full_name,
         bio,
+        location,
+        address,
         specialties_join:nutritionist_specialties (
           specialty:specialties ( id, name )
         ),

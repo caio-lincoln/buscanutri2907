@@ -65,10 +65,10 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
   }
 
   const { data: bookedSessions, error: sessionsError } = await supabase
-    .from('teleconsulta_sessions')
+    .from('appointments')
     .select('scheduled_at, duration_minutes')
     .eq('nutritionist_id', nutritionist.id)
-    .in('status', [ 'scheduled', 'in_progress' ])
+    .in('status', [ 'paid', 'confirmed', 'scheduled', 'agendado', 'confirmada' ])
   // .gte('scheduled_at', start.toISOString())
   // .lte('scheduled_at', end.toISOString())
 

@@ -31,12 +31,17 @@ interface TeleconsultaSession {
   nutritionist: {
     id: string
     full_name: string
+    name: string // Adicionado para compatibilidade
     profile_image_url: string | null
+    avatar_url?: string | null // Adicionado para compatibilidade
+    crn?: string
   }
   patient: {
     id: string
     full_name: string
+    name: string // Adicionado para compatibilidade
     profile_image_url: string | null
+    avatar_url?: string | null // Adicionado para compatibilidade
   }
 }
 
@@ -108,14 +113,14 @@ export default function TeleconsultasPage() {
       setIsFetching(true)
 
       let q = supabase
-        .from('teleconsulta_sessions')
+        .from('appointments')
         .select(`
-          id, session_token, scheduled_at, started_at, ended_at,
-          duration_minutes, price, status, join_url, nutritionist_id, patient_id,
-          nutritionist:nutritionist_profiles!teleconsulta_sessions_nutritionist_id_fkey (
+          id, scheduled_at, price, status,
+          appointment_date, appointment_time, duration_minutes,
+          nutritionist:nutritionist_profiles!fk_appointments_nutritionist_id (
             id, user_id, full_name, profile_image_url
           ),
-          patient:patient_profiles!teleconsulta_sessions_patient_id_fkey (
+          patient:patient_profiles!appointments_patient_id_fkey (
             id, user_id, full_name, phone, profile_image_url
           )
         `)
@@ -124,7 +129,17 @@ export default function TeleconsultasPage() {
 
       const { status, dateFrom, dateTo, priceMin, priceMax } = debouncedServerFilters
 
-      if (status !== 'all') q = q.eq('status', status)
+      // Mapeamento de status do filtro para o banco
+      if (status !== 'all') {
+        if (status === 'scheduled') q = q.in('status', ['paid', 'confirmed', 'agendado', 'confirmada'])
+        else if (status === 'cancelled') q = q.in('status', ['cancelled', 'cancelado'])
+        else if (status === 'completed') q = q.in('status', ['completed', 'realizada', 'concluido'])
+      } else {
+        // Por padrão, não mostrar agendamentos pendentes de pagamento ou cancelados
+        // Apenas pagos/confirmados e concluídos devem aparecer na lista geral
+        q = q.in('status', ['paid', 'confirmed', 'agendado', 'confirmada', 'completed', 'realizada', 'concluido'])
+      }
+
       if (dateFrom) q = q.gte('scheduled_at', startOfDay(dateFrom).toISOString())
       if (dateTo)   q = q.lte('scheduled_at', endOfDay(dateTo).toISOString())
       if (priceMin) q = q.gte('price', Number(priceMin))
@@ -133,7 +148,56 @@ export default function TeleconsultasPage() {
       const { data, error } = await q
       if (error) throw error
 
-      setSessions((data as TeleconsultaSession[]) ?? [])
+      // Mapear para o formato esperado pela interface
+      const mappedSessions: TeleconsultaSession[] = (data || []).map((app: any) => {
+        // Normalização de status
+        let normalizedStatus: SessionStatus = 'scheduled' // Default fallback
+        const rawStatus = (app.status || '').toLowerCase()
+
+        if (['paid', 'confirmed', 'confirmada', 'agendado', 'scheduled'].includes(rawStatus)) {
+          normalizedStatus = 'scheduled'
+        } else if (['cancelled', 'cancelado'].includes(rawStatus)) {
+          normalizedStatus = 'cancelled'
+        } else if (['completed', 'realizada', 'concluido'].includes(rawStatus)) {
+          normalizedStatus = 'completed'
+        } else if (['in_progress', 'em_andamento'].includes(rawStatus)) {
+          normalizedStatus = 'in_progress'
+        }
+
+        // Fallback para scheduled_at se estiver nulo
+        let scheduledAt = app.scheduled_at
+        if (!scheduledAt && app.appointment_date && app.appointment_time) {
+          scheduledAt = `${app.appointment_date}T${app.appointment_time}`
+        }
+
+        return {
+          id: app.id,
+          session_token: app.id, // Usando ID como token por enquanto
+          nutritionist_id: app.nutritionist?.id,
+          patient_id: app.patient?.id,
+          scheduled_at: scheduledAt,
+          duration_minutes: app.duration_minutes || 60,
+          price: app.price || 0,
+          status: normalizedStatus,
+          join_url: `/teleconsulta/${app.id}`,
+          nutritionist: {
+            id: app.nutritionist?.id,
+            full_name: app.nutritionist?.full_name || 'Nutricionista',
+            profile_image_url: app.nutritionist?.profile_image_url,
+            name: app.nutritionist?.full_name || 'Nutricionista',
+            avatar_url: app.nutritionist?.profile_image_url
+          },
+          patient: {
+            id: app.patient?.id,
+            full_name: app.patient?.full_name || 'Paciente',
+            profile_image_url: app.patient?.profile_image_url,
+            name: app.patient?.full_name || 'Paciente',
+            avatar_url: app.patient?.profile_image_url
+          }
+        }
+      }).filter(s => s.scheduled_at) // Remove sessões sem data válida
+
+      setSessions(mappedSessions)
     } catch (err) {
       console.error('Erro ao carregar teleconsultas:', err)
       toast.error('Erro ao carregar teleconsultas')
@@ -228,21 +292,30 @@ export default function TeleconsultasPage() {
         </Link>
       </div>
 
-      {/* Filtros (mesmo componente da tela do nutricionista) */}
+      {/* Filtros */}
       <TeleconsultaFilters
-        searchTerm={filters.search}
+        filters={{
+          search: filters.search,
+          status: filters.status,
+          dateFrom: filters.dateFrom ? parseISO(filters.dateFrom) : undefined,
+          dateTo: filters.dateTo ? parseISO(filters.dateTo) : undefined,
+          priceMin: filters.priceMin ? Number(filters.priceMin) : undefined,
+          priceMax: filters.priceMax ? Number(filters.priceMax) : undefined,
+        }}
+        onFiltersChange={(newFilters) => {
+           setFilters(prev => ({
+             ...prev,
+             search: newFilters.search || '',
+             status: (newFilters.status as any) || 'all',
+             dateFrom: newFilters.dateFrom ? newFilters.dateFrom.toISOString() : null,
+             dateTo: newFilters.dateTo ? newFilters.dateTo.toISOString() : null,
+             priceMin: newFilters.priceMin ? String(newFilters.priceMin) : '',
+             priceMax: newFilters.priceMax ? String(newFilters.priceMax) : '',
+           }))
+        }}
+        userRole="patient"
         isExpanded={isExpanded}
         setIsExpanded={setIsExpanded}
-        onSearchChange={(v: string) => setFilters(prev => ({ ...prev, search: v }))}
-        statusFilter={filters.status}
-        onStatusChange={(s: FiltersState['status']) =>
-          setFilters(prev => ({ ...prev, status: s }))
-        }
-        filters={filters}
-        onFiltersChange={(next: Partial<FiltersState>) =>
-          setFilters(prev => ({ ...prev, ...next }))
-        }
-        searchPlaceholder="Buscar por nutricionista..."
         className="mb-6"
       />
 
@@ -257,8 +330,8 @@ export default function TeleconsultasPage() {
             {upcomingSessions.map(s => (
               <TeleconsultaCard
                 key={s.id}
-                session={s}
-                userType="patient"
+                session={s as any} // Cast para evitar erro de tipo por causa de propriedades extras/diferentes
+                userRole="paciente"
                 onJoin={handleJoinSession}
               />
             ))}
@@ -295,8 +368,8 @@ export default function TeleconsultasPage() {
             {pastSessions.map(s => (
               <TeleconsultaCard
                 key={s.id}
-                session={s}
-                userType="patient"
+                session={s as any}
+                userRole="paciente"
                 onJoin={handleJoinSession}
               />
             ))}
