@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withErrorHandling } from '@/lib/api-middleware'
 import { validateAuth } from '@/src/lib/middleware/error-handler'
-import { addDays, parseISO } from 'date-fns'
-import { fromZonedTime, toZonedTime, format as formatTz } from 'date-fns-tz'
+import { addDays } from 'date-fns'
 import { z } from 'zod'
 import { createClient } from '../../../../lib/supabase/server'
 
@@ -13,6 +12,40 @@ const availableTimesQuerySchema = z.object({
   startDate: z.string().optional(),
   endDate: z.string().optional()
 })
+
+// Helper constants and functions for Timezone Handling
+// We manually handle 'America/Sao_Paulo' (-03:00) to avoid environment-specific Intl issues
+const SP_OFFSET_HOURS = -3;
+const SP_OFFSET_MS = SP_OFFSET_HOURS * 60 * 60 * 1000;
+
+/**
+ * Returns a Date object shifted by the offset, so that UTC methods return local time components.
+ * e.g. 23:00 UTC -> 20:00 UTC (which represents 20:00 SP)
+ */
+function toSaoPaulo(date: Date): Date {
+  return new Date(date.getTime() + SP_OFFSET_MS);
+}
+
+/**
+ * Parses a date string and time string assuming they are in Sao Paulo time,
+ * and returns the corresponding UTC Date.
+ * e.g. "2026-02-26", "20:00" -> "2026-02-26T20:00:00-03:00" -> 23:00 UTC
+ */
+function fromSaoPauloStr(dateStr: string, timeStr: string = '00:00:00'): Date {
+  // Ensure strict format YYYY-MM-DD and HH:mm:ss
+  // Append fixed offset -03:00
+  return new Date(`${dateStr}T${timeStr}-03:00`);
+}
+
+function formatSaoPauloDate(date: Date): string {
+  // Shift to SP time, then take ISO date part (which is YYYY-MM-DD)
+  return toSaoPaulo(date).toISOString().split('T')[0];
+}
+
+function formatSaoPauloTime(date: Date): string {
+  // Shift to SP time, then take ISO time part HH:mm
+  return toSaoPaulo(date).toISOString().split('T')[1].substring(0, 5);
+}
 
 export const GET = withErrorHandling(async (request: NextRequest) => {
   const supabase = await createClient()
@@ -31,18 +64,19 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
 
   // Parse start/end dates ensuring we get the correct range in America/Sao_Paulo
   // startDate comes as "YYYY-MM-DD" or ISO string. We need YYYY-MM-DD.
-  const nowSP = toZonedTime(new Date(), 'America/Sao_Paulo')
+  const now = new Date();
   const startYMD = startDate 
     ? startDate.split('T')[0] 
-    : formatTz(nowSP, 'yyyy-MM-dd', { timeZone: 'America/Sao_Paulo' })
+    : formatSaoPauloDate(now)
     
   const endYMD = endDate 
     ? endDate.split('T')[0] 
     : addDays(new Date(), 14).toISOString().split('T')[0]
 
   // Create range boundaries: Start of day and End of day in SP
-  const start = fromZonedTime(`${startYMD}T00:00:00`, 'America/Sao_Paulo')
-  const end = fromZonedTime(`${endYMD}T23:59:59`, 'America/Sao_Paulo')
+  // These are UTC timestamps representing 00:00 SP and 23:59:59 SP
+  const start = fromSaoPauloStr(startYMD, '00:00:00')
+  const end = fromSaoPauloStr(endYMD, '23:59:59')
 
   const { data: nutritionist, error: nutritionistError } = await supabase
   .from('nutritionist_profiles')
@@ -69,9 +103,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
     .select('scheduled_at, duration_minutes')
     .eq('nutritionist_id', nutritionist.id)
     .in('status', [ 'paid', 'confirmed', 'scheduled', 'agendado', 'confirmada' ])
-  // .gte('scheduled_at', start.toISOString())
-  // .lte('scheduled_at', end.toISOString())
-
+  
   if (sessionsError) {
     throw new Error('Erro ao buscar sessões agendadas')
   }
@@ -100,9 +132,6 @@ function normWeekday(v: number) {
   if (v >= 0 && v <= 6) return v;
   throw new Error(`weekday inválido: ${v}`);
 }
-const pad2 = (n: number) => n.toString().padStart(2, '0');
-const ymdLocal = (d: Date) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
-const hmLocal = (d: Date) => `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
 const gcd = (a: number, b: number) => {
   a = Math.abs(a); b = Math.abs(b);
   while (b) { const t = b; b = a % b; a = t; }
@@ -159,8 +188,11 @@ export function generateAvailableSlots(
 
   const slots: Array<{ datetime: string; date: string; time: string; duration: number; available: boolean }> = [];
 
-  const startInZone = toZonedTime(start, 'America/Sao_Paulo');
-  const endInZone = toZonedTime(end, 'America/Sao_Paulo');
+  // Convert start/end to "Local" Date objects for iteration
+  // We want to iterate by day in SP time
+  // startInZone should be a Date object where getDate() returns the SP day
+  const startInZone = toSaoPaulo(start);
+  const endInZone = toSaoPaulo(end);
 
   const cursor = new Date(startInZone.getFullYear(), startInZone.getMonth(), startInZone.getDate());
   const endLocal = new Date(endInZone.getFullYear(), endInZone.getMonth(), endInZone.getDate());
@@ -181,13 +213,7 @@ export function generateAvailableSlots(
       const dd = String(cursor.getDate()).padStart(2, '0');
       const dateStr = `${yyyy}-${mm}-${dd}`;
       
-      const startDateTimeStr = `${dateStr}T${rule.start_time}:00`;
-      const endDateTimeStr = `${dateStr}T${rule.end_time}:00`;
-      
-      // Interpretamos o horário da regra (ex: "08:00") como sendo no fuso de SP
-      // Isso gera o timestamp correto (ex: 11:00 UTC)
       // FIX CRITICO: Construção manual do offset para garantir SP (-03:00)
-      // Evita problemas com fromZonedTime em ambientes sem ICU completo
       const isoWithOffset = `${dateStr}T${rule.start_time}:00-03:00`
       const startRuleInSP = new Date(isoWithOffset)
       
@@ -199,20 +225,14 @@ export function generateAvailableSlots(
 
         const collides = bookedRanges.some(([ bs, be ]) => overlaps(slotStart, slotEnd, bs, be));
         
-        // Comparação direta de timestamps (UTC)
-        // Evita problemas de conversão de timezone e garante consistência entre ambientes
-        // Slot é passado se for menor ou igual ao momento atual (com tolerância zero)
         const past = slotStart <= Date.now();
 
         const dt = new Date(slotStart);
         slots.push({
           datetime: dt.toISOString(), 
-          date: formatTz(dt, 'yyyy-MM-dd', { timeZone: 'America/Sao_Paulo' }),         
-          time: formatTz(dt, 'HH:mm', { timeZone: 'America/Sao_Paulo' }),          
+          date: formatSaoPauloDate(dt),         
+          time: formatSaoPauloTime(dt),          
           duration: durationMin,
-          // MUDANÇA ESTRATÉGICA: O backend NÃO deve bloquear slots passados na flag 'available'.
-          // A responsabilidade de filtrar passado/futuro é 100% do frontend (isSlotAvailableOverride).
-          // Aqui garantimos apenas que não há colisão (agendamento).
           available: !collides, 
           is_past: past,
           has_collision: collides
