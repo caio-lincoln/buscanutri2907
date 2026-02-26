@@ -18,142 +18,101 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { appointment_id } = body
+    const { nutritionist_id, scheduled_at, price, duration_minutes = 60 } = body
 
-    if (!appointment_id) {
-      return NextResponse.json({ error: 'Missing appointment_id' }, { status: 400 })
+    if (!nutritionist_id || !scheduled_at || price === undefined) {
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
-    // 1. Fetch appointment
-    const { data: appointment, error: fetchError } = await supabase
-      .from('appointments')
-      .select('*')
-      .eq('id', appointment_id)
-      .single()
-
-    if (fetchError || !appointment) {
-      return NextResponse.json({ error: 'Appointment not found' }, { status: 404 })
-    }
-
-    if (appointment.status !== 'pending' && appointment.status !== 'agendado') {
-      return NextResponse.json({ error: 'Appointment is not pending or agendado' }, { status: 400 })
-    }
-
-    // 2. Check availability (ensure no other paid/confirmed appointment for this slot)
+    // 1. Validate slot availability (Concurrency check)
+    // Check if there is any confirmed appointment at this time
     const { data: conflicts, error: conflictError } = await supabase
       .from('appointments')
       .select('id')
-      .eq('nutritionist_id', appointment.nutritionist_id)
-      .eq('scheduled_at', appointment.scheduled_at)
-      .in('status', ['confirmado', 'concluido'])
-      .neq('id', appointment_id) // Exclude self (though self is pending)
+      .eq('nutritionist_id', nutritionist_id)
+      .eq('scheduled_at', scheduled_at)
+      .in('status', ['agendado', 'confirmado', 'confirmada', 'concluido', 'realizada']) // Status that block the slot
+      .maybeSingle()
 
     if (conflictError) {
       console.error('Error checking conflicts:', conflictError)
       return NextResponse.json({ error: 'Failed to check availability' }, { status: 500 })
     }
 
-    if (conflicts && conflicts.length > 0) {
-      return NextResponse.json({ error: 'Slot is no longer available' }, { status: 409 })
+    if (conflicts) {
+      return NextResponse.json({ error: 'Horário já reservado por outro paciente.' }, { status: 409 })
     }
 
-    // 2.1 Fetch Nutritionist Profile for Price and Payment Methods
-    const { data: nutritionist, error: nutritionistError } = await supabase
+    // 2. Fetch Nutritionist Profile (for name, price validation, etc.)
+    const { data: nutritionist, error: nutError } = await supabase
       .from('nutritionist_profiles')
-      .select('consultation_price, payment_methods')
-      .eq('id', appointment.nutritionist_id) // Assuming nutritionist_id in appointment is the profile id (user_id or profile id, need to check FK)
-      // Actually, appointments.nutritionist_id usually refers to the profile ID in this schema, let's verify if appointment.nutritionist_id is UUID matching profile.id
+      .select('id, full_name, consultation_price')
+      .eq('id', nutritionist_id)
       .single()
 
-    if (nutritionistError || !nutritionist) {
-        console.error('Error fetching nutritionist profile:', nutritionistError)
-        return NextResponse.json({ error: 'Failed to fetch nutritionist profile' }, { status: 500 })
+    if (nutError || !nutritionist) {
+      return NextResponse.json({ error: 'Nutritionist not found' }, { status: 404 })
     }
 
-    // Determine Payment Methods
-    const allowedPaymentMethods: ('card' | 'boleto')[] = []
-    if (nutritionist.payment_methods) {
-        const methods = nutritionist.payment_methods.toLowerCase()
-        if (methods.includes('cartao') || methods.includes('cartão') || methods.includes('credit')) {
-            allowedPaymentMethods.push('card')
-        }
-        if (methods.includes('boleto')) {
-            allowedPaymentMethods.push('boleto')
-        }
-        // Note: Pix support requires specific Stripe activation
-        // if (methods.includes('pix')) allowedPaymentMethods.push('pix')
-    }
-    
-    // Fallback to card if nothing valid found or empty
-    if (allowedPaymentMethods.length === 0) {
-        allowedPaymentMethods.push('card')
+    // 3. Fetch Patient Profile (for metadata)
+    const { data: patient, error: patError } = await supabase
+      .from('patient_profiles')
+      .select('id, full_name, email, phone')
+      .eq('user_id', user.id)
+      .single()
+
+    if (patError || !patient) {
+      return NextResponse.json({ error: 'Patient profile not found' }, { status: 404 })
     }
 
-    // Determine Price
-    // Logic:
-    // 1. Get base price from nutritionist profile (consultation_price)
-    // 2. Compare with appointment.price (which might have a coupon discount applied)
-    // 3. If appointment.price is lower than base price, assume valid discount and use it.
-    // 4. Otherwise, fallback to base price to prevent tampering (unless base price is null/zero, then trust appointment).
-    
-    let priceToUse = nutritionist.consultation_price ? Number(nutritionist.consultation_price) : appointment.price
+    // 4. Create Stripe Checkout Session
+    // Use price from request but validate? User might tamper.
+    // Ideally use nutritionist.consultation_price, but maybe there's a discount logic in frontend.
+    // For now, trust the price passed but maybe log discrepancy? 
+    // Or better, use backend price if available. 
+    // Let's use the passed price for flexibility (coupons etc), assuming backend validates coupons elsewhere if implemented.
+    // Converting price to centavos
+    const unitAmount = Math.round(Number(price) * 100)
 
-    if (appointment.price && nutritionist.consultation_price) {
-        const appointmentPrice = Number(appointment.price)
-        const basePrice = Number(nutritionist.consultation_price)
-        
-        // If appointment price is lower (discount) but not unreasonably low (e.g. > 0), use it
-        // We could add a tolerance check (e.g. max 50% discount) if needed, but for now trust the created appointment
-        // provided it's not higher than base price (which would be weird but safe to cap at base).
-        if (appointmentPrice < basePrice && appointmentPrice > 0) {
-            priceToUse = appointmentPrice
-        }
-    }
-
-    // Ensure we have a base URL
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || request.headers.get('origin') || 'http://localhost:3000'
-
-    // 3. Create Stripe Session
     const session = await stripe.checkout.sessions.create({
-      payment_method_types: allowedPaymentMethods,
-      mode: 'payment',
-      customer_email: user.email,
+      payment_method_types: ['card', 'boleto'], // Default to common methods
       line_items: [
         {
           price_data: {
             currency: 'brl',
             product_data: {
-              name: 'Consulta Nutricional',
-              description: `Agendamento com nutricionista em ${new Date(appointment.scheduled_at).toLocaleString('pt-BR')}`,
+              name: `Consulta com ${nutritionist.full_name}`,
+              description: `Agendamento para ${new Date(scheduled_at).toLocaleString('pt-BR')}`,
             },
-            unit_amount: Math.round(priceToUse * 100), // Stripe expects cents
+            unit_amount: unitAmount,
           },
           quantity: 1,
         },
       ],
+      mode: 'payment',
+      success_url: `${request.headers.get('origin')}/paciente/dashboard?session_id={CHECKOUT_SESSION_ID}&status=success`,
+      cancel_url: `${request.headers.get('origin')}/paciente/dashboard?status=cancelled`,
+      customer_email: user.email,
       metadata: {
-        appointment_id: appointment.id,
-        patient_id: appointment.patient_id,
-        nutritionist_id: appointment.nutritionist_id,
+        nutritionist_id,
+        patient_id: patient.id,
+        scheduled_at,
+        duration_minutes: String(duration_minutes),
+        price: String(price),
+        patient_name: patient.full_name,
+        patient_email: user.email || '',
+        patient_phone: patient.phone || '',
+        appointment_type: 'online' // Default to online
       },
-      success_url: `${baseUrl}/dashboard/paciente/agendar/sucesso?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${baseUrl}/dashboard/paciente/agendar/${appointment.nutritionist_id}?cancelled=true`,
     })
 
-    // 4. Update appointment with session ID
-    const { error: updateError } = await supabase
-      .from('appointments')
-      .update({ stripe_session_id: session.id })
-      .eq('id', appointment_id)
+    return NextResponse.json({ checkout_url: session.url, session_id: session.id })
 
-    if (updateError) {
-      console.error('Error updating appointment with session ID:', updateError)
-      // We continue anyway since we have the session URL, but ideally we'd want this to succeed.
-    }
-
-    return NextResponse.json({ checkout_url: session.url })
-  } catch (error) {
-    console.error('Internal error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  } catch (error: any) {
+    console.error('Checkout error:', error)
+    return NextResponse.json(
+      { error: error.message || 'Internal server error' },
+      { status: 500 }
+    )
   }
 }

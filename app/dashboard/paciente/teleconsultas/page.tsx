@@ -115,7 +115,7 @@ export default function TeleconsultasPage() {
       let q = supabase
         .from('appointments')
         .select(`
-          id, scheduled_at, price, status,
+          id, scheduled_at, price, status, payment_status,
           appointment_date, appointment_time, duration_minutes,
           nutritionist:nutritionist_profiles!fk_appointments_nutritionist_id (
             id, user_id, full_name, profile_image_url
@@ -125,6 +125,9 @@ export default function TeleconsultasPage() {
           )
         `)
         .eq('patient_id', patientProfile.id)
+        // FILTRO DE SEGURANÇA: Apenas mostrar agendamentos com pagamento confirmado
+        // Isso garante que agendamentos pendentes ou falhos não apareçam
+        .eq('payment_status', 'pago')
         .order('scheduled_at', { ascending: false })
 
       const { status, dateFrom, dateTo, priceMin, priceMax } = debouncedServerFilters

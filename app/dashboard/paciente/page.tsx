@@ -16,6 +16,7 @@ import OverviewTab from './_components/OverviewTab'
 import BuscarTab from './_components/BuscarTab'
 import IrisTab from './_components/IrisTab'
 import PerfilTab from './_components/PerfilTab'
+import { PaymentFeedback } from './_components/PaymentFeedback'
 import { AnamneseNutricionalModal } from '../../../components/anamnese-nutricional-modal'
 import { createSupabaseClient } from '../../../lib/supabase'
 import Loading from '@/components/ui/loading'
@@ -127,6 +128,7 @@ export default function PatientDashboard() {
       }}
       onSignOut={handleSignOut}
     >
+      <PaymentFeedback />
       <div className="space-y-8">
         {/* Overview Dashboard */}
         {activeTab === 'overview' && (

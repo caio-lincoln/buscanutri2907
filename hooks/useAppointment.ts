@@ -18,8 +18,8 @@ export function useAppointment() {
     setLoading(true)
     setError(null)
     try {
-      // 1. Create Appointment (Pending)
-      const appointmentResponse = await fetch('/api/appointments/create', {
+      // 1. Create Stripe Checkout Session (Directly - No pre-booking)
+      const checkoutResponse = await fetch('/api/payments/create-checkout', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -31,32 +31,14 @@ export function useAppointment() {
         }),
       })
 
-      if (!appointmentResponse.ok) {
-        const errorData = await appointmentResponse.json().catch(() => ({}))
-        throw new Error(errorData.error || 'Falha ao criar agendamento')
-      }
-
-      const { appointment_id } = await appointmentResponse.json()
-
-      // 2. Create Stripe Checkout Session
-      const checkoutResponse = await fetch('/api/payments/create-checkout', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          appointment_id,
-        }),
-      })
-
       if (!checkoutResponse.ok) {
         const errorData = await checkoutResponse.json().catch(() => ({}))
-        throw new Error(errorData.error || 'Falha ao criar sessão de pagamento')
+        throw new Error(errorData.error || 'Falha ao iniciar pagamento')
       }
 
       const { checkout_url } = await checkoutResponse.json()
 
-      // 3. Redirect to Stripe
+      // 2. Redirect to Stripe
       window.location.href = checkout_url
       
     } catch (err: any) {
@@ -64,7 +46,6 @@ export function useAppointment() {
       const msg = err.message || 'Erro inesperado ao agendar'
       setError(msg)
       toast.error(msg)
-      // Don't throw, just handle error state
     } finally {
       setLoading(false)
     }

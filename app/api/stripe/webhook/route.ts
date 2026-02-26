@@ -33,92 +33,103 @@ export async function POST(req: Request) {
 
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object as any
-    const appointmentId = session.metadata?.appointment_id
+    const metadata = session.metadata
 
-    if (!appointmentId) {
-      console.error('Missing appointment_id in metadata')
+    if (!metadata || !metadata.nutritionist_id || !metadata.patient_id || !metadata.scheduled_at) {
+      console.error('Missing required metadata', metadata)
       return NextResponse.json({ error: 'Missing metadata' }, { status: 400 })
     }
 
-    // 1. Check idempotency: if payment already exists
-    const { data: existingPayment } = await supabaseAdmin
-      .from('payments')
+    // 1. Idempotency Check: Check if appointment already created for this session
+    const { data: existingAppointment } = await supabaseAdmin
+      .from('appointments')
       .select('id')
-      .eq('stripe_payment_intent_id', session.payment_intent)
-      .single()
+      .eq('stripe_session_id', session.id)
+      .maybeSingle()
 
-    if (existingPayment) {
+    if (existingAppointment) {
+      console.log(`Appointment already created for session ${session.id}`)
       return NextResponse.json({ received: true })
     }
 
-    // 2. Check conflict: if another appointment is already PAID for same slot?
-    // First fetch the appointment to get details
-    const { data: appointment } = await supabaseAdmin
+    // 2. Prepare Data
+    const scheduledDate = new Date(metadata.scheduled_at)
+    // Extract UTC date and time for unique constraint compliance
+    const appointment_date = scheduledDate.toISOString().split('T')[0]
+    const appointment_time = scheduledDate.toISOString().split('T')[1].substring(0, 8)
+
+    const appointmentData = {
+      nutritionist_id: metadata.nutritionist_id,
+      patient_id: metadata.patient_id,
+      scheduled_at: metadata.scheduled_at,
+      appointment_date,
+      appointment_time,
+      price: Number(metadata.price),
+      duration_minutes: Number(metadata.duration_minutes || 60),
+      status: 'agendado', // Confirmed booking status
+      payment_status: 'pago',
+      stripe_session_id: session.id,
+      patient_name: metadata.patient_name,
+      patient_email: metadata.patient_email,
+      patient_phone: metadata.patient_phone,
+      is_online: metadata.appointment_type === 'online',
+      type: metadata.appointment_type || 'online',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }
+
+    // 3. Insert Appointment (Handle Race Condition)
+    const { data: newAppointment, error: insertError } = await supabaseAdmin
       .from('appointments')
-      .select('*')
-      .eq('id', appointmentId)
+      .insert(appointmentData)
+      .select()
       .single()
 
-    if (appointment) {
-      // Check for other PAID appointments in same slot
-      const { data: conflicts } = await supabaseAdmin
-        .from('appointments')
-        .select('id')
-        .eq('nutritionist_id', appointment.nutritionist_id)
-        .eq('scheduled_at', appointment.scheduled_at)
-        .eq('status', 'confirmado')
-        .neq('id', appointmentId)
+    if (insertError) {
+      console.error('Error creating appointment:', insertError)
 
-      if (conflicts && conflicts.length > 0) {
-        // CONFLICT DETECTED!
-        // Refund the payment and mark as cancelled
-        console.error('Conflict detected! Issuing refund.')
+      // Check for Unique Violation (Code 23505) -> Slot already taken
+      if (insertError.code === '23505') {
+        console.warn('Slot conflict detected (Double Booking). refunding...')
         
+        // REFUND LOGIC
         try {
-          if (session.payment_intent) {
-            await stripe.refunds.create({
-              payment_intent: session.payment_intent as string,
-              reason: 'duplicate',
-            })
-          }
+            if (session.payment_intent) {
+                await stripe.refunds.create({
+                    payment_intent: session.payment_intent as string,
+                    reason: 'duplicate',
+                    metadata: {
+                        reason: 'Slot already taken by another patient'
+                    }
+                })
+                console.log('Refund issued successfully.')
+            }
         } catch (refundError) {
-          console.error('Error issuing refund:', refundError)
+            console.error('Failed to refund:', refundError)
         }
-
-        await supabaseAdmin
-          .from('appointments')
-          .update({ status: 'cancelado', cancellation_reason: 'Double booking conflict - Refunded' })
-          .eq('id', appointmentId)
-
-        return NextResponse.json({ error: 'Conflict detected - Refunded' }, { status: 409 })
+        
+        // Record failed payment attempt/log if possible (optional)
+        return NextResponse.json({ error: 'Slot conflict - Refunded' }, { status: 409 })
       }
+
+      return NextResponse.json({ error: 'Failed to create appointment' }, { status: 500 })
     }
 
-    // 3. Mark appointment as PAID
-    const { error: updateError } = await supabaseAdmin
-      .from('appointments')
-      .update({ status: 'confirmado', payment_status: 'pago' })
-      .eq('id', appointmentId)
+    // 4. Record Payment in 'payments' table (Audit)
+    await supabaseAdmin.from('payments').insert({
+      patient_id: metadata.patient_id,
+      nutritionist_id: metadata.nutritionist_id,
+      amount_brl: Number(metadata.price),
+      currency: 'brl',
+      status: 'paid',
+      stripe_session_id: session.id,
+      stripe_payment_intent_id: session.payment_intent,
+      appointment_id: newAppointment.id,
+      created_at: new Date().toISOString()
+    })
 
-    if (updateError) {
-      console.error('Error updating appointment status:', updateError)
-      return NextResponse.json({ error: 'Database update failed' }, { status: 500 })
-    }
-
-    // 4. Create Payment record
-    const { error: paymentError } = await supabaseAdmin
-      .from('payments')
-      .insert({
-        appointment_id: appointmentId,
-        stripe_payment_intent_id: session.payment_intent,
-        amount: session.amount_total ? session.amount_total / 100 : 0,
-        currency: session.currency || 'brl',
-        status: 'paid',
-      })
-
-    if (paymentError) {
-      console.error('Error creating payment record:', paymentError)
-    }
+    console.log(`Appointment created successfully: ${newAppointment.id}`)
+    return NextResponse.json({ received: true, appointment_id: newAppointment.id })
   }
 
   return NextResponse.json({ received: true })

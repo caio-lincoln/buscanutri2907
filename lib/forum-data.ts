@@ -141,18 +141,10 @@ const addBadgesToAuthor = async (author: ForumAuthor): Promise<ForumAuthor> => {
 // Função para buscar todas as perguntas do fórum (apenas de pacientes)
 export async function getAllForumQuestions(): Promise<ForumQuestion[]> {
   try {
-    // Buscar perguntas de pacientes com JOIN para pegar os dados do perfil
+    // 1. Buscar perguntas (sem JOIN direto com patient_profiles para segurança)
     const { data: questionsData, error: questionsError } = await supabase
       .from('forum_questions')
-      .select(
-        `
-        *,
-        patient_profiles!forum_questions_patient_id_fkey(
-          full_name,
-          profile_image_url
-        )
-      `
-      )
+      .select('*')
       .not('patient_id', 'is', null)
       .order('created_at', { ascending: false })
 
@@ -165,13 +157,34 @@ export async function getAllForumQuestions(): Promise<ForumQuestion[]> {
       return []
     }
 
+    // 2. Coletar IDs de pacientes
+    const patientIds = Array.from(new Set(questionsData.map((q: any) => q.patient_id).filter(Boolean)))
+
+    // 3. Buscar perfis públicos usando a VIEW segura
+    let patientProfilesMap: Record<string, any> = {}
+    if (patientIds.length > 0) {
+      const { data: profiles } = await supabase
+        .from('public_patient_profiles')
+        .select('id, full_name, profile_image_url')
+        .in('id', patientIds)
+      
+      if (profiles) {
+        profiles.forEach((p: any) => {
+          patientProfilesMap[p.id] = p
+        })
+      }
+    }
+
+    // 4. Mapear perguntas com os dados do perfil
     const questions: ForumQuestion[] = questionsData.map((data: any) => {
+      const profile = patientProfilesMap[data.patient_id]
+      
       const author: ForumAuthor = {
         id: data.patient_id,
-        name: data.patient_profiles?.full_name || 'Usuário Anônimo',
+        name: profile?.full_name || 'Usuário Anônimo',
         userType: 'paciente',
         avatar:
-          data.patient_profiles?.profile_image_url ||
+          profile?.profile_image_url ||
           '/placeholder.svg?height=40&width=40',
         credentials: undefined,
         isVerified: false,
@@ -185,7 +198,7 @@ export async function getAllForumQuestions(): Promise<ForumQuestion[]> {
         timestamp: new Date(data.created_at).toLocaleString('pt-BR'),
         likes: data.likes_count || 0,
         repliesCount: data.answers_count || 0,
-    views: data.views || 0,
+        views: data.views || 0,
         tags: data.tags || [],
         category: data.category || '',
         replies: [],
