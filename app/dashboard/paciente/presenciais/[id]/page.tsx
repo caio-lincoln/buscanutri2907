@@ -79,7 +79,14 @@ export default function PresencialDetailsPage(props: { params: Promise<{ id: str
         throw new Error("Agendamento presencial não encontrado.")
       }
 
-      setAppointment(data as any)
+      const rawData = data as any
+      let status = rawData.status
+      if (status === 'agendado') status = 'scheduled'
+      else if (status === 'confirmado' || status === 'confirmada') status = 'confirmed'
+      else if (status === 'concluido') status = 'completed'
+      else if (status === 'cancelado') status = 'cancelled'
+
+      setAppointment({ ...rawData, status })
     } catch (e: any) {
       console.error(e)
       toast.error(e.message || "Erro ao carregar detalhes.")
@@ -183,8 +190,15 @@ export default function PresencialDetailsPage(props: { params: Promise<{ id: str
                   <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize
                     ${appointment.status === 'confirmed' ? 'bg-green-100 text-green-800' : 
                       appointment.status === 'cancelled' ? 'bg-red-100 text-red-800' : 
+                      appointment.status === 'completed' ? 'bg-gray-100 text-gray-800' :
                       'bg-blue-100 text-blue-800'}`}>
-                    {appointment.status === 'confirmed' ? 'Confirmado' : appointment.status}
+                    {
+                      appointment.status === 'confirmed' ? 'Confirmado' : 
+                      appointment.status === 'cancelled' ? 'Cancelado' : 
+                      appointment.status === 'completed' ? 'Concluído' :
+                      appointment.status === 'scheduled' ? 'Agendado' :
+                      appointment.status
+                    }
                   </span>
                 </div>
               </div>

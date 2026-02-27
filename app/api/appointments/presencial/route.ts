@@ -162,7 +162,7 @@ export async function POST(request: Request) {
         appointment_date: date,
         appointment_time: time,
         type: 'presencial', // Fixed type
-        status: 'confirmed', // Initial status as requested
+        status: 'agendado', // Initial status matching DB constraint
         address_id: address_id,
         patient_name: patientProfile.full_name,
         patient_phone: patientProfile.phone,
