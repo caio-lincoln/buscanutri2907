@@ -106,7 +106,7 @@ export default function PresenciaisPage() {
         .from('appointments')
         .select(`
           id, appointment_date, appointment_time, duration_minutes, status, type, patient_notes, nutritionist_id, patient_id, price, address_id,
-          nutritionist:nutritionist_profiles!appointments_nutritionist_id_fkey (
+          nutritionist:nutritionist_profiles!fk_appointments_nutritionist_id (
             id, user_id, full_name, profile_image_url, address
           ),
           patient:patient_profiles!appointments_patient_id_fkey ( id, full_name, profile_image_url ),
