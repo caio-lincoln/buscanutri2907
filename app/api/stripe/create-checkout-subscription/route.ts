@@ -55,6 +55,14 @@ export async function POST(req: NextRequest) {
     // Para permitir trials se o Price tiver trial configurado
     allow_promotion_codes: true,
     billing_address_collection: 'auto',
+    metadata: {
+      user_id: user.id,
+    },
+    subscription_data: {
+      metadata: {
+        user_id: user.id,
+      },
+    },
   });
 
   return NextResponse.json({ url: session.url });

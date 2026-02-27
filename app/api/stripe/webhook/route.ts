@@ -41,6 +41,66 @@ export async function POST(req: Request) {
     const session = event.data.object as any
     const metadata = session.metadata
 
+    // HANDLE SUBSCRIPTION CHECKOUT
+    if (session.mode === 'subscription') {
+       const subscriptionId = session.subscription as string
+       const customerId = session.customer as string
+       
+       console.log(`Processing subscription checkout for session ${session.id}`)
+
+       const subscription = await stripe.subscriptions.retrieve(subscriptionId)
+
+       // Handle potential missing current_period_end (API version diffs)
+       const currentPeriodEnd = subscription.current_period_end 
+          || subscription.items?.data?.[0]?.current_period_end 
+          || Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60;
+
+       // Update user_subscriptions
+       // Priority for user_id:
+       // 1. Session metadata
+       // 2. Subscription metadata
+       // 3. Existing record in user_subscriptions (via customer_id)
+       
+       let userId = metadata?.user_id || subscription.metadata?.user_id
+       
+       if (!userId) {
+          // Try to find by stripe_customer_id
+          const { data: sub } = await supabaseAdmin
+             .from('user_subscriptions')
+             .select('user_id')
+             .eq('stripe_customer_id', customerId)
+             .single()
+          
+          if (sub) {
+             userId = sub.user_id
+          } else {
+             console.error('User not found for subscription checkout', session.id)
+             return NextResponse.json({ error: 'User not found' }, { status: 400 })
+          }
+       }
+
+       const { error: updateError } = await supabaseAdmin
+          .from('user_subscriptions')
+          .upsert({
+             user_id: userId,
+             stripe_customer_id: customerId,
+             stripe_subscription_id: subscriptionId,
+             status: subscription.status,
+             current_period_end: new Date(currentPeriodEnd * 1000).toISOString(),
+             cancel_at_period_end: subscription.cancel_at_period_end,
+             updated_at: new Date().toISOString()
+          })
+       
+       if (updateError) {
+          console.error('Error updating user_subscriptions:', updateError)
+          return NextResponse.json({ error: 'Database update failed' }, { status: 500 })
+       }
+
+       console.log(`User subscription updated for user ${userId}`)
+       return NextResponse.json({ received: true })
+    }
+
+    // HANDLE TELECONSULTA CHECKOUT (existing logic)
     if (!metadata || !metadata.nutritionist_id || !metadata.patient_id || !metadata.scheduled_at) {
       console.error('Missing required metadata', metadata)
       return NextResponse.json({ error: 'Missing metadata' }, { status: 400 })
@@ -161,6 +221,45 @@ export async function POST(req: Request) {
 
     console.log(`Teleconsulta session created successfully: ${newSession.id}`)
     return NextResponse.json({ received: true, session_id: newSession.id })
+  }
+
+  // HANDLE SUBSCRIPTION UPDATES
+  if (event.type === 'customer.subscription.updated' || event.type === 'customer.subscription.deleted') {
+    const subscription = event.data.object as any
+    const customerId = subscription.customer as string
+
+    console.log(`Processing subscription update ${subscription.id} (${event.type})`)
+
+    const currentPeriodEnd = subscription.current_period_end 
+       || subscription.items?.data?.[0]?.current_period_end 
+       || Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60;
+
+    const { error: updateError } = await supabaseAdmin
+        .from('user_subscriptions')
+        .update({
+            status: subscription.status,
+            current_period_end: new Date(currentPeriodEnd * 1000).toISOString(),
+            cancel_at_period_end: subscription.cancel_at_period_end,
+            updated_at: new Date().toISOString()
+        })
+        .eq('stripe_subscription_id', subscription.id)
+
+    if (updateError) {
+        // Fallback: try by customer_id if subscription_id mismatch (unlikely but safe)
+        console.warn('Could not update by subscription_id, trying customer_id', updateError)
+        await supabaseAdmin
+            .from('user_subscriptions')
+            .update({
+                status: subscription.status,
+                current_period_end: new Date(currentPeriodEnd * 1000).toISOString(),
+                cancel_at_period_end: subscription.cancel_at_period_end,
+                stripe_subscription_id: subscription.id, // Ensure it's set
+                updated_at: new Date().toISOString()
+            })
+            .eq('stripe_customer_id', customerId)
+    }
+
+    return NextResponse.json({ received: true })
   }
 
   return NextResponse.json({ received: true })
