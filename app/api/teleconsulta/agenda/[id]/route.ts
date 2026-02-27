@@ -52,6 +52,7 @@ export const DELETE = withErrorHandling(async (
   if (bookedSessions && bookedSessions.length > 0) {
     // TODO: Add strict time overlap filtering. Current logic prevents deletion if any session exists.
     throw new ConflictError('Não é possível deletar horário com teleconsultas agendadas')
+  }
 
   // Deletar disponibilidade
   const { error: deleteError } = await supabase

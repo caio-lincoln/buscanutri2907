@@ -173,6 +173,7 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ appointment_id: data.id })
+    */
   } catch (error) {
     console.error('Internal error:', error)
     return NextResponse.json(
