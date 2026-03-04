@@ -1,4 +1,3 @@
-import { headers } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { stripe } from '@/lib/stripe'
 import { createClient } from '@supabase/supabase-js'
@@ -14,6 +13,27 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
+function getWebhookSecrets(): string[] {
+  // Supports secret rotation and separate endpoint secrets.
+  const candidates = [
+    process.env.STRIPE_WEBHOOK_SECRETS,
+    process.env.STRIPE_WEBHOOK_SECRET,
+    process.env.STRIPE_CONNECT_WEBHOOK_SECRET,
+    process.env.STRIPE_WEBHOOK_SECRET_LIVE,
+    process.env.STRIPE_WEBHOOK_SECRET_TEST
+  ]
+
+  return Array.from(
+    new Set(
+      candidates
+        .filter(Boolean)
+        .flatMap((value) => (value as string).split(','))
+        .map((value) => value.trim())
+        .filter(Boolean)
+    )
+  )
+}
+
 export async function POST(req: Request) {
   if (!stripe) {
     console.error('Stripe not configured')
@@ -21,16 +41,34 @@ export async function POST(req: Request) {
   }
 
   const body = await req.text()
-  const signature = (await headers()).get('stripe-signature') as string
+  const signature = req.headers.get('stripe-signature')
+  const webhookSecrets = getWebhookSecrets()
 
   let event
 
   try {
-    event = stripe.webhooks.constructEvent(
-      body,
-      signature,
-      process.env.STRIPE_WEBHOOK_SECRET!
-    )
+    if (!signature) {
+      throw new Error('Missing stripe-signature header')
+    }
+
+    if (webhookSecrets.length === 0) {
+      throw new Error('Webhook secret not configured')
+    }
+
+    let lastError: Error | null = null
+    for (const secret of webhookSecrets) {
+      try {
+        event = stripe.webhooks.constructEvent(body, signature, secret)
+        lastError = null
+        break
+      } catch (error: any) {
+        lastError = error
+      }
+    }
+
+    if (!event) {
+      throw lastError || new Error('Unable to verify webhook signature')
+    }
   } catch (err: any) {
     console.error(`Webhook signature verification failed: ${err.message}`)
     return NextResponse.json({ error: 'Webhook error' }, { status: 400 })
@@ -295,7 +333,6 @@ async function handleAccountUpdated(account: any) {
   // O payload mostra contas Stripe Connect com metadata:
   // metadata: { user_id, nutritionist_profile_id }
   
-  const userId = account.metadata?.user_id
   const profileId = account.metadata?.nutritionist_profile_id
 
   if (!profileId) {

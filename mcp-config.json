@@ -1,14 +1,9 @@
 {
   "mcpServers": {
-    "BUSCANUTRI": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@supabase/mcp-server-supabase@latest",
-        "--project-ref=lutokoucdfhfbwtppzwe"
-      ],
-      "env": {
-        "SUPABASE_ACCESS_TOKEN": "sbp_fa0aa27b34f39aca723d8c8244ac5aca99eafce0"
+    "BuscaNutri": {
+      "url": "https://mcp.supabase.com/mcp?project_ref=lutokoucdfhfbwtppzwe",
+      "headers": {
+        "Authorization": "Bearer sbp_f3358b71636e8209420e3c7cdf8a012de019b68b"
       }
     }
   }
