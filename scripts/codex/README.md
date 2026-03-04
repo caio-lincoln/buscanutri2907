@@ -1,31 +1,48 @@
-# Codex Contexto BuscaNutri
+﻿# Codex Contexto de Perfis (BuscaNutri e PreFest)
 
-## Como funciona
+## Objetivo
 
-O script define `CODEX_HOME` dedicado do BuscaNutri.
+Manter dois perfis equivalentes, com alternancia simples e isolamento de MCP:
 
-- sessao/historico local
-- configuracao `config.toml`
-- skills/estado local do Codex
+- `buscanutri` usa somente MCP BuscaNutri
+- `prefest` usa somente MCP PreFest
 
-Tambem usa MCP do projeto BuscaNutri.
-
-## Script
+## Scripts
 
 - `scripts/codex/start-buscanutri.ps1`
+- `scripts/codex/start-prefest.ps1`
+
+Cada script define um `CODEX_HOME` separado:
+
+- BuscaNutri: `.codex-buscanutri`
+- PreFest: `.codex-prefest`
+
+Isso isola historico, estado e MCP por perfil.
 
 ## Uso
 
 ```powershell
+# Perfil BuscaNutri
 .\scripts\codex\start-buscanutri.ps1
+
+# Perfil PreFest
+.\scripts\codex\start-prefest.ps1
+```
+
+Opcionalmente, voce pode informar `project_ref` no start:
+
+```powershell
+.\scripts\codex\start-prefest.ps1 -ProjectRef "<project_ref_prefest>"
+.\scripts\codex\start-buscanutri.ps1 -ProjectRef "<project_ref_buscanutri>"
 ```
 
 ## Variaveis de ambiente
 
-Defina:
+Defina tokens dedicados para manter isolamento completo:
 
 ```powershell
-[Environment]::SetEnvironmentVariable("SUPABASE_MCP_TOKEN_BUSCANUTRI","sbp_f3358b71636e8209420e3c7cdf8a012de019b68b","User")
+[Environment]::SetEnvironmentVariable("SUPABASE_MCP_TOKEN_BUSCANUTRI","<token_buscanutri>","User")
+[Environment]::SetEnvironmentVariable("SUPABASE_MCP_TOKEN_PREFEST","<token_prefest>","User")
 ```
 
-Feche e abra o terminal apos definir.
+Fallback: se a variavel dedicada nao existir, os scripts usam `SUPABASE_MCP_TOKEN` no processo atual.
