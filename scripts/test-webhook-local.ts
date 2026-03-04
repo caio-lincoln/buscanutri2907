@@ -1,4 +1,4 @@
-import dotenv from 'dotenv';
+﻿import dotenv from 'dotenv';
 import crypto from 'crypto';
 import path from 'path';
 
@@ -10,14 +10,14 @@ const WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
 const WEBHOOK_URL = 'http://localhost:3000/api/stripe/webhook';
 
 if (!WEBHOOK_SECRET) {
-  console.error('❌ Erro: STRIPE_WEBHOOK_SECRET não está definido nas variáveis de ambiente.');
-  console.error('Certifique-se de que o arquivo .env existe e contém esta variável.');
+  console.error('âŒ Erro: STRIPE_WEBHOOK_SECRET nÃ£o estÃ¡ definido nas variÃ¡veis de ambiente.');
+  console.error('Certifique-se de que o arquivo .env existe e contÃ©m esta variÃ¡vel.');
   process.exit(1);
 }
 
 async function sendWebhookEvent(eventType: string, payloadData: any) {
   console.log(`\n---------------------------------------------------------`);
-  console.log(`📡 Enviando evento de teste: ${eventType}`);
+  console.log(`ðŸ“¡ Enviando evento de teste: ${eventType}`);
 
   const payload = JSON.stringify({
     id: `evt_test_${Date.now()}_${Math.random().toString(36).substring(7)}`,
@@ -59,14 +59,14 @@ async function sendWebhookEvent(eventType: string, payloadData: any) {
     const responseText = await response.text();
     
     if (response.ok) {
-      console.log(`✅ Sucesso! Status: ${response.status}`);
+      console.log(`âœ… Sucesso! Status: ${response.status}`);
       console.log(`   Resposta: ${responseText}`);
     } else {
-      console.error(`❌ Falha! Status: ${response.status}`);
+      console.error(`âŒ Falha! Status: ${response.status}`);
       console.error(`   Erro: ${responseText}`);
     }
   } catch (error: any) {
-    console.error(`❌ Erro ao conectar com ${WEBHOOK_URL}:`);
+    console.error(`âŒ Erro ao conectar com ${WEBHOOK_URL}:`);
     if (error.code === 'ECONNREFUSED') {
       console.error('   O servidor local parece estar desligado. Certifique-se de rodar "npm run dev" em outro terminal.');
     } else {
@@ -156,7 +156,8 @@ const mockInvoicePaymentFailed = {
 // ==========================================
 
 (async () => {
-  console.log('🚀 Iniciando bateria de testes de webhooks...');
+  console.log('Iniciando bateria de testes de webhooks...');
+  const includeRealStripeLookupMock = process.env.INCLUDE_STRIPE_SUB_LOOKUP_MOCK === 'true';
 
   // 1. Account Updated (Stripe Connect)
   await sendWebhookEvent('account.updated', mockAccountUpdated);
@@ -168,9 +169,13 @@ const mockInvoicePaymentFailed = {
   await sendWebhookEvent('customer.subscription.created', mockSubscriptionUpdated);
 
   // 4. Checkout Session Completed (Subscription)
-  // Nota: Isso vai gerar um erro no backend porque ele tenta buscar a subscription na API real do Stripe com ID fake.
-  // O teste passa se retornar 200 OK (tratado pelo try/catch global).
-  await sendWebhookEvent('checkout.session.completed', mockCheckoutSessionSubscription);
+  // Disabled by default to avoid noisy Stripe 404 logs with fake subscription IDs.
+  // Enable only when needed: INCLUDE_STRIPE_SUB_LOOKUP_MOCK=true
+  if (includeRealStripeLookupMock) {
+    await sendWebhookEvent('checkout.session.completed', mockCheckoutSessionSubscription);
+  } else {
+    console.log('Skipping checkout.session.completed (subscription mock) by default.');
+  }
 
   // 5. Checkout Session Completed (Teleconsulta)
   // Nota: Isso vai gerar erro de Foreign Key no banco (IDs fake), mas deve retornar 200 OK.
@@ -182,5 +187,6 @@ const mockInvoicePaymentFailed = {
   // 7. Invoice Payment Failed
   await sendWebhookEvent('invoice.payment_failed', mockInvoicePaymentFailed);
 
-  console.log('\n✅ Bateria de testes finalizada.');
+  console.log('\nâœ… Bateria de testes finalizada.');
 })();
+

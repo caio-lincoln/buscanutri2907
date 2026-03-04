@@ -28,7 +28,7 @@ function getWebhookSecrets(): string[] {
       candidates
         .filter(Boolean)
         .flatMap((value) => (value as string).split(','))
-        .map((value) => value.trim())
+        .map((value) => value.trim().replace(/^["']|["']$/g, ''))
         .filter(Boolean)
     )
   )
@@ -128,6 +128,12 @@ async function handleCheckoutSessionCompleted(session: any) {
     const customerId = session.customer as string
     
     console.log(`Processing subscription checkout for session ${session.id}`)
+
+    // Guard against locally mocked payloads that accidentally hit real Stripe API logs.
+    if (!subscriptionId || subscriptionId.includes('_mock_')) {
+      console.warn(`Skipping mocked subscription id: ${subscriptionId}`)
+      return
+    }
 
     const subscription = await stripe.subscriptions.retrieve(subscriptionId)
 
