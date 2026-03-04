@@ -36,6 +36,7 @@ export async function POST(req: NextRequest) {
             user_id: user.id,
             stripe_customer_id: customer,
             status: 'incomplete',
+            current_period_end: new Date().toISOString(),
           });
       }
       
