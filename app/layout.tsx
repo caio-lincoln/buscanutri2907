@@ -12,6 +12,7 @@ import Script from 'next/script'
 import MetaPixelRouteChange from './MetaPixelRouteChange'
 import { FloatingWhatsApp } from '@/components/FloatingWhatsApp'
 import { Analytics } from '@vercel/analytics/next'
+import { SpeedInsights } from '@vercel/speed-insights/next'
 
 const inter = Inter({ subsets: [ 'latin' ] })
 
@@ -92,6 +93,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Sonner />
               <FloatingWhatsApp />
               <Analytics />
+              <SpeedInsights />
             </Suspense>
           </SessionTrackerProvider>
           </VisitTrackerProvider>
